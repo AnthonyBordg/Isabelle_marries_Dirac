@@ -217,9 +217,92 @@ declare [[coercion cpx_vec_to_cpx_mat]]
 definition app :: "gate \<Rightarrow> qubit \<Rightarrow> qubit" where
 "app A v \<equiv> Abs_qubit (col (Rep_gate A * v) 1)"
 
+(* The bra-vector corresponding to a ket-vector is introduced. 
+I recall that "$" stands for "vec_index" (see the Matrix theory file) *)
+definition bra_vec :: "complex vec \<Rightarrow> complex vec" where
+"bra_vec v \<equiv> vec (dim_vec v) (\<lambda>i. cnj (v $ i))"
+
+(* We introduce the inner product of two complex vectors in C^n  *)
+definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" where
+"inner_prod u v \<equiv> (bra_vec u) \<bullet> v"
+
+(* We prove that our inner product is linear in its second argument *)
+
+lemma vec_index_is_linear:
+  fixes u::"complex vec" and v::"complex vec" and k::"complex" and l::"complex"
+  assumes "dim_vec u = dim_vec v" and "j < dim_vec u"
+  shows "(k \<cdot>\<^sub>v u + l \<cdot>\<^sub>v v) $ j = k * (u $ j) + l * (v $ j)"
+  using assms vec_index_def smult_vec_def plus_vec_def 
+  by simp
+
+lemma inner_prod_is_linear:
+  fixes u::"complex vec" and v::"nat \<Rightarrow> complex vec" and l::"nat \<Rightarrow> complex"
+  assumes "\<forall>i\<in>{0, 1}. dim_vec u = dim_vec (v i)"
+  shows "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = (\<Sum>i\<le>1. l i * (inner_prod u (v i)))"
+proof-
+  have "dim_vec (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = dim_vec u"
+    using assms 
+    by simp
+  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = 
+    (\<Sum>j<dim_vec u. cnj (u $ j) * ((l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) $ j))"
+    using assms inner_prod_def bra_vec_def scalar_prod_def
+    by (smt index_vec lessThan_atLeast0 lessThan_iff sum.cong)
+  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = 
+    (\<Sum>j<dim_vec u. cnj (u $ j) * (l 0 * v 0 $ j + l 1 * v 1 $ j))"
+    using assms vec_index_is_linear 
+    by simp
+  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = 
+    l 0 * (\<Sum>j<dim_vec u. cnj(u $ j) * (v 0 $ j)) + l 1 * (\<Sum>j<dim_vec u. cnj(u $ j) * (v 1 $ j))"
+    using distrib_left ab_semigroup_mult.mult_commute
+    by (smt mult_hom.hom_sum semiring_normalization_rules(19) sum.cong sum.distrib)
+  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = l 0 * (inner_prod u (v 0)) + l 1 * (inner_prod u (v 1))"
+    using assms inner_prod_def bra_vec_def
+    by (smt index_vec insert_iff lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+  thus ?thesis 
+    by simp
+qed
+
+lemma inner_prod_cnj:
+  fixes u::"complex vec" and v::"complex vec"
+  assumes "dim_vec u = dim_vec v"
+  shows "inner_prod v u = cnj (inner_prod u v)"
+  using assms inner_prod_def bra_vec_def complex_cnj_cnj complex_cnj_mult cnj_sum
+  by (smt Groups.mult_ac(2) index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+
+lemma inner_prod_with_itself_Im:
+  fixes u::"complex vec"
+  shows "Im (inner_prod u u) = 0"
+  using inner_prod_def bra_vec_def
+  by (metis cnj.simps(2) inner_prod_cnj neg_equal_zero)
+
+lemma inner_prod_with_itself_real:
+  fixes u::"complex vec"
+  shows "inner_prod u u \<in> \<real>"
+  using inner_prod_with_itself_Im
+  by (simp add: complex_is_Real_iff)
+
+lemma inner_prod_with_itself_eq0:
+  fixes u::"complex vec"
+  assumes "u = 0\<^sub>v (dim_vec u)"
+  shows "inner_prod u u = 0"
+proof-
+  have "\<forall>i<dim_vec u. cnj(u $ i) * (u $ i) = 0"
+    using assms complex_cnj_zero
+    by (metis index_zero_vec(1) mult_zero_right)
+  thus ?thesis
+    using inner_prod_def bra_vec_def
+    by (smt complex_cnj_zero index_vec index_zero_vec(1) lessThan_atLeast0 lessThan_iff 
+        mult_hom.hom_sum mult_zero_left scalar_prod_def sum.cong)
+qed
+
+lemma inner_prod_with_itself_neq0:
+  fixes u::"complex vec"
+  assumes "u \<noteq> 0\<^sub>v (dim_vec u)"
+  shows "real_of_complex (inner_prod u u) > 0"
+  using assms zero_vec_def inner_prod_def bra_vec_def complex_neq_0
+
 (* A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
-same length. As a consequence, we prove that a quantum gate acting on a qubit really produces a 
-qubit *)
+same length. As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
 
 lemma gate_on_qubit_is_qubit:
   assumes ""
