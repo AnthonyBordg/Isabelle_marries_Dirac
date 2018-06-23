@@ -7,6 +7,10 @@ imports
   "Jordan_Normal_Form.Matrix"
 begin
 
+section \<open>Qubits and Quantum Gates\<close>
+
+subsection \<open>Basics of Qubits and Quantum Gates\<close>
+
 (* In this theory "cpx" stands for "complex" *)
 definition cpx_vec_length :: "complex vec \<Rightarrow> real" where
 "cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (vec_index v i))^2)"
@@ -91,7 +95,7 @@ definition basis_qubit :: "nat \<Rightarrow> nat \<Rightarrow> qubit" where
 "basis_qubit n i \<equiv> Abs_qubit (unit_vec (2^n) i)"
 
 (* The Hermitian conjugate of a complex matrix is the complex conjugate of its transpose *)
-definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" where
+definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" ("_\<dagger>") where
   "hermite_cnj A \<equiv> mat (dim_col A) (dim_row A) (\<lambda> (i,j). cnj(A $$ (j,i)))"
 
 (* We introduce the type of complex square matrices *)
@@ -112,37 +116,37 @@ definition cpx_sqr_mat_to_cpx_mat :: "cpx_sqr_mat \<Rightarrow> complex mat" whe
 declare [[coercion cpx_sqr_mat_to_cpx_mat]]
 
 lemma hermite_cnj_dim_row:
-  shows "dim_row (hermite_cnj A) = dim_col A"
+  shows "dim_row (A\<dagger>) = dim_col A"
   using hermite_cnj_def 
   by simp
 
 lemma hermite_cnj_dim_col:
-  shows "dim_col (hermite_cnj A) = dim_row A"
+  shows "dim_col (A\<dagger>) = dim_row A"
   using hermite_cnj_def
   by simp
 
 lemma hermite_cnj_of_sqr_is_sqr:
-  shows "square_mat (hermite_cnj (A::cpx_sqr_mat))"
+  shows "square_mat ((A::cpx_sqr_mat)\<dagger>)"
 proof-
   have "square_mat A"
     using cpx_sqr_mat_to_cpx_mat_def Rep_cpx_sqr_mat 
     by auto
   then have "dim_row A = dim_col A" 
     by simp
-  then have "dim_col (hermite_cnj A) = dim_row (hermite_cnj A)"
+  then have "dim_col (A\<dagger>) = dim_row (A\<dagger>)"
     using hermite_cnj_dim_col hermite_cnj_dim_row 
     by simp
-  thus "square_mat (hermite_cnj A)" 
+  thus "square_mat (A\<dagger>)" 
     by simp
 qed
 
 lemma hermite_cnj_of_id_is_id:
-  shows "hermite_cnj (1\<^sub>m n) = 1\<^sub>m n"
+  shows "(1\<^sub>m n)\<dagger> = 1\<^sub>m n"
   using hermite_cnj_def one_mat_def 
   by auto
 
 definition unitary :: "complex mat \<Rightarrow> bool" where
-"unitary A \<equiv> hermite_cnj A * A = 1\<^sub>m (dim_col A) \<and> A * hermite_cnj A = 1\<^sub>m (dim_row A)"
+"unitary A \<equiv> (A\<dagger>) * A = 1\<^sub>m (dim_col A) \<and> A * (A\<dagger>) = 1\<^sub>m (dim_row A)"
 
 lemma id_is_unitary:
   shows "unitary (1\<^sub>m n)"
@@ -181,11 +185,6 @@ lemma gate_of_dim_is_gate:
 
 declare [[coercion gate_to_cpx_mat]]
 
-(* Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though ! *)
-
-definition id_gate :: "nat \<Rightarrow> gate" where
-"id_gate n \<equiv> Abs_gate (1\<^sub>m (2^n))"
-
 (* We prove that a quantum gate is invertible and its inverse is given by its Hermitian conjugate *)
 
 lemma gate_is_inv:
@@ -194,10 +193,10 @@ proof-
   have f1:"square_mat A"
     using Rep_gate gate_to_cpx_mat_def 
     by simp
-  have f2:"inverts_mat A (hermite_cnj A)"
+  have f2:"inverts_mat A (A\<dagger>)"
     using inverts_mat_def Rep_gate gate_to_cpx_mat_def unitary_def 
     by auto
-  have f3:"inverts_mat (hermite_cnj A) A"
+  have f3:"inverts_mat (A\<dagger>) A"
     using Rep_gate gate_to_cpx_mat_def unitary_def hermite_cnj_dim_row
     by (simp add: inverts_mat_def)
   thus ?thesis
@@ -223,7 +222,7 @@ definition bra_vec :: "complex vec \<Rightarrow> complex vec" where
 "bra_vec v \<equiv> vec (dim_vec v) (\<lambda>i. cnj (v $ i))"
 
 (* We introduce the inner product of two complex vectors in C^n  *)
-definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" where
+definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" ("\<langle>_|_\<rangle>") where
 "inner_prod u v \<equiv> (bra_vec u) \<bullet> v"
 
 (* We prove that our inner product is linear in its second argument *)
@@ -238,24 +237,24 @@ lemma vec_index_is_linear:
 lemma inner_prod_is_linear:
   fixes u::"complex vec" and v::"nat \<Rightarrow> complex vec" and l::"nat \<Rightarrow> complex"
   assumes "\<forall>i\<in>{0, 1}. dim_vec u = dim_vec (v i)"
-  shows "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = (\<Sum>i\<le>1. l i * (inner_prod u (v i)))"
+  shows "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = (\<Sum>i\<le>1. l i * \<langle>u|v i\<rangle>)"
 proof-
   have "dim_vec (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = dim_vec u"
     using assms 
     by simp
-  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = 
+  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
     (\<Sum>j<dim_vec u. cnj (u $ j) * ((l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) $ j))"
     using assms inner_prod_def bra_vec_def scalar_prod_def
     by (smt index_vec lessThan_atLeast0 lessThan_iff sum.cong)
-  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = 
+  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
     (\<Sum>j<dim_vec u. cnj (u $ j) * (l 0 * v 0 $ j + l 1 * v 1 $ j))"
     using assms vec_index_is_linear 
     by simp
-  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = 
+  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
     l 0 * (\<Sum>j<dim_vec u. cnj(u $ j) * (v 0 $ j)) + l 1 * (\<Sum>j<dim_vec u. cnj(u $ j) * (v 1 $ j))"
     using distrib_left ab_semigroup_mult.mult_commute
     by (smt mult_hom.hom_sum semiring_normalization_rules(19) sum.cong sum.distrib)
-  then have "inner_prod u (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = l 0 * (inner_prod u (v 0)) + l 1 * (inner_prod u (v 1))"
+  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = l 0 * \<langle>u|v 0\<rangle> + l 1 * \<langle>u|v 1\<rangle>"
     using assms inner_prod_def bra_vec_def
     by (smt index_vec insert_iff lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
   thus ?thesis 
@@ -265,26 +264,26 @@ qed
 lemma inner_prod_cnj:
   fixes u::"complex vec" and v::"complex vec"
   assumes "dim_vec u = dim_vec v"
-  shows "inner_prod v u = cnj (inner_prod u v)"
+  shows "\<langle>v|u\<rangle> = cnj (\<langle>u|v\<rangle>)"
   using assms inner_prod_def bra_vec_def complex_cnj_cnj complex_cnj_mult cnj_sum
   by (smt Groups.mult_ac(2) index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
 
 lemma inner_prod_with_itself_Im:
   fixes u::"complex vec"
-  shows "Im (inner_prod u u) = 0"
+  shows "Im (\<langle>u|u\<rangle>) = 0"
   using inner_prod_def bra_vec_def
   by (metis cnj.simps(2) inner_prod_cnj neg_equal_zero)
 
 lemma inner_prod_with_itself_real:
   fixes u::"complex vec"
-  shows "inner_prod u u \<in> \<real>"
+  shows "\<langle>u|u\<rangle> \<in> \<real>"
   using inner_prod_with_itself_Im
   by (simp add: complex_is_Real_iff)
 
 lemma inner_prod_with_itself_eq0:
   fixes u::"complex vec"
   assumes "u = 0\<^sub>v (dim_vec u)"
-  shows "inner_prod u u = 0"
+  shows "\<langle>u|u\<rangle> = 0"
 proof-
   have "\<forall>i<dim_vec u. cnj(u $ i) * (u $ i) = 0"
     using assms complex_cnj_zero
@@ -295,11 +294,66 @@ proof-
         mult_hom.hom_sum mult_zero_left scalar_prod_def sum.cong)
 qed
 
-lemma inner_prod_with_itself_neq0:
+lemma inner_prod_with_itself_Re:
+  fixes u::"complex vec"
+  shows "Re (\<langle>u|u\<rangle>) \<ge> 0"
+proof-
+  have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. Re (cnj(u $ i) * (u $ i)))"
+    using inner_prod_def bra_vec_def Re_sum
+    by (smt index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+  then have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. (Re (u $ i))^2 + (Im (u $ i))^2)"
+    using complex_mult_cnj
+    by (metis (no_types, lifting) Re_complex_of_real semiring_normalization_rules(7) sum.cong)
+  thus "Re (\<langle>u|u\<rangle>) \<ge> 0"
+    by (simp add: sum_nonneg)
+qed
+
+lemma inner_prod_with_itself_Re_non0:
   fixes u::"complex vec"
   assumes "u \<noteq> 0\<^sub>v (dim_vec u)"
-  shows "real_of_complex (inner_prod u u) > 0"
-  using assms zero_vec_def inner_prod_def bra_vec_def complex_neq_0
+  shows "Re (\<langle>u|u\<rangle>) > 0"
+proof-
+  obtain i where a1:"i <dim_vec u" and "u $ i \<noteq> 0"
+    using assms zero_vec_def
+    by (metis dim_vec eq_vecI index_zero_vec(1))
+  then have f1:"Re (cnj (u $ i) * (u $ i)) > 0"
+    by (metis Re_complex_of_real complex_mult_cnj complex_neq_0 mult.commute)
+  have f2:"Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. Re (cnj(u $ i) * (u $ i)))"
+    using inner_prod_def bra_vec_def Re_sum
+    by (smt index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+  have f3:"\<forall>i<dim_vec u. Re (cnj(u $ i) * (u $ i)) \<ge> 0"
+    using complex_mult_cnj
+    by simp
+  thus ?thesis
+    using a1 f1 f2 f3 inner_prod_def bra_vec_def lessThan_iff sum_pos2
+    by (metis (no_types, lifting) finite_lessThan sum_pos2)
+qed
+
+(* We declare a coercion from real numbers to complex numbers *)
+declare [[coercion complex_of_real]]
+
+lemma cpx_vec_length_inner_product:
+  fixes v::"complex vec"
+  shows "(cpx_vec_length v)^2 = \<langle>v|v\<rangle>"
+proof-
+  have "(cpx_vec_length v)^2 = (\<Sum>i< dim_vec v.(cmod (v $ i))^2)"
+    using cpx_vec_length_def complex_of_real_def
+    by (metis (no_types, lifting) real_sqrt_power real_sqrt_unique sum_nonneg zero_le_power2)
+  then have "(cpx_vec_length v)^2 = (\<Sum>i< dim_vec v. cnj (v $ i) * (v $ i))"
+    using complex_norm_square mult.commute
+    by (smt of_real_sum sum.cong)
+  thus ?thesis
+    using inner_prod_def bra_vec_def
+    by (smt index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+qed
+
+lemma inner_prod_csqrt:
+  fixes v::"complex vec"
+  shows "csqrt \<langle>v|v\<rangle> = cpx_vec_length v"
+  using inner_prod_with_itself_Re inner_prod_with_itself_Im csqrt_of_real_nonneg cpx_vec_length_def
+  by (metis (no_types, lifting) Re_complex_of_real cpx_vec_length_inner_product real_sqrt_ge_0_iff 
+      real_sqrt_unique sum_nonneg zero_le_power2)
+
 
 (* A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
 same length. As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
@@ -307,6 +361,10 @@ same length. As a consequence, we prove that a quantum gate acting on a qubit gi
 lemma gate_on_qubit_is_qubit:
   assumes ""
 
+subsection \<open>A Few Well-known Quantum Gates\<close>
 
+(* Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though ! *)
+definition id_gate :: "nat \<Rightarrow> gate" where
+"id_gate n \<equiv> Abs_gate (1\<^sub>m (2^n))"
 
 end
