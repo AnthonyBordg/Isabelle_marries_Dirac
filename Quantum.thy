@@ -5,6 +5,7 @@ imports
   Real 
   Complex 
   "Jordan_Normal_Form.Matrix"
+  "HOL-Library.Nonpos_Ints"
 begin
 
 section \<open>Qubits and Quantum Gates\<close>
@@ -216,14 +217,72 @@ declare [[coercion cpx_vec_to_cpx_mat]]
 definition app :: "gate \<Rightarrow> qubit \<Rightarrow> qubit" where
 "app A v \<equiv> Abs_qubit (col (Rep_gate A * v) 1)"
 
-(* The bra-vector corresponding to a ket-vector is introduced. 
-I recall that "$" stands for "vec_index" (see the Matrix theory file) *)
-definition bra_vec :: "complex vec \<Rightarrow> complex vec" where
-"bra_vec v \<equiv> vec (dim_vec v) (\<lambda>i. cnj (v $ i))"
+(* Now, we introduce a coercion between complex vectors and (column) complex matrices *)
 
-(* We introduce the inner product of two complex vectors in C^n  *)
+definition ket_vec :: "complex vec \<Rightarrow> complex mat" ("|_\<rangle>") where
+"ket_vec v \<equiv> mat (dim_vec v) 1 (\<lambda>(i,j). v $ i)"
+
+lemma col_ket_vec:
+  fixes v::"complex vec"
+  shows "col |v\<rangle> 0 = vec (dim_vec v) (\<lambda>i. v $ i)"
+  using col_def ket_vec_def index_mat 
+  by simp
+
+declare [[coercion ket_vec]]
+
+definition row_vec :: "complex vec \<Rightarrow> complex mat" where
+"row_vec v \<equiv> mat 1 (dim_vec v) (\<lambda>(i,j). v $ j)" 
+
+definition mat_cnj :: "complex mat \<Rightarrow> complex mat" where
+"mat_cnj A \<equiv> mat (dim_row A) (dim_col A) (\<lambda>(i,j). cnj (A $$ (i,j)))"
+
+definition bra_vec :: "complex vec \<Rightarrow> complex mat" where
+"bra_vec v \<equiv> mat_cnj (row_vec v)"
+
+lemma row_bra_vec:
+  fixes v::"complex vec"
+  shows "row (bra_vec v) 0 = vec (dim_vec v) (\<lambda>i. cnj(v $ i))"
+  using row_def bra_vec_def mat_cnj_def index_mat row_vec_def 
+  by auto
+
+(* We introduce a definition called bra to take the corresponding bra of a vector when this last
+vector is given under its matrix representation, i.e. as a column matrix *)
+definition bra :: "complex mat \<Rightarrow> complex mat" ("\<langle>_|") where
+"bra v \<equiv> mat 1 (dim_row v) (\<lambda>(i,j). cnj(v $$ (j,0)))"
+
+(* The relation between bra, bra_vec and ket_vec is given as follows. *)
+lemma bra_bra_vec:
+  fixes v::"complex vec"
+  shows "bra (ket_vec v) = bra_vec v"
+  using cong_mat bra_def ket_vec_def bra_vec_def mat_cnj_def row_vec_def
+  by auto
+
+(* We introduce the inner product of two complex vectors in C^n.
+The result of an inner product is a (1,1)-matrix, i.e. a complex number. *)
 definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" ("\<langle>_|_\<rangle>") where
-"inner_prod u v \<equiv> (bra_vec u) \<bullet> v"
+"inner_prod u v \<equiv> \<Sum> i \<in> {0 ..< dim_vec v}. cnj(u $ i) * (v $ i)"
+
+lemma inner_prod_with_row_bra_vec:
+  fixes u::"complex vec" and v::"complex vec"
+  assumes "dim_vec u = dim_vec v"
+  shows "inner_prod u v = row (bra_vec u) 0 \<bullet> v"
+  using assms inner_prod_def scalar_prod_def row_bra_vec index_vec
+  by (smt lessThan_atLeast0 lessThan_iff sum.cong)
+
+lemma inner_prod_with_row_bra_vec_col_ket_vec:
+  fixes u::"complex vec" and v::"complex vec"
+  assumes "dim_vec u = dim_vec v"
+  shows "inner_prod u v = (row \<langle>u| 0) \<bullet> (col |v\<rangle> 0)"
+  using assms inner_prod_def index_vec row_bra_vec col_ket_vec
+  by (simp add: scalar_prod_def bra_bra_vec)
+
+lemma inner_prod_with_times_mat:
+  fixes u::"complex vec" and v::"complex vec"
+  assumes "dim_vec u = dim_vec v"
+  shows "inner_prod u v = (\<langle>u| * |v\<rangle>) $$ (0,0)"
+  using assms inner_prod_def times_mat_def index_mat ket_vec_def bra_def 
+    inner_prod_with_row_bra_vec_col_ket_vec 
+  by auto
 
 (* We prove that our inner product is linear in its second argument *)
 
@@ -239,24 +298,23 @@ lemma inner_prod_is_linear:
   assumes "\<forall>i\<in>{0, 1}. dim_vec u = dim_vec (v i)"
   shows "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = (\<Sum>i\<le>1. l i * \<langle>u|v i\<rangle>)"
 proof-
-  have "dim_vec (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = dim_vec u"
+  have f1:"dim_vec (l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) = dim_vec u"
     using assms 
     by simp
-  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
-    (\<Sum>j<dim_vec u. cnj (u $ j) * ((l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) $ j))"
-    using assms inner_prod_def bra_vec_def scalar_prod_def
-    by (smt index_vec lessThan_atLeast0 lessThan_iff sum.cong)
-  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
-    (\<Sum>j<dim_vec u. cnj (u $ j) * (l 0 * v 0 $ j + l 1 * v 1 $ j))"
-    using assms vec_index_is_linear 
+  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = (\<Sum> i \<in> {0 ..< dim_vec u}. cnj (u $ i) * ((l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1) $ i))"
+    using inner_prod_def 
     by simp
   then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
-    l 0 * (\<Sum>j<dim_vec u. cnj(u $ j) * (v 0 $ j)) + l 1 * (\<Sum>j<dim_vec u. cnj(u $ j) * (v 1 $ j))"
+    (\<Sum> i \<in> {0 ..< dim_vec u}. cnj (u $ i) * (l 0 * v 0 $ i + l 1 * v 1 $ i))"
+    using assms vec_index_is_linear
+    by simp
+  then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = 
+    l 0 * (\<Sum> i \<in> {0 ..< dim_vec u}. cnj(u $ i) * (v 0 $ i)) + l 1 * (\<Sum> i \<in> {0 ..< dim_vec u}. cnj(u $ i) * (v 1 $ i))"
     using distrib_left ab_semigroup_mult.mult_commute
     by (smt mult_hom.hom_sum semiring_normalization_rules(19) sum.cong sum.distrib)
   then have "\<langle>u|l 0 \<cdot>\<^sub>v v 0 + l 1 \<cdot>\<^sub>v v 1\<rangle> = l 0 * \<langle>u|v 0\<rangle> + l 1 * \<langle>u|v 1\<rangle>"
-    using assms inner_prod_def bra_vec_def
-    by (smt index_vec insert_iff lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+    using assms inner_prod_def 
+    by auto
   thus ?thesis 
     by simp
 qed
@@ -265,14 +323,14 @@ lemma inner_prod_cnj:
   fixes u::"complex vec" and v::"complex vec"
   assumes "dim_vec u = dim_vec v"
   shows "\<langle>v|u\<rangle> = cnj (\<langle>u|v\<rangle>)"
-  using assms inner_prod_def bra_vec_def complex_cnj_cnj complex_cnj_mult cnj_sum
-  by (smt Groups.mult_ac(2) index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+  using assms inner_prod_def complex_cnj_cnj complex_cnj_mult cnj_sum sledgehammer
+  by (smt semiring_normalization_rules(7) sum.cong)
 
 lemma inner_prod_with_itself_Im:
   fixes u::"complex vec"
   shows "Im (\<langle>u|u\<rangle>) = 0"
-  using inner_prod_def bra_vec_def
-  by (metis cnj.simps(2) inner_prod_cnj neg_equal_zero)
+  using inner_prod_cnj
+  by (metis Reals_cnj_iff complex_is_Real_iff)
 
 lemma inner_prod_with_itself_real:
   fixes u::"complex vec"
@@ -284,23 +342,16 @@ lemma inner_prod_with_itself_eq0:
   fixes u::"complex vec"
   assumes "u = 0\<^sub>v (dim_vec u)"
   shows "\<langle>u|u\<rangle> = 0"
-proof-
-  have "\<forall>i<dim_vec u. cnj(u $ i) * (u $ i) = 0"
-    using assms complex_cnj_zero
-    by (metis index_zero_vec(1) mult_zero_right)
-  thus ?thesis
-    using inner_prod_def bra_vec_def
-    by (smt complex_cnj_zero index_vec index_zero_vec(1) lessThan_atLeast0 lessThan_iff 
-        mult_hom.hom_sum mult_zero_left scalar_prod_def sum.cong)
-qed
+  using assms inner_prod_def zero_vec_def
+  by (smt atLeastLessThan_iff complex_cnj_zero index_zero_vec(1) mult_zero_left sum.neutral)
 
 lemma inner_prod_with_itself_Re:
   fixes u::"complex vec"
   shows "Re (\<langle>u|u\<rangle>) \<ge> 0"
 proof-
   have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. Re (cnj(u $ i) * (u $ i)))"
-    using inner_prod_def bra_vec_def Re_sum
-    by (smt index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+    using inner_prod_def Re_sum
+    by (simp add: lessThan_atLeast0)
   then have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. (Re (u $ i))^2 + (Im (u $ i))^2)"
     using complex_mult_cnj
     by (metis (no_types, lifting) Re_complex_of_real semiring_normalization_rules(7) sum.cong)
@@ -308,25 +359,44 @@ proof-
     by (simp add: sum_nonneg)
 qed
 
+lemma inner_prod_with_itself_nonneg_reals:
+  fixes u::"complex vec"
+  shows "\<langle>u|u\<rangle> \<in> nonneg_Reals"
+  using inner_prod_with_itself_real inner_prod_with_itself_Re nonneg_Reals_def
+  by (simp add: complex_nonneg_Reals_iff inner_prod_with_itself_Im)
+
 lemma inner_prod_with_itself_Re_non0:
   fixes u::"complex vec"
   assumes "u \<noteq> 0\<^sub>v (dim_vec u)"
   shows "Re (\<langle>u|u\<rangle>) > 0"
 proof-
-  obtain i where a1:"i <dim_vec u" and "u $ i \<noteq> 0"
+  obtain i where a1:"i < dim_vec u" and "u $ i \<noteq> 0"
     using assms zero_vec_def
     by (metis dim_vec eq_vecI index_zero_vec(1))
   then have f1:"Re (cnj (u $ i) * (u $ i)) > 0"
     by (metis Re_complex_of_real complex_mult_cnj complex_neq_0 mult.commute)
   have f2:"Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. Re (cnj(u $ i) * (u $ i)))"
-    using inner_prod_def bra_vec_def Re_sum
-    by (smt index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
-  have f3:"\<forall>i<dim_vec u. Re (cnj(u $ i) * (u $ i)) \<ge> 0"
+    using inner_prod_def Re_sum
+    by (simp add: lessThan_atLeast0)
+  have f3:"\<forall>i < dim_vec u. Re (cnj(u $ i) * (u $ i)) \<ge> 0"
     using complex_mult_cnj
     by simp
   thus ?thesis
-    using a1 f1 f2 f3 inner_prod_def bra_vec_def lessThan_iff sum_pos2
+    using a1 f1 f2 f3 inner_prod_def lessThan_iff
     by (metis (no_types, lifting) finite_lessThan sum_pos2)
+qed
+
+lemma inner_prod_with_itself_nonneg_reals_non0:
+  fixes u::"complex vec"
+  assumes "u \<noteq> 0\<^sub>v (dim_vec u)"
+  shows "\<langle>u|u\<rangle> \<in> nonneg_Reals" and "\<langle>u|u\<rangle> \<noteq> 0"
+proof-
+  show "\<langle>u|u\<rangle> \<in> nonneg_Reals"
+    using inner_prod_with_itself_nonneg_reals 
+    by simp
+  show "\<langle>u|u\<rangle> \<noteq> 0"
+    using assms inner_prod_with_itself_Re_non0
+    by fastforce
 qed
 
 (* We declare a coercion from real numbers to complex numbers *)
@@ -336,15 +406,15 @@ lemma cpx_vec_length_inner_product:
   fixes v::"complex vec"
   shows "(cpx_vec_length v)^2 = \<langle>v|v\<rangle>"
 proof-
-  have "(cpx_vec_length v)^2 = (\<Sum>i< dim_vec v.(cmod (v $ i))^2)"
+  have "(cpx_vec_length v)^2 = (\<Sum>i < dim_vec v.(cmod (v $ i))^2)"
     using cpx_vec_length_def complex_of_real_def
     by (metis (no_types, lifting) real_sqrt_power real_sqrt_unique sum_nonneg zero_le_power2)
-  then have "(cpx_vec_length v)^2 = (\<Sum>i< dim_vec v. cnj (v $ i) * (v $ i))"
+  then have "(cpx_vec_length v)^2 = (\<Sum>i < dim_vec v. cnj (v $ i) * (v $ i))"
     using complex_norm_square mult.commute
     by (smt of_real_sum sum.cong)
   thus ?thesis
-    using inner_prod_def bra_vec_def
-    by (smt index_vec lessThan_atLeast0 lessThan_iff scalar_prod_def sum.cong)
+    using inner_prod_def
+    by (simp add: lessThan_atLeast0)
 qed
 
 lemma inner_prod_csqrt:
@@ -354,6 +424,12 @@ lemma inner_prod_csqrt:
   by (metis (no_types, lifting) Re_complex_of_real cpx_vec_length_inner_product real_sqrt_ge_0_iff 
       real_sqrt_unique sum_nonneg zero_le_power2)
 
+(* The bra-vector \<langle>Av| is given by \<langle>v|A\<dagger> *)
+
+lemma bra_mat_on_vec:
+  fixes v::"complex vec" and A::"complex mat"
+  assumes "dim_col A = dim_vec v"
+  shows "\<langle>A * v| = \<langle>v| * (A\<dagger>)"
 
 (* A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
 same length. As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
