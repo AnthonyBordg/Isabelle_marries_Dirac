@@ -126,6 +126,20 @@ lemma hermite_cnj_dim_col:
   using hermite_cnj_def
   by simp
 
+lemma col_hermite_cnj:
+  fixes A::"complex mat"
+  assumes "j < dim_row A"
+  shows "col (A\<dagger>) j = vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))"
+  using assms col_def hermite_cnj_def 
+  by simp
+
+lemma row_hermite_cnj:
+  fixes A::"complex mat"
+  assumes "i < dim_col A"
+  shows "row (A\<dagger>) i = vec (dim_row A) (\<lambda>j. cnj (A $$ (j,i)))"
+  using assms row_def hermite_cnj_def 
+  by simp
+
 lemma hermite_cnj_of_sqr_is_sqr:
   shows "square_mat ((A::cpx_sqr_mat)\<dagger>)"
 proof-
@@ -224,9 +238,9 @@ definition ket_vec :: "complex vec \<Rightarrow> complex mat" ("|_\<rangle>") wh
 
 lemma col_ket_vec:
   fixes v::"complex vec"
-  shows "col |v\<rangle> 0 = vec (dim_vec v) (\<lambda>i. v $ i)"
-  using col_def ket_vec_def index_mat 
-  by simp
+  shows "col |v\<rangle> 0 = v"
+  using col_def ket_vec_def index_mat eq_vecI
+  by auto
 
 declare [[coercion ket_vec]]
 
@@ -256,6 +270,12 @@ lemma bra_bra_vec:
   shows "bra (ket_vec v) = bra_vec v"
   using cong_mat bra_def ket_vec_def bra_vec_def mat_cnj_def row_vec_def
   by auto
+
+lemma row_bra:
+  fixes v::"complex vec"
+  shows "row \<langle>v| 0 = vec (dim_vec v) (\<lambda>i. cnj (v $ i))"
+  using bra_bra_vec row_bra_vec 
+  by simp
 
 (* We introduce the inner product of two complex vectors in C^n.
 The result of an inner product is a (1,1)-matrix, i.e. a complex number. *)
@@ -430,6 +450,47 @@ lemma bra_mat_on_vec:
   fixes v::"complex vec" and A::"complex mat"
   assumes "dim_col A = dim_vec v"
   shows "\<langle>A * v| = \<langle>v| * (A\<dagger>)"
+proof-
+  have f1:"dim_row \<langle>A * v| = 1"
+    using bra_def 
+    by simp
+  have f2:"dim_row (\<langle>v| * (A\<dagger>)) = 1"
+    using times_mat_def bra_def 
+    by simp
+  from f1 and f2 have f3:"dim_row \<langle>A * v| = dim_row (\<langle>v| * (A\<dagger>))" 
+    by simp
+  have f4:"dim_col \<langle>A * v| = dim_row A"
+    using bra_def times_mat_def 
+    by simp
+  have f5:"dim_col (\<langle>v| * (A\<dagger>)) = dim_row A"
+    using times_mat_def hermite_cnj_dim_col 
+    by simp
+  from f4 and f5 have f6:"dim_col \<langle>A * v| = dim_col (\<langle>v| * (A\<dagger>))"
+    by simp
+  have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = cnj (row A j \<bullet> v)"
+    using index_mat bra_def times_mat_def col_ket_vec eq_vecI ket_vec_def 
+    by auto
+  then have f7:"j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (\<Sum> i \<in> {0 ..< dim_vec v}. cnj(v $ i) * cnj(A $$ (j,i)))"
+    using row_def scalar_prod_def index_mat cnj_sum complex_cnj_mult mult.commute
+    by (smt assms index_vec lessThan_atLeast0 lessThan_iff sum.cong)
+  have f8:"j < dim_row A \<Longrightarrow> (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j) = 
+    vec (dim_vec v) (\<lambda>i. cnj (v $ i)) \<bullet> vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))"
+    using row_bra col_hermite_cnj f1
+    by simp 
+  from f7 and f8 have f9:"j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j)"
+    using assms scalar_prod_def
+    by (smt dim_vec index_vec lessThan_atLeast0 lessThan_iff sum.cong)
+  then have "j < dim_col \<langle>A * v| \<Longrightarrow> \<langle>A * v| $$ (0,j) = (\<langle>v| * (A\<dagger>)) $$ (0,j)"
+    using bra_def times_mat_def f5 
+    by simp
+  have f10:"\<langle>A * v| = mat 1 (dim_row A) (\<lambda>(i,j). cnj((A * v) $$ (j,0)))"
+    using bra_def 
+    by simp
+  have f11:"\<langle>v| * (A\<dagger>) = mat 1 (dim_row A) (\<lambda>(i,j). (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j))"
+    using times_mat_def f1 f3 f5 
+    by auto
+  thus ?thesis
+    using cong_mat f9 f10 f11 index_mat
 
 (* A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
 same length. As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
