@@ -13,7 +13,7 @@ section \<open>Qubits and Quantum Gates\<close>
 subsection \<open>Basics of Qubits and Quantum Gates\<close>
 
 (* In this theory "cpx" stands for "complex" *)
-definition cpx_vec_length :: "complex vec \<Rightarrow> real" where
+definition cpx_vec_length :: "complex vec \<Rightarrow> real" ("\<parallel>_\<parallel>") where
 "cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (vec_index v i))^2)"
 
 lemma norm_vec_index_unit_vec_is_0:
@@ -36,7 +36,7 @@ qed
 
 lemma unit_cpx_vec_length:
   assumes "i < n"
-  shows "cpx_vec_length (unit_vec n i) = 1"
+  shows "\<parallel>unit_vec n i\<parallel> = 1"
 proof-
   have f1:"(\<Sum>j<n. cmod(vec_index (unit_vec n i) j)^2) = (\<Sum>j<n. if j = i then 1 else 0)"
     using norm_vec_index_unit_vec_is_0 norm_vec_index_unit_vec_is_1
@@ -54,7 +54,7 @@ proof-
     by simp
 qed
 
-typedef qubit = "{v| n v::complex vec. dim_vec v = 2^n \<and> cpx_vec_length v = 1}"
+typedef qubit = "{v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
   using unit_cpx_vec_length[of 0 "2^n"]
   by (smt index_unit_vec(3) less_numeral_extra(1) mem_Collect_eq power_0 unit_cpx_vec_length)
 
@@ -71,24 +71,24 @@ declare
 live *)
 lemma unit_vec_of_right_length_is_qubit:
   assumes "i < 2^n"
-  shows "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> cpx_vec_length v = 1}"
+  shows "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
 proof-
   have f1:"dim_vec (unit_vec (2^n) i) = 2^n" 
     by simp
-  have f2:"cpx_vec_length (unit_vec (2^n) i) = 1"
+  have f2:"\<parallel>unit_vec (2^n) i\<parallel> = 1"
     using assms unit_cpx_vec_length
     by simp
-  thus "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> cpx_vec_length v = 1}"
+  thus "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
     using f1 f2 
     by simp
 qed
 
 definition qubit_of_dim:: "nat \<Rightarrow> _ set" where
-"qubit_of_dim n \<equiv> {v| v:: complex vec. dim_vec v = 2^n \<and> cpx_vec_length v = 1}"
+"qubit_of_dim n \<equiv> {v| v:: complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
 
 lemma qubit_of_dim_is_qubit:
   assumes "v \<in> qubit_of_dim n"
-  shows "v \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> cpx_vec_length v = 1}"
+  shows "v \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
   using assms qubit_of_dim_def
   by simp
 
@@ -262,7 +262,7 @@ lemma row_bra_vec:
 (* We introduce a definition called bra to take the corresponding bra of a vector when this last
 vector is given under its matrix representation, i.e. as a column matrix *)
 definition bra :: "complex mat \<Rightarrow> complex mat" ("\<langle>_|") where
-"bra v \<equiv> mat 1 (dim_row v) (\<lambda>(i,j). cnj(v $$ (j,0)))"
+"bra v \<equiv> mat 1 (dim_row v) (\<lambda>(i,j). cnj(v $$ (j,i)))"
 
 (* The relation between bra, bra_vec and ket_vec is given as follows. *)
 lemma bra_bra_vec:
@@ -285,21 +285,21 @@ definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> co
 lemma inner_prod_with_row_bra_vec:
   fixes u::"complex vec" and v::"complex vec"
   assumes "dim_vec u = dim_vec v"
-  shows "inner_prod u v = row (bra_vec u) 0 \<bullet> v"
+  shows "\<langle>u|v\<rangle> = row (bra_vec u) 0 \<bullet> v"
   using assms inner_prod_def scalar_prod_def row_bra_vec index_vec
   by (smt lessThan_atLeast0 lessThan_iff sum.cong)
 
 lemma inner_prod_with_row_bra_vec_col_ket_vec:
   fixes u::"complex vec" and v::"complex vec"
   assumes "dim_vec u = dim_vec v"
-  shows "inner_prod u v = (row \<langle>u| 0) \<bullet> (col |v\<rangle> 0)"
+  shows "\<langle>u|v\<rangle> = (row \<langle>u| 0) \<bullet> (col |v\<rangle> 0)"
   using assms inner_prod_def index_vec row_bra_vec col_ket_vec
   by (simp add: scalar_prod_def bra_bra_vec)
 
 lemma inner_prod_with_times_mat:
   fixes u::"complex vec" and v::"complex vec"
   assumes "dim_vec u = dim_vec v"
-  shows "inner_prod u v = (\<langle>u| * |v\<rangle>) $$ (0,0)"
+  shows "\<langle>u|v\<rangle> = (\<langle>u| * |v\<rangle>) $$ (0,0)"
   using assms inner_prod_def times_mat_def index_mat ket_vec_def bra_def 
     inner_prod_with_row_bra_vec_col_ket_vec 
   by auto
@@ -424,12 +424,12 @@ declare [[coercion complex_of_real]]
 
 lemma cpx_vec_length_inner_product:
   fixes v::"complex vec"
-  shows "(cpx_vec_length v)^2 = \<langle>v|v\<rangle>"
+  shows "\<parallel>v\<parallel>^2 = \<langle>v|v\<rangle>"
 proof-
-  have "(cpx_vec_length v)^2 = (\<Sum>i < dim_vec v.(cmod (v $ i))^2)"
+  have "\<parallel>v\<parallel>^2 = (\<Sum>i < dim_vec v.(cmod (v $ i))^2)"
     using cpx_vec_length_def complex_of_real_def
     by (metis (no_types, lifting) real_sqrt_power real_sqrt_unique sum_nonneg zero_le_power2)
-  then have "(cpx_vec_length v)^2 = (\<Sum>i < dim_vec v. cnj (v $ i) * (v $ i))"
+  then have "\<parallel>v\<parallel>^2 = (\<Sum>i < dim_vec v. cnj (v $ i) * (v $ i))"
     using complex_norm_square mult.commute
     by (smt of_real_sum sum.cong)
   thus ?thesis
@@ -439,7 +439,7 @@ qed
 
 lemma inner_prod_csqrt:
   fixes v::"complex vec"
-  shows "csqrt \<langle>v|v\<rangle> = cpx_vec_length v"
+  shows "csqrt \<langle>v|v\<rangle> = \<parallel>v\<parallel>"
   using inner_prod_with_itself_Re inner_prod_with_itself_Im csqrt_of_real_nonneg cpx_vec_length_def
   by (metis (no_types, lifting) Re_complex_of_real cpx_vec_length_inner_product real_sqrt_ge_0_iff 
       real_sqrt_unique sum_nonneg zero_le_power2)
@@ -467,33 +467,46 @@ proof-
     by simp
   from f4 and f5 have f6:"dim_col \<langle>A * v| = dim_col (\<langle>v| * (A\<dagger>))"
     by simp
-  have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = cnj (row A j \<bullet> v)"
+  have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = cnj (row A j \<bullet> v)" for j
     using index_mat bra_def times_mat_def col_ket_vec eq_vecI ket_vec_def 
     by auto
-  then have f7:"j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (\<Sum> i \<in> {0 ..< dim_vec v}. cnj(v $ i) * cnj(A $$ (j,i)))"
+  then have f7:"j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = 
+    (\<Sum> i \<in> {0 ..< dim_vec v}. cnj(v $ i) * cnj(A $$ (j,i)))" for j
     using row_def scalar_prod_def index_mat cnj_sum complex_cnj_mult mult.commute
     by (smt assms index_vec lessThan_atLeast0 lessThan_iff sum.cong)
   have f8:"j < dim_row A \<Longrightarrow> (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j) = 
-    vec (dim_vec v) (\<lambda>i. cnj (v $ i)) \<bullet> vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))"
+    vec (dim_vec v) (\<lambda>i. cnj (v $ i)) \<bullet> vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))" for j
     using row_bra col_hermite_cnj f1
     by simp 
-  from f7 and f8 have f9:"j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j)"
+  from f7 and f8 have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j)" for j
     using assms scalar_prod_def
     by (smt dim_vec index_vec lessThan_atLeast0 lessThan_iff sum.cong)
-  then have "j < dim_col \<langle>A * v| \<Longrightarrow> \<langle>A * v| $$ (0,j) = (\<langle>v| * (A\<dagger>)) $$ (0,j)"
+  then have "j < dim_col \<langle>A * v| \<Longrightarrow> \<langle>A * v| $$ (0,j) = (\<langle>v| * (A\<dagger>)) $$ (0,j)" for j
     using bra_def times_mat_def f5 
     by simp
-  have f10:"\<langle>A * v| = mat 1 (dim_row A) (\<lambda>(i,j). cnj((A * v) $$ (j,0)))"
-    using bra_def 
-    by simp
-  have f11:"\<langle>v| * (A\<dagger>) = mat 1 (dim_row A) (\<lambda>(i,j). (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j))"
-    using times_mat_def f1 f3 f5 
-    by auto
   thus ?thesis
-    using cong_mat f9 f10 f11 index_mat
+    using eq_matI f1 f3 f6 
+    by auto
+qed
 
 (* A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
-same length. As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
+same length. *)
+
+definition col_fst :: "'a mat \<Rightarrow> 'a vec" where 
+  "col_fst A = vec (dim_row A) (\<lambda> i. A $$ (i,0))"
+
+(* We need to declare col_fst as a coercion from matrices to vectors in order to see a column matrix
+as a vector *)
+declare 
+  [[coercion_delete ket_vec]]
+  [[coercion col_fst]]
+
+lemma unitary_length:
+  fixes U::"complex mat" and v::"complex vec"
+  assumes "unitary U" and "dim_vec v = dim_col U"
+  shows "\<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
+
+(* As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
 
 lemma gate_on_qubit_is_qubit:
   assumes ""
