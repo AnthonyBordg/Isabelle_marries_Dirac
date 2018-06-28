@@ -14,7 +14,7 @@ subsection \<open>Basics of Qubits and Quantum Gates\<close>
 
 (* In this theory "cpx" stands for "complex" *)
 definition cpx_vec_length :: "complex vec \<Rightarrow> real" ("\<parallel>_\<parallel>") where
-"cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (vec_index v i))^2)"
+"cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (vec_index v i))\<^sup>2)"
 
 lemma norm_vec_index_unit_vec_is_0:
   assumes "j < n" and "j \<noteq> i"
@@ -38,16 +38,16 @@ lemma unit_cpx_vec_length:
   assumes "i < n"
   shows "\<parallel>unit_vec n i\<parallel> = 1"
 proof-
-  have f1:"(\<Sum>j<n. cmod(vec_index (unit_vec n i) j)^2) = (\<Sum>j<n. if j = i then 1 else 0)"
+  have f1:"(\<Sum>j<n. (cmod(vec_index (unit_vec n i) j))\<^sup>2) = (\<Sum>j<n. if j = i then 1 else 0)"
     using norm_vec_index_unit_vec_is_0 norm_vec_index_unit_vec_is_1
     by (smt lessThan_iff one_power2 sum.cong zero_power2) 
   also have "(\<Sum>j<n. if j = i then 1 else 0) = 1"
     using assms  
     by simp
-  then have "(\<Sum>j<n. cmod(vec_index (unit_vec n i) j)^2) = 1"
+  then have "(\<Sum>j<n. (cmod(vec_index (unit_vec n i) j))\<^sup>2) = 1"
     using f1 
     by simp
-  then have "sqrt (\<Sum>j<n. cmod(vec_index (unit_vec n i) j)^2) = 1" 
+  then have "sqrt (\<Sum>j<n. (cmod(vec_index (unit_vec n i) j))\<^sup>2) = 1" 
     by simp
   thus ?thesis
     using cpx_vec_length_def 
@@ -202,6 +202,20 @@ declare [[coercion gate_to_cpx_mat]]
 
 (* We prove that a quantum gate is invertible and its inverse is given by its Hermitian conjugate *)
 
+lemma mat_unitary_mat:
+  fixes A::"complex mat"
+  assumes "unitary A"
+  shows "inverts_mat A (A\<dagger>)"
+  using assms inverts_mat_def unitary_def
+  by auto
+
+lemma unitary_mat_mat:
+  fixes A::"complex mat"
+  assumes "unitary A"
+  shows "inverts_mat (A\<dagger>) A"
+  using assms unitary_def
+  by (simp add: inverts_mat_def hermite_cnj_dim_row)
+
 lemma gate_is_inv:
   shows "invertible_mat (A::gate)"
 proof-
@@ -209,11 +223,11 @@ proof-
     using Rep_gate gate_to_cpx_mat_def 
     by simp
   have f2:"inverts_mat A (A\<dagger>)"
-    using inverts_mat_def Rep_gate gate_to_cpx_mat_def unitary_def 
-    by auto
+    using mat_unitary_mat Rep_gate gate_to_cpx_mat_def
+    by simp
   have f3:"inverts_mat (A\<dagger>) A"
-    using Rep_gate gate_to_cpx_mat_def unitary_def hermite_cnj_dim_row
-    by (simp add: inverts_mat_def)
+    using Rep_gate gate_to_cpx_mat_def unitary_mat_mat
+    by simp
   thus ?thesis
     using f1 f2 f3 invertible_mat_def 
     by auto
@@ -343,7 +357,7 @@ lemma inner_prod_cnj:
   fixes u::"complex vec" and v::"complex vec"
   assumes "dim_vec u = dim_vec v"
   shows "\<langle>v|u\<rangle> = cnj (\<langle>u|v\<rangle>)"
-  using assms inner_prod_def complex_cnj_cnj complex_cnj_mult cnj_sum sledgehammer
+  using assms inner_prod_def complex_cnj_cnj complex_cnj_mult cnj_sum
   by (smt semiring_normalization_rules(7) sum.cong)
 
 lemma inner_prod_with_itself_Im:
@@ -372,7 +386,7 @@ proof-
   have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. Re (cnj(u $ i) * (u $ i)))"
     using inner_prod_def Re_sum
     by (simp add: lessThan_atLeast0)
-  then have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. (Re (u $ i))^2 + (Im (u $ i))^2)"
+  then have "Re (\<langle>u|u\<rangle>) = (\<Sum>i<dim_vec u. (Re (u $ i))\<^sup>2 + (Im (u $ i))\<^sup>2)"
     using complex_mult_cnj
     by (metis (no_types, lifting) Re_complex_of_real semiring_normalization_rules(7) sum.cong)
   thus "Re (\<langle>u|u\<rangle>) \<ge> 0"
@@ -422,14 +436,14 @@ qed
 (* We declare a coercion from real numbers to complex numbers *)
 declare [[coercion complex_of_real]]
 
-lemma cpx_vec_length_inner_product:
+lemma cpx_vec_length_inner_prod:
   fixes v::"complex vec"
-  shows "\<parallel>v\<parallel>^2 = \<langle>v|v\<rangle>"
+  shows "\<parallel>v\<parallel>\<^sup>2 = \<langle>v|v\<rangle>"
 proof-
-  have "\<parallel>v\<parallel>^2 = (\<Sum>i < dim_vec v.(cmod (v $ i))^2)"
+  have "\<parallel>v\<parallel>\<^sup>2 = (\<Sum>i < dim_vec v.(cmod (v $ i))\<^sup>2)"
     using cpx_vec_length_def complex_of_real_def
     by (metis (no_types, lifting) real_sqrt_power real_sqrt_unique sum_nonneg zero_le_power2)
-  then have "\<parallel>v\<parallel>^2 = (\<Sum>i < dim_vec v. cnj (v $ i) * (v $ i))"
+  then have "\<parallel>v\<parallel>\<^sup>2 = (\<Sum>i < dim_vec v. cnj (v $ i) * (v $ i))"
     using complex_norm_square mult.commute
     by (smt of_real_sum sum.cong)
   thus ?thesis
@@ -441,7 +455,7 @@ lemma inner_prod_csqrt:
   fixes v::"complex vec"
   shows "csqrt \<langle>v|v\<rangle> = \<parallel>v\<parallel>"
   using inner_prod_with_itself_Re inner_prod_with_itself_Im csqrt_of_real_nonneg cpx_vec_length_def
-  by (metis (no_types, lifting) Re_complex_of_real cpx_vec_length_inner_product real_sqrt_ge_0_iff 
+  by (metis (no_types, lifting) Re_complex_of_real cpx_vec_length_inner_prod real_sqrt_ge_0_iff 
       real_sqrt_unique sum_nonneg zero_le_power2)
 
 (* The bra-vector \<langle>Av| is given by \<langle>v|A\<dagger> *)
@@ -501,15 +515,57 @@ declare
   [[coercion_delete ket_vec]]
   [[coercion col_fst]]
 
+lemma mult_ket_vec_is_ket_vec_of_mult:
+  fixes A::"complex mat" and v::"complex vec"
+  assumes "dim_col A = dim_vec v"
+  shows "|A * |v\<rangle> \<rangle> = A * |v\<rangle>"
+  using assms ket_vec_def
+  by (simp add: times_mat_def col_fst_def cong_mat)
+
+lemma unitary_squared_length:
+  fixes U::"complex mat" and v::"complex vec"
+  assumes "unitary U" and "dim_vec v = dim_col U"
+  shows "\<parallel>U * |v\<rangle>\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2"
+proof-
+  have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * (U\<dagger>) * |U * |v\<rangle>\<rangle>) $$ (0,0)"
+    using assms(2) inner_prod_with_row_bra_vec_col_ket_vec bra_mat_on_vec
+    by (metis inner_prod_with_times_mat mult_ket_vec_is_ket_vec_of_mult)
+  then have f2:"\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * (U\<dagger>) * (U * |v\<rangle>)) $$ (0,0)"
+    using assms(2) mult_ket_vec_is_ket_vec_of_mult 
+    by simp
+  have f3:"dim_col \<langle>|v\<rangle>| = dim_vec v"
+    using ket_vec_def bra_def
+    by simp
+  have f4:"dim_row (U\<dagger>) = dim_vec v"
+    using assms(2)
+    by (simp add: hermite_cnj_dim_row)
+  have "dim_row (U * |v\<rangle>) = dim_row U"
+    using times_mat_def 
+    by simp
+  then have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * ((U\<dagger>) * U) * |v\<rangle>) $$ (0,0)"
+    using assoc_mult_mat f2 f3 f4
+    by (smt carrier_mat_triv dim_row_mat(1) hermite_cnj_def ket_vec_def mat_carrier times_mat_def)
+  then have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * |v\<rangle>) $$ (0,0)"
+    using assms(1)
+    by (simp add: assms(2) f3 unitary_def)
+  thus ?thesis
+    using inner_prod_with_row_bra_vec_col_ket_vec cpx_vec_length_inner_prod
+    by (metis Re_complex_of_real inner_prod_with_times_mat)
+qed
+
 lemma unitary_length:
   fixes U::"complex mat" and v::"complex vec"
   assumes "unitary U" and "dim_vec v = dim_col U"
   shows "\<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
+  using assms unitary_squared_length
+  by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
 (* As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
 
 lemma gate_on_qubit_is_qubit:
-  assumes ""
+  fixes U::"gate" and v::"qubit"
+  assumes "Rep_gate U \<in> gate_of_dim n" and "Rep_qubit v \<in> qubit_of_dim n"
+  shows "Rep_qubit (app U v) \<in> qubit_of_dim n"
 
 subsection \<open>A Few Well-known Quantum Gates\<close>
 
