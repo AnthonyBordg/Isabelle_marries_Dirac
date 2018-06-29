@@ -10,7 +10,7 @@ begin
 
 section \<open>Qubits and Quantum Gates\<close>
 
-subsection \<open>Basics of Qubits and Quantum Gates\<close>
+subsection \<open>Qubits\<close>
 
 (* In this theory "cpx" stands for "complex" *)
 definition cpx_vec_length :: "complex vec \<Rightarrow> real" ("\<parallel>_\<parallel>") where
@@ -95,6 +95,9 @@ lemma qubit_of_dim_is_qubit:
 definition basis_qubit :: "nat \<Rightarrow> nat \<Rightarrow> qubit" where
 "basis_qubit n i \<equiv> Abs_qubit (unit_vec (2^n) i)"
 
+
+subsection "The Hermitian Conjugation"
+
 (* The Hermitian conjugate of a complex matrix is the complex conjugate of its transpose *)
 definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" ("_\<dagger>") where
   "hermite_cnj A \<equiv> mat (dim_col A) (dim_row A) (\<lambda> (i,j). cnj(A $$ (j,i)))"
@@ -159,6 +162,9 @@ lemma hermite_cnj_of_id_is_id:
   shows "(1\<^sub>m n)\<dagger> = 1\<^sub>m n"
   using hermite_cnj_def one_mat_def 
   by auto
+
+
+subsection "Unitary Matrices and Quantum Gates"
 
 definition unitary :: "complex mat \<Rightarrow> bool" where
 "unitary A \<equiv> (A\<dagger>) * A = 1\<^sub>m (dim_col A) \<and> A * (A\<dagger>) = 1\<^sub>m (dim_row A)"
@@ -232,6 +238,9 @@ proof-
     using f1 f2 f3 invertible_mat_def 
     by auto
 qed
+
+
+subsection "The Inner Product"
 
 (* Now, we introduce a coercion between complex vectors and (column) complex matrices *)
 
@@ -446,6 +455,9 @@ lemma inner_prod_csqrt:
   by (metis (no_types, lifting) Re_complex_of_real cpx_vec_length_inner_prod real_sqrt_ge_0_iff 
       real_sqrt_unique sum_nonneg zero_le_power2)
 
+
+subsection "Unitary Matrices and Length-preservation"
+
 (* The bra-vector \<langle>Av| is given by \<langle>v|A\<dagger> *)
 
 lemma bra_mat_on_vec:
@@ -602,5 +614,34 @@ subsection \<open>A Few Well-known Quantum Gates\<close>
 (* Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though ! *)
 definition id_gate :: "nat \<Rightarrow> gate" where
 "id_gate n \<equiv> Abs_gate (1\<^sub>m (2^n))"
+
+(* More interesting: the Pauli matrices. *)
+
+definition X_gate ::"gate" where
+"X_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1))"
+
+definition Y_gate ::"gate" where
+"Y_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=j then 0 else (if i=0 then  -\<i> else \<i>)))"
+
+definition Z_gate ::"gate" where
+"Z_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 0 else (if i = 0 then 1 else -1)))"
+
+(* The Hadamard gate *)
+
+definition H_gate ::"gate" where
+"H_gate \<equiv> Abs_gate (1/sqrt(2) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i = 0 then 1 else -1))))"
+
+(*lemma H_gate_without_scalar_prod:
+  shows "Rep_gate H_gate = mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1/sqrt(2) else (if i=0 then 1/sqrt(2) else -(1/sqrt(2))))"
+  using H_gate_def smult_mat_def eq_matI index_mat map_mat_def prod_def*)
+
+(* The controlled-NOT gate *)
+
+definition CN_gate ::"gate" where
+"CN_gate \<equiv> Abs_gate (mat 4 4 
+  (\<lambda>(i,j). if i=0 \<and> j= 0 then 1 else 
+    (if i=1 \<and> j=1 then 1 else 
+      (if i = 2 \<and> j= 3 then 1 else 
+        (if i = 3 \<and> j= 2 then 1 else 0)))))"
 
 end
