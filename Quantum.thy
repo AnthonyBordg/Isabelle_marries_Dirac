@@ -233,18 +233,6 @@ proof-
     by auto
 qed
 
-definition cpx_vec_to_cpx_mat :: "complex vec \<Rightarrow> complex mat" where
-"cpx_vec_to_cpx_mat v \<equiv> mat (dim_vec v) 1 (\<lambda>(i,j). vec_index v i)"
-
-(* Based on the definition above, we introduce a coercion from complex vectors to complex (column) 
-matrices, then by composition the coercion algorithm will infer a coercion from qubits to complex
-matrices  *)
-
-declare [[coercion cpx_vec_to_cpx_mat]]
-
-definition app :: "gate \<Rightarrow> qubit \<Rightarrow> qubit" where
-"app A v \<equiv> Abs_qubit (col (Rep_gate A * v) 1)"
-
 (* Now, we introduce a coercion between complex vectors and (column) complex matrices *)
 
 definition ket_vec :: "complex vec \<Rightarrow> complex mat" ("|_\<rangle>") where
@@ -560,12 +548,54 @@ lemma unitary_length:
   using assms unitary_squared_length
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
-(* As a consequence, we prove that a quantum gate acting on a qubit gives a qubit *)
+lemma col_fst_col:
+  fixes A::"complex mat" and v::"complex vec"
+  shows "col_fst (U * |v\<rangle>) = col (U * |v\<rangle>) 0"
+  using eq_vecI
+  by (simp add: col_def col_fst_def)
+
+declare 
+  [[coercion_delete col_fst]]
+  [[coercion ket_vec]]
+
+(* As a consequence, we prove that a quantum gate acting on a qubit really gives a qubit of the
+same dimension *)
+
+definition app :: "gate \<Rightarrow> qubit \<Rightarrow> qubit" where
+"app A v \<equiv> Abs_qubit (col (Rep_gate A * v) 0)"
 
 lemma gate_on_qubit_is_qubit:
+  fixes U::"complex mat" and v::"complex vec"
+  assumes "U \<in> gate_of_dim n" and "v \<in> qubit_of_dim n"
+  shows "col (U * v) 0 \<in> qubit_of_dim n"
+proof-
+  have f1:"dim_vec (col (U * v) 0) = 2^n"
+    using col_def gate_of_dim_def assms(1) times_mat_def 
+    by simp
+  have "square_mat U"
+    using assms(1) gate_of_dim_def 
+    by simp
+  then have "dim_col U = 2^n"
+    using assms(1) gate_of_dim_def 
+    by simp
+  then have "\<parallel>col (U * v) 0\<parallel> = \<parallel>v\<parallel>"
+    using unitary_length assms gate_of_dim_def qubit_of_dim_def col_fst_col
+    by (metis (mono_tags, lifting) mem_Collect_eq)
+  then have f2:"\<parallel>col (U * v) 0\<parallel> = 1"
+    using assms(2) qubit_of_dim_def 
+    by simp
+  thus ?thesis
+    using f1 f2 qubit_of_dim_def 
+    by simp
+qed
+
+lemma gate_on_qubit_is_qubit_bis:
   fixes U::"gate" and v::"qubit"
   assumes "Rep_gate U \<in> gate_of_dim n" and "Rep_qubit v \<in> qubit_of_dim n"
   shows "Rep_qubit (app U v) \<in> qubit_of_dim n"
+  using assms app_def gate_on_qubit_is_qubit Abs_qubit_inverse qubit_of_dim_def qubit_to_cpx_vec_def 
+  by auto
+
 
 subsection \<open>A Few Well-known Quantum Gates\<close>
 
