@@ -611,6 +611,13 @@ lemma gate_on_qubit_is_qubit_bis:
 
 subsection \<open>A Few Well-known Quantum Gates\<close>
 
+(* We introduce a coercion from real matrices to complex matrices *)
+
+definition real_to_cpx_mat:: "real mat \<Rightarrow> complex mat" where
+"real_to_cpx_mat A \<equiv> mat (dim_row A) (dim_col A) (\<lambda>(i,j). A $$ (i,j))"
+
+(* declare [[coercion real_to_cpx_mat]] prompts an error! *)
+
 (* Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though ! *)
 definition id_gate :: "nat \<Rightarrow> gate" where
 "id_gate n \<equiv> Abs_gate (1\<^sub>m (2^n))"
@@ -620,20 +627,142 @@ definition id_gate :: "nat \<Rightarrow> gate" where
 definition X_gate ::"gate" where
 "X_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1))"
 
+(* Below we use (momentarily, hopefully) "sorry", since Sledgehammer is not able to conveniently 
+handle (matrix) computations, even very easy ones *)
+
+(* Be aware that "gate_of_dim n" means that the matrix has dimension 2^n. For instance, with this
+convention a 2 X 2 matrix which is unitary belongs to "gate_of_dim 1" but not to "gate_of_dim 2" as
+one might have been expected *)
+lemma X_gate_dim_prelim:
+  shows "mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1) \<in> gate_of_dim 1"
+proof-
+  define A::"complex mat" where "A = mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1)"
+  then have f1:"dim_row A = 2^1"
+    by simp
+  have f2:"dim_col A = 2^1"
+    using A_def 
+    by simp
+  from f1 and f2 have f3:"square_mat A" 
+    by simp
+  have f4:"A\<dagger> = A"
+    using hermite_cnj_def A_def 
+    by auto
+  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  thus ?thesis
+    using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
+    by simp
+qed
+
+lemma X_gate_dim:
+  shows "Rep_gate X_gate \<in> gate_of_dim 1"
+  using X_gate_dim_prelim X_gate_def Abs_gate_inverse gate_of_dim_is_gate 
+  by fastforce
+
 definition Y_gate ::"gate" where
 "Y_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=j then 0 else (if i=0 then  -\<i> else \<i>)))"
 
+lemma Y_gate_dim_prelim:
+  shows "mat 2 2 (\<lambda>(i,j). if i=j then 0 else (if i=0 then  -\<i> else \<i>)) \<in> gate_of_dim 1"
+proof-
+  define A::"complex mat" where "A = mat 2 2 (\<lambda>(i,j). if i=j then 0 else (if i=0 then  -\<i> else \<i>))"
+  then have f1:"dim_row A = 2^1"
+    by simp
+  have f2:"dim_col A = 2^1"
+    using A_def 
+    by simp
+  from f1 and f2 have f3:"square_mat A" 
+    by simp
+  have f4:"A\<dagger> = A"
+    using hermite_cnj_def A_def 
+    by auto
+  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  thus ?thesis
+    using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
+    by simp
+qed
+
+lemma Y_gate_dim:
+  shows "Rep_gate Y_gate \<in> gate_of_dim 1"
+  using Y_gate_dim_prelim Y_gate_def Abs_gate_inverse gate_of_dim_is_gate 
+  by fastforce
+
 definition Z_gate ::"gate" where
 "Z_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 0 else (if i = 0 then 1 else -1)))"
+
+lemma Z_gate_dim_prelim:
+  shows "mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 0 else (if i = 0 then 1 else -1)) \<in> gate_of_dim 1"
+proof-
+  define A::"complex mat" where "A = mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 0 else (if i = 0 then 1 else -1))"
+  then have f1:"dim_row A = 2^1"
+    by simp
+  have f2:"dim_col A = 2^1"
+    using A_def 
+    by simp
+  from f1 and f2 have f3:"square_mat A" 
+    by simp
+  have f4:"A\<dagger> = A"
+    using hermite_cnj_def A_def 
+    by auto
+  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  thus ?thesis
+    using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
+    by simp
+qed
+
+lemma Z_gate_dim:
+  shows "Rep_gate Z_gate \<in> gate_of_dim 1"
+  using Z_gate_dim_prelim Z_gate_def Abs_gate_inverse gate_of_dim_is_gate 
+  by fastforce
 
 (* The Hadamard gate *)
 
 definition H_gate ::"gate" where
 "H_gate \<equiv> Abs_gate (1/sqrt(2) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i = 0 then 1 else -1))))"
 
-(*lemma H_gate_without_scalar_prod:
-  shows "Rep_gate H_gate = mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1/sqrt(2) else (if i=0 then 1/sqrt(2) else -(1/sqrt(2))))"
-  using H_gate_def smult_mat_def eq_matI index_mat map_mat_def prod_def*)
+lemma H_gate_without_scalar_prod:
+  shows "H_gate = Abs_gate (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1/sqrt(2) else (if i=0 then 1/sqrt(2) else -(1/sqrt(2)))))"
+proof-
+  define A::"complex mat" where "A = 1/sqrt(2) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i = 0 then 1 else -1)))"
+  define B::"complex mat" where "B = mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1/sqrt(2) else (if i=0 then 1/sqrt(2) else -(1/sqrt(2))))"
+  then have f1:"A = B" 
+    using A_def 
+    by auto
+  then have f2:"Rep_gate H_gate = Rep_gate (Abs_gate B)"
+    using H_gate_def A_def B_def
+    by simp
+  thus ?thesis
+    using H_gate_def Rep_gate_inject B_def 
+    by simp
+qed
+
+lemma H_gate_dim_prelim:
+  shows "1/sqrt(2) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i = 0 then 1 else -1))) \<in> gate_of_dim 1"
+proof-
+  define A::"complex mat" where "A = 1/sqrt(2) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i = 0 then 1 else -1)))"
+  then have f1:"dim_row A = 2^1"
+    by simp
+  have f2:"dim_col A = 2^1"
+    using A_def 
+    by simp
+  from f1 and f2 have f3:"square_mat A" 
+    by simp
+  have f4:"A\<dagger> = A"
+    using hermite_cnj_def A_def 
+    by auto
+  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  thus ?thesis
+    using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
+    by simp
+qed
+
+lemma H_gate_dim:
+  shows "Rep_gate H_gate \<in> gate_of_dim 1"
+  using H_gate_dim_prelim H_gate_def Abs_gate_inverse gate_of_dim_is_gate 
+  by fastforce
 
 (* The controlled-NOT gate *)
 
@@ -643,5 +772,39 @@ definition CN_gate ::"gate" where
     (if i=1 \<and> j=1 then 1 else 
       (if i = 2 \<and> j= 3 then 1 else 
         (if i = 3 \<and> j= 2 then 1 else 0)))))"
+
+lemma CN_gate_dim_prelim:
+  shows "mat 4 4 
+  (\<lambda>(i,j). if i=0 \<and> j= 0 then 1 else 
+    (if i=1 \<and> j=1 then 1 else 
+      (if i = 2 \<and> j= 3 then 1 else 
+        (if i = 3 \<and> j= 2 then 1 else 0)))) \<in> gate_of_dim 2"
+proof-
+  define A::"complex mat" where "A = mat 4 4 
+  (\<lambda>(i,j). if i=0 \<and> j= 0 then 1 else 
+    (if i=1 \<and> j=1 then 1 else 
+      (if i = 2 \<and> j= 3 then 1 else 
+        (if i = 3 \<and> j= 2 then 1 else 0))))"
+  then have f1:"dim_row A = 2^2"
+    by simp
+  have f2:"dim_col A = 2^2"
+    using A_def 
+    by simp
+  from f1 and f2 have f3:"square_mat A" 
+    by simp
+  have f4:"A\<dagger> = A"
+    using hermite_cnj_def A_def 
+    by auto
+  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  thus ?thesis
+    using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
+    by simp
+qed
+
+lemma CN_gate_dim:
+  shows "Rep_gate CN_gate \<in> gate_of_dim 2"
+  using CN_gate_dim_prelim CN_gate_def Abs_gate_inverse gate_of_dim_is_gate 
+  by fastforce
 
 end
