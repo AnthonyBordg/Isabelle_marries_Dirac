@@ -7,6 +7,7 @@ imports
   Jordan_Normal_Form.Matrix
   "HOL-Library.Nonpos_Ints"
   VectorSpace.VectorSpace
+  "HOL-Algebra.Ring"
 begin
 
 section \<open>Qubits and Quantum Gates\<close>
@@ -810,23 +811,26 @@ subsection \<open>The Vector Space of Complex Vectors of Dimension n\<close>
 definition module_cpx_vec:: "nat \<Rightarrow> (complex, complex vec) module" where
 "module_cpx_vec n \<equiv> module_vec TYPE(complex) n"
 
-definition cpx_set :: "complex set" where
-"cpx_set \<equiv> {z| z::complex. True}"
-
-definition mult_cpx ::"[complex, complex] \<Rightarrow> complex" where
-"mult_cpx z z' \<equiv> z * z'"
-
-definition add_cpx ::"[complex, complex] \<Rightarrow> complex" where
-"add_cpx z z' \<equiv> z + z'"
-
 definition cpx_rng ::"complex ring" where
-"cpx_rng \<equiv> \<lparr>carrier = cpx_set ,mult = mult_cpx, one = 1, zero = 0, add = add_cpx\<rparr>"
+"cpx_rng \<equiv> \<lparr>carrier = UNIV, mult = op *, one = 1, zero = 0, add = op +\<rparr>"
+
+lemma cpx_cring :
+  shows "field cpx_rng"
+  apply unfold_locales
+  apply (auto intro: right_inverse simp: cpx_rng_def Units_def field_simps)
+  by (metis add.right_neutral add_diff_cancel_left' add_uminus_conv_diff)
 
 lemma vecspace_cpx_vec :
   fixes n::"nat"
   shows "vectorspace cpx_rng (module_cpx_vec n)"
+  apply unfold_locales
+  apply (auto simp: cpx_rng_def cpx_cring module_cpx_vec_def module_vec_def Units_def field_simps)
+  apply (auto intro: right_inverse add_inv_exists_vec)
+  by (metis add.right_neutral add_diff_cancel_left' add_uminus_conv_diff)
 
 definition basis_qubit :: "nat \<Rightarrow> nat \<Rightarrow> qubit" where
 "basis_qubit n i \<equiv> Abs_qubit (unit_vec (2^n) i)"
+
+
 
 end
