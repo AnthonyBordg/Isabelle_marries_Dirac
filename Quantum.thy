@@ -821,6 +821,11 @@ lemma cpx_cring:
   apply (auto intro: right_inverse simp: cpx_rng_def Units_def field_simps)
   by (metis add.right_neutral add_diff_cancel_left' add_uminus_conv_diff)
 
+lemma cpx_abelian_monoid:
+  shows "abelian_monoid cpx_rng"
+  using cpx_cring field_def
+  by (simp add: field_def abelian_group_def cring_def domain_def ring_def)
+
 lemma vecspace_cpx_vec:
   fixes n::"nat"
   shows "vectorspace cpx_rng (module_cpx_vec n)"
@@ -942,11 +947,23 @@ proof
   have "\<forall>u\<in>A.\<forall>j<n. u = unit_vec n j \<longrightarrow> j \<noteq> i \<longrightarrow> a u * (u $ i) = 0"
     using f2 unit_vectors_def index_unit_vec
     by (simp add: f8)
-  then have "(\<Sum>u\<in>A. a u * (u $ i)) = (\<Sum>u\<in>{x\<in>A. x = unit_vec n i}. a u * (u $ i))"
-
-
-
-
+  then have "(\<Sum>u\<in>A. a u * (u $ i)) = (\<Sum>u\<in>A. if u=v then a v * v $ i else 0)"
+    using f2 unit_vectors_def f7
+    by (smt mem_Collect_eq subsetCE sum.cong)
+  then have "(\<Sum>u\<in>A. a u * (u $ i)) = a v * (v $ i)"
+    using abelian_monoid.finsum_singleton[of cpx_rng v A "\<lambda>u\<in>A. a u * (u $ i)"] cpx_abelian_monoid
+      f5 f1 cpx_rng_def 
+    by simp
+  then have "(\<Sum>u\<in>A. a u * (u $ i)) = a v"
+    using f7 index_unit_vec f8
+    by simp
+  then have "(\<Sum>u\<in>A. a u * (u $ i)) \<noteq> 0"
+    using f6
+    by (simp add: cpx_rng_def)
+  thus False
+    using f4 module_cpx_vec_def module_vec_def index_zero_vec f8 f9
+    by (simp add: module_vec_simps(2))
+qed
 
 lemma unit_vectors_is_basis :
   fixes n::"nat"
