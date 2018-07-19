@@ -847,9 +847,17 @@ lemma (in module) finsum_over_singleton:
   using assms 
   by simp
 
+lemma lincomb_over_singleton:
+  fixes n::"nat"
+  assumes "x \<in> carrier_vec n" and "f \<in> {x} \<rightarrow> UNIV"
+  shows "module.lincomb (module_cpx_vec n) f {x} = f x \<cdot>\<^sub>v x"
+  using assms module.lincomb_def module_cpx_vec_def module_vec_def module.finsum_over_singleton 
+    module_cpx_vec
+  by (smt carrier_vecD carrier_vecI index_smult_vec(2) module_vec_simps(3) module_vec_simps(4))
+
 lemma dim_vec_lincomb:
   fixes n::"nat"
-  assumes "finite F" and "f: F \<rightarrow> UNIV" and "F \<subseteq> carrier (module_cpx_vec n)"
+  assumes "finite F" and "f: F \<rightarrow> UNIV" and "F \<subseteq> carrier_vec n"
   shows "dim_vec (module.lincomb (module_cpx_vec n) f F) = n"
   using assms
 proof(induct F)
@@ -879,6 +887,39 @@ next
     by auto
 qed
 
+lemma lincomb_vec_index:
+  fixes n::"nat"
+  assumes "finite F" and "i < n" and "F \<subseteq> carrier_vec n" and "f: F \<rightarrow> UNIV"
+  shows "module.lincomb (module_cpx_vec n) f F $ i = (\<Sum>v\<in>F. f v * (v $ i))"
+  using assms
+proof(induct F)
+  case empty
+  then show "module.lincomb (module_cpx_vec n) f {} $ i = (\<Sum>v\<in>{}. f v * v $ i)"
+    apply auto
+    using assms(2) module.lincomb_def abelian_monoid.finsum_empty module_cpx_vec_def
+    by (metis (mono_tags) abelian_group_def index_zero_vec(1) module_cpx_vec module_def module_vec_simps(2))
+next
+  case(insert x F)
+  then show "module.lincomb (module_cpx_vec n) f (insert x F) $ i = (\<Sum>v\<in>insert x F. f v * v $ i)"
+    apply auto
+  proof-
+    have "module.lincomb (module_cpx_vec n) f (insert x F) = 
+      f x \<cdot>\<^sub>v x \<oplus>\<^bsub>module_cpx_vec n\<^esub> module.lincomb (module_cpx_vec n) f F"
+      using module.lincomb_insert module_cpx_vec insert.hyps(1) module_cpx_vec_def module_vec_def
+        insert.prems(2) insert.hyps(2) insert.prems(3) insert_def
+      by (smt Pi_I' UNIV_I Un_insert_right cpx_rng_def insert_subset module_vec_simps(4) 
+          partial_object.select_convs(1) sup_bot.comm_neutral)
+    then have "module.lincomb (module_cpx_vec n) f (insert x F) $ i = 
+      (f x \<cdot>\<^sub>v x) $ i + module.lincomb (module_cpx_vec n) f F $ i"
+      using index_add_vec assms(2) dim_vec_lincomb
+      by (metis Pi_split_insert_domain insert.hyps(1) insert.prems(2) insert.prems(3) insert_subset 
+          module_cpx_vec_def module_vec_simps(1))
+    thus "module.lincomb (module_cpx_vec n) f (insert x F) $ i = f x * x $ i + (\<Sum>v\<in>F. f v * v $ i)"
+      using index_smult_vec assms(2) insert.prems(2) insert_def insert.hyps(3) 
+      by auto
+  qed
+qed
+
 lemma unit_vectors_is_lin_indpt :
   fixes n::"nat"
   shows "module.lin_indpt cpx_rng (module_cpx_vec n) (unit_vectors n)"
@@ -886,74 +927,23 @@ proof
   assume a1:"module.lin_dep cpx_rng (module_cpx_vec n) (unit_vectors n)"
   then have "\<exists>A a v. (finite A \<and> A \<subseteq> (unit_vectors n) \<and> (a \<in> A \<rightarrow> UNIV) \<and> 
     (module.lincomb (module_cpx_vec n) a A = \<zero>\<^bsub>module_cpx_vec n\<^esub>) \<and> (v \<in> A) \<and> (a v \<noteq> \<zero>\<^bsub>cpx_rng\<^esub>))"
-    using module.lin_dep_def cpx_rng_def vecspace_cpx_vec vectorspace_def 
+    using module.lin_dep_def cpx_rng_def module_cpx_vec 
     by fastforce
   then obtain A and a and v where f1:"finite A" and f2:"A \<subseteq> (unit_vectors n)" and f3:"a \<in> A \<rightarrow> UNIV" 
     and f4:"module.lincomb (module_cpx_vec n) a A = \<zero>\<^bsub>module_cpx_vec n\<^esub>" and f5:"v \<in> A" and 
     f6:"a v \<noteq> \<zero>\<^bsub>cpx_rng\<^esub>"
     by blast
-  have "0 \<le> i \<and> i < n \<longrightarrow> (module.lincomb (module_cpx_vec n) a A) $ i = 
-    (\<Sum>u\<in>A. a u * (u $ i))" for i
-    using f1 
-  proof(induct A)
-    case empty
-    then show "0 \<le> i \<and> i < n \<longrightarrow> (module.lincomb (module_cpx_vec n) a {}) $ i = (\<Sum>u\<in>{}. a u * u $ i)"
-      apply auto
-    proof-
-      assume "i < n"
-      then show "module.lincomb (module_cpx_vec n) a {} $ i = 0"
-        using module.lincomb_def abelian_monoid.finsum_empty module_cpx_vec_def module_vec_def zero_vec_def
-        by (smt abelian_group_def index_zero_vec(1) module_def module_vec_simps(2) vecspace_cpx_vec vectorspace_def)
-    qed
-    case (insert x F)
-    show "\<And>x F. finite F \<Longrightarrow>
-           x \<notin> F \<Longrightarrow>
-           0 \<le> i \<and> i < n \<longrightarrow> module.lincomb (module_cpx_vec n) a F $ i = (\<Sum>u\<in>F. a u * u $ i) \<Longrightarrow>
-           0 \<le> i \<and> i < n \<longrightarrow> module.lincomb (module_cpx_vec n) a (insert x F) $ i = (\<Sum>u\<in>insert x F. a u * u $ i)"
-      apply auto
-    proof-
-      fix x and F
-      assume b1:"x \<in> unit_vectors n" and b2:"F \<subseteq> unit_vectors n" and b3:"finite F" and b4:"x \<notin> F" 
-        and b5:"i < n" and b6:"module.lincomb (module_cpx_vec n) a F $ i = (\<Sum>u\<in>F. a u * u $ i)"
-      then have f7:"module.lincomb (module_cpx_vec n) a (insert x F) = 
-        module.lincomb (module_cpx_vec n) a {x} \<oplus>\<^bsub>module_cpx_vec n\<^esub> module.lincomb (module_cpx_vec n) a F"
-      proof-
-        have f8:"finite ({x} \<union> F)"
-          using b3 
-          by simp
-        have f9:"({x} \<union> F) \<subseteq> carrier_vec n"
-          using module_cpx_vec_def module_vec_def b1 b2 unit_vectors_def unit_vec_def 
-          by auto
-        have f10:"{x} \<inter> F = {}"
-          using b4 
-          by simp
-        have f11:"a \<in> ({x} \<union> F \<rightarrow> UNIV)"
-          using f3 
-          by simp
-        thus ?thesis
-          using f8 f9 f10 insert_def module.lincomb_union
-          by (metis cpx_rng_def module_cpx_vec_def module_vec_def partial_object.select_convs(1) singleton_conv vecspace_cpx_vec vectorspace_def)
-      qed
-      have "module.lincomb (module_cpx_vec n) a {x} = (\<Oplus>\<^bsub>module_cpx_vec n\<^esub>  y\<in>{x}. (a y \<odot>\<^bsub>module_cpx_vec n\<^esub> y))"
-        using module.lincomb_def vecspace_cpx_vec vectorspace_def  
-        by blast
-      then have f11:"module.lincomb (module_cpx_vec n) a {x} = (\<Oplus>\<^bsub>module_cpx_vec n\<^esub>  y\<in>{x}. (a y \<cdot>\<^sub>v y))"
-        using module_cpx_vec_def module_vec_def
-        by (simp add: module_vec_simps(4))
-      have "a x \<cdot>\<^sub>v x \<in> carrier_vec n"
-        using module_cpx_vec_def module_vec_def b1 unit_vectors_def 
-        by auto
-      then have "module.lincomb (module_cpx_vec n) a {x} = a x \<cdot>\<^sub>v x"
-        using module.finsum_over_singleton vecspace_cpx_vec vectorspace_def f11
-        by (smt module_cpx_vec_def module_vec_simps(3))
-      then have "module.lincomb (module_cpx_vec n) a {x} $ i = a x * x $ i"
-        using b1 b5 index_smult_vec unit_vectors_def 
-        by auto
-      have "i < dim_vec (module.lincomb (module_cpx_vec n) a F)"
-        using b5 module.lincomb_def index_add_vec index_smult_vec module_cpx_vec_def module_vec_def
-      then have "module.lincomb (module_cpx_vec n) a (insert x F) $ i = 
-        a x * x $ i  + (\<Sum>u\<in>F. a u * u $ i)"
-        using f7 b5 b6 index_add_vec   
+  then obtain i where f7:"v = unit_vec n i" and f8:"i < n"
+    using f5 f2 unit_vectors_def 
+    by auto
+  then have f9:"module.lincomb (module_cpx_vec n) a A $ i = (\<Sum>u\<in>A. a u * (u $ i))"
+    using lincomb_vec_index f1 f2 f3 f8
+    by (smt carrier_dim_vec index_unit_vec(3) mem_Collect_eq subset_iff sum.cong unit_vectors_def)
+  have "\<forall>u\<in>A.\<forall>j<n. u = unit_vec n j \<longrightarrow> j \<noteq> i \<longrightarrow> a u * (u $ i) = 0"
+    using f2 unit_vectors_def index_unit_vec
+    by (simp add: f8)
+  then have "(\<Sum>u\<in>A. a u * (u $ i)) = (\<Sum>u\<in>{x\<in>A. x = unit_vec n i}. a u * (u $ i))"
+
 
 
 
