@@ -965,9 +965,74 @@ proof
     by (simp add: module_vec_simps(2))
 qed
 
+lemma unit_vectors_is_genset:
+  fixes n::"nat"
+  shows "module.gen_set cpx_rng (module_cpx_vec n) (unit_vectors n)"
+proof-
+  have "module.span cpx_rng (module_cpx_vec n) (unit_vectors n) \<subseteq> carrier_vec n"
+    using module.span_def dim_vec_lincomb carrier_vec_def cpx_rng_def
+    by (smt Collect_mono index_unit_vec(3) module.span_is_subset2 module_cpx_vec module_cpx_vec_def 
+        module_vec_simps(3) unit_vectors_def)
+  have "carrier (module_cpx_vec n) \<subseteq> module.span cpx_rng (module_cpx_vec n) (unit_vectors n)"
+  proof
+    fix v
+    assume a1:"v \<in> carrier (module_cpx_vec n)"
+    define A a lc where "A = {unit_vec n i ::complex vec| i::nat. i < n \<and> v $ i \<noteq> 0}" and 
+      "a = (\<lambda>u\<in>A. u \<bullet> v)" and "lc = module.lincomb (module_cpx_vec n) a A"
+    then have f1:"finite A" 
+      by simp
+    have f2:"A \<subseteq> carrier_vec n"
+      using carrier_vec_def A_def 
+      by auto
+    have f3:"a \<in> A \<rightarrow> UNIV"
+      using a_def 
+      by simp
+    then have f4:"dim_vec v = dim_vec lc"
+      using f1 f2 f3 a1 module_cpx_vec_def dim_vec_lincomb lc_def
+      by (simp add: module_vec_simps(3))
+    then have f5:"i < n \<Longrightarrow> lc $ i = (\<Sum>u\<in>A. u \<bullet> v * u $ i)" for i
+      using lincomb_vec_index lc_def a_def f1 f2 f3 
+      by simp
+    then have "i < n \<Longrightarrow> j < n \<Longrightarrow> j \<noteq> i \<Longrightarrow> unit_vec n j \<bullet> v * unit_vec n j $ i = 0" for i j
+      using index_unit_vec
+      by simp
+    then have "i < n \<Longrightarrow> lc $ i = (\<Sum>u\<in>A. if u = unit_vec n i then v $ i else 0)" for i
+      using a1 A_def f5 scalar_prod_left_unit
+      by (smt f4 carrier_vecI dim_vec_lincomb f1 f2 f3 index_unit_vec(2) lc_def 
+          mem_Collect_eq mult.right_neutral sum.cong)
+    then have "i < n \<Longrightarrow> lc $ i = v $ i" for i
+      using abelian_monoid.finsum_singleton[of cpx_rng i] A_def cpx_rng_def 
+      by auto
+    then have f6:"v = lc"
+      using eq_vecI f4 dim_vec_lincomb f1 f2 lc_def 
+      by auto
+    have "A \<subseteq> unit_vectors n"
+      using A_def unit_vectors_def 
+      by auto
+    thus "v \<in> module.span cpx_rng (module_cpx_vec n) (unit_vectors n)"
+      using f6 module.span_def[of cpx_rng "module_cpx_vec n"] lc_def f1 f2 cpx_rng_def module_cpx_vec
+      by (smt Pi_I' UNIV_I mem_Collect_eq partial_object.select_convs(1))
+  qed
+  thus ?thesis
+    using module_cpx_vec_def module_vec_def \<open>module.span cpx_rng (module_cpx_vec n) (unit_vectors n) \<subseteq> carrier_vec n\<close> 
+      module_vec_simps(3) 
+    by fastforce
+qed
+    
 lemma unit_vectors_is_basis :
   fixes n::"nat"
   shows "vectorspace.basis cpx_rng (module_cpx_vec n) (unit_vectors n)"
+proof-
+  fix n
+  have "unit_vectors n \<subseteq> carrier (module_cpx_vec n)"
+    using unit_vectors_def module_cpx_vec_def module_vec_def carrier_vec_def index_unit_vec module_vec_simps(3) 
+    by fastforce
+  then show ?thesis
+    using vectorspace.basis_def unit_vectors_is_lin_indpt unit_vectors_is_genset vecspace_cpx_vec
+      cpx_cring
+    by (smt carrier_dim_vec index_unit_vec(3) mem_Collect_eq module_cpx_vec_def module_vec_simps(3) 
+        subsetI unit_vectors_def)
+qed
 
 
 
