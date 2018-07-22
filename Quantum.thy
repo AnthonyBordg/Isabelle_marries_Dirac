@@ -846,6 +846,12 @@ definition qubit_of_basis :: "nat \<Rightarrow> nat \<Rightarrow> qubit" where
 definition unit_vectors :: "nat \<Rightarrow> (complex vec) set" where
 "unit_vectors n \<equiv> {unit_vec n i| i::nat. 0 \<le> i \<and> i < n}"
 
+lemma unit_vectors_carrier_vec:
+  fixes n::"nat"
+  shows "unit_vectors n \<subseteq> carrier_vec n"
+  using unit_vectors_def 
+  by auto
+
 lemma (in module) finsum_over_singleton:
   assumes "f x \<in> carrier M"
   shows "finsum M f {x} = f x"
@@ -1032,6 +1038,44 @@ proof-
       cpx_cring
     by (smt carrier_dim_vec index_unit_vec(3) mem_Collect_eq module_cpx_vec_def module_vec_simps(3) 
         subsetI unit_vectors_def)
+qed
+
+lemma qubit_of_dim_is_lincomb:
+  fixes n::"nat"
+  shows "qubit_of_dim n = 
+  {module.lincomb (module_cpx_vec (2^n)) a A|a A. 
+    finite A \<and> A\<subseteq>(unit_vectors (2^n)) \<and> a\<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2^n)) a A\<parallel>=1}"
+proof
+  show "qubit_of_dim n
+    \<subseteq> {module.lincomb (module_cpx_vec (2^n)) a A |a A.
+        finite A \<and> A \<subseteq> unit_vectors (2^n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2^n)) a A\<parallel> = 1}"
+  proof
+    fix v
+    assume a1:"v \<in> qubit_of_dim n"
+    then show "v \<in> {module.lincomb (module_cpx_vec (2^n)) a A |a A.
+               finite A \<and> A \<subseteq> unit_vectors (2^n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2^n)) a A\<parallel> = 1}"
+    proof-
+      obtain a and A where "finite A" and "a\<in> A \<rightarrow> UNIV" and "A \<subseteq> unit_vectors (2^n)" and 
+        "v = module.lincomb (module_cpx_vec (2^n)) a A"
+        using a1 qubit_of_dim_def unit_vectors_is_basis vectorspace.basis_def module.span_def 
+        vecspace_cpx_vec module_cpx_vec module_cpx_vec_def module_vec_def carrier_vec_def
+        by (smt Pi_UNIV UNIV_I mem_Collect_eq module_vec_simps(3))
+      thus ?thesis
+        using a1 qubit_of_dim_def 
+        by auto
+    qed
+  qed
+  show "{module.lincomb (module_cpx_vec (2 ^ n)) a A |a A.
+     finite A \<and> A \<subseteq> unit_vectors (2 ^ n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2 ^ n)) a A\<parallel> = 1}
+    \<subseteq> qubit_of_dim n"
+  proof
+    fix v
+    assume "v \<in> {module.lincomb (module_cpx_vec (2 ^ n)) a A |a A.
+              finite A \<and> A \<subseteq> unit_vectors (2 ^ n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2 ^ n)) a A\<parallel> = 1}"
+    then show "v\<in> qubit_of_dim n"
+      using qubit_of_dim_def dim_vec_lincomb unit_vectors_carrier_vec
+      by (smt mem_Collect_eq order_trans)
+  qed
 qed
 
 
