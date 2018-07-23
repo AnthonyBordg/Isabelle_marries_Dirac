@@ -239,6 +239,135 @@ proof-
     by auto
 qed
 
+subsection "Relations Between Complex Conjugation, Hermitian Conjugation, Transposition and Unitarity"
+
+definition cpx_mat_cnj :: "complex mat \<Rightarrow> complex mat" ("(_\<^sup>*)") where
+"cpx_mat_cnj A \<equiv> mat (dim_row A) (dim_col A) (\<lambda>(i,j). cnj (A $$ (i,j)))"
+
+lemma cpx_mat_cnj_id:
+  fixes n::"nat"
+  shows "cpx_mat_cnj (1\<^sub>m n) = 1\<^sub>m n"
+  using cpx_mat_cnj_def one_mat_def 
+  by auto
+
+lemma cpx_mat_cnj_cnj:
+  fixes A::"complex mat"
+  shows "cpx_mat_cnj (cpx_mat_cnj A) = A"
+  using eq_matI cpx_mat_cnj_def 
+  by auto
+
+lemma cpx_mat_cnj_prod:
+  fixes A B::"complex mat"
+  assumes "dim_col A = dim_row B"
+  shows "cpx_mat_cnj (A * B) = (cpx_mat_cnj A) * (cpx_mat_cnj B)"
+proof-
+  have f1:"dim_row (cpx_mat_cnj (A * B)) = dim_row ((cpx_mat_cnj A) * (cpx_mat_cnj B))"
+    using cpx_mat_cnj_def 
+    by simp
+  have f2:"dim_col (cpx_mat_cnj (A * B)) = dim_col ((cpx_mat_cnj A) * (cpx_mat_cnj B))"
+    using cpx_mat_cnj_def
+    by simp
+  have "i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> cpx_mat_cnj (A * B) $$ (i,j) = 
+    cnj (\<Sum>k=0..<(dim_row B). A $$ (i,k) * B $$ (k,j))" for i j
+    using cpx_mat_cnj_def index_mat times_mat_def scalar_prod_def row_def col_def
+    by (smt assms case_prod_conv dim_col index_mult_mat(2) index_mult_mat(3) index_vec lessThan_atLeast0 
+        lessThan_iff sum.cong)
+  then have f3:"i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> cpx_mat_cnj (A * B) $$ (i,j) = 
+    (\<Sum>k=0..<(dim_row B). cnj(A $$ (i,k)) * cnj(B $$ (k,j)))" for i j
+    using cnj_sum complex_cnj_mult 
+    by simp
+  have f4:"i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> (cpx_mat_cnj A * cpx_mat_cnj B) $$ (i,j) = 
+    (\<Sum>k=0..<(dim_row B). cnj(A $$ (i,k)) * cnj(B $$ (k,j)))" for i j
+    using cpx_mat_cnj_def index_mat times_mat_def scalar_prod_def row_def col_def
+    by (smt assms case_prod_conv dim_col dim_col_mat(1) dim_row_mat(1) index_vec lessThan_atLeast0 
+        lessThan_iff sum.cong)
+  thus ?thesis
+    using assms eq_matI f1 f2 f3 f4 cpx_mat_cnj_def 
+    by auto
+qed
+
+lemma transpose_cnj:
+  fixes A::"complex mat"
+  shows "cpx_mat_cnj (transpose_mat A) = (A\<dagger>)"
+proof-
+  have f1:"dim_row (cpx_mat_cnj (transpose_mat A)) = dim_row (A\<dagger>)"
+    using cpx_mat_cnj_def transpose_mat_def hermite_cnj_def 
+    by simp
+  have f2:"dim_col (cpx_mat_cnj (transpose_mat A)) = dim_col (A\<dagger>)"
+    using cpx_mat_cnj_def transpose_mat_def hermite_cnj_def 
+    by simp
+  thus ?thesis
+    using eq_matI f1 f2 cpx_mat_cnj_def transpose_mat_def hermite_cnj_def 
+    by auto
+qed
+
+lemma cnj_transpose:
+  fixes A::"complex mat"
+  shows "transpose_mat (cpx_mat_cnj A) = (A\<dagger>)"
+proof-
+  have f1:"dim_row (transpose_mat (cpx_mat_cnj A)) = dim_row (A\<dagger>)"
+    using transpose_mat_def cpx_mat_cnj_def hermite_cnj_def 
+    by simp
+  have f2:"dim_col (transpose_mat (cpx_mat_cnj A)) = dim_col (A\<dagger>)"
+    using transpose_mat_def cpx_mat_cnj_def hermite_cnj_def 
+    by simp
+  thus ?thesis
+    using eq_matI f1 f2 transpose_mat_def cpx_mat_cnj_def hermite_cnj_def 
+    by auto
+qed
+
+lemma transpose_hermite_cnj:
+  fixes A::"complex mat"
+  shows "(transpose_mat A)\<dagger> = cpx_mat_cnj A"
+  using transpose_transpose transpose_cnj
+  by metis
+
+lemma transpose_of_unitary_is_unitary:
+  fixes U::"complex mat"
+  assumes "unitary U"
+  shows "unitary (transpose_mat U)"
+proof-
+  have c1:"(transpose_mat U)\<dagger> * (transpose_mat U) =  1\<^sub>m(dim_row U)"
+  proof-
+    have f1:"(transpose_mat U)\<dagger> * (transpose_mat U) = cpx_mat_cnj U * (transpose_mat U)"
+      using transpose_hermite_cnj 
+      by simp
+    have "dim_col U = dim_row (cpx_mat_cnj (transpose_mat U))"
+      using cpx_mat_cnj_def transpose_mat_def 
+      by auto
+    then have "(transpose_mat U)\<dagger> * (transpose_mat U) = cpx_mat_cnj (U * (cpx_mat_cnj (transpose_mat U)))"
+      using f1 cpx_mat_cnj_cnj cpx_mat_cnj_prod 
+      by simp
+    then have "(transpose_mat U)\<dagger> * (transpose_mat U) = cpx_mat_cnj (U * (U\<dagger>))"
+      using transpose_cnj 
+      by simp
+    thus ?thesis
+      using assms cpx_mat_cnj_id unitary_def 
+      by auto
+  qed
+  have c2:"transpose_mat U * ((transpose_mat U)\<dagger>) = 1\<^sub>m(dim_col U)"
+  proof-
+    have f1:"transpose_mat U * ((transpose_mat U)\<dagger>) = transpose_mat U * cpx_mat_cnj U"
+      using transpose_hermite_cnj 
+      by simp
+    have "dim_col (cpx_mat_cnj (transpose_mat U)) = dim_row U"
+      using cpx_mat_cnj_def transpose_mat_def 
+      by simp
+    then have "transpose_mat U * ((transpose_mat U)\<dagger>) = cpx_mat_cnj (cpx_mat_cnj (transpose_mat U) * U)"
+      using f1 cpx_mat_cnj_cnj cpx_mat_cnj_prod 
+      by simp
+    then have "transpose_mat U * ((transpose_mat U)\<dagger>) = cpx_mat_cnj (U\<dagger> * U)"
+      using transpose_cnj 
+      by simp
+    thus ?thesis
+      using assms unitary_def cpx_mat_cnj_id 
+      by simp
+  qed
+  thus ?thesis
+    using unitary_def c1 c2 
+    by simp
+qed
+
 
 subsection "The Inner Product"
 
@@ -560,11 +689,56 @@ lemma unitary_length:
   using assms unitary_squared_length
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
+(* As a consequence we prove that columns and rows of a unitary matrix are unit vectors *)
+
 lemma col_fst_col:
   fixes A::"complex mat" and v::"complex vec"
-  shows "col_fst (U * |v\<rangle>) = col (U * |v\<rangle>) 0"
+  shows "col_fst (A * |v\<rangle>) = col (A * |v\<rangle>) 0"
   using eq_vecI
   by (simp add: col_def col_fst_def)
+
+lemma unitary_unit_col:
+  fixes U::"complex mat"
+  assumes "unitary U" and "dim_col U = n" and "i < n"
+  shows "\<parallel>col U i\<parallel> = 1"
+proof-
+  have "dim_vec (col U i) = dim_vec (U * |unit_vec n i\<rangle>)"
+    using col_def times_mat_def
+    by (simp add: col_fst_def)
+  then have "col U i = U * |unit_vec n i\<rangle>"
+    using assms col_def unit_vec_def times_mat_def col_fst_def ket_vec_def eq_vecI
+    by (smt col_fst_col col_ket_vec dim_col dim_col_mat(1) index_col index_mult_mat(1) index_row(1) 
+        less_numeral_extra(1) scalar_prod_right_unit)
+  thus ?thesis
+    using assms unit_cpx_vec_length unitary_length unit_vec_def 
+    by simp
+qed
+
+lemma col_tranpose:
+  fixes A::"'a mat"
+  assumes "dim_row A = n" and "i < n"
+  shows "col (transpose_mat A) i = row A i"
+proof-
+  have "dim_vec (col (transpose_mat A) i) = dim_vec (row A i)"
+    using row_def col_def transpose_mat_def 
+    by simp
+  thus ?thesis
+    using assms eq_vecI col_def row_def transpose_mat_def 
+    by auto
+qed
+
+lemma unitary_unit_row:
+  fixes U::"complex mat"
+  assumes "unitary U" and "dim_row U = n" and "i < n"
+  shows "\<parallel>row U i\<parallel> = 1"
+proof-
+  have "row U i = col (transpose_mat U) i"
+    using col_transpose assms(2) assms(3) 
+    by simp
+  thus ?thesis
+    using assms transpose_of_unitary_is_unitary unitary_unit_col
+    by (metis index_transpose_mat(3))
+qed
 
 declare 
   [[coercion_delete col_fst]]
