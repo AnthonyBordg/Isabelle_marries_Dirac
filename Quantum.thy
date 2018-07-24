@@ -1,3 +1,5 @@
+(* Author: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk *)
+
 theory Quantum
 imports 
   Main 
