@@ -99,7 +99,7 @@ lemma qubit_of_dim_is_qubit:
 subsection "The Hermitian Conjugation"
 
 (* The Hermitian conjugate of a complex matrix is the complex conjugate of its transpose *)
-definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" ("_\<dagger>") where
+definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" ("_\<^sup>\<dagger>") where
   "hermite_cnj A \<equiv> mat (dim_col A) (dim_row A) (\<lambda> (i,j). cnj(A $$ (j,i)))"
 
 (* We introduce the type of complex square matrices *)
@@ -120,46 +120,46 @@ definition cpx_sqr_mat_to_cpx_mat :: "cpx_sqr_mat \<Rightarrow> complex mat" whe
 declare [[coercion cpx_sqr_mat_to_cpx_mat]]
 
 lemma hermite_cnj_dim_row:
-  shows "dim_row (A\<dagger>) = dim_col A"
+  shows "dim_row (A\<^sup>\<dagger>) = dim_col A"
   using hermite_cnj_def 
   by simp
 
 lemma hermite_cnj_dim_col:
-  shows "dim_col (A\<dagger>) = dim_row A"
+  shows "dim_col (A\<^sup>\<dagger>) = dim_row A"
   using hermite_cnj_def
   by simp
 
 lemma col_hermite_cnj:
   fixes A::"complex mat"
   assumes "j < dim_row A"
-  shows "col (A\<dagger>) j = vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))"
+  shows "col (A\<^sup>\<dagger>) j = vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))"
   using assms col_def hermite_cnj_def 
   by simp
 
 lemma row_hermite_cnj:
   fixes A::"complex mat"
   assumes "i < dim_col A"
-  shows "row (A\<dagger>) i = vec (dim_row A) (\<lambda>j. cnj (A $$ (j,i)))"
+  shows "row (A\<^sup>\<dagger>) i = vec (dim_row A) (\<lambda>j. cnj (A $$ (j,i)))"
   using assms row_def hermite_cnj_def 
   by simp
 
 lemma hermite_cnj_of_sqr_is_sqr:
-  shows "square_mat ((A::cpx_sqr_mat)\<dagger>)"
+  shows "square_mat ((A::cpx_sqr_mat)\<^sup>\<dagger>)"
 proof-
   have "square_mat A"
     using cpx_sqr_mat_to_cpx_mat_def Rep_cpx_sqr_mat 
     by auto
   then have "dim_row A = dim_col A" 
     by simp
-  then have "dim_col (A\<dagger>) = dim_row (A\<dagger>)"
+  then have "dim_col (A\<^sup>\<dagger>) = dim_row (A\<^sup>\<dagger>)"
     using hermite_cnj_dim_col hermite_cnj_dim_row 
     by simp
-  thus "square_mat (A\<dagger>)" 
+  thus "square_mat (A\<^sup>\<dagger>)" 
     by simp
 qed
 
 lemma hermite_cnj_of_id_is_id:
-  shows "(1\<^sub>m n)\<dagger> = 1\<^sub>m n"
+  shows "(1\<^sub>m n)\<^sup>\<dagger> = 1\<^sub>m n"
   using hermite_cnj_def one_mat_def 
   by auto
 
@@ -167,7 +167,7 @@ lemma hermite_cnj_of_id_is_id:
 subsection "Unitary Matrices and Quantum Gates"
 
 definition unitary :: "complex mat \<Rightarrow> bool" where
-"unitary A \<equiv> (A\<dagger>) * A = 1\<^sub>m (dim_col A) \<and> A * (A\<dagger>) = 1\<^sub>m (dim_row A)"
+"unitary A \<equiv> (A\<^sup>\<dagger>) * A = 1\<^sub>m (dim_col A) \<and> A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
 
 lemma id_is_unitary:
   shows "unitary (1\<^sub>m n)"
@@ -211,14 +211,14 @@ declare [[coercion gate_to_cpx_mat]]
 lemma mat_unitary_mat:
   fixes A::"complex mat"
   assumes "unitary A"
-  shows "inverts_mat A (A\<dagger>)"
+  shows "inverts_mat A (A\<^sup>\<dagger>)"
   using assms inverts_mat_def unitary_def
   by auto
 
 lemma unitary_mat_mat:
   fixes A::"complex mat"
   assumes "unitary A"
-  shows "inverts_mat (A\<dagger>) A"
+  shows "inverts_mat (A\<^sup>\<dagger>) A"
   using assms unitary_def
   by (simp add: inverts_mat_def hermite_cnj_dim_row)
 
@@ -228,10 +228,10 @@ proof-
   have f1:"square_mat A"
     using Rep_gate gate_to_cpx_mat_def 
     by simp
-  have f2:"inverts_mat A (A\<dagger>)"
+  have f2:"inverts_mat A (A\<^sup>\<dagger>)"
     using mat_unitary_mat Rep_gate gate_to_cpx_mat_def
     by simp
-  have f3:"inverts_mat (A\<dagger>) A"
+  have f3:"inverts_mat (A\<^sup>\<dagger>) A"
     using Rep_gate gate_to_cpx_mat_def unitary_mat_mat
     by simp
   thus ?thesis
@@ -241,42 +241,46 @@ qed
 
 subsection "Relations Between Complex Conjugation, Hermitian Conjugation, Transposition and Unitarity"
 
-definition cpx_mat_cnj :: "complex mat \<Rightarrow> complex mat" ("(_\<^sup>*)") where
+syntax
+  "transpose_mat" :: "'a mat => 'a mat"
+      ("(_\<^sup>t)")
+
+definition cpx_mat_cnj :: "complex mat \<Rightarrow> complex mat" ("(_\<^sup>\<star>)") where
 "cpx_mat_cnj A \<equiv> mat (dim_row A) (dim_col A) (\<lambda>(i,j). cnj (A $$ (i,j)))"
 
 lemma cpx_mat_cnj_id:
   fixes n::"nat"
-  shows "cpx_mat_cnj (1\<^sub>m n) = 1\<^sub>m n"
+  shows "(1\<^sub>m n)\<^sup>\<star> = 1\<^sub>m n"
   using cpx_mat_cnj_def one_mat_def 
   by auto
 
 lemma cpx_mat_cnj_cnj:
   fixes A::"complex mat"
-  shows "cpx_mat_cnj (cpx_mat_cnj A) = A"
+  shows "(A\<^sup>\<star>)\<^sup>\<star> = A"
   using eq_matI cpx_mat_cnj_def 
   by auto
 
 lemma cpx_mat_cnj_prod:
   fixes A B::"complex mat"
   assumes "dim_col A = dim_row B"
-  shows "cpx_mat_cnj (A * B) = (cpx_mat_cnj A) * (cpx_mat_cnj B)"
+  shows "(A * B)\<^sup>\<star> = (A\<^sup>\<star>) * (B\<^sup>\<star>)"
 proof-
-  have f1:"dim_row (cpx_mat_cnj (A * B)) = dim_row ((cpx_mat_cnj A) * (cpx_mat_cnj B))"
+  have f1:"dim_row ((A * B)\<^sup>\<star>) = dim_row ((A\<^sup>\<star>) * (B\<^sup>\<star>))"
     using cpx_mat_cnj_def 
     by simp
-  have f2:"dim_col (cpx_mat_cnj (A * B)) = dim_col ((cpx_mat_cnj A) * (cpx_mat_cnj B))"
+  have f2:"dim_col ((A * B)\<^sup>\<star>) = dim_col ((A\<^sup>\<star>) * (B\<^sup>\<star>))"
     using cpx_mat_cnj_def
     by simp
-  have "i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> cpx_mat_cnj (A * B) $$ (i,j) = 
+  have "i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> ((A * B)\<^sup>\<star>) $$ (i,j) = 
     cnj (\<Sum>k=0..<(dim_row B). A $$ (i,k) * B $$ (k,j))" for i j
     using cpx_mat_cnj_def index_mat times_mat_def scalar_prod_def row_def col_def
     by (smt assms case_prod_conv dim_col index_mult_mat(2) index_mult_mat(3) index_vec lessThan_atLeast0 
         lessThan_iff sum.cong)
-  then have f3:"i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> cpx_mat_cnj (A * B) $$ (i,j) = 
+  then have f3:"i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> ((A * B)\<^sup>\<star>) $$ (i,j) = 
     (\<Sum>k=0..<(dim_row B). cnj(A $$ (i,k)) * cnj(B $$ (k,j)))" for i j
     using cnj_sum complex_cnj_mult 
     by simp
-  have f4:"i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> (cpx_mat_cnj A * cpx_mat_cnj B) $$ (i,j) = 
+  have f4:"i < dim_row A \<longrightarrow> j < dim_col B \<longrightarrow> ((A\<^sup>\<star>) * (B\<^sup>\<star>)) $$ (i,j) = 
     (\<Sum>k=0..<(dim_row B). cnj(A $$ (i,k)) * cnj(B $$ (k,j)))" for i j
     using cpx_mat_cnj_def index_mat times_mat_def scalar_prod_def row_def col_def
     by (smt assms case_prod_conv dim_col dim_col_mat(1) dim_row_mat(1) index_vec lessThan_atLeast0 
@@ -288,12 +292,12 @@ qed
 
 lemma transpose_cnj:
   fixes A::"complex mat"
-  shows "cpx_mat_cnj (transpose_mat A) = (A\<dagger>)"
+  shows "(A\<^sup>t)\<^sup>\<star> = (A\<^sup>\<dagger>)"
 proof-
-  have f1:"dim_row (cpx_mat_cnj (transpose_mat A)) = dim_row (A\<dagger>)"
+  have f1:"dim_row ((A\<^sup>t)\<^sup>\<star>) = dim_row (A\<^sup>\<dagger>)"
     using cpx_mat_cnj_def transpose_mat_def hermite_cnj_def 
     by simp
-  have f2:"dim_col (cpx_mat_cnj (transpose_mat A)) = dim_col (A\<dagger>)"
+  have f2:"dim_col ((A\<^sup>t)\<^sup>\<star>) = dim_col (A\<^sup>\<dagger>)"
     using cpx_mat_cnj_def transpose_mat_def hermite_cnj_def 
     by simp
   thus ?thesis
@@ -303,12 +307,12 @@ qed
 
 lemma cnj_transpose:
   fixes A::"complex mat"
-  shows "transpose_mat (cpx_mat_cnj A) = (A\<dagger>)"
+  shows "(A\<^sup>\<star>)\<^sup>t = (A\<^sup>\<dagger>)"
 proof-
-  have f1:"dim_row (transpose_mat (cpx_mat_cnj A)) = dim_row (A\<dagger>)"
+  have f1:"dim_row ((A\<^sup>\<star>)\<^sup>t) = dim_row (A\<^sup>\<dagger>)"
     using transpose_mat_def cpx_mat_cnj_def hermite_cnj_def 
     by simp
-  have f2:"dim_col (transpose_mat (cpx_mat_cnj A)) = dim_col (A\<dagger>)"
+  have f2:"dim_col ((A\<^sup>\<star>)\<^sup>t) = dim_col (A\<^sup>\<dagger>)"
     using transpose_mat_def cpx_mat_cnj_def hermite_cnj_def 
     by simp
   thus ?thesis
@@ -318,45 +322,45 @@ qed
 
 lemma transpose_hermite_cnj:
   fixes A::"complex mat"
-  shows "(transpose_mat A)\<dagger> = cpx_mat_cnj A"
+  shows "(A\<^sup>t)\<^sup>\<dagger> = (A\<^sup>\<star>)"
   using transpose_transpose transpose_cnj
   by metis
 
 lemma transpose_of_unitary_is_unitary:
   fixes U::"complex mat"
   assumes "unitary U"
-  shows "unitary (transpose_mat U)"
+  shows "unitary (U\<^sup>t)"
 proof-
-  have c1:"(transpose_mat U)\<dagger> * (transpose_mat U) =  1\<^sub>m(dim_row U)"
+  have c1:"(U\<^sup>t)\<^sup>\<dagger> * (U\<^sup>t) =  1\<^sub>m(dim_row U)"
   proof-
-    have f1:"(transpose_mat U)\<dagger> * (transpose_mat U) = cpx_mat_cnj U * (transpose_mat U)"
+    have f1:"(U\<^sup>t)\<^sup>\<dagger> * (U\<^sup>t) = (U\<^sup>\<star>) * (U\<^sup>t)"
       using transpose_hermite_cnj 
       by simp
-    have "dim_col U = dim_row (cpx_mat_cnj (transpose_mat U))"
+    have "dim_col U = dim_row ((U\<^sup>t)\<^sup>\<star>)"
       using cpx_mat_cnj_def transpose_mat_def 
       by auto
-    then have "(transpose_mat U)\<dagger> * (transpose_mat U) = cpx_mat_cnj (U * (cpx_mat_cnj (transpose_mat U)))"
+    then have "(U\<^sup>t)\<^sup>\<dagger> * (U\<^sup>t) = ((U * ((U\<^sup>t)\<^sup>\<star>))\<^sup>\<star>)"
       using f1 cpx_mat_cnj_cnj cpx_mat_cnj_prod 
       by simp
-    then have "(transpose_mat U)\<dagger> * (transpose_mat U) = cpx_mat_cnj (U * (U\<dagger>))"
+    then have "(U\<^sup>t)\<^sup>\<dagger> * (U\<^sup>t) = ((U * (U\<^sup>\<dagger>))\<^sup>\<star>)"
       using transpose_cnj 
       by simp
     thus ?thesis
       using assms cpx_mat_cnj_id unitary_def 
       by auto
   qed
-  have c2:"transpose_mat U * ((transpose_mat U)\<dagger>) = 1\<^sub>m(dim_col U)"
+  have c2:"U\<^sup>t * ((U\<^sup>t)\<^sup>\<dagger>) = 1\<^sub>m(dim_col U)"
   proof-
-    have f1:"transpose_mat U * ((transpose_mat U)\<dagger>) = transpose_mat U * cpx_mat_cnj U"
+    have f1:"U\<^sup>t * ((U\<^sup>t)\<^sup>\<dagger>) = (U\<^sup>t) * (U\<^sup>\<star>)"
       using transpose_hermite_cnj 
       by simp
-    have "dim_col (cpx_mat_cnj (transpose_mat U)) = dim_row U"
+    have "dim_col ((U\<^sup>t)\<^sup>\<star>) = dim_row U"
       using cpx_mat_cnj_def transpose_mat_def 
       by simp
-    then have "transpose_mat U * ((transpose_mat U)\<dagger>) = cpx_mat_cnj (cpx_mat_cnj (transpose_mat U) * U)"
+    then have "U\<^sup>t * ((U\<^sup>t)\<^sup>\<dagger>) = (((U\<^sup>t)\<^sup>\<star> * U)\<^sup>\<star>)"
       using f1 cpx_mat_cnj_cnj cpx_mat_cnj_prod 
       by simp
-    then have "transpose_mat U * ((transpose_mat U)\<dagger>) = cpx_mat_cnj (U\<dagger> * U)"
+    then have "U\<^sup>t * ((U\<^sup>t)\<^sup>\<dagger>) = ((U\<^sup>\<dagger> * U)\<^sup>\<star>)"
       using transpose_cnj 
       by simp
     thus ?thesis
@@ -587,28 +591,28 @@ lemma inner_prod_csqrt:
 
 subsection "Unitary Matrices and Length-preservation"
 
-(* The bra-vector \<langle>Av| is given by \<langle>v|A\<dagger> *)
+(* The bra-vector \<langle>Av| is given by \<langle>v|A\<^sup>\<dagger> *)
 
 lemma bra_mat_on_vec:
   fixes v::"complex vec" and A::"complex mat"
   assumes "dim_col A = dim_vec v"
-  shows "\<langle>A * v| = \<langle>v| * (A\<dagger>)"
+  shows "\<langle>A * v| = \<langle>v| * (A\<^sup>\<dagger>)"
 proof-
   have f1:"dim_row \<langle>A * v| = 1"
     using bra_def 
     by simp
-  have f2:"dim_row (\<langle>v| * (A\<dagger>)) = 1"
+  have f2:"dim_row (\<langle>v| * (A\<^sup>\<dagger>)) = 1"
     using times_mat_def bra_def 
     by simp
-  from f1 and f2 have f3:"dim_row \<langle>A * v| = dim_row (\<langle>v| * (A\<dagger>))" 
+  from f1 and f2 have f3:"dim_row \<langle>A * v| = dim_row (\<langle>v| * (A\<^sup>\<dagger>))" 
     by simp
   have f4:"dim_col \<langle>A * v| = dim_row A"
     using bra_def times_mat_def 
     by simp
-  have f5:"dim_col (\<langle>v| * (A\<dagger>)) = dim_row A"
+  have f5:"dim_col (\<langle>v| * (A\<^sup>\<dagger>)) = dim_row A"
     using times_mat_def hermite_cnj_dim_col 
     by simp
-  from f4 and f5 have f6:"dim_col \<langle>A * v| = dim_col (\<langle>v| * (A\<dagger>))"
+  from f4 and f5 have f6:"dim_col \<langle>A * v| = dim_col (\<langle>v| * (A\<^sup>\<dagger>))"
     by simp
   have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = cnj (row A j \<bullet> v)" for j
     using index_mat bra_def times_mat_def col_ket_vec eq_vecI ket_vec_def 
@@ -617,14 +621,14 @@ proof-
     (\<Sum> i \<in> {0 ..< dim_vec v}. cnj(v $ i) * cnj(A $$ (j,i)))" for j
     using row_def scalar_prod_def index_mat cnj_sum complex_cnj_mult mult.commute
     by (smt assms index_vec lessThan_atLeast0 lessThan_iff sum.cong)
-  have f8:"j < dim_row A \<Longrightarrow> (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j) = 
+  have f8:"j < dim_row A \<Longrightarrow> (row \<langle>v| 0) \<bullet> (col (A\<^sup>\<dagger>) j) = 
     vec (dim_vec v) (\<lambda>i. cnj (v $ i)) \<bullet> vec (dim_col A) (\<lambda>i. cnj (A $$ (j,i)))" for j
     using row_bra col_hermite_cnj f1
     by simp 
-  from f7 and f8 have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (row \<langle>v| 0) \<bullet> (col (A\<dagger>) j)" for j
+  from f7 and f8 have "j < dim_row A \<Longrightarrow> cnj((A * v) $$ (j,0)) = (row \<langle>v| 0) \<bullet> (col (A\<^sup>\<dagger>) j)" for j
     using assms scalar_prod_def
     by (smt dim_vec index_vec lessThan_atLeast0 lessThan_iff sum.cong)
-  then have "j < dim_col \<langle>A * v| \<Longrightarrow> \<langle>A * v| $$ (0,j) = (\<langle>v| * (A\<dagger>)) $$ (0,j)" for j
+  then have "j < dim_col \<langle>A * v| \<Longrightarrow> \<langle>A * v| $$ (0,j) = (\<langle>v| * (A\<^sup>\<dagger>)) $$ (0,j)" for j
     using bra_def times_mat_def f5 
     by simp
   thus ?thesis
@@ -656,22 +660,22 @@ lemma unitary_squared_length:
   assumes "unitary U" and "dim_vec v = dim_col U"
   shows "\<parallel>U * |v\<rangle>\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2"
 proof-
-  have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * (U\<dagger>) * |U * |v\<rangle>\<rangle>) $$ (0,0)"
+  have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * (U\<^sup>\<dagger>) * |U * |v\<rangle>\<rangle>) $$ (0,0)"
     using assms(2) inner_prod_with_row_bra_vec_col_ket_vec bra_mat_on_vec
     by (metis inner_prod_with_times_mat mult_ket_vec_is_ket_vec_of_mult)
-  then have f2:"\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * (U\<dagger>) * (U * |v\<rangle>)) $$ (0,0)"
+  then have f2:"\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * (U\<^sup>\<dagger>) * (U * |v\<rangle>)) $$ (0,0)"
     using assms(2) mult_ket_vec_is_ket_vec_of_mult 
     by simp
   have f3:"dim_col \<langle>|v\<rangle>| = dim_vec v"
     using ket_vec_def bra_def
     by simp
-  have f4:"dim_row (U\<dagger>) = dim_vec v"
+  have f4:"dim_row (U\<^sup>\<dagger>) = dim_vec v"
     using assms(2)
     by (simp add: hermite_cnj_dim_row)
   have "dim_row (U * |v\<rangle>) = dim_row U"
     using times_mat_def 
     by simp
-  then have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * ((U\<dagger>) * U) * |v\<rangle>) $$ (0,0)"
+  then have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * ((U\<^sup>\<dagger>) * U) * |v\<rangle>) $$ (0,0)"
     using assoc_mult_mat f2 f3 f4
     by (smt carrier_mat_triv dim_row_mat(1) hermite_cnj_def ket_vec_def mat_carrier times_mat_def)
   then have "\<langle>U * |v\<rangle>|U * |v\<rangle> \<rangle> = (\<langle>|v\<rangle>| * |v\<rangle>) $$ (0,0)"
@@ -717,9 +721,9 @@ qed
 lemma col_tranpose:
   fixes A::"'a mat"
   assumes "dim_row A = n" and "i < n"
-  shows "col (transpose_mat A) i = row A i"
+  shows "col (A\<^sup>t) i = row A i"
 proof-
-  have "dim_vec (col (transpose_mat A) i) = dim_vec (row A i)"
+  have "dim_vec (col (A\<^sup>t) i) = dim_vec (row A i)"
     using row_def col_def transpose_mat_def 
     by simp
   thus ?thesis
@@ -732,7 +736,7 @@ lemma unitary_unit_row:
   assumes "unitary U" and "dim_row U = n" and "i < n"
   shows "\<parallel>row U i\<parallel> = 1"
 proof-
-  have "row U i = col (transpose_mat U) i"
+  have "row U i = col (U\<^sup>t) i"
     using col_transpose assms(2) assms(3) 
     by simp
   thus ?thesis
@@ -818,11 +822,11 @@ proof-
     by simp
   from f1 and f2 have f3:"square_mat A" 
     by simp
-  have f4:"A\<dagger> = A"
+  have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
-  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -847,11 +851,11 @@ proof-
     by simp
   from f1 and f2 have f3:"square_mat A" 
     by simp
-  have f4:"A\<dagger> = A"
+  have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
-  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -876,11 +880,11 @@ proof-
     by simp
   from f1 and f2 have f3:"square_mat A" 
     by simp
-  have f4:"A\<dagger> = A"
+  have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
-  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -923,11 +927,11 @@ proof-
     by simp
   from f1 and f2 have f3:"square_mat A" 
     by simp
-  have f4:"A\<dagger> = A"
+  have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
-  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -966,11 +970,11 @@ proof-
     by simp
   from f1 and f2 have f3:"square_mat A" 
     by simp
-  have f4:"A\<dagger> = A"
+  have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  then have f5:"A\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
-  have f6:"A * (A\<dagger>) = 1\<^sub>m (dim_row A)" sorry
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1097,7 +1101,7 @@ next
     then have "module.lincomb (module_cpx_vec n) f (insert x F) $ i = 
       (f x \<cdot>\<^sub>v x) $ i + module.lincomb (module_cpx_vec n) f F $ i"
       using index_add_vec assms(2) dim_vec_lincomb
-      by (metis Pi_split_insert_domain insert.hyps(1) insert.prems(2) insert.prems(3) insert_subset 
+      by (metis Pi_split_insert_domain  insert.hyps(1) insert.prems(2) insert.prems(3) insert_subset 
           module_cpx_vec_def module_vec_simps(1))
     thus "module.lincomb (module_cpx_vec n) f (insert x F) $ i = f x * x $ i + (\<Sum>v\<in>F. f v * v $ i)"
       using index_smult_vec assms(2) insert.prems(2) insert_def insert.hyps(3) 
