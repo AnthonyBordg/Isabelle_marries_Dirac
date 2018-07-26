@@ -695,7 +695,33 @@ lemma unitary_length:
   using assms unitary_squared_length
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
-(* As a consequence we prove that columns and rows of a unitary matrix are unit vectors *)
+lemma inner_prod_with_unitary_mat:
+  fixes U::"complex mat" and u::"complex vec" and v::"complex vec"
+  assumes "unitary U" and "dim_vec u = dim_col U" and "dim_vec v = dim_col U"
+  shows "\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = \<langle>u|v\<rangle>"
+proof-
+  have f1:"\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = (\<langle>|u\<rangle>| * (U\<^sup>\<dagger>) * U * |v\<rangle>) $$ (0,0)"
+    using assms(2) assms(3) bra_mat_on_vec mult_ket_vec_is_ket_vec_of_mult
+    by (smt assoc_mult_mat carrier_mat_triv col_fst_def dim_vec hermite_cnj_dim_col index_mult_mat(2) 
+        index_mult_mat(3) inner_prod_with_times_mat ket_vec_def mat_carrier)
+  have f2:"\<langle>|u\<rangle>| \<in> carrier_mat 1 (dim_vec v)"
+    using bra_def ket_vec_def assms(2) assms(3) 
+    by auto
+  have f3:"U\<^sup>\<dagger> \<in> carrier_mat (dim_col U) (dim_row U)"
+    using hermite_cnj_def
+    by simp
+  then have "\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = (\<langle>|u\<rangle>| * (U\<^sup>\<dagger> * U) * |v\<rangle>) $$ (0,0)"
+    using f1 f2 f3 assms(3) assoc_mult_mat
+    by (metis carrier_mat_triv)
+  then have "\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = (\<langle>|u\<rangle>| * |v\<rangle>) $$ (0,0)"
+    using assms(1) unitary_def
+    by (simp add: assms(2) bra_def ket_vec_def)
+  thus ?thesis
+    using assms(2) assms(3) inner_prod_with_times_mat 
+    by simp
+qed
+
+(* As a consequence we prove that columns and rows of a unitary matrix are orthonormal vectors *)
 
 lemma col_fst_col:
   fixes A::"complex mat" and v::"complex vec"
@@ -703,18 +729,27 @@ lemma col_fst_col:
   using eq_vecI
   by (simp add: col_def col_fst_def)
 
+lemma unit_vec_to_col:
+  assumes "dim_col A = n" and "i < n"
+  shows "col A i = A * |unit_vec n i\<rangle>"
+proof-
+  have "dim_vec (col A i) = dim_vec (A * |unit_vec n i\<rangle>)"
+    using col_def times_mat_def
+    by (simp add: col_fst_def)
+  thus "col A i = A * |unit_vec n i\<rangle>"
+    using assms col_def unit_vec_def times_mat_def col_fst_def ket_vec_def eq_vecI
+    by (smt col_fst_col col_ket_vec dim_col dim_col_mat(1) index_col index_mult_mat(1) index_row(1) 
+        less_numeral_extra(1) scalar_prod_right_unit)
+qed
+
 lemma unitary_unit_col:
   fixes U::"complex mat"
   assumes "unitary U" and "dim_col U = n" and "i < n"
   shows "\<parallel>col U i\<parallel> = 1"
 proof-
-  have "dim_vec (col U i) = dim_vec (U * |unit_vec n i\<rangle>)"
-    using col_def times_mat_def
-    by (simp add: col_fst_def)
-  then have "col U i = U * |unit_vec n i\<rangle>"
-    using assms col_def unit_vec_def times_mat_def col_fst_def ket_vec_def eq_vecI
-    by (smt col_fst_col col_ket_vec dim_col dim_col_mat(1) index_col index_mult_mat(1) index_row(1) 
-        less_numeral_extra(1) scalar_prod_right_unit)
+  have "col U i = U * |unit_vec n i\<rangle>"
+    using assms(2) assms(3) unit_vec_to_col 
+    by simp
   thus ?thesis
     using assms unit_cpx_vec_length unitary_length unit_vec_def 
     by simp
@@ -733,6 +768,13 @@ proof-
     by auto
 qed
 
+lemma row_transpose:
+  fixes A::"'a mat"
+  assumes "dim_col A = n" and "i < n"
+  shows "row (A\<^sup>t) i = col A i"
+  using assms col_transpose transpose_transpose 
+  by simp
+
 lemma unitary_unit_row:
   fixes U::"complex mat"
   assumes "unitary U" and "dim_row U = n" and "i < n"
@@ -745,6 +787,42 @@ proof-
     using assms transpose_of_unitary_is_unitary unitary_unit_col
     by (metis index_transpose_mat(3))
 qed
+
+lemma orthogonal_unit_vec:
+  assumes "i < n" and "j < n" and "i \<noteq> j"
+  shows "\<langle>unit_vec n i|unit_vec n j\<rangle> = 0"
+proof-
+  have "\<langle>unit_vec n i|unit_vec n j\<rangle> = unit_vec n i \<bullet> unit_vec n j"
+    using assms unit_vec_def inner_prod_def scalar_prod_def
+    by (smt complex_cnj_zero index_unit_vec(3) index_vec inner_prod_with_row_bra_vec row_bra_vec 
+        scalar_prod_right_unit)
+  thus ?thesis
+    using assms scalar_prod_def unit_vec_def 
+    by simp
+qed
+
+lemma orthogonal_col_of_unitary:
+  fixes U::"complex mat"
+  assumes "unitary U" and "dim_col U = n" and "i < n" and "j < n" and "i \<noteq> j"
+  shows "\<langle>col U i|col U j\<rangle> = 0"
+proof-
+  have "\<langle>col U i|col U j\<rangle> = \<langle>U * |unit_vec n i\<rangle>| U * |unit_vec n j\<rangle>\<rangle>"
+    using assms(2) assms(3) assms(4) unit_vec_to_col 
+    by simp
+  then have "\<langle>col U i|col U j\<rangle> = \<langle>unit_vec n i |unit_vec n j\<rangle>"
+    using assms(1) assms(2) inner_prod_with_unitary_mat index_unit_vec(3) 
+    by simp
+  thus ?thesis
+    using assms(3) assms(4) assms(5) orthogonal_unit_vec 
+    by simp
+qed
+
+lemma orthogonal_row_of_unitary:
+  fixes U::"complex mat"
+  assumes "unitary U" and "dim_row U = n" and "i < n" and "j < n" and "i \<noteq> j"
+  shows "\<langle>row U i|row U j\<rangle> = 0"
+  using assms orthogonal_col_of_unitary transpose_of_unitary_is_unitary col_transpose
+  by (metis index_transpose_mat(3))
 
 declare 
   [[coercion_delete col_fst]]
