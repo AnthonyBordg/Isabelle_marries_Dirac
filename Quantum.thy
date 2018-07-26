@@ -72,8 +72,10 @@ declare
   [[coercion_enabled]]
   [[coercion qubit_to_cpx_vec]]
 
-(* Below the natural number n codes for the dimension of the complex vector space where the qubits 
-live *)
+(* 
+Below the natural number n codes for the dimension of the complex vector space where the qubits 
+live 
+*)
 lemma unit_vec_of_right_length_is_qubit:
   assumes "i < 2^n"
   shows "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
@@ -117,7 +119,8 @@ qed
 definition cpx_sqr_mat_to_cpx_mat :: "cpx_sqr_mat \<Rightarrow> complex mat" where
 "cpx_sqr_mat_to_cpx_mat A \<equiv> Rep_cpx_sqr_mat A"
 
-(* We introduce a coercion from the type of complex square matrices to the type of complex matrices 
+(* 
+We introduce a coercion from the type of complex square matrices to the type of complex matrices 
 *)
 declare [[coercion cpx_sqr_mat_to_cpx_mat]]
 
@@ -241,11 +244,32 @@ proof-
     by auto
 qed
 
-subsection "Relations Between Complex Conjugation, Hermitian Conjugation, Transposition and Unitarity"
+subsection 
+"Relations Between Complex Conjugation, Hermitian Conjugation, Transposition and Unitarity"
 
 syntax
   "transpose_mat" :: "'a mat => 'a mat"
       ("(_\<^sup>t)")
+
+lemma col_tranpose:
+  fixes A::"'a mat"
+  assumes "dim_row A = n" and "i < n"
+  shows "col (A\<^sup>t) i = row A i"
+proof-
+  have "dim_vec (col (A\<^sup>t) i) = dim_vec (row A i)"
+    using row_def col_def transpose_mat_def 
+    by simp
+  thus ?thesis
+    using assms eq_vecI col_def row_def transpose_mat_def 
+    by auto
+qed
+
+lemma row_transpose:
+  fixes A::"'a mat"
+  assumes "dim_col A = n" and "i < n"
+  shows "row (A\<^sup>t) i = col A i"
+  using assms col_transpose transpose_transpose 
+  by simp
 
 definition cpx_mat_cnj :: "complex mat \<Rightarrow> complex mat" ("(_\<^sup>\<star>)") where
 "cpx_mat_cnj A \<equiv> mat (dim_row A) (dim_col A) (\<lambda>(i,j). cnj (A $$ (i,j)))"
@@ -405,8 +429,10 @@ lemma row_bra_vec:
   using row_def bra_vec_def mat_cnj_def index_mat row_vec_def 
   by auto
 
-(* We introduce a definition called bra to take the corresponding bra of a vector when this last
-vector is given under its matrix representation, i.e. as a column matrix *)
+(* 
+We introduce a definition called bra to take the corresponding bra of a vector when this last
+vector is given under its matrix representation, i.e. as a column matrix 
+*)
 definition bra :: "complex mat \<Rightarrow> complex mat" ("\<langle>_|") where
 "bra v \<equiv> mat 1 (dim_row v) (\<lambda>(i,j). cnj(v $$ (j,i)))"
 
@@ -423,8 +449,8 @@ lemma row_bra:
   using bra_bra_vec row_bra_vec 
   by simp
 
-(* We introduce the inner product of two complex vectors in C^n.
-The result of an inner product is a (1,1)-matrix, i.e. a complex number. *)
+(* We introduce the inner product of two complex vectors in C^n. *)
+
 definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" ("\<langle>_|_\<rangle>") where
 "inner_prod u v \<equiv> \<Sum> i \<in> {0 ..< dim_vec v}. cnj(u $ i) * (v $ i)"
 
@@ -449,6 +475,19 @@ lemma inner_prod_with_times_mat:
   using assms inner_prod_def times_mat_def index_mat ket_vec_def bra_def 
     inner_prod_with_row_bra_vec_col_ket_vec 
   by auto
+
+lemma orthogonal_unit_vec:
+  assumes "i < n" and "j < n" and "i \<noteq> j"
+  shows "\<langle>unit_vec n i|unit_vec n j\<rangle> = 0"
+proof-
+  have "\<langle>unit_vec n i|unit_vec n j\<rangle> = unit_vec n i \<bullet> unit_vec n j"
+    using assms unit_vec_def inner_prod_def scalar_prod_def
+    by (smt complex_cnj_zero index_unit_vec(3) index_vec inner_prod_with_row_bra_vec row_bra_vec 
+        scalar_prod_right_unit)
+  thus ?thesis
+    using assms scalar_prod_def unit_vec_def 
+    by simp
+qed
 
 (* We prove that our inner product is linear in its second argument *)
 
@@ -638,17 +677,35 @@ proof-
     by auto
 qed
 
-(* A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
-same length. *)
-
 definition col_fst :: "'a mat \<Rightarrow> 'a vec" where 
   "col_fst A = vec (dim_row A) (\<lambda> i. A $$ (i,0))"
 
-(* We need to declare col_fst as a coercion from matrices to vectors in order to see a column matrix
-as a vector *)
+lemma col_fst_col:
+  fixes A::"complex mat" and v::"complex vec"
+  shows "col_fst (A * |v\<rangle>) = col (A * |v\<rangle>) 0"
+  using eq_vecI
+  by (simp add: col_def col_fst_def)
+
+(* 
+We need to declare col_fst as a coercion from matrices to vectors in order to see a column matrix
+as a vector 
+*)
 declare 
   [[coercion_delete ket_vec]]
   [[coercion col_fst]]
+
+lemma unit_vec_to_col:
+  assumes "dim_col A = n" and "i < n"
+  shows "col A i = A * |unit_vec n i\<rangle>"
+proof-
+  have "dim_vec (col A i) = dim_vec (A * |unit_vec n i\<rangle>)"
+    using col_def times_mat_def
+    by (simp add: col_fst_def)
+  thus "col A i = A * |unit_vec n i\<rangle>"
+    using assms col_def unit_vec_def times_mat_def col_fst_def ket_vec_def eq_vecI
+    by (smt col_fst_col col_ket_vec dim_col dim_col_mat(1) index_col index_mult_mat(1) index_row(1) 
+        less_numeral_extra(1) scalar_prod_right_unit)
+qed
 
 lemma mult_ket_vec_is_ket_vec_of_mult:
   fixes A::"complex mat" and v::"complex vec"
@@ -688,6 +745,11 @@ proof-
     by (metis Re_complex_of_real inner_prod_with_times_mat)
 qed
 
+(* 
+A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
+same length. 
+*)
+
 lemma unitary_length:
   fixes U::"complex mat" and v::"complex vec"
   assumes "unitary U" and "dim_vec v = dim_col U"
@@ -723,25 +785,6 @@ qed
 
 (* As a consequence we prove that columns and rows of a unitary matrix are orthonormal vectors *)
 
-lemma col_fst_col:
-  fixes A::"complex mat" and v::"complex vec"
-  shows "col_fst (A * |v\<rangle>) = col (A * |v\<rangle>) 0"
-  using eq_vecI
-  by (simp add: col_def col_fst_def)
-
-lemma unit_vec_to_col:
-  assumes "dim_col A = n" and "i < n"
-  shows "col A i = A * |unit_vec n i\<rangle>"
-proof-
-  have "dim_vec (col A i) = dim_vec (A * |unit_vec n i\<rangle>)"
-    using col_def times_mat_def
-    by (simp add: col_fst_def)
-  thus "col A i = A * |unit_vec n i\<rangle>"
-    using assms col_def unit_vec_def times_mat_def col_fst_def ket_vec_def eq_vecI
-    by (smt col_fst_col col_ket_vec dim_col dim_col_mat(1) index_col index_mult_mat(1) index_row(1) 
-        less_numeral_extra(1) scalar_prod_right_unit)
-qed
-
 lemma unitary_unit_col:
   fixes U::"complex mat"
   assumes "unitary U" and "dim_col U = n" and "i < n"
@@ -755,26 +798,6 @@ proof-
     by simp
 qed
 
-lemma col_tranpose:
-  fixes A::"'a mat"
-  assumes "dim_row A = n" and "i < n"
-  shows "col (A\<^sup>t) i = row A i"
-proof-
-  have "dim_vec (col (A\<^sup>t) i) = dim_vec (row A i)"
-    using row_def col_def transpose_mat_def 
-    by simp
-  thus ?thesis
-    using assms eq_vecI col_def row_def transpose_mat_def 
-    by auto
-qed
-
-lemma row_transpose:
-  fixes A::"'a mat"
-  assumes "dim_col A = n" and "i < n"
-  shows "row (A\<^sup>t) i = col A i"
-  using assms col_transpose transpose_transpose 
-  by simp
-
 lemma unitary_unit_row:
   fixes U::"complex mat"
   assumes "unitary U" and "dim_row U = n" and "i < n"
@@ -786,19 +809,6 @@ proof-
   thus ?thesis
     using assms transpose_of_unitary_is_unitary unitary_unit_col
     by (metis index_transpose_mat(3))
-qed
-
-lemma orthogonal_unit_vec:
-  assumes "i < n" and "j < n" and "i \<noteq> j"
-  shows "\<langle>unit_vec n i|unit_vec n j\<rangle> = 0"
-proof-
-  have "\<langle>unit_vec n i|unit_vec n j\<rangle> = unit_vec n i \<bullet> unit_vec n j"
-    using assms unit_vec_def inner_prod_def scalar_prod_def
-    by (smt complex_cnj_zero index_unit_vec(3) index_vec inner_prod_with_row_bra_vec row_bra_vec 
-        scalar_prod_right_unit)
-  thus ?thesis
-    using assms scalar_prod_def unit_vec_def 
-    by simp
 qed
 
 lemma orthogonal_col_of_unitary:
