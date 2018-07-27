@@ -11,13 +11,15 @@ imports
   VectorSpace.VectorSpace
   "HOL-Algebra.Ring"
   VectorSpace.LinearCombinations
+  Transcendental
 begin
 
 section \<open>Qubits and Quantum Gates\<close>
 
 subsection \<open>Qubits\<close>
 
-(* In this theory "cpx" stands for "complex" *)
+text\<open>In this theory "cpx" stands for "complex"\<close>
+
 definition cpx_vec_length :: "complex vec \<Rightarrow> real" ("\<parallel>_\<parallel>") where
 "cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (vec_index v i))\<^sup>2)"
 
@@ -66,16 +68,17 @@ typedef qubit = "{v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<para
 definition qubit_to_cpx_vec:: "qubit \<Rightarrow> complex vec" where
 "qubit_to_cpx_vec v \<equiv> Rep_qubit v"
 
-(* We introduce a coercion from the type of qubits to the type of complex vectors *)
+text\<open>We introduce a coercion from the type of qubits to the type of complex vectors\<close>
 
 declare 
   [[coercion_enabled]]
   [[coercion qubit_to_cpx_vec]]
 
-(* 
+text\<open> 
 Below the natural number n codes for the dimension of the complex vector space where the qubits 
 live 
-*)
+\<close>
+
 lemma unit_vec_of_right_length_is_qubit:
   assumes "i < 2^n"
   shows "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
@@ -102,11 +105,13 @@ lemma qubit_of_dim_is_qubit:
 
 subsection "The Hermitian Conjugation"
 
-(* The Hermitian conjugate of a complex matrix is the complex conjugate of its transpose *)
+text\<open>The Hermitian conjugate of a complex matrix is the complex conjugate of its transpose\<close>
+
 definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" ("_\<^sup>\<dagger>") where
   "hermite_cnj A \<equiv> mat (dim_col A) (dim_row A) (\<lambda> (i,j). cnj(A $$ (j,i)))"
 
-(* We introduce the type of complex square matrices *)
+text\<open>We introduce the type of complex square matrices\<close>
+
 typedef cpx_sqr_mat = "{A | A::complex mat. square_mat A}"
 proof-
   have "square_mat (1\<^sub>m n)" for n
@@ -119,9 +124,10 @@ qed
 definition cpx_sqr_mat_to_cpx_mat :: "cpx_sqr_mat \<Rightarrow> complex mat" where
 "cpx_sqr_mat_to_cpx_mat A \<equiv> Rep_cpx_sqr_mat A"
 
-(* 
+text\<open> 
 We introduce a coercion from the type of complex square matrices to the type of complex matrices 
-*)
+\<close>
+
 declare [[coercion cpx_sqr_mat_to_cpx_mat]]
 
 lemma hermite_cnj_dim_row:
@@ -207,11 +213,11 @@ lemma gate_of_dim_is_gate:
   using assms gate_of_dim_def 
   by simp
 
-(* We introduce a coercion from the type of quantum gates to the type of complex matrices *)
+text\<open>We introduce a coercion from the type of quantum gates to the type of complex matrices\<close>
 
 declare [[coercion gate_to_cpx_mat]]
 
-(* We prove that a quantum gate is invertible and its inverse is given by its Hermitian conjugate *)
+text\<open>We prove that a quantum gate is invertible and its inverse is given by its Hermitian conjugate\<close>
 
 lemma mat_unitary_mat:
   fixes A::"complex mat"
@@ -401,7 +407,7 @@ qed
 
 subsection "The Inner Product"
 
-(* Now, we introduce a coercion between complex vectors and (column) complex matrices *)
+text\<open>Now, we introduce a coercion between complex vectors and (column) complex matrices\<close>
 
 definition ket_vec :: "complex vec \<Rightarrow> complex mat" ("|_\<rangle>") where
 "ket_vec v \<equiv> mat (dim_vec v) 1 (\<lambda>(i,j). v $ i)"
@@ -429,14 +435,16 @@ lemma row_bra_vec:
   using row_def bra_vec_def mat_cnj_def index_mat row_vec_def 
   by auto
 
-(* 
+text\<open> 
 We introduce a definition called bra to take the corresponding bra of a vector when this last
 vector is given under its matrix representation, i.e. as a column matrix 
-*)
+\<close>
+
 definition bra :: "complex mat \<Rightarrow> complex mat" ("\<langle>_|") where
 "bra v \<equiv> mat 1 (dim_row v) (\<lambda>(i,j). cnj(v $$ (j,i)))"
 
-(* The relation between bra, bra_vec and ket_vec is given as follows. *)
+text\<open>The relation between bra, bra_vec and ket_vec is given as follows.\<close>
+
 lemma bra_bra_vec:
   fixes v::"complex vec"
   shows "bra (ket_vec v) = bra_vec v"
@@ -449,7 +457,7 @@ lemma row_bra:
   using bra_bra_vec row_bra_vec 
   by simp
 
-(* We introduce the inner product of two complex vectors in C^n. *)
+text\<open>We introduce the inner product of two complex vectors in C^n.\<close>
 
 definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" ("\<langle>_|_\<rangle>") where
 "inner_prod u v \<equiv> \<Sum> i \<in> {0 ..< dim_vec v}. cnj(u $ i) * (v $ i)"
@@ -489,7 +497,7 @@ proof-
     by simp
 qed
 
-(* We prove that our inner product is linear in its second argument *)
+text\<open>We prove that our inner product is linear in its second argument\<close>
 
 lemma vec_index_is_linear:
   fixes u::"complex vec" and v::"complex vec" and k::"complex" and l::"complex"
@@ -604,7 +612,8 @@ proof-
     by fastforce
 qed
 
-(* We declare a coercion from real numbers to complex numbers *)
+text\<open>We declare a coercion from real numbers to complex numbers\<close>
+
 declare [[coercion complex_of_real]]
 
 lemma cpx_vec_length_inner_prod:
@@ -686,10 +695,11 @@ lemma col_fst_col:
   using eq_vecI
   by (simp add: col_def col_fst_def)
 
-(* 
+text\<open>
 We need to declare col_fst as a coercion from matrices to vectors in order to see a column matrix
 as a vector 
-*)
+\<close>
+
 declare 
   [[coercion_delete ket_vec]]
   [[coercion col_fst]]
@@ -745,10 +755,10 @@ proof-
     by (metis Re_complex_of_real inner_prod_with_times_mat)
 qed
 
-(* 
+text\<open> 
 A unitary matrix is length-preserving, i.e. it acts on a vector to produce another vector of the 
 same length. 
-*)
+\<close>
 
 lemma unitary_length:
   fixes U::"complex mat" and v::"complex vec"
@@ -783,7 +793,7 @@ proof-
     by simp
 qed
 
-(* As a consequence we prove that columns and rows of a unitary matrix are orthonormal vectors *)
+text\<open>As a consequence we prove that columns and rows of a unitary matrix are orthonormal vectors\<close>
 
 lemma unitary_unit_col:
   fixes U::"complex mat"
@@ -838,8 +848,10 @@ declare
   [[coercion_delete col_fst]]
   [[coercion ket_vec]]
 
-(* As a consequence, we prove that a quantum gate acting on a qubit really gives a qubit of the
-same dimension *)
+text\<open>
+As a consequence, we prove that a quantum gate acting on a qubit really gives a qubit of the
+same dimension
+\<close>
 
 definition app :: "gate \<Rightarrow> qubit \<Rightarrow> qubit" where
 "app A v \<equiv> Abs_qubit (col (Rep_gate A * v) 0)"
@@ -879,18 +891,28 @@ lemma gate_on_qubit_is_qubit_bis:
 
 subsection \<open>A Few Well-known Quantum Gates\<close>
 
-(* We introduce a coercion from real matrices to complex matrices *)
+text\<open>
+Any unitary operation on n qubits can be implemented exactly by composing single qubits and
+CNOT-gates (controlled-NOT gates). However, no straightforward method is known to implement these 
+gates in a fashion which is resistant to errors. But, the Hadamard gate, the phase gate, the 
+CNOT-gate and the \<pi>/8 gate are also universal for quantum computations, i.e. any quantum circuit on 
+n qubits can be approximated to an arbitrary accuracy by using only these gates, and these gates can 
+be implemented in a fault-tolerant way. 
+\<close>
+
+text\<open>We introduce a coercion from real matrices to complex matrices\<close>
 
 definition real_to_cpx_mat:: "real mat \<Rightarrow> complex mat" where
 "real_to_cpx_mat A \<equiv> mat (dim_row A) (dim_col A) (\<lambda>(i,j). A $$ (i,j))"
 
 (* declare [[coercion real_to_cpx_mat]] prompts an error! *)
 
-(* Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though ! *)
+text\<open>Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though !\<close>
+
 definition id_gate :: "nat \<Rightarrow> gate" where
 "id_gate n \<equiv> Abs_gate (1\<^sub>m (2^n))"
 
-(* More interesting: the Pauli matrices. *)
+text\<open>More interesting: the Pauli matrices.\<close>
 
 definition X_gate ::"gate" where
 "X_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1))"
@@ -898,9 +920,12 @@ definition X_gate ::"gate" where
 (* Below we use (momentarily, hopefully) "sorry", since Sledgehammer is not able to conveniently 
 handle (matrix) computations, even very easy ones *)
 
-(* Be aware that "gate_of_dim n" means that the matrix has dimension 2^n. For instance, with this
+text\<open> 
+Be aware that "gate_of_dim n" means that the matrix has dimension 2^n. For instance, with this
 convention a 2 X 2 matrix which is unitary belongs to "gate_of_dim 1" but not to "gate_of_dim 2" as
-one might have been expected *)
+one might have been expected
+\<close>
+
 lemma X_gate_dim_prelim:
   shows "mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1) \<in> gate_of_dim 1"
 proof-
@@ -985,7 +1010,7 @@ lemma Z_gate_dim:
   using Z_gate_dim_prelim Z_gate_def Abs_gate_inverse gate_of_dim_is_gate 
   by fastforce
 
-(* The Hadamard gate *)
+text\<open>The Hadamard gate\<close>
 
 definition H_gate ::"gate" where
 "H_gate \<equiv> Abs_gate (1/sqrt(2) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i = 0 then 1 else -1))))"
@@ -1032,16 +1057,16 @@ lemma H_gate_dim:
   using H_gate_dim_prelim H_gate_def Abs_gate_inverse gate_of_dim_is_gate 
   by fastforce
 
-(* The controlled-NOT gate *)
+text\<open>The controlled-NOT gate\<close>
 
-definition CN_gate ::"gate" where
-"CN_gate \<equiv> Abs_gate (mat 4 4 
+definition CNOT_gate ::"gate" where
+"CNOT_gate \<equiv> Abs_gate (mat 4 4 
   (\<lambda>(i,j). if i=0 \<and> j= 0 then 1 else 
     (if i=1 \<and> j=1 then 1 else 
       (if i = 2 \<and> j= 3 then 1 else 
         (if i = 3 \<and> j= 2 then 1 else 0)))))"
 
-lemma CN_gate_dim_prelim:
+lemma CNOT_gate_dim_prelim:
   shows "mat 4 4 
   (\<lambda>(i,j). if i=0 \<and> j= 0 then 1 else 
     (if i=1 \<and> j=1 then 1 else 
@@ -1070,10 +1095,20 @@ proof-
     by simp
 qed
 
-lemma CN_gate_dim:
-  shows "Rep_gate CN_gate \<in> gate_of_dim 2"
-  using CN_gate_dim_prelim CN_gate_def Abs_gate_inverse gate_of_dim_is_gate 
+lemma CNOT_gate_dim:
+  shows "Rep_gate CNOT_gate \<in> gate_of_dim 2"
+  using CNOT_gate_dim_prelim CNOT_gate_def Abs_gate_inverse gate_of_dim_is_gate 
   by fastforce
+
+text\<open>The phase gate, also known as the S-gate\<close>
+
+definition S_gate ::"gate" where
+"S_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else (if i=1 \<and> j=1 then \<i> else 0)))"
+
+text\<open>The \<pi>/8 gate, also known as the T-gate\<close>
+
+definition T_gate ::"gate" where
+"T_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else (if i=1 \<and> j=1 then exp(\<i>*(pi/4)) else 0)))"
 
 subsection \<open>The Vector Space of Complex Vectors of Dimension n\<close>
 
