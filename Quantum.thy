@@ -1057,6 +1057,30 @@ lemma H_gate_dim:
   using H_gate_dim_prelim H_gate_def Abs_gate_inverse gate_of_dim_is_gate 
   by fastforce
 
+text\<open>The Hadamard gate is its own inverse\<close>
+
+lemma H_inv:
+  shows "inverts_mat H_gate H_gate"
+proof-
+  define M where "M = (1/2::complex) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 0 else 2))"
+  have f1:"dim_row (Rep_gate(H_gate) * Rep_gate(H_gate)) = dim_row M"
+    using H_gate_dim gate_of_dim_def M_def
+    by simp
+  have f2:"dim_col (Rep_gate(H_gate) * Rep_gate(H_gate)) = dim_col M"
+    using H_gate_dim gate_of_dim_def M_def
+    by simp
+  have "Rep_gate(H_gate) * Rep_gate(H_gate) = M" sorry
+  then have "Rep_gate(H_gate) * Rep_gate(H_gate) = mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1/2 * 0 else 1/2 * 2)"
+    using smult_mat_def map_mat_def eq_matI M_def
+    by auto
+  then have "Rep_gate(H_gate) * Rep_gate(H_gate) = 1\<^sub>m(2)" 
+    by auto
+  thus ?thesis
+    using inverts_mat_def H_gate_def
+    by (metis gate_to_cpx_mat_def index_mult_mat(2) index_one_mat(2))
+qed
+ 
+    
 text\<open>The controlled-NOT gate\<close>
 
 definition CNOT_gate ::"gate" where
@@ -1100,6 +1124,9 @@ lemma CNOT_gate_dim:
   using CNOT_gate_dim_prelim CNOT_gate_def Abs_gate_inverse gate_of_dim_is_gate 
   by fastforce
 
+lemma CNOT_inv:
+  shows "inverts_mat CNOT_gate CNOT_gate" sorry
+
 text\<open>The phase gate, also known as the S-gate\<close>
 
 definition S_gate ::"gate" where
@@ -1109,6 +1136,18 @@ text\<open>The \<pi>/8 gate, also known as the T-gate\<close>
 
 definition T_gate ::"gate" where
 "T_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else (if i=1 \<and> j=1 then exp(\<i>*(pi/4)) else 0)))"
+
+text\<open>A few relations between the Hadamard gate and the Pauli matrices\<close>
+
+lemma HXH_is_Z:
+  shows "(H_gate::complex mat) * X_gate * H_gate = Z_gate" sorry
+
+lemma HYH_is_minusY:
+  shows "(H_gate::complex mat) * Y_gate * H_gate = - (Y_gate::complex mat)" sorry
+
+lemma HZH_is_X:
+  shows "(H_gate::complex mat) * Z_gate * H_gate = X_gate" sorry
+
 
 subsection \<open>The Vector Space of Complex Vectors of Dimension n\<close>
 
