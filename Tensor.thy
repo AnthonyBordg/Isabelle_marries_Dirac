@@ -16,16 +16,21 @@ Theory by René Thiemann and Akihisa Yamada. In the present theory our purpose c
 a formalization. Of course, we will reuse their code as much as possible.
 *}
 
-section \<open>Tensor Products of Vectors\<close>
+section \<open>Tensor Products\<close>
 
-subsection \<open>The Kronecker Product\<close>
+subsection \<open>The Kronecker Product of Two Vectors\<close>
 
-definition tensor_vec ::"('a:: comm_monoid_mult) Matrix.vec \<Rightarrow> 'a Matrix.vec \<Rightarrow> 'a Matrix.vec" where
-"tensor_vec u v \<equiv> vec_of_list (mult.vec_vec_Tensor (op *) (list_of_vec u) (list_of_vec v))"
+definition tensor_vec ::"('a::comm_monoid_mult) Matrix.vec \<Rightarrow> 'a Matrix.vec \<Rightarrow> 'a Matrix.vec" (infixl "\<otimes>" 63) 
+where "tensor_vec u v \<equiv> vec_of_list (mult.vec_vec_Tensor (op *) (list_of_vec u) (list_of_vec v))"
 
-section \<open>Tensor Products of Matrices\<close>
+subsection \<open>Tensor Products of Matrices\<close>
 
-section \<open>Tensor Products of Vector Spaces\<close>
+definition tensor_mat ::"('a::comm_monoid_mult) Matrix.mat \<Rightarrow> 'a Matrix.mat \<Rightarrow> 'a Matrix.mat" (infixl "\<Otimes>" 63)
+where "tensor_mat A B \<equiv> mat_of_cols_list (dim_row A * dim_row B) (mult.Tensor (op *) (mat_to_list A) (mat_to_list B))"
+
+subsection \<open>Tensor Products of Vector Spaces\<close>
+
+
 
 
 end
