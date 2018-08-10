@@ -5,11 +5,8 @@ imports
   Main
   Complex
   Quantum
-  Group
   Jordan_Normal_Form.Matrix
   Matrix_Tensor.Matrix_Tensor
-  "HOL-Algebra.Ring"
-  Rings
 begin
 
 text{* There is already a formalization of tensor products in the Archive of Formal Proofs, 
@@ -17,7 +14,9 @@ namely Matrix_Tensor.thy in Tensor Product of Matrices[1] by T.V.H. Prathamesh, 
 on top of the formalization of vectors and matrices given in Matrices, Jordan Normal Forms, and 
 Spectral Radius Theory[2] by René Thiemann and Akihisa Yamada. 
 In the present theory our purpose consists in giving such a formalization. Of course, we will reuse 
-Prathamesh's code as much as possible.
+Prathamesh's code as much as possible, and in order to achieve that we formalize some lemmas that
+translate back and forth between vectors (resp. matrices) seen as lists (resp. lists of lists) and 
+vectors (resp. matrices) as formalized in [2].
 *}
 
 section \<open>Tensor Products\<close>
@@ -63,6 +62,8 @@ lemma mat_to_cols_list_is_not_Nil:
   using assms
   by (simp add: mat_to_cols_list_def)
 
+(* Link between Matrix_Tensor.row_length and Matrix.dim_row *)
+
 lemma row_length_mat_to_cols_list:
   assumes "dim_col A > 0"
   shows "mult.row_length (mat_to_cols_list A) = dim_row A"
@@ -78,10 +79,11 @@ proof-
     by (simp add: upt_conv_Cons)
 qed
 
+(* mat_to_cols_list is a matrix in the sense of the theory Matrix_Legacy. *)
+
 lemma mat_to_cols_list_is_mat:
   assumes "dim_col A > 0"
   shows "Matrix_Legacy.mat (mult.row_length (mat_to_cols_list A)) (length (mat_to_cols_list A)) (mat_to_cols_list A)"
-  using Matrix_Legacy.mat_def
 proof-
   have "Ball (set (mat_to_cols_list A)) (Matrix_Legacy.vec (mult.row_length (mat_to_cols_list A)))"
     using assms row_length_mat_to_cols_list mat_to_cols_list_def Ball_def set_def Matrix_Legacy.vec_def
@@ -161,7 +163,8 @@ qed
 
 definition tensor_mat ::"complex Matrix.mat \<Rightarrow> complex Matrix.mat \<Rightarrow> complex Matrix.mat" (infixl "\<Otimes>" 63)
   where 
-"tensor_mat A B \<equiv> mat_of_cols_list (dim_row A * dim_row B) (mult.Tensor (op *) (mat_to_cols_list A) (mat_to_cols_list B))"
+"tensor_mat A B \<equiv> 
+  mat_of_cols_list (dim_row A * dim_row B) (mult.Tensor (op *) (mat_to_cols_list A) (mat_to_cols_list B))"
   
 lemma dim_row_tensor_mat:
   shows "dim_row (A \<Otimes> B) = dim_row A * dim_row B"
@@ -171,7 +174,8 @@ lemma dim_col_tensor_mat:
   shows "dim_col (A \<Otimes> B) = dim_col A * dim_col B"
   using tensor_mat_def mat_of_cols_list_def Matrix_Tensor.mult.length_Tensor[of "1" "op *"] 
     length_mat_to_cols_list
-  by (smt ab_semigroup_mult_class.mult_ac(1) comm_monoid_mult_class.mult_1 dim_col_mat(1) mult.commute mult.intro)
+  by (smt ab_semigroup_mult_class.mult_ac(1) comm_monoid_mult_class.mult_1 dim_col_mat(1) 
+      mult.commute mult.intro)
 
 lemma index_tensor_mat:
   assumes "dim_row A = rA" and "dim_col A = cA" and "dim_row B = rB" and "dim_col B = cB"
@@ -208,8 +212,6 @@ proof-
         mult_is_0 neq0_conv row_length_mat_to_cols_list)
 qed
 
-(* We make explicit the link between times_mat and matrix_mult *)
-
 lemma dim_vec_vec_of_list:
   shows "dim_vec (vec_of_list l) = length l"
   by (metis dim_vec vec.abs_eq vec_of_list.abs_eq)
@@ -219,6 +221,8 @@ lemma index_vec_of_list:
   shows "vec_of_list l $ i = l ! i"
   using assms
   by (metis index_vec vec.abs_eq vec_of_list.abs_eq) 
+
+(* To go from Matrix.row to Matrix_Legacy.row *)
 
 lemma Matrix_row_is_Legacy_row:
   assumes "i < dim_row A"
@@ -248,6 +252,8 @@ lemma index_list_of_vec:
   using assms Rep_vec mk_vec_def
   by (simp add: case_prod_unfold dim_vec.rep_eq vec_index.rep_eq) 
 
+(* To go from Matrix_Legacy.row to Matrix.row *)
+
 lemma Legacy_row_is_Matrix_row:
   assumes "i < mult.row_length A"
   shows "Matrix_Legacy.row A i = list_of_vec (Matrix.row (mat_of_cols_list (mult.row_length A) A) i)"
@@ -268,6 +274,8 @@ proof-
     by blast
 qed
 
+(* To go from Matrix.col to Matrix_Legacy.col *)
+
 lemma Matrix_col_is_Legacy_col:
   assumes "j < dim_col A"
   shows "Matrix.col A j = vec_of_list (Matrix_Legacy.col (mat_to_cols_list A) j)"
@@ -283,6 +291,8 @@ proof-
     using f1 eq_vecI 
     by auto
 qed
+
+(* To go from Matrix_Legacy.col to Matrix.col *)
 
 lemma Legacy_col_is_Matrix_col:
   assumes "j < length A" and "length (A ! j) = mult.row_length A"
@@ -312,18 +322,40 @@ proof-
     by (simp add: nth_equalityI) 
 qed
 
+(* Link between Matrix_Tensor.scalar_product and Matrix.scalar_prod *)
+
 lemma scalar_prod_is_Matrix_scalar_prod:
+  fixes u::"complex list" and v::"complex list"
   assumes "length u = length v"
   shows "plus_mult.scalar_product (op *) 0 (op +) u v = (vec_of_list u) \<bullet> (vec_of_list v)"
 proof-
-  have "(vec_of_list u) \<bullet> (vec_of_list v) = (\<Sum>i=0..<length v. u ! i * v ! i)"
+  have f1:"(vec_of_list u) \<bullet> (vec_of_list v) = (\<Sum>i=0..<length v. u ! i * v ! i)"
     using assms scalar_prod_def[of "vec_of_list u" "vec_of_list v"] dim_vec_vec_of_list[of v] 
       index_vec_of_list
     by (metis (no_types, lifting) atLeastLessThan_iff sum.cong)
-  thus ?thesis sorry
-    (*using assms plus_mult.scalar_product_def[of 1 "op *" 0 "op +" "a_inv cpx_rng"] 
-      scalar_prodI_def[of 0 "op +" "op *"] plus_mult_cpx foldr_def zip_def*)
+  thus ?thesis
+  proof-
+    have "plus_mult.scalar_product (op *) 0 (op +) u v = semiring_0_class.scalar_prod u v"
+      using plus_mult_cpx Matrix_Tensor.plus_mult.scalar_product_def[of 1 "op *" 0 "op +" "a_inv cpx_rng" u v] 
+      by simp
+    then have f2:"plus_mult.scalar_product (op *) 0 (op +) u v = sum_list (map (\<lambda>(x,y). x * y) (zip u v))"
+      using scalar_prod 
+      by simp
+    have "\<forall>i<length v. (zip u v) ! i = (u ! i, v ! i)"
+      using assms zip_def 
+      by simp
+    then have "\<forall>i<length v. (map (\<lambda>(x,y). x * y) (zip u v)) ! i = u ! i * v ! i"
+      by (simp add: assms)
+    then have "plus_mult.scalar_product (op *) 0 (op +) u v = (\<Sum>i=0..<length v. u ! i * v ! i)"
+      using assms f2
+      by (metis (no_types, lifting) atLeastLessThan_iff length_map map_fst_zip sum.cong sum_list_sum_nth)
+    thus ?thesis
+      using f1 
+      by simp
+  qed
 qed
+
+(* Link between Matrix.times_mat and Matrix_Tensor.matrix_mult *)
 
 lemma matrix_mult_to_times_mat:
   assumes "dim_col A > 0" and "dim_col B > 0" and "dim_col (A::complex Matrix.mat) = dim_row B"
@@ -427,6 +459,11 @@ proof-
     using f1 f2 nth_equalityI
     by (simp add: nth_equalityI M_def length_mat_to_cols_list)
 qed
+
+(* 
+Finally, we prove that the tensor product of complex matrices is distributive over the 
+multiplication of complex matrices. 
+*)
 
 lemma mult_distr_tensor:
   assumes "dim_col A = dim_row B" and "dim_col C = dim_row D" and "dim_col A > 0" and "dim_col B > 0"
