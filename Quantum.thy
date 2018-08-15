@@ -61,25 +61,25 @@ proof-
     by simp
 qed
 
-typedef qubit = "{v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
+typedef state = "{v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
   using unit_cpx_vec_length[of 0 "2^n"]
   by (smt index_unit_vec(3) less_numeral_extra(1) mem_Collect_eq power_0 unit_cpx_vec_length)
 
-definition qubit_to_cpx_vec:: "qubit \<Rightarrow> complex vec" where
-"qubit_to_cpx_vec v \<equiv> Rep_qubit v"
+definition state_to_cpx_vec:: "state \<Rightarrow> complex vec" where
+"state_to_cpx_vec v \<equiv> Rep_state v"
 
-text\<open>We introduce a coercion from the type of qubits to the type of complex vectors\<close>
+text\<open>We introduce a coercion from the type of states to the type of complex vectors\<close>
 
 declare 
   [[coercion_enabled]]
-  [[coercion qubit_to_cpx_vec]]
+  [[coercion state_to_cpx_vec]]
 
 text\<open> 
-Below the natural number n codes for the dimension of the complex vector space where the qubits 
-live 
+Below the natural number n codes for the dimension of the complex vector space whose elements of norm
+1 we call states 
 \<close>
 
-lemma unit_vec_of_right_length_is_qubit:
+lemma unit_vec_of_right_length_is_state:
   assumes "i < 2^n"
   shows "unit_vec (2^n) i \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
 proof-
@@ -93,13 +93,13 @@ proof-
     by simp
 qed
 
-definition qubit_of_dim:: "nat \<Rightarrow> _ set" where
-"qubit_of_dim n \<equiv> {v| v:: complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
+definition state_qbit:: "nat \<Rightarrow> _ set" where
+"state_qbit n \<equiv> {v| v:: complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
 
-lemma qubit_of_dim_is_qubit:
-  assumes "v \<in> qubit_of_dim n"
+lemma state_qbit_is_qubit:
+  assumes "v \<in> state_qbit n"
   shows "v \<in> {v| n v::complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
-  using assms qubit_of_dim_def
+  using assms state_qbit_def
   by simp
 
 
@@ -849,17 +849,17 @@ declare
   [[coercion ket_vec]]
 
 text\<open>
-As a consequence, we prove that a quantum gate acting on a qubit really gives a qubit of the
-same dimension
+As a consequence, we prove that a quantum gate acts on the states of a system of n qubits to give 
+another state of this same system.
 \<close>
 
-definition app :: "gate \<Rightarrow> qubit \<Rightarrow> qubit" where
-"app A v \<equiv> Abs_qubit (col (Rep_gate A * v) 0)"
+definition app :: "gate \<Rightarrow> state \<Rightarrow> state" where
+"app A v \<equiv> Abs_state (col (Rep_gate A * v) 0)"
 
-lemma gate_on_qubit_is_qubit:
+lemma gate_on_state_is_state:
   fixes U::"complex mat" and v::"complex vec"
-  assumes "U \<in> gate_of_dim n" and "v \<in> qubit_of_dim n"
-  shows "col (U * v) 0 \<in> qubit_of_dim n"
+  assumes "U \<in> gate_of_dim n" and "v \<in> state_qbit n"
+  shows "col (U * v) 0 \<in> state_qbit n"
 proof-
   have f1:"dim_vec (col (U * v) 0) = 2^n"
     using col_def gate_of_dim_def assms(1) times_mat_def 
@@ -871,21 +871,21 @@ proof-
     using assms(1) gate_of_dim_def 
     by simp
   then have "\<parallel>col (U * v) 0\<parallel> = \<parallel>v\<parallel>"
-    using unitary_length assms gate_of_dim_def qubit_of_dim_def col_fst_col
+    using unitary_length assms gate_of_dim_def state_qbit_def col_fst_col
     by (metis (mono_tags, lifting) mem_Collect_eq)
   then have f2:"\<parallel>col (U * v) 0\<parallel> = 1"
-    using assms(2) qubit_of_dim_def 
+    using assms(2) state_qbit_def 
     by simp
   thus ?thesis
-    using f1 f2 qubit_of_dim_def 
+    using f1 f2 state_qbit_def 
     by simp
 qed
 
 lemma gate_on_qubit_is_qubit_bis:
-  fixes U::"gate" and v::"qubit"
-  assumes "Rep_gate U \<in> gate_of_dim n" and "Rep_qubit v \<in> qubit_of_dim n"
-  shows "Rep_qubit (app U v) \<in> qubit_of_dim n"
-  using assms app_def gate_on_qubit_is_qubit Abs_qubit_inverse qubit_of_dim_def qubit_to_cpx_vec_def 
+  fixes U::"gate" and v::"state"
+  assumes "Rep_gate U \<in> gate_of_dim n" and "Rep_state v \<in> state_qbit n"
+  shows "Rep_state (app U v) \<in> state_qbit n"
+  using assms app_def gate_on_state_is_state Abs_state_inverse state_qbit_def state_to_cpx_vec_def 
   by auto
 
 
@@ -1182,8 +1182,8 @@ lemma module_cpx_vec:
   using vecspace_cpx_vec vectorspace_def 
   by auto
 
-definition qubit_of_basis :: "nat \<Rightarrow> nat \<Rightarrow> qubit" where
-"qubit_of_basis n i \<equiv> Abs_qubit (unit_vec (2^n) i)"
+definition state_basis :: "nat \<Rightarrow> nat \<Rightarrow> state" where
+"state_basis n i \<equiv> Abs_state (unit_vec (2^n) i)"
 
 definition unit_vectors :: "nat \<Rightarrow> (complex vec) set" where
 "unit_vectors n \<equiv> {unit_vec n i| i::nat. 0 \<le> i \<and> i < n}"
@@ -1382,44 +1382,65 @@ proof-
         subsetI unit_vectors_def)
 qed
 
-lemma qubit_of_dim_is_lincomb:
+lemma state_qbit_is_lincomb:
   fixes n::"nat"
-  shows "qubit_of_dim n = 
+  shows "state_qbit n = 
   {module.lincomb (module_cpx_vec (2^n)) a A|a A. 
     finite A \<and> A\<subseteq>(unit_vectors (2^n)) \<and> a\<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2^n)) a A\<parallel>=1}"
 proof
-  show "qubit_of_dim n
+  show "state_qbit n
     \<subseteq> {module.lincomb (module_cpx_vec (2^n)) a A |a A.
         finite A \<and> A \<subseteq> unit_vectors (2^n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2^n)) a A\<parallel> = 1}"
   proof
     fix v
-    assume a1:"v \<in> qubit_of_dim n"
+    assume a1:"v \<in> state_qbit n"
     then show "v \<in> {module.lincomb (module_cpx_vec (2^n)) a A |a A.
                finite A \<and> A \<subseteq> unit_vectors (2^n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2^n)) a A\<parallel> = 1}"
     proof-
       obtain a and A where "finite A" and "a\<in> A \<rightarrow> UNIV" and "A \<subseteq> unit_vectors (2^n)" and 
         "v = module.lincomb (module_cpx_vec (2^n)) a A"
-        using a1 qubit_of_dim_def unit_vectors_is_basis vectorspace.basis_def module.span_def 
+        using a1 state_qbit_def unit_vectors_is_basis vectorspace.basis_def module.span_def 
         vecspace_cpx_vec module_cpx_vec module_cpx_vec_def module_vec_def carrier_vec_def
         by (smt Pi_UNIV UNIV_I mem_Collect_eq module_vec_simps(3))
       thus ?thesis
-        using a1 qubit_of_dim_def 
+        using a1 state_qbit_def 
         by auto
     qed
   qed
   show "{module.lincomb (module_cpx_vec (2 ^ n)) a A |a A.
      finite A \<and> A \<subseteq> unit_vectors (2 ^ n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2 ^ n)) a A\<parallel> = 1}
-    \<subseteq> qubit_of_dim n"
+    \<subseteq> state_qbit n"
   proof
     fix v
     assume "v \<in> {module.lincomb (module_cpx_vec (2 ^ n)) a A |a A.
               finite A \<and> A \<subseteq> unit_vectors (2 ^ n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2 ^ n)) a A\<parallel> = 1}"
-    then show "v\<in> qubit_of_dim n"
-      using qubit_of_dim_def dim_vec_lincomb unit_vectors_carrier_vec
+    then show "v\<in> state_qbit n"
+      using state_qbit_def dim_vec_lincomb unit_vectors_carrier_vec
       by (smt mem_Collect_eq order_trans)
   qed
 qed
 
 
+subsection \<open>Measurement\<close>
+
+text
+\<open>
+In the light of the last lemma of the previous subsection, given an element v in "state_qbit n", 
+its components v $ i for 0 <= i < n have to be understood as the coefficients of the representation 
+of v in the basis given by the unit vectors of dimension 2^n. Such a vector v is a state for a quantum 
+system of n qubits.
+In the literature on quantum computing, for n = 1, i.e. for a quantum system of 1 qubit, the basis 
+vector (1,0) (resp. (0,1)) is denoted by |0\<rangle> (resp. |1\<rangle>); for n = 2, i.e. for a quantum system of 2
+qubits, the basis vector (1,0,0,0) (resp. (0,1,0,0), (0,0,1,0), (0,0,0,1)) is denoted by |00\<rangle>
+(resp. |01\<rangle>, |10\<rangle>, |11\<rangle>); and so on for higher values of n. The idea behind these standard notations 
+is that the labels on the basis vectors represent the possible results of a measurement of the n 
+qubits of the system, while the squared modules of the corresponding coefficients represent the 
+probabilities for those results. The fact that the vector v has to be normalized precisely expresses
+the fact that the squared modules of the coefficients represent some probabilities and hence their 
+sum should be 1.
+Note that in case of a system with multiple qubits, i.e. n>=2, one can model the simultaneous 
+measurement of multiple qubits by sequential measurements of single qubits. Indeed, this last process
+leads to the same probabilities for the various possible outcomes.   
+\<close>
 
 end
