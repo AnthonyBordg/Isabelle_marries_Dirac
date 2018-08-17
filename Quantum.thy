@@ -1427,17 +1427,22 @@ text
 \<open>
 In the light of the last lemma of the previous subsection, given an element v in "state_qbit n", 
 its components v $ i for 0 <= i < n have to be understood as the coefficients of the representation 
-of v in the basis given by the unit vectors of dimension 2^n. Such a vector v is a state for a quantum 
-system of n qubits.
-In the literature on quantum computing, for n = 1, i.e. for a quantum system of 1 qubit, the basis 
-vector (1,0) (resp. (0,1)) is denoted by |0\<rangle> (resp. |1\<rangle>); for n = 2, i.e. for a quantum system of 2
-qubits, the basis vector (1,0,0,0) (resp. (0,1,0,0), (0,0,1,0), (0,0,0,1)) is denoted by |00\<rangle>
-(resp. |01\<rangle>, |10\<rangle>, |11\<rangle>); and so on for higher values of n. The idea behind these standard notations 
-is that the labels on the basis vectors represent the possible results of a measurement of the n 
-qubits of the system, while the squared modules of the corresponding coefficients represent the 
-probabilities for those results. The fact that the vector v has to be normalized precisely expresses
-the fact that the squared modules of the coefficients represent some probabilities and hence their 
-sum should be 1.
+of v in the basis given by the unit vectors of dimension 2^n, unless stated otherwise. 
+Such a vector v is a state for a quantum system of n qubits.
+In the literature on quantum computing, for n = 1, i.e. for a quantum system of 1 qubit, the elements
+of the so-called computational basis are denoted |0\<rangle>,|1\<rangle>, and these last elements might be understood
+for instance as (1,0),(0,1), i.e. as the zeroth and the first elements of a given basis ; for n = 2, 
+i.e. for a quantum system of 2 qubits, the elements of the computational basis are denoted |00\<rangle>,|01\<rangle>, 
+|10\<rangle>,|11\<rangle>, and they might be understood for instance as (1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1); and 
+so on for higher values of n. 
+The idea behind these standard notations is that the labels on the vectors of the 
+computational basis are the binary expressions of the natural numbers indexing the elements
+in a given ordered basis interpreting the computational basis in a specific context, another point of
+view is that the order of the basis corresponds to the lexicographic order for the labels. 
+Those labels also represent the possible outcomes of a measurement of the n qubits of the system, 
+while the squared modules of the corresponding coefficients represent the probabilities for those 
+outcomes. The fact that the vector v has to be normalized expresses precisely the fact that the squared 
+modules of the coefficients represent some probabilities and hence their sum should be 1.
 Note that in case of a system with multiple qubits, i.e. n>=2, one can model the simultaneous 
 measurement of multiple qubits by sequential measurements of single qubits. Indeed, this last process
 leads to the same probabilities for the various possible outcomes.   
