@@ -1443,7 +1443,7 @@ Those labels also represent the possible outcomes of a measurement of the n qubi
 while the squared modules of the corresponding coefficients represent the probabilities for those 
 outcomes. The fact that the vector v has to be normalized expresses precisely the fact that the squared 
 modules of the coefficients represent some probabilities and hence their sum should be 1.
-Note that in case of a system with multiple qubits, i.e. n>=2, one can model the simultaneous 
+Note that in the case of a system with multiple qubits, i.e. n>=2, one can model the simultaneous 
 measurement of multiple qubits by sequential measurements of single qubits. Indeed, this last process
 leads to the same probabilities for the various possible outcomes.   
 \<close>
