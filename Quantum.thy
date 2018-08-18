@@ -93,7 +93,7 @@ proof-
     by simp
 qed
 
-definition state_qbit:: "nat \<Rightarrow> _ set" where
+definition state_qbit:: "nat \<Rightarrow> complex vec set" where
 "state_qbit n \<equiv> {v| v:: complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
 
 lemma state_qbit_is_qubit:
@@ -1447,5 +1447,81 @@ Note that in case of a system with multiple qubits, i.e. n>=2, one can model the
 measurement of multiple qubits by sequential measurements of single qubits. Indeed, this last process
 leads to the same probabilities for the various possible outcomes.   
 \<close>
+
+
+text
+\<open>
+Given a system with n-qubits and i the index of one qubit among the n qubits of the system, where
+0 <= i <= n-1 (i.e. we start the indexing from 0), we want to find the indices of the states of the
+computational basis whose labels have a 1 at the ith spot (counting from 0). For instance, if n=3 and 
+i=2 then 1,3,5,7 are the indices of the elements of the computational basis with a 1 at the 2nd spot,
+namely |001\<rangle>,|011\<rangle>,|101\<rangle>,|111\<rangle>. To achieve that we define the predicate select_index below. 
+\<close>
+
+definition select_index ::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
+"select_index n i j \<equiv> (i \<le> n-1) \<and> (j \<le> 2^n - 1) \<and> (j mod 2^(n-i) \<ge> 2^(n-1-i))"
+
+text
+\<open>
+Given a n-qubit system and a state v of that system, we compute the probability that a measure 
+of qubit i has the outcome 1.
+\<close>
+
+definition prob_1 ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> real" where
+"prob_1 n v i \<equiv> 
+  if Rep_state v \<in> state_qbit n then \<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $ j))\<^sup>2 else undefined"
+
+(* To do: prove that when defined prob_1 n v i lies between 0 and 1, i.e it is a probability *)
+lemma prob_1_is_prob:
+  fixes n::"nat" and i::"nat" and v::"state" 
+  assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
+  shows "prob_1 n v i \<ge> 0 \<and> prob_1 n v i \<le> 1" sorry
+
+definition prob_0 ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> real" where
+"prob_0 n v i \<equiv>
+  if Rep_state v \<in> state_qbit n then \<Sum>j\<in>{k| k::nat. \<not> select_index n i k}. (cmod(v $ j))\<^sup>2 else undefined"
+
+(* To do: prove that when defined prob_0 n v i lies between 0 and 1, i.e it is a probability *)
+lemma prob_0_is_prob:
+  fixes n::"nat" and i::"nat" and v::"state" 
+  assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
+  shows "prob_0 n v i \<ge> 0 \<and> prob_0 n v i \<le> 1" sorry
+
+text\<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 0.\<close>
+
+definition post_measure_0_state ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> state" where
+"post_measure_0_state n v i \<equiv> 
+Abs_state (of_real(1/sqrt(prob_0 n v i)) \<cdot>\<^sub>v vec (2^n) (\<lambda>j. if \<not> select_index n i j then v $ j else 0))"
+(* 
+Note that a division by 0 never occurs. Indeed, if sqrt(prob_0 n v i) would be 0 then prob_0 n v i 
+would be 0 and it would mean that the measurement of the ith qubit gave 1. 
+*)
+
+(* To do: prove that post_measure_0_state is a state for a system of n-qubits, i.e. is an element of
+state_qbit n. *)
+
+lemma post_measure_0_state_qbit:
+  fixes n::"nat" and i::"nat" and v::"state"
+  assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
+  shows "Rep_state (post_measure_0_state n v i) \<in> state_qbit n" sorry
+
+text\<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 1.\<close>
+
+definition post_measure_1_state ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> state" where
+"post_measure_1_state n v i \<equiv> 
+Abs_state (of_real(1/sqrt(prob_1 n v i)) \<cdot>\<^sub>v vec (2^n) (\<lambda>j. if select_index n i j then v $ j else 0))"
+(* 
+Note that a division by 0 never occurs. Indeed, if sqrt(prob_1 n v i) would be 0 then prob_1 n v i 
+would be 0 and it would mean that the measurement of the ith qubit gave 0. 
+*)
+
+(* To do: prove that post_measure_1_state is a state for a system of n-qubits, i.e. is an element of
+state_qbit n. *)
+
+lemma post_measure_1_state_qbit:
+  fixes n::"nat" and i::"nat" and v::"state"
+  assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
+  shows "Rep_state (post_measure_1_state n v i) \<in> state_qbit n" sorry
+
 
 end
