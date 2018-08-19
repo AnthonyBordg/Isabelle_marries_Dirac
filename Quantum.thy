@@ -1523,5 +1523,21 @@ lemma post_measure_1_state_qbit:
   assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
   shows "Rep_state (post_measure_1_state n v i) \<in> state_qbit n" sorry
 
+text
+\<open>
+The measurement operator below takes a number of qubits n, a state v of a n-qubits system, a number
+i corresponding to the index (starting from 0) of one qubit among the n-qubits, and it computes a list 
+whose first (resp. second) element is the pair made of the probability that the outcome of the measurement
+of the ith qubit is 0 (resp. 1) and the corresponding post-measurement state of the system.
+Of course, note that i should be strictly less than n and v (more precisely "Rep_state v") should be a 
+member of "state_qbit n".
+\<close>
+
+definition measure ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> _list" where
+"measure n v i \<equiv> [(prob_0 n v i, post_measure_0_state n v i), (prob_1 n v i, post_measure_1_state n v i)]"
+
+
+subsection\<open>The Bell states\<close>
+
 
 end
