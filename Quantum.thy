@@ -1489,8 +1489,8 @@ lemma prob_0_is_prob:
 
 text\<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 0.\<close>
 
-definition post_measure_0_state ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> state" where
-"post_measure_0_state n v i \<equiv> 
+definition post_meas_0 ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> state" where
+"post_meas_0 n v i \<equiv> 
 Abs_state (of_real(1/sqrt(prob_0 n v i)) \<cdot>\<^sub>v vec (2^n) (\<lambda>j. if \<not> select_index n i j then v $ j else 0))"
 (* 
 Note that a division by 0 never occurs. Indeed, if sqrt(prob_0 n v i) would be 0 then prob_0 n v i 
@@ -1500,15 +1500,15 @@ would be 0 and it would mean that the measurement of the ith qubit gave 1.
 (* To do: prove that post_measure_0_state is a state for a system of n-qubits, i.e. is an element of
 state_qbit n. *)
 
-lemma post_measure_0_state_qbit:
+lemma post_meas_0_is_state:
   fixes n::"nat" and i::"nat" and v::"state"
   assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
-  shows "Rep_state (post_measure_0_state n v i) \<in> state_qbit n" sorry
+  shows "Rep_state (post_meas_0 n v i) \<in> state_qbit n" sorry
 
 text\<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 1.\<close>
 
-definition post_measure_1_state ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> state" where
-"post_measure_1_state n v i \<equiv> 
+definition post_meas_1 ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> state" where
+"post_meas_1 n v i \<equiv> 
 Abs_state (of_real(1/sqrt(prob_1 n v i)) \<cdot>\<^sub>v vec (2^n) (\<lambda>j. if select_index n i j then v $ j else 0))"
 (* 
 Note that a division by 0 never occurs. Indeed, if sqrt(prob_1 n v i) would be 0 then prob_1 n v i 
@@ -1518,10 +1518,10 @@ would be 0 and it would mean that the measurement of the ith qubit gave 0.
 (* To do: prove that post_measure_1_state is a state for a system of n-qubits, i.e. is an element of
 state_qbit n. *)
 
-lemma post_measure_1_state_qbit:
+lemma post_meas_1_is_state:
   fixes n::"nat" and i::"nat" and v::"state"
   assumes "i \<le> n-1" and "Rep_state v \<in> state_qbit n"
-  shows "Rep_state (post_measure_1_state n v i) \<in> state_qbit n" sorry
+  shows "Rep_state (post_meas_1 n v i) \<in> state_qbit n" sorry
 
 text
 \<open>
@@ -1533,11 +1533,120 @@ Of course, note that i should be strictly less than n and v (more precisely "Rep
 member of "state_qbit n".
 \<close>
 
-definition measure ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> _list" where
-"measure n v i \<equiv> [(prob_0 n v i, post_measure_0_state n v i), (prob_1 n v i, post_measure_1_state n v i)]"
+definition meas ::"nat \<Rightarrow> state \<Rightarrow> nat \<Rightarrow> _list" where
+"meas n v i \<equiv> [(prob_0 n v i, post_meas_0 n v i), (prob_1 n v i, post_meas_1 n v i)]"
 
 
-subsection\<open>The Bell states\<close>
+subsection\<open>The Bell States\<close>
 
+text
+\<open>
+We introduce below the so-called Bell states, also known as EPR pairs (EPR stands for Einstein,
+Podolsky and Rosen).
+\<close>
+
+definition bell_00 ::"complex vec" ("|\<beta>\<^sub>0\<^sub>0\<rangle>") where
+"bell_00 \<equiv> 1/sqrt(2) \<cdot>\<^sub>v vec 4 (\<lambda>i. if i=0 \<or> i=3 then 1 else 0)"
+
+definition bell_01 ::"complex vec" ("|\<beta>\<^sub>0\<^sub>1\<rangle>") where
+"bell_01 \<equiv> 1/sqrt(2) \<cdot>\<^sub>v vec 4 (\<lambda>i. if i=1 \<or> i=2 then 1 else 0)"
+
+definition bell_10 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>0\<rangle>") where
+"bell_10 \<equiv> 1/sqrt(2) \<cdot>\<^sub>v vec 4 (\<lambda>i. if i=0 then 1 else if i=3 then -1 else 0)"
+
+definition bell_11 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>1\<rangle>") where
+"bell_11 \<equiv> 1/sqrt(2) \<cdot>\<^sub>v vec 4 (\<lambda>i. if i=1 then 1 else if i=2 then -1 else 0)"
+
+(* To do: prove that the Bell states belong to "state_qbit 2". *)
+lemma bell_00_is_state:
+  shows "|\<beta>\<^sub>0\<^sub>0\<rangle> \<in> state_qbit 2" sorry
+
+lemma bell_01_is_state:
+  shows "|\<beta>\<^sub>0\<^sub>1\<rangle> \<in> state_qbit 2" sorry
+
+lemma bell_10_is_state:
+  shows "|\<beta>\<^sub>1\<^sub>0\<rangle> \<in> state_qbit 2" sorry
+
+lemma bell_11_is_state:
+  shows "|\<beta>\<^sub>1\<^sub>1\<rangle> \<in> state_qbit 2" sorry
+
+text
+\<open>
+A Bell state is a remarkable state. Indeed, if one makes one measure, either of the first or the second 
+qubit, then one gets either 0 with probability 1/2 or 1 with probability 1/2. Moreover, in the case of 
+two successive measurements of the first and second qubit, the outcomes are correlated. 
+Indeed, in the case of |\<beta>00\<rangle> or |\<beta>10\<rangle> (resp. |\<beta>01\<rangle> or |\<beta>11\<rangle>) if one measures the second qubit after a 
+measurement of the first qubit (or the other way around) then one gets the same outcomes (resp. opposite 
+outcomes), i.e. for instance the probability of measuring 0 for the second qubit after a measure with 
+outcome 0 for the first qubit is 1 (resp. 0).
+\<close>
+
+(* To do: prove the following results. *)
+lemma prob_0_bell_fst:
+  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_0 2 (Abs_state v) 0 = 1/2" sorry
+
+lemma prob_1_bell_fst:
+  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_1 2 (Abs_state v) 0 = 1/2" sorry
+
+lemma prob_0_bell_snd:
+  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_0 2 (Abs_state v) 1 = 1/2" sorry
+
+lemma prob_1_bell_snd:
+  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_1 2 (Abs_state v) 1 = 1/2" sorry
+
+lemma post_meas_0_bell_00_fst:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_00) 0) = unit_vec 4 0" sorry
+
+lemma post_meas_0_bell_00_snd:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_00) 1) = unit_vec 4 0" sorry
+
+lemma post_meas_0_bell_01_fst:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_01) 0) = unit_vec 4 1" sorry
+
+lemma post_meas_0_bell_01_snd:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_01) 1) = unit_vec 4 2" sorry
+
+lemma post_meas_0_bell_10_fst:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_10) 0) = unit_vec 4 0" sorry
+
+lemma post_meas_0_bell_10_snd:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_10) 1) = unit_vec 4 0" sorry
+
+lemma post_meas_0_bell_11_fst:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_11) 0) = unit_vec 4 1" sorry
+
+lemma post_meas_0_bell_11_snd:
+  shows "Rep_state (post_meas_0 2 (Abs_state bell_11) 1) = - unit_vec 4 2" sorry
+
+lemma post_meas_1_bell_00_fst:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_00) 0) = unit_vec 4 3" sorry
+
+lemma post_meas_1_bell_00_snd:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_00) 1) = unit_vec 4 3" sorry
+
+lemma post_meas_1_bell_01_fst:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_01) 0) = unit_vec 4 2" sorry
+
+lemma post_meas_1_bell_01_snd:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_01) 1) = unit_vec 4 1" sorry
+
+lemma post_meas_1_bell_10_fst:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_10) 0) = - unit_vec 4 3" sorry
+
+lemma post_meas_1_bell_10_snd:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_10) 1) = - unit_vec 4 3" sorry
+
+lemma post_meas_1_bell_11_fst:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_11) 0) = - unit_vec 4 2" sorry
+
+lemma post_meas_1_bell_11_snd:
+  shows "Rep_state (post_meas_1 2 (Abs_state bell_11) 1) = unit_vec 4 1" sorry
+
+
+subsection\<open>Entanglement\<close>
 
 end
