@@ -3,15 +3,15 @@
 theory Quantum
 imports 
   Main 
-  Power 
-  Real 
-  Complex 
+  HOL.Power 
+  HOL.Real 
+  HOL.Complex 
   Jordan_Normal_Form.Matrix
   "HOL-Library.Nonpos_Ints"
   VectorSpace.VectorSpace
   "HOL-Algebra.Ring"
   VectorSpace.LinearCombinations
-  Transcendental
+  HOL.Transcendental
 begin
 
 section \<open>Qubits and Quantum Gates\<close>
@@ -1155,7 +1155,7 @@ definition module_cpx_vec:: "nat \<Rightarrow> (complex, complex vec) module" wh
 "module_cpx_vec n \<equiv> module_vec TYPE(complex) n"
 
 definition cpx_rng ::"complex ring" where
-"cpx_rng \<equiv> \<lparr>carrier = UNIV, mult = op *, one = 1, zero = 0, add = op +\<rparr>"
+"cpx_rng \<equiv> \<lparr>carrier = UNIV, mult = ( * ), one = 1, zero = 0, add = (+)\<rparr>"
 
 lemma cpx_cring:
   shows "field cpx_rng"
@@ -1178,7 +1178,7 @@ lemma vecspace_cpx_vec:
 
 lemma module_cpx_vec:
   fixes n::"nat"
-  shows "module cpx_rng (module_cpx_vec n)"
+  shows "Module.module cpx_rng (module_cpx_vec n)"
   using vecspace_cpx_vec vectorspace_def 
   by auto
 
@@ -1194,7 +1194,7 @@ lemma unit_vectors_carrier_vec:
   using unit_vectors_def 
   by auto
 
-lemma (in module) finsum_over_singleton:
+lemma (in Module.module) finsum_over_singleton:
   assumes "f x \<in> carrier M"
   shows "finsum M f {x} = f x"
   using assms 
@@ -1220,7 +1220,7 @@ proof(induct F)
     have "module.lincomb (module_cpx_vec n) f {} = 0\<^sub>v n"
       using module.lincomb_def abelian_monoid.finsum_empty module_cpx_vec_def module_vec_def
         vecspace_cpx_vec vectorspace_def
-      by (smt abelian_group_def module_def module_vec_simps(2))
+      by (smt abelian_group_def Module.module_def module_vec_simps(2))
     thus ?thesis
       using index_zero_vec 
       by simp
@@ -1250,7 +1250,8 @@ proof(induct F)
   then show "module.lincomb (module_cpx_vec n) f {} $ i = (\<Sum>v\<in>{}. f v * v $ i)"
     apply auto
     using assms(2) module.lincomb_def abelian_monoid.finsum_empty module_cpx_vec_def
-    by (metis (mono_tags) abelian_group_def index_zero_vec(1) module_cpx_vec module_def module_vec_simps(2))
+    by (metis (mono_tags) abelian_group_def index_zero_vec(1) module_cpx_vec Module.module_def 
+        module_vec_simps(2))
 next
   case(insert x F)
   then show "module.lincomb (module_cpx_vec n) f (insert x F) $ i = (\<Sum>v\<in>insert x F. f v * v $ i)"
@@ -1264,7 +1265,7 @@ next
           partial_object.select_convs(1) sup_bot.comm_neutral)
     then have "module.lincomb (module_cpx_vec n) f (insert x F) $ i = 
       (f x \<cdot>\<^sub>v x) $ i + module.lincomb (module_cpx_vec n) f F $ i"
-      using index_add_vec assms(2) dim_vec_lincomb
+      using index_add_vec(1) assms(2) dim_vec_lincomb
       by (metis Pi_split_insert_domain  insert.hyps(1) insert.prems(2) insert.prems(3) insert_subset 
           module_cpx_vec_def module_vec_simps(1))
     thus "module.lincomb (module_cpx_vec n) f (insert x F) $ i = f x * x $ i + (\<Sum>v\<in>F. f v * v $ i)"
