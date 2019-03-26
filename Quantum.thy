@@ -917,9 +917,6 @@ text\<open>More interesting: the Pauli matrices.\<close>
 definition X_gate ::"gate" where
 "X_gate \<equiv> Abs_gate (mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1))"
 
-(* Below we use (momentarily, hopefully) "sorry", since Sledgehammer is not able to conveniently 
-handle (matrix) computations, even very easy ones *)
-
 text\<open> 
 Be aware that "gate_of_dim n" means that the matrix has dimension 2^n. For instance, with this
 convention a 2 X 2 matrix which is unitary belongs to "gate_of_dim 1" but not to "gate_of_dim 2" as
@@ -1757,13 +1754,62 @@ Note that a division by 0 never occurs. Indeed, if sqrt(prob_0 n v i) would be 0
 would be 0 and it would mean that the measurement of the ith qubit gave 1. 
 *)
 
-(* To do: prove that post_measure_0_state is a state for a system of n-qubits, i.e. is an element of
-state_qbit n. *)
+lemma smult_vec_length:
+  fixes x::"real" and v :: "complex vec"
+  assumes "x \<ge> 0"
+  shows "\<parallel>complex_of_real(x) \<cdot>\<^sub>v v\<parallel> = x * \<parallel>v\<parallel>"
+proof-
+  have f0:"(\<lambda>i::nat.(cmod (complex_of_real x * v $ i))\<^sup>2) = (\<lambda>i::nat.(cmod (v $ i))\<^sup>2*x\<^sup>2)"
+  proof
+    fix i
+    show "(cmod (complex_of_real x * v $ i))\<^sup>2 = (cmod (v $ i))\<^sup>2 * x\<^sup>2"
+      by (simp add: norm_mult power_mult_distrib)
+  qed
+  then have f1:"(\<Sum>i<dim_vec v. (cmod (complex_of_real x * v $ i))\<^sup>2) = 
+                (\<Sum>i<dim_vec v. (cmod (v $ i))\<^sup>2*x\<^sup>2)"
+    by meson
+  have f2:"(\<Sum>i<dim_vec v. (cmod (v $ i))\<^sup>2*x\<^sup>2) = 
+           x\<^sup>2 * (\<Sum>i<dim_vec v. (cmod (v $ i))\<^sup>2)"
+    by (metis (no_types) mult.commute sum_distrib_right)
+  have f3:"sqrt(x\<^sup>2 * (\<Sum>i<dim_vec v. (cmod (v $ i))\<^sup>2)) = 
+           sqrt(x\<^sup>2) * sqrt (\<Sum>i<dim_vec v. (cmod (v $ i))\<^sup>2)"
+    using real_sqrt_mult by blast
+  have f4:"sqrt(x\<^sup>2) = x"
+    using assms
+    by simp
+  show ?thesis
+    by(simp add: cpx_vec_length_def f1 f2 f3 f4 assms)
+qed
 
 lemma post_meas_0_is_state:
   fixes n::"nat" and i::"nat" and v::"complex vec"
-  assumes "i \<le> n-1" and "v \<in> state_qbit n"
-  shows "post_meas_0 n v i \<in> state_qbit n" sorry
+  assumes "i \<le> n-1" and "v \<in> state_qbit n" and "prob_0 n v i \<noteq> 0"
+  shows "post_meas_0 n v i \<in> state_qbit n" 
+proof-
+  have f0:"\<parallel>vec (2 ^ n) (\<lambda>j. if \<not> select_index n i j then v $ j else 0)\<parallel> = 
+           sqrt(\<Sum>j<2^n. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2)"
+    by(simp add: cpx_vec_length_def)
+  have f1:"(\<Sum>j\<in>{0..<2^n::nat}. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2) = 
+           (\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2) +
+           (\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2)"
+    using outcomes_sum[of "\<lambda>j. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2" n i]
+    by simp
+  have f2:"(\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2) = 0"
+    by simp
+  have f3:"(\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (cmod (if \<not> select_index n i j then v $ j else 0))\<^sup>2) = 
+           prob_0 n v i"
+    by(simp add: prob_0_def assms)
+  have f4:"\<parallel>vec (2 ^ n) (\<lambda>j. if \<not> select_index n i j then v $ j else 0)\<parallel> = sqrt(prob_0 n v i)"
+    using f0 f1 f2 f3 assms lessThan_atLeast0
+    by simp
+  have f5:"\<parallel>complex_of_real (1 / sqrt (prob_0 n v i)) \<cdot>\<^sub>v vec (2 ^ n) (\<lambda>j. if \<not> select_index n i j then v $ j else 0)\<parallel> = 
+           (1 / sqrt (prob_0 n v i)) * \<parallel>vec (2 ^ n) (\<lambda>j. if \<not> select_index n i j then v $ j else 0)\<parallel>"
+    apply(rule smult_vec_length)
+    using assms(1) assms(2) prob_geq_zero
+    by auto
+  show ?thesis
+    by(simp add: state_qbit_def post_meas_0_def f4 f5 assms(3) del: of_real_divide)
+qed
 
 text\<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 1.\<close>
 
@@ -1775,13 +1821,34 @@ Note that a division by 0 never occurs. Indeed, if sqrt(prob_1 n v i) would be 0
 would be 0 and it would mean that the measurement of the ith qubit gave 0. 
 *)
 
-(* To do: prove that post_measure_1_state is a state for a system of n-qubits, i.e. is an element of
-state_qbit n. *)
-
 lemma post_meas_1_is_state:
   fixes n::"nat" and i::"nat" and v::"complex vec"
-  assumes "i \<le> n-1" and "v \<in> state_qbit n"
-  shows "post_meas_1 n v i \<in> state_qbit n" sorry
+  assumes "i \<le> n-1" and "v \<in> state_qbit n" and "prob_1 n v i \<noteq> 0"
+  shows "post_meas_1 n v i \<in> state_qbit n"
+proof-
+  have f0:"\<parallel>vec (2 ^ n) (\<lambda>j. if select_index n i j then v $ j else 0)\<parallel> = 
+           sqrt(\<Sum>j<2^n. (cmod (if select_index n i j then v $ j else 0))\<^sup>2)"
+    by(simp add: cpx_vec_length_def)
+  have f1:"(\<Sum>j\<in>{0..<2^n::nat}. (cmod (if select_index n i j then v $ j else 0))\<^sup>2) = 
+           (\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod (if select_index n i j then v $ j else 0))\<^sup>2) +
+           (\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (cmod (if select_index n i j then v $ j else 0))\<^sup>2)"
+    using outcomes_sum[of "\<lambda>j. (cmod (if select_index n i j then v $ j else 0))\<^sup>2" n i]
+    by simp
+  have f2:"(\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod (if select_index n i j then v $ j else 0))\<^sup>2) = prob_1 n v i"
+    by(simp add: prob_1_def assms)
+  have f3:"(\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (cmod (if select_index n i j then v $ j else 0))\<^sup>2) = 0"
+    by simp
+  have f4:"\<parallel>vec (2 ^ n) (\<lambda>j. if  select_index n i j then v $ j else 0)\<parallel> = sqrt(prob_1 n v i)"
+    using f0 f1 f2 f3 assms lessThan_atLeast0
+    by simp
+  have f5:"\<parallel>complex_of_real (1 / sqrt (prob_1 n v i)) \<cdot>\<^sub>v vec (2 ^ n) (\<lambda>j. if  select_index n i j then v $ j else 0)\<parallel> = 
+           (1 / sqrt (prob_1 n v i)) * \<parallel>vec (2 ^ n) (\<lambda>j. if  select_index n i j then v $ j else 0)\<parallel>"
+    apply(rule smult_vec_length)
+    using assms(1) assms(2) prob_geq_zero
+    by auto
+  show ?thesis
+    by(simp add: state_qbit_def post_meas_1_def f4 f5 assms(3) del: of_real_divide)
+qed
 
 text
 \<open>
@@ -1817,7 +1884,6 @@ definition bell_10 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>0\<rangle>") where
 definition bell_11 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>1\<rangle>") where
 "bell_11 \<equiv> 1/sqrt(2) \<cdot>\<^sub>v vec 4 (\<lambda>i. if i=1 then 1 else if i=2 then -1 else 0)"
 
-(* To do: prove that the Bell states belong to "state_qbit 2". *)
 lemma bell_00_is_state:
   shows "|\<beta>\<^sub>0\<^sub>0\<rangle> \<in> state_qbit 2" 
 proof-
@@ -1860,75 +1926,557 @@ measurement of the first qubit (or the other way around) then one gets the same 
 outcomes), i.e. for instance the probability of measuring 0 for the second qubit after a measure with 
 outcome 0 for the first qubit is 1 (resp. 0).
 \<close>
-
-(* To do: prove the following results. *)
 lemma prob_0_bell_fst:
-  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  assumes "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
   shows "prob_0 2 v 0 = 1/2" 
 proof-
-
-  show ?thesis sorry
+  have set_0:"{x::nat. x < 4 \<and> (x \<le> 3 \<longrightarrow> \<not> 2 \<le> x)} = {0,1}"
+    by auto
+  have f1:"v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<Longrightarrow> prob_0 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>0\<rangle>"
+    show "prob_0 2 v 0 = 1/2" 
+      apply(simp add: prob_0_def asm bell_00_is_state select_index_def set_0)
+      by(simp add: bell_00_def cmod_def power_divide)
+  qed
+  have f2:"v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<Longrightarrow> prob_0 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>1\<rangle>"
+    show "prob_0 2 v 0 = 1/2" 
+      apply(simp add: prob_0_def asm bell_01_is_state select_index_def set_0)
+      by(simp add: bell_01_def cmod_def power_divide)
+  qed
+  have f3:"v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<Longrightarrow> prob_0 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>0\<rangle>"
+    show "prob_0 2 v 0 = 1/2" 
+      apply(simp add: prob_0_def asm bell_10_is_state select_index_def set_0)
+      by(simp add: bell_10_def cmod_def power_divide)
+  qed
+  have f4:"v = |\<beta>\<^sub>1\<^sub>1\<rangle> \<Longrightarrow> prob_0 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+    show "prob_0 2 v 0 = 1/2" 
+      apply(simp add: prob_0_def asm bell_11_is_state select_index_def set_0)
+      by(simp add: bell_11_def cmod_def power_divide)
+  qed
+  show ?thesis
+    using f1 f2 f3 f4 assms
+    by blast
 qed
 
 lemma prob_1_bell_fst:
-  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
-  shows "prob_1 2 v 0 = 1/2" sorry
+  assumes "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_1 2 v 0 = 1/2" 
+proof-
+  have set_0:"{x::nat. x \<le> 3 \<and> 2 \<le> x mod 4} = {2,3}"
+    by auto
+  have f1:"v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<Longrightarrow> prob_1 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>0\<rangle>"
+    show "prob_1 2 v 0 = 1/2" 
+      apply(simp add: prob_1_def asm bell_00_is_state select_index_def set_0)
+      by(simp add: bell_00_def cmod_def power_divide)
+  qed
+  have f2:"v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<Longrightarrow> prob_1 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>1\<rangle>"
+    show "prob_1 2 v 0 = 1/2" 
+      apply(simp add: prob_1_def asm bell_01_is_state select_index_def set_0)
+      by(simp add: bell_01_def cmod_def power_divide)
+  qed
+  have f3:"v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<Longrightarrow> prob_1 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>0\<rangle>"
+    show "prob_1 2 v 0 = 1/2" 
+      apply(simp add: prob_1_def asm bell_10_is_state select_index_def set_0)
+      by(simp add: bell_10_def cmod_def power_divide)
+  qed
+  have f4:"v = |\<beta>\<^sub>1\<^sub>1\<rangle> \<Longrightarrow> prob_1 2 v 0 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+    show "prob_1 2 v 0 = 1/2" 
+      apply(simp add: prob_1_def asm bell_11_is_state select_index_def set_0)
+      by(simp add: bell_11_def cmod_def power_divide)
+  qed
+  show ?thesis
+    using f1 f2 f3 f4 assms
+    by blast
+qed
 
 lemma prob_0_bell_snd:
-  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
-  shows "prob_0 2 v 1 = 1/2" sorry
+  assumes "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_0 2 v 1 = 1/2" 
+proof-
+  have set_00:" \<And>x::nat. x < 4 \<Longrightarrow> x \<in> {0,1,2,3}"
+    by auto
+  have set_0:"{x::nat. x < 4 \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)} = {0,2}"
+  proof
+    show "{x. x < 4 \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)} \<subseteq> {0, 2}"
+    proof
+      fix x assume "x \<in> {x. x < 4 \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)}"
+      then have "x \<in> {0,1,2,3} \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)"
+        by(auto simp add: set_00)
+      then show "x \<in> {0, 2}"
+        by auto
+    qed
+  next
+    show "{0, 2} \<subseteq> {x. x < 4 \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)}"
+      by auto
+  qed
+  have f1:"v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<Longrightarrow> prob_0 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>0\<rangle>"
+    show "prob_0 2 v 1 = 1/2" 
+      apply(simp add: prob_0_def asm bell_00_is_state select_index_def set_0)
+      by(simp add: bell_00_def cmod_def power_divide)
+  qed
+  have f2:"v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<Longrightarrow> prob_0 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>1\<rangle>"
+    show "prob_0 2 v 1 = 1/2" 
+      apply(simp add: prob_0_def asm bell_01_is_state select_index_def set_0)
+      by(simp add: bell_01_def cmod_def power_divide)
+  qed
+  have f3:"v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<Longrightarrow> prob_0 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>0\<rangle>"
+    show "prob_0 2 v 1 = 1/2" 
+      apply(simp add: prob_0_def asm bell_10_is_state select_index_def set_0)
+      by(simp add: bell_10_def cmod_def power_divide)
+  qed
+  have f4:"v = |\<beta>\<^sub>1\<^sub>1\<rangle> \<Longrightarrow> prob_0 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+    show "prob_0 2 v 1 = 1/2" 
+      apply(simp add: prob_0_def asm bell_11_is_state select_index_def set_0)
+      by(simp add: bell_11_def cmod_def power_divide)
+  qed
+  show ?thesis
+    using f1 f2 f3 f4 assms
+    by blast
+qed
 
 lemma prob_1_bell_snd:
-  assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
-  shows "prob_1 2 v 1 = 1/2" sorry
+  assumes "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+  shows "prob_1 2 v 1 = 1/2"
+proof-
+  have set_00:" \<And>x::nat. x < 4 \<Longrightarrow> x \<in> {0,1,2,3}"
+    by auto
+  have set_0:"{x. x \<le> 3 \<and> Suc 0 \<le> x mod 2} = {1,3}"
+  proof
+    show "{x. x \<le> 3 \<and> Suc 0 \<le> x mod 2} \<subseteq> {1, 3}"
+    proof
+      fix x assume "x \<in> {x. x \<le> 3 \<and> Suc 0 \<le> x mod 2}"
+      then have "x \<in> {0,1,2,3} \<and> Suc 0 \<le> x mod 2"
+        by(auto simp add: set_00)
+      then show "x \<in> {1, 3}"
+        by auto
+    qed
+  next
+    show "{1, 3} \<subseteq> {x. x \<le> 3 \<and> Suc 0 \<le> x mod 2}"
+      by auto
+  qed
+  have f1:"v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<Longrightarrow> prob_1 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>0\<rangle>"
+    show "prob_1 2 v 1 = 1/2" 
+      apply(simp add: prob_1_def asm bell_00_is_state select_index_def set_0)
+      by(simp add: bell_00_def cmod_def power_divide)
+  qed
+  have f2:"v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<Longrightarrow> prob_1 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>0\<^sub>1\<rangle>"
+    show "prob_1 2 v 1 = 1/2" 
+      apply(simp add: prob_1_def asm bell_01_is_state select_index_def set_0)
+      by(simp add: bell_01_def cmod_def power_divide)
+  qed
+  have f3:"v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<Longrightarrow> prob_1 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>0\<rangle>"
+    show "prob_1 2 v 1 = 1/2" 
+      apply(simp add: prob_1_def asm bell_10_is_state select_index_def set_0)
+      by(simp add: bell_10_def cmod_def power_divide)
+  qed
+  have f4:"v = |\<beta>\<^sub>1\<^sub>1\<rangle> \<Longrightarrow> prob_1 2 v 1 = 1/2"
+  proof-
+    fix v assume asm:"v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
+    show "prob_1 2 v 1 = 1/2" 
+      apply(simp add: prob_1_def asm bell_11_is_state select_index_def set_0)
+      by(simp add: bell_11_def cmod_def power_divide)
+  qed
+  show ?thesis
+    using f1 f2 f3 f4 assms
+    by blast
+qed
 
 lemma post_meas_0_bell_00_fst:
-  shows "post_meas_0 2 bell_00 0 = unit_vec 4 0" sorry
+  shows "post_meas_0 2 bell_00 0 = unit_vec 4 0"
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 0)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 0 = unit_vec 4 0 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_00_def real_sqrt_divide)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 1 = unit_vec 4 0 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_00_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 2 = unit_vec 4 0 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_00_def real_sqrt_divide)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 3 = unit_vec 4 0 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_00_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ i = unit_vec 4 0 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0) = dim_vec (unit_vec 4 0)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_00_snd:
-  shows "post_meas_0 2 bell_00 1 = unit_vec 4 0" sorry
+  shows "post_meas_0 2 bell_00 1 = unit_vec 4 0"
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 0)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 0 = unit_vec 4 0 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_00_def real_sqrt_divide del:One_nat_def)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 1 = unit_vec 4 0 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_00_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 2 = unit_vec 4 0 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_00_def real_sqrt_divide)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 3 = unit_vec 4 0 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_00_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ i = unit_vec 4 0 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1) = dim_vec (unit_vec 4 0)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_01_fst:
-  shows "post_meas_0 2 bell_01 0 = unit_vec 4 1" sorry
+  shows "post_meas_0 2 bell_01 0 = unit_vec 4 1"
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 1)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 0 = unit_vec 4 1 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_01_def real_sqrt_divide)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 1 = unit_vec 4 1 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_01_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 2 = unit_vec 4 1 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_01_def real_sqrt_divide)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 3 = unit_vec 4 1 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_01_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ i = unit_vec 4 1 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0) = dim_vec (unit_vec 4 1)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_01_snd:
-  shows "post_meas_0 2 bell_01 1 = unit_vec 4 2" sorry
+  shows "post_meas_0 2 bell_01 1 = unit_vec 4 2" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 2)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 0 = unit_vec 4 2 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_01_def real_sqrt_divide)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 1 = unit_vec 4 2 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_01_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 2 = unit_vec 4 2 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_01_def real_sqrt_divide del:One_nat_def)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 3 = unit_vec 4 2 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_01_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ i = unit_vec 4 2 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1) = dim_vec (unit_vec 4 2)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_10_fst:
-  shows "post_meas_0 2 bell_10 0 = unit_vec 4 0" sorry
+  shows "post_meas_0 2 bell_10 0 = unit_vec 4 0" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 0)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 0 = unit_vec 4 0 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_10_def real_sqrt_divide)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 1 = unit_vec 4 0 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_10_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 2 = unit_vec 4 0 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_10_def real_sqrt_divide)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 3 = unit_vec 4 0 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_10_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ i = unit_vec 4 0 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0) = dim_vec (unit_vec 4 0)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_10_snd:
-  shows "post_meas_0 2 bell_10 1 = unit_vec 4 0" sorry
+  shows "post_meas_0 2 bell_10 1 = unit_vec 4 0" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 0)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 0 = unit_vec 4 0 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_10_def real_sqrt_divide del:One_nat_def)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 1 = unit_vec 4 0 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_10_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 2 = unit_vec 4 0 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_10_def real_sqrt_divide)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 3 = unit_vec 4 0 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_10_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ i = unit_vec 4 0 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1) = dim_vec (unit_vec 4 0)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_11_fst:
-  shows "post_meas_0 2 bell_11 0 = unit_vec 4 1" sorry
+  shows "post_meas_0 2 bell_11 0 = unit_vec 4 1" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 1)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 0 = unit_vec 4 1 $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_11_def real_sqrt_divide)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 1 = unit_vec 4 1 $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_11_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 2 = unit_vec 4 1 $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_11_def real_sqrt_divide)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 3 = unit_vec 4 1 $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_fst bell_11_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ i = unit_vec 4 1 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0) = dim_vec (unit_vec 4 1)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_0_bell_11_snd:
-  shows "post_meas_0 2 bell_11 1 = - unit_vec 4 2" sorry
+  shows "post_meas_0 2 bell_11 1 = - unit_vec 4 2" 
+proof
+  fix i::nat assume asm:"i < dim_vec (- unit_vec 4 2)"
+  have f0:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 0 = (- unit_vec 4 2) $ 0"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_11_def real_sqrt_divide)
+  have f1:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 1 = (- unit_vec 4 2) $ 1"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_11_def real_sqrt_divide)
+  have f2:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 2 = (- unit_vec 4 2) $ 2"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_11_def real_sqrt_divide del:One_nat_def)
+  have f3:"post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 3 = (- unit_vec 4 2) $ 3"
+    by(simp add: post_meas_0_def unit_vec_def select_index_def prob_0_bell_snd bell_11_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ i = (- unit_vec 4 2) $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_0 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1) = dim_vec (- unit_vec 4 2)"
+    by(auto simp add: post_meas_0_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_00_fst:
-  shows "post_meas_1 2 bell_00 0 = unit_vec 4 3" sorry
+  shows "post_meas_1 2 bell_00 0 = unit_vec 4 3" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 3)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 0 = unit_vec 4 3 $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_00_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 1 = unit_vec 4 3 $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_00_def real_sqrt_divide)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 2 = unit_vec 4 3 $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_00_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ 3 = unit_vec 4 3 $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_00_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0 $ i = unit_vec 4 3 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 0) = dim_vec (unit_vec 4 3)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_00_snd:
-  shows "post_meas_1 2 bell_00 1 = unit_vec 4 3" sorry
+  shows "post_meas_1 2 bell_00 1 = unit_vec 4 3" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 3)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 0 = unit_vec 4 3 $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_00_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 1 = unit_vec 4 3 $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_00_def real_sqrt_divide)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 2 = unit_vec 4 3 $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_00_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ 3 = unit_vec 4 3 $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_00_def real_sqrt_divide del: One_nat_def)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1 $ i = unit_vec 4 3 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>0\<^sub>0\<rangle> 1) = dim_vec (unit_vec 4 3)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_01_fst:
-  shows "post_meas_1 2 bell_01 0 = unit_vec 4 2" sorry
+  shows "post_meas_1 2 bell_01 0 = unit_vec 4 2" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 2)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 0 = unit_vec 4 2 $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_01_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 1 = unit_vec 4 2 $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_01_def real_sqrt_divide)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 2 = unit_vec 4 2 $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_01_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ 3 = unit_vec 4 2 $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_01_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0 $ i = unit_vec 4 2 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 0) = dim_vec (unit_vec 4 2)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_01_snd:
-  shows "post_meas_1 2 bell_01 1 = unit_vec 4 1" sorry
+  shows "post_meas_1 2 bell_01 1 = unit_vec 4 1" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 1)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 0 = unit_vec 4 1 $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_01_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 1 = unit_vec 4 1 $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_01_def real_sqrt_divide del: One_nat_def)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 2 = unit_vec 4 1 $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_01_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ 3 = unit_vec 4 1 $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_01_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1 $ i = unit_vec 4 1 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>0\<^sub>1\<rangle> 1) = dim_vec (unit_vec 4 1)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_10_fst:
-  shows "post_meas_1 2 bell_10 0 = - unit_vec 4 3" sorry
+  shows "post_meas_1 2 bell_10 0 = - unit_vec 4 3" 
+proof
+  fix i::nat assume asm:"i < dim_vec (- unit_vec 4 3)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 0 = (- unit_vec 4 3) $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_10_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 1 = (- unit_vec 4 3) $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_10_def real_sqrt_divide)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 2 = (- unit_vec 4 3) $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_10_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ 3 = (- unit_vec 4 3) $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_10_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0 $ i = (- unit_vec 4 3) $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 0) = dim_vec (- unit_vec 4 3)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_10_snd:
-  shows "post_meas_1 2 bell_10 1 = - unit_vec 4 3" sorry
+  shows "post_meas_1 2 bell_10 1 = - unit_vec 4 3" 
+proof
+  fix i::nat assume asm:"i < dim_vec (- unit_vec 4 3)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 0 = (- unit_vec 4 3) $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_10_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 1 = (- unit_vec 4 3) $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_10_def real_sqrt_divide)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 2 = (- unit_vec 4 3) $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_10_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ 3 = (- unit_vec 4 3) $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_10_def real_sqrt_divide del: One_nat_def)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1 $ i = (- unit_vec 4 3) $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>1\<^sub>0\<rangle> 1) = dim_vec (- unit_vec 4 3)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_11_fst:
-  shows "post_meas_1 2 bell_11 0 = - unit_vec 4 2" sorry
+  shows "post_meas_1 2 bell_11 0 = - unit_vec 4 2" 
+proof
+  fix i::nat assume asm:"i < dim_vec (- unit_vec 4 2)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 0 = (- unit_vec 4 2) $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_11_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 1 = (- unit_vec 4 2) $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_11_def real_sqrt_divide)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 2 = (- unit_vec 4 2) $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_11_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ 3 = (- unit_vec 4 2) $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_fst bell_11_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0 $ i = (- unit_vec 4 2) $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 0) = dim_vec (- unit_vec 4 2)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 lemma post_meas_1_bell_11_snd:
-  shows "post_meas_1 2 bell_11 1 = unit_vec 4 1" sorry
+  shows "post_meas_1 2 bell_11 1 = unit_vec 4 1" 
+proof
+  fix i::nat assume asm:"i < dim_vec (unit_vec 4 1)"
+  have f0:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 0 = unit_vec 4 1 $ 0"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_11_def real_sqrt_divide)
+  have f1:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 1 = unit_vec 4 1 $ 1"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_11_def real_sqrt_divide del: One_nat_def)
+  have f2:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 2 = unit_vec 4 1 $ 2"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_11_def real_sqrt_divide)
+  have f3:"post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ 3 = unit_vec 4 1 $ 3"
+    by(simp add: post_meas_1_def unit_vec_def select_index_def prob_1_bell_snd bell_11_def real_sqrt_divide)
+  have f4:"i \<in> {0,1,2,3}"
+    using asm
+    by(auto simp add: unit_vec_def)
+  show "post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1 $ i = unit_vec 4 1 $ i"
+    using f0 f1 f2 f3 f4
+    by blast
+next
+  show "dim_vec (post_meas_1 2 |\<beta>\<^sub>1\<^sub>1\<rangle> 1) = dim_vec (unit_vec 4 1)"
+    by(auto simp add: post_meas_1_def unit_vec_def)
+qed
 
 
 
