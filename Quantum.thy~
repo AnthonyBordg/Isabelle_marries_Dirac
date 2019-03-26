@@ -940,19 +940,8 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
-  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" 
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -980,19 +969,8 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
-  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1020,19 +998,8 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
-  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1078,21 +1045,8 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" 
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0 complex_of_real_def Complex_eq_0)
-    apply(auto simp add: complex_eqI)
-    done
-  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0 complex_of_real_def Complex_eq_0)
-    apply(auto simp add: complex_eqI)
-    done
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1108,15 +1062,22 @@ text\<open>The Hadamard gate is its own inverse\<close>
 lemma H_inv:
   shows "inverts_mat H_gate H_gate"
 proof-
-  have f1:"Rep_gate H_gate = (complex_of_real (1 / sqrt 2) \<cdot>\<^sub>m mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1))"
-    using H_gate_dim_prelim H_gate_def Abs_gate_inverse gate_of_dim_is_gate 
-    by fastforce
-  then have f2:"(Rep_gate(H_gate))\<^sup>\<dagger> = Rep_gate(H_gate)" 
-    using hermite_cnj_def
+  define M where "M = (1/2::complex) \<cdot>\<^sub>m (mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 0 else 2))"
+  have f1:"dim_row (Rep_gate(H_gate) * Rep_gate(H_gate)) = dim_row M"
+    using H_gate_dim gate_of_dim_def M_def
+    by simp
+  have f2:"dim_col (Rep_gate(H_gate) * Rep_gate(H_gate)) = dim_col M"
+    using H_gate_dim gate_of_dim_def M_def
+    by simp
+  have "Rep_gate(H_gate) * Rep_gate(H_gate) = M" sorry
+  then have "Rep_gate(H_gate) * Rep_gate(H_gate) = mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1/2 * 0 else 1/2 * 2)"
+    using smult_mat_def map_mat_def eq_matI M_def
+    by auto
+  then have "Rep_gate(H_gate) * Rep_gate(H_gate) = 1\<^sub>m(2)" 
     by auto
   thus ?thesis
-    using inverts_mat_def H_gate_dim gate_of_dim_def unitary_def
-    by (simp add: inverts_mat_def gate_to_cpx_mat_def)
+    using inverts_mat_def H_gate_def
+    by (metis gate_to_cpx_mat_def index_mult_mat(2) index_one_mat(2))
 qed
  
     
@@ -1151,19 +1112,8 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<4::nat} = {0,1,2,3}" by auto
-  have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" 
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
-  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
-    apply(simp add: f4)
-    apply(simp add: A_def times_mat_def one_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+  then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" sorry
+  have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" sorry
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1175,22 +1125,7 @@ lemma CNOT_gate_dim:
   by fastforce
 
 lemma CNOT_inv:
-  shows "inverts_mat CNOT_gate CNOT_gate"
-proof-
-  have f1:"Rep_gate CNOT_gate = mat 4 4 
-  (\<lambda>(i,j). if i=0 \<and> j= 0 then 1 else 
-    (if i=1 \<and> j=1 then 1 else 
-      (if i = 2 \<and> j= 3 then 1 else 
-        (if i = 3 \<and> j= 2 then 1 else 0))))"
-    using CNOT_gate_dim_prelim CNOT_gate_def Abs_gate_inverse gate_of_dim_is_gate 
-    by fastforce
-  then have f2:"(Rep_gate(CNOT_gate))\<^sup>\<dagger> = Rep_gate(CNOT_gate)" 
-    using hermite_cnj_def
-    by auto
-  thus ?thesis
-    using inverts_mat_def CNOT_gate_dim gate_of_dim_def unitary_def
-    by (simp add: inverts_mat_def gate_to_cpx_mat_def)
-qed
+  shows "inverts_mat CNOT_gate CNOT_gate" sorry
 
 text\<open>The phase gate, also known as the S-gate\<close>
 
@@ -1205,74 +1140,13 @@ definition T_gate ::"gate" where
 text\<open>A few relations between the Hadamard gate and the Pauli matrices\<close>
 
 lemma HXH_is_Z:
-  shows "(H_gate::complex mat) * X_gate * H_gate = Z_gate"
-proof-
-  have f1:"gate_to_cpx_mat X_gate = mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1)"
-    apply(simp add: gate_to_cpx_mat_def X_gate_def)
-    using X_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f2:"gate_to_cpx_mat Z_gate = mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 0 else if i = 0 then 1 else - 1)"
-    apply(simp add: gate_to_cpx_mat_def Z_gate_def)
-    using Z_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f3:"gate_to_cpx_mat H_gate = complex_of_real (1 / sqrt 2) \<cdot>\<^sub>m mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)"
-    apply(simp add: gate_to_cpx_mat_def H_gate_def del: of_real_divide)
-    using H_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  show ?thesis 
-    apply(simp add: f1 f2 f3 times_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: f0 scalar_prod_def)
-    apply(auto simp add: complex_eqI)
-    done
-qed
+  shows "(H_gate::complex mat) * X_gate * H_gate = Z_gate" sorry
 
 lemma HYH_is_minusY:
-  shows "(H_gate::complex mat) * Y_gate * H_gate = - (Y_gate::complex mat)" 
-proof-
-  have f1:"gate_to_cpx_mat Y_gate = mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then - \<i> else \<i>)"
-    apply(simp add: gate_to_cpx_mat_def Y_gate_def)
-    using Y_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f2:"gate_to_cpx_mat H_gate = complex_of_real (1 / sqrt 2) \<cdot>\<^sub>m mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)"
-    apply(simp add: gate_to_cpx_mat_def H_gate_def del: of_real_divide)
-    using H_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f3:"- mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then - \<i> else \<i>) =
-             mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then  \<i> else -\<i>)" by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  show ?thesis 
-    apply(simp add: f1 f2 f3 times_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: f0 scalar_prod_def)
-    apply(auto simp add: complex_eqI)
-    done
-qed
+  shows "(H_gate::complex mat) * Y_gate * H_gate = - (Y_gate::complex mat)" sorry
 
 lemma HZH_is_X:
-  shows "(H_gate::complex mat) * Z_gate * H_gate = X_gate" 
-proof-
-  have f1:"gate_to_cpx_mat X_gate = mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1)"
-    apply(simp add: gate_to_cpx_mat_def X_gate_def)
-    using X_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f2:"gate_to_cpx_mat Z_gate = mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 0 else if i = 0 then 1 else - 1)"
-    apply(simp add: gate_to_cpx_mat_def Z_gate_def)
-    using Z_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f3:"gate_to_cpx_mat H_gate = complex_of_real (1 / sqrt 2) \<cdot>\<^sub>m mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)"
-    apply(simp add: gate_to_cpx_mat_def H_gate_def del: of_real_divide)
-    using H_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
-    by blast
-  have f0:"{0..<2::nat} = {0,1}" by auto
-  show ?thesis 
-    apply(simp add: f1 f2 f3 times_mat_def)
-    apply(rule cong_mat)
-    apply(auto simp add: f0 scalar_prod_def)
-    apply(auto simp add: complex_eqI)
-    done
-qed
+  shows "(H_gate::complex mat) * Z_gate * H_gate = X_gate" sorry
 
 
 subsection \<open>The Vector Space of Complex Vectors of Dimension n\<close>
@@ -1588,79 +1462,6 @@ namely |001\<rangle>,|011\<rangle>,|101\<rangle>,|111\<rangle>. To achieve that 
 definition select_index ::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
 "select_index n i j \<equiv> (i \<le> n-1) \<and> (j \<le> 2^n - 1) \<and> (j mod 2^(n-i) \<ge> 2^(n-1-i))"
 
-
-lemma select_index_union:
-  "{k| k::nat. select_index n i k} \<union> {k| k::nat. (k < 2^n) \<and> \<not> select_index n i k} = {0..<2^n::nat}"
-proof
-  have f1:"{k |k. select_index n i k} \<subseteq> {0..<2 ^ n}"
-  proof
-    fix x::nat assume "x \<in> {k |k. select_index n i k}"
-    show "x \<in> {0..<2^n}" 
-      using select_index_def
-      by (metis (no_types, lifting) \<open>x \<in> {k |k. select_index n i k}\<close> atLeastLessThan_iff diff_diff_cancel diff_is_0_eq' diff_le_mono2 le_less_linear le_numeral_extra(2) mem_Collect_eq one_le_numeral one_le_power select_index_def zero_order(1))
-  qed
-  have f2:"{k |k. k < 2 ^ n \<and> \<not> select_index n i k} \<subseteq> {0..<2 ^ n}"
-  proof
-    fix x::nat assume "x \<in> {k |k. k < 2 ^ n \<and> \<not> select_index n i k}"
-    show "x \<in> {0..<2^n}"
-      using \<open>x \<in> {k |k. k < 2 ^ n \<and> \<not> select_index n i k}\<close> atLeast0LessThan
-      by blast
-  qed
-  show "{k |k. select_index n i k} \<union> {k |k. k < 2 ^ n \<and> \<not> select_index n i k} \<subseteq> {0..<2 ^ n}"
-    using f1 f2
-    by auto
-next
-  show "{0..<2 ^ n} \<subseteq> {k |k. select_index n i k} \<union> {k |k. k < 2 ^ n \<and> \<not> select_index n i k}"
-  proof
-    fix x::nat assume "x \<in> {0..<2^n}"
-    show "x \<in> {k |k. select_index n i k} \<union> {k |k. k < 2 ^ n \<and> \<not> select_index n i k}"
-      using \<open>x \<in> {0..<2 ^ n}\<close>
-      by auto
-  qed
-qed
-
-lemma select_index_inter:
-  "{k| k::nat. select_index n i k} \<inter> {k| k::nat. (k < 2^n) \<and> \<not> select_index n i k} = {}"
-  by auto
-
-lemma outcomes_sum:
-  fixes f :: "nat \<Rightarrow> real"
-  shows
-  "(\<Sum>j\<in>{k| k::nat. select_index n i k}. (f j)) + 
-   (\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (f j)) = 
-   (\<Sum>j\<in>{0..<2^n::nat}. (f j))"
-proof-
-  have f0:"finite {0..<2^n::nat}"
-    using finite_Collect_less_nat
-    by blast
-  have f1:"{k| k::nat. select_index n i k} \<subseteq> {0..<2^n::nat}"
-    using select_index_union
-    by blast
-  have f2:"{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k} \<subseteq> {0..<2^n::nat}"
-    using select_index_union
-    by blast
-  have f3:"finite {k| k::nat. select_index n i k}"
-    using f1 rev_finite_subset
-    by blast
-  have f4:"finite {k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}"
-    using f2 rev_finite_subset
-    by blast
-  have f5:"(\<Sum>j\<in>{k| k::nat. select_index n i k}\<union>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (f j)) = 
-           (\<Sum>j\<in>{k| k::nat. select_index n i k}. (f j)) + 
-           (\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (f j)) -
-           (\<Sum>j\<in>{k| k::nat. select_index n i k}\<inter>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (f j))"
-    using f3 f4 sum_Un
-    by blast
-  then have f6:"(\<Sum>j\<in>{0..<2^n::nat}. (f j)) = 
-                (\<Sum>j\<in>{k| k::nat. select_index n i k}. (f j)) + 
-                (\<Sum>j\<in>{k| k::nat. (k < 2^n) \<and> \<not> select_index n i k}. (f j)) -
-                (\<Sum>j\<in>{}. (f j))"
-    using select_index_union select_index_inter
-    by auto
-  thus ?thesis
-    by simp
-qed
-
 text
 \<open>
 Given a n-qubit system and a state v of that system, we compute the probability that a measure 
@@ -1671,81 +1472,21 @@ definition prob_1 ::"nat \<Rightarrow> complex vec \<Rightarrow> nat \<Rightarro
 "prob_1 n v i \<equiv> 
   if v \<in> state_qbit n then \<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $ j))\<^sup>2 else undefined"
 
-definition prob_0 ::"nat \<Rightarrow> complex vec \<Rightarrow> nat \<Rightarrow> real" where
-"prob_0 n v i \<equiv>
-  if v \<in> state_qbit n then \<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (cmod(v $ j))\<^sup>2
-                      else undefined"
-
-lemma prob_geq_zero:
-  fixes n::"nat" and i::"nat" and v::"complex vec" 
-  assumes "i \<le> n-1" and "v \<in> state_qbit n"
-  shows "prob_1 n v i \<ge> 0 \<and> prob_0 n v i \<ge> 0" 
-proof
-  have f1:"(\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $ j))\<^sup>2) \<ge> 
-           (\<Sum>j\<in>{k| k::nat. select_index n i k}. (0::real))"
-    by (meson sum_mono zero_le_power2)
-  then have f2:"(\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $ j))\<^sup>2) \<ge> 0"
-    by simp
-  thus "prob_1 n v i \<ge> 0"
-    using assms prob_1_def
-    by simp
-next
-  have f1:"(\<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (cmod(v $ j))\<^sup>2) \<ge> 
-           (\<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (0::real))"
-    by (meson sum_mono zero_le_power2)
-  then have f2:"(\<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (cmod(v $ j))\<^sup>2) \<ge> 0"
-    by simp
-  thus "prob_0 n v i \<ge> 0"
-    using assms prob_0_def
-    by simp
-qed
-
-lemma prob_sum_is_one:
-  fixes n::"nat" and i::"nat" and v::"complex vec" 
-  assumes "i \<le> n-1" and "v \<in> state_qbit n"
-  shows "prob_1 n v i + prob_0 n v i = 1"
-proof-
-  have f0:"prob_1 n v i + prob_0 n v i = (\<Sum>j\<in>{0..<2^n::nat}. (cmod(v $ j))\<^sup>2)"
-    using prob_1_def prob_0_def assms outcomes_sum
-    by simp
-  have f1:"(\<Sum>j\<in>{0..<2^n::nat}. (cmod(v $ j))\<^sup>2) = \<parallel>v\<parallel>\<^sup>2"
-    using cpx_vec_length_def assms state_qbit_def
-    by (smt \<open>prob_1 n v i + prob_0 n v i = (\<Sum>j = 0..<2 ^ n. (cmod (v $ j))\<^sup>2)\<close> atLeast0LessThan mem_Collect_eq outcomes_sum prob_0_def prob_1_def real_sqrt_ge_0_iff real_sqrt_pow2)
-  have f2:"\<parallel>v\<parallel>\<^sup>2 = 1"
-    using assms state_qbit_def
-    by simp
-  show ?thesis
-    using f0 f1 f2
-    by simp
-qed
-
+(* To do: prove that when defined prob_1 n v i lies between 0 and 1, i.e it is a probability *)
 lemma prob_1_is_prob:
   fixes n::"nat" and i::"nat" and v::"complex vec" 
   assumes "i \<le> n-1" and "v \<in> state_qbit n"
-  shows "prob_1 n v i \<ge> 0 \<and> prob_1 n v i \<le> 1" 
-proof
-  show "prob_1 n v i \<ge> 0"
-    using prob_geq_zero assms
-    by simp
-next
-  show "prob_1 n v i \<le> 1"
-    using prob_geq_zero prob_sum_is_one assms
-    by fastforce
-qed
+  shows "prob_1 n v i \<ge> 0 \<and> prob_1 n v i \<le> 1" sorry
 
+definition prob_0 ::"nat \<Rightarrow> complex vec \<Rightarrow> nat \<Rightarrow> real" where
+"prob_0 n v i \<equiv>
+  if v \<in> state_qbit n then \<Sum>j\<in>{k| k::nat. \<not> select_index n i k}. (cmod(v $ j))\<^sup>2 else undefined"
+
+(* To do: prove that when defined prob_0 n v i lies between 0 and 1, i.e it is a probability *)
 lemma prob_0_is_prob:
   fixes n::"nat" and i::"nat" and v::"complex vec" 
   assumes "i \<le> n-1" and "v \<in> state_qbit n"
-  shows "prob_0 n v i \<ge> 0 \<and> prob_0 n v i \<le> 1"
-proof
-  show "prob_0 n v i \<ge> 0"
-    using prob_geq_zero assms
-    by simp
-next
-  show "prob_0 n v i \<le> 1"
-    using prob_geq_zero prob_sum_is_one assms
-    by fastforce
-qed
+  shows "prob_0 n v i \<ge> 0 \<and> prob_0 n v i \<le> 1" sorry
 
 text\<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 0.\<close>
 
@@ -1819,36 +1560,16 @@ definition bell_11 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>1\<rangle>") where
 
 (* To do: prove that the Bell states belong to "state_qbit 2". *)
 lemma bell_00_is_state:
-  shows "|\<beta>\<^sub>0\<^sub>0\<rangle> \<in> state_qbit 2" 
-proof-
-  have f0:"{..<4::nat} = {0,1,2,3}" by auto
-  show ?thesis
-    by(simp add: bell_00_def state_qbit_def cpx_vec_length_def f0 cmod_def power2_eq_square)
-qed
+  shows "|\<beta>\<^sub>0\<^sub>0\<rangle> \<in> state_qbit 2" sorry
 
 lemma bell_01_is_state:
-  shows "|\<beta>\<^sub>0\<^sub>1\<rangle> \<in> state_qbit 2"
-proof-
-  have f0:"{..<4::nat} = {0,1,2,3}" by auto
-  show ?thesis
-    by(simp add: bell_01_def state_qbit_def cpx_vec_length_def f0 cmod_def power2_eq_square)
-qed
+  shows "|\<beta>\<^sub>0\<^sub>1\<rangle> \<in> state_qbit 2" sorry
 
 lemma bell_10_is_state:
-  shows "|\<beta>\<^sub>1\<^sub>0\<rangle> \<in> state_qbit 2"
-proof-
-  have f0:"{..<4::nat} = {0,1,2,3}" by auto
-  show ?thesis
-    by(simp add: bell_10_def state_qbit_def cpx_vec_length_def f0 cmod_def power2_eq_square)
-qed
+  shows "|\<beta>\<^sub>1\<^sub>0\<rangle> \<in> state_qbit 2" sorry
 
 lemma bell_11_is_state:
-  shows "|\<beta>\<^sub>1\<^sub>1\<rangle> \<in> state_qbit 2"
-proof-
-  have f0:"{..<4::nat} = {0,1,2,3}" by auto
-  show ?thesis
-    by(simp add: bell_11_def state_qbit_def cpx_vec_length_def f0 cmod_def power2_eq_square)
-qed
+  shows "|\<beta>\<^sub>1\<^sub>1\<rangle> \<in> state_qbit 2" sorry
 
 text
 \<open>
@@ -1864,11 +1585,7 @@ outcome 0 for the first qubit is 1 (resp. 0).
 (* To do: prove the following results. *)
 lemma prob_0_bell_fst:
   assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
-  shows "prob_0 2 v 0 = 1/2" 
-proof-
-
-  show ?thesis sorry
-qed
+  shows "prob_0 2 v 0 = 1/2" sorry
 
 lemma prob_1_bell_fst:
   assumes "v \<in> state_qbit 2" and "v = |\<beta>\<^sub>0\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>0\<^sub>1\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>0\<rangle> \<or> v = |\<beta>\<^sub>1\<^sub>1\<rangle>"
