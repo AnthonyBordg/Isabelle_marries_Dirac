@@ -907,6 +907,8 @@ definition real_to_cpx_mat:: "real mat \<Rightarrow> complex mat" where
 
 (* declare [[coercion real_to_cpx_mat]] prompts an error! *)
 
+lemma set_2:"{0..<2::nat} = {0,1}" by auto
+
 text\<open>Our first quantum gate: the identity matrix ! Arguably, not a very interesting one though !\<close>
 
 definition id_gate :: "nat \<Rightarrow> gate" where
@@ -937,19 +939,16 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
   have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_2)
   have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)" 
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_2)
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -977,19 +976,16 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
   have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_2)
   have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_2)
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1017,19 +1013,16 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
   have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_2)
   have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_2)
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1075,21 +1068,16 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
   then have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" 
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0 complex_of_real_def Complex_eq_0)
-    apply(auto simp add: complex_eqI)
-    done
+    by(auto simp add: scalar_prod_def set_2 complex_of_real_def Complex_eq_0 complex_eqI)
   have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0 complex_of_real_def Complex_eq_0)
-    apply(auto simp add: complex_eqI)
-    done
+    by(auto simp add: scalar_prod_def set_2 complex_of_real_def Complex_eq_0 complex_eqI)
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1116,7 +1104,8 @@ proof-
     by (simp add: inverts_mat_def gate_to_cpx_mat_def)
 qed
  
-    
+lemma set_4:"{0..<4::nat} = {0,1,2,3}" by auto
+
 text\<open>The controlled-NOT gate\<close>
 
 definition CNOT_gate ::"gate" where
@@ -1148,19 +1137,16 @@ proof-
   have f4:"A\<^sup>\<dagger> = A"
     using hermite_cnj_def A_def 
     by auto
-  have f0:"{0..<4::nat} = {0,1,2,3}" by auto
   have f5:"A\<^sup>\<dagger> * A = 1\<^sub>m (dim_col A)" 
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_4)
   have f6:"A * (A\<^sup>\<dagger>) = 1\<^sub>m (dim_row A)"
     apply(simp add: f4)
     apply(simp add: A_def times_mat_def one_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: scalar_prod_def f0)
-    done
+    by(auto simp add: scalar_prod_def set_4)
   thus ?thesis
     using f1 f3 f5 f6 unitary_def gate_of_dim_def A_def 
     by simp
@@ -1216,13 +1202,10 @@ proof-
     apply(simp add: gate_to_cpx_mat_def H_gate_def del: of_real_divide)
     using H_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
     by blast
-  have f0:"{0..<2::nat} = {0,1}" by auto
   show ?thesis 
     apply(simp add: f1 f2 f3 times_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: f0 scalar_prod_def)
-    apply(auto simp add: complex_eqI)
-    done
+    by(auto simp add: set_2 scalar_prod_def complex_eqI)
 qed
 
 lemma HYH_is_minusY:
@@ -1238,13 +1221,10 @@ proof-
     by blast
   have f3:"- mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then - \<i> else \<i>) =
              mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then  \<i> else -\<i>)" by auto
-  have f0:"{0..<2::nat} = {0,1}" by auto
   show ?thesis 
     apply(simp add: f1 f2 f3 times_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: f0 scalar_prod_def)
-    apply(auto simp add: complex_eqI)
-    done
+    by(auto simp add: set_2 scalar_prod_def complex_eqI)
 qed
 
 lemma HZH_is_X:
@@ -1262,13 +1242,10 @@ proof-
     apply(simp add: gate_to_cpx_mat_def H_gate_def del: of_real_divide)
     using H_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
     by blast
-  have f0:"{0..<2::nat} = {0,1}" by auto
   show ?thesis 
     apply(simp add: f1 f2 f3 times_mat_def)
     apply(rule cong_mat)
-    apply(auto simp add: f0 scalar_prod_def)
-    apply(auto simp add: complex_eqI)
-    done
+    by(auto simp add: set_2 scalar_prod_def complex_eqI)
 qed
 
 
