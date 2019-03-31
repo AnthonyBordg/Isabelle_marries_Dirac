@@ -36,17 +36,16 @@ proof-
         by simp
       hence "(v \<otimes> w) $ 0 = 1 / complex_of_real (sqrt 2)"
         by(simp add: bell_00_def)
-      have "mult.vec_vec_Tensor ( * ) \<equiv> rec_list (\<lambda>ys. []) (\<lambda>x xs xsa ys. mult.times ( * ) x ys @ xsa ys)"
+      have f1:"mult.vec_vec_Tensor ( * ) \<equiv> rec_list (\<lambda>ys. []) (\<lambda>x xs xsa ys. mult.times ( * ) x ys @ xsa ys)"
       proof-
-        have "Matrix_Tensor.mult (1::complex) ( * )" sorry
+        have f0:"Matrix_Tensor.mult (1::complex) ( * )" sorry
         then show "mult.vec_vec_Tensor ( * ) \<equiv> rec_list (\<lambda>ys. []) (\<lambda>x xs xsa ys. mult.times ( * ) x ys @ xsa ys)"
           using mult.vec_vec_Tensor_def[of "(1::complex)" "( * )"]
-          by blast
+          sorry
       qed
       have "(v \<otimes> w) $ 0 = v $ 0 * w $ 0"
-        using mult.vec_vec_Tensor_def[of 1 times_complex]
-        apply(simp add: tensor_vec_def times_complex_def)
-        apply(induction rule: vec_vec_Tensor.induct)
+        apply(simp add: tensor_vec_def f1 mult.times.simps)
+        sorry
       show False
         using state_qbit_def
         sorry
