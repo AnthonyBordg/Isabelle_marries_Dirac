@@ -1859,34 +1859,32 @@ definition bell_10 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>0\<rangle>") where
 definition bell_11 ::"complex vec" ("|\<beta>\<^sub>1\<^sub>1\<rangle>") where
 "bell_11 \<equiv> 1/sqrt(2) \<cdot>\<^sub>v vec 4 (\<lambda>i. if i=1 then 1 else if i=2 then -1 else 0)"
 
-lemma set_4_0:"{..<4::nat} = {0,1,2,3}" by auto
-
 lemma bell_00_is_state:
   shows "|\<beta>\<^sub>0\<^sub>0\<rangle> \<in> state_qbit 2" 
 proof-
   show ?thesis
-    by(simp add: bell_00_def state_qbit_def cpx_vec_length_def set_4_0 cmod_def power2_eq_square)
+    by(simp add: bell_00_def state_qbit_def cpx_vec_length_def set_4 Set_Interval.lessThan_atLeast0 cmod_def power2_eq_square)
 qed
 
 lemma bell_01_is_state:
   shows "|\<beta>\<^sub>0\<^sub>1\<rangle> \<in> state_qbit 2"
 proof-
   show ?thesis
-    by(simp add: bell_01_def state_qbit_def cpx_vec_length_def set_4_0 cmod_def power2_eq_square)
+    by(simp add: bell_01_def state_qbit_def cpx_vec_length_def set_4 Set_Interval.lessThan_atLeast0 cmod_def power2_eq_square)
 qed
 
 lemma bell_10_is_state:
   shows "|\<beta>\<^sub>1\<^sub>0\<rangle> \<in> state_qbit 2"
 proof-
   show ?thesis
-    by(simp add: bell_10_def state_qbit_def cpx_vec_length_def set_4_0 cmod_def power2_eq_square)
+    by(simp add: bell_10_def state_qbit_def cpx_vec_length_def set_4 Set_Interval.lessThan_atLeast0 cmod_def power2_eq_square)
 qed
 
 lemma bell_11_is_state:
   shows "|\<beta>\<^sub>1\<^sub>1\<rangle> \<in> state_qbit 2"
 proof-
   show ?thesis
-    by(simp add: bell_11_def state_qbit_def cpx_vec_length_def set_4_0 cmod_def power2_eq_square)
+    by(simp add: bell_11_def state_qbit_def cpx_vec_length_def set_4 Set_Interval.lessThan_atLeast0 cmod_def power2_eq_square)
 qed
 
 text
@@ -1987,7 +1985,7 @@ proof-
     proof
       fix x assume "x \<in> {x. x < 4 \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)}"
       then have "x \<in> {0,1,2,3} \<and> (x \<le> 3 \<longrightarrow> \<not> Suc 0 \<le> x mod 2)"
-        by(auto simp add: set_4_0)
+        by(auto simp add: set_4 Set_Interval.lessThan_atLeast0)
       then show "x \<in> {0, 2}"
         by auto
     qed
@@ -2038,7 +2036,7 @@ proof-
     proof
       fix x assume "x \<in> {x. x \<le> 3 \<and> Suc 0 \<le> x mod 2}"
       then have "x \<in> {0,1,2,3} \<and> Suc 0 \<le> x mod 2"
-        by(auto simp add: set_4_0)
+        by(auto simp add: set_4 Set_Interval.lessThan_atLeast0)
       then show "x \<in> {1, 3}"
         by auto
     qed
