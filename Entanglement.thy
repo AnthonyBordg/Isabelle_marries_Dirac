@@ -1,4 +1,7 @@
-(* Author: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk *)
+(* Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk 
+
+            Yijun He, University of Cambridge, yh403@cam.ac.uk
+*)
 
 theory Entanglement
 imports
@@ -16,11 +19,11 @@ subsection\<open>The Product States and Entangled States of a 2-qubits System\<c
 (* Here I added the condition that v, w \<in> state_qbit 1, otherwise u can always be represented by the
    tensor product of the 1-dimensional vector (1) and u itself *)
 
-definition prod_state ::"complex Matrix.vec \<Rightarrow> bool" where
-"prod_state u \<equiv> if u \<in> state_qbit 2 then \<exists>v \<in> state_qbit 1.\<exists> w \<in> state_qbit 1. u = v \<otimes> w else undefined"
+definition prod_state2 ::"complex Matrix.vec \<Rightarrow> bool" where
+"prod_state2 u \<equiv> if u \<in> state_qbit 2 then \<exists>v \<in> state_qbit 1.\<exists>w \<in> state_qbit 1. u = v \<otimes> w else undefined"
 
 definition entangled2 ::"complex Matrix.vec \<Rightarrow> bool" where
-"entangled2 u \<equiv> \<not> prod_state u"
+"entangled2 u \<equiv> \<not> prod_state2 u"
 
 text\<open>The Bell states are entangled states\<close>
 
@@ -43,7 +46,8 @@ lemma list_vec:
   assumes "v \<in> state_qbit 1"
   shows "list_of_vec v = [v $ 0, v $ 1]"
 proof-
-  have a1:"Rep_vec v = (fst(Rep_vec v), snd(Rep_vec v))" by auto
+  have a1:"Rep_vec v = (fst(Rep_vec v), snd(Rep_vec v))" 
+    by auto
   have a2:"fst(Rep_vec v) = 2" 
     using state_qbit_def assms
     by(auto simp add: dim_vec.rep_eq)
@@ -116,7 +120,7 @@ proof-
       by blast
   qed
   then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_00_is_state)
+    by(simp add: entangled2_def prod_state2_def bell_00_is_state)
 qed
 
 lemma bell_01_is_entangled2:
@@ -164,7 +168,7 @@ proof-
       by blast
   qed
   then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_01_is_state)
+    by(simp add: entangled2_def prod_state2_def bell_01_is_state)
 qed
 
 lemma bell_10_is_entangled2:
@@ -212,7 +216,7 @@ proof-
       by blast
   qed
   then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_10_is_state)
+    by(simp add: entangled2_def prod_state2_def bell_10_is_state)
 qed
 
 lemma bell_11_is_entangled2:
@@ -260,8 +264,23 @@ proof-
       by blast
   qed
   then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_11_is_state)
+    by(simp add: entangled2_def prod_state2_def bell_11_is_state)
 qed
+
+
+text \<open>An entangled state is a state that cannot be broken down as the tensor product of smaller states\<close>
+
+definition prod_state ::"nat \<Rightarrow> complex Matrix.vec \<Rightarrow> bool" where
+"prod_state m u \<equiv> if u \<in> state_qbit m then \<exists>n p::nat.\<exists>v \<in> state_qbit n.\<exists>w \<in> state_qbit p. 
+  n < m \<and> p < m \<and>  u = v \<otimes> w else undefined"
+
+definition entangled ::"nat \<Rightarrow> complex Matrix.vec \<Rightarrow> bool" where
+"entangled n v \<equiv> \<not> (prod_state n v)"
+
+(* To do: as an exercise prove the equivalence between entangled2 and (entangled 2) *)
+
+lemma sanity_check: 
+  shows "\<not>(entangled 2 (vec_of_list [1/sqrt(2), 1/sqrt(2)] \<otimes> vec_of_list [1/sqrt(2), 1/sqrt(2)]))" sorry
 
 
 
