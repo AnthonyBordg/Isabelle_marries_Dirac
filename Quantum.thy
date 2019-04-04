@@ -1,4 +1,6 @@
-(* Author: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk *)
+(* Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk 
+            Yijun He, University of Cambridge, yh403@cam.ac.uk
+*)
 
 theory Quantum
 imports 
@@ -1220,7 +1222,8 @@ proof-
     using H_gate_dim_prelim Abs_gate_inverse gate_of_dim_def
     by blast
   have f3:"- mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then - \<i> else \<i>) =
-             mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then  \<i> else -\<i>)" by auto
+             mat 2 2 (\<lambda>(i, j). if i = j then 0 else if i = 0 then  \<i> else -\<i>)" 
+    by auto
   show ?thesis 
     apply(simp add: f1 f2 f3 times_mat_def)
     apply(rule cong_mat)
