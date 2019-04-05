@@ -539,8 +539,9 @@ proof-
      by simp
 qed
 
-
-subsection \<open>The Tensor Product of Vector Spaces\<close>
+lemma tensor_gate:
+  assumes "G1 \<in> gate_of_dim m" and "G2 \<in> gate_of_dim n"
+  shows "G1 \<Otimes> G2 \<in> gate_of_dim (m + n)" sorry
 
 
 
