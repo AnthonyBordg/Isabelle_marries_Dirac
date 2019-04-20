@@ -5,6 +5,7 @@ imports
   Main
   HOL.Complex
   Quantum
+  Complex_Vectors
   Jordan_Normal_Form.Matrix
   Matrix_Tensor.Matrix_Tensor
 begin
@@ -537,11 +538,7 @@ proof-
    thus ?thesis
      using tensor_mat_def 
      by simp
-qed
-
-lemma tensor_gate:
-  assumes "G1 \<in> gate_of_dim m" and "G2 \<in> gate_of_dim n"
-  shows "G1 \<Otimes> G2 \<in> gate_of_dim (m + n)" sorry
+ qed
 
 
 
