@@ -24,7 +24,12 @@ subsection \<open>Qubits\<close>
 text\<open>In this theory "cpx" stands for "complex"\<close>
 
 definition cpx_vec_length :: "complex vec \<Rightarrow> real" ("\<parallel>_\<parallel>") where
-"cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (vec_index v i))\<^sup>2)"
+"cpx_vec_length v \<equiv> sqrt(\<Sum>i< dim_vec v.(cmod (v $ i))\<^sup>2)"
+
+lemma cpx_length_of_vec_of_list:
+  shows "\<parallel>vec_of_list l\<parallel> = sqrt(\<Sum>i< length l.(cmod (l ! i))\<^sup>2)"
+  apply (auto simp: cpx_vec_length_def vec_of_list_def vec_of_list_index)
+  by (metis (no_types, lifting) dim_vec_of_list sum.cong vec_of_list.abs_eq vec_of_list_index)
 
 lemma norm_vec_index_unit_vec_is_0:
   assumes "j < n" and "j \<noteq> i"
