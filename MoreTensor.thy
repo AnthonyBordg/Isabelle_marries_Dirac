@@ -381,15 +381,27 @@ nth_Cons_0 numeral_2_eq_2 numeral_Bit0 plus_1_eq_Suc vec_of_list_Cons vec_of_lis
 zero_less_one_class.zero_less_one)
     define l where d0:"l = [u $$ (0,0) * v $$ (0,0), u $$ (0,0) * v $$ (1,0), u $$ (1,0) * v $$ (0,0), u $$ (1,0) * v $$ (1,0)]"
     then have f4:"length l = 4"
-      by simp
-    have f5:"\<forall>i::nat. i\<in>{..<4} \<longrightarrow> i\<in>{0,1,2,3}" 
-      by auto    
-    then have "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = sqrt(\<Sum>i<4. (cmod (l ! i))\<^sup>2)"
+      by simp    
+    then have f5:"\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = sqrt(\<Sum>i<4. (cmod (l ! i))\<^sup>2)"
       apply (auto simp: cpx_length_of_vec_of_list f3)
-      by (metis One_nat_def cpx_length_of_vec_of_list d0 f4 vec_of_list_Cons vec_of_list_Nil)
+      by (metis One_nat_def cpx_length_of_vec_of_list d0 vec_of_list_Cons vec_of_list_Nil)
     then have "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = 
 sqrt ((cmod (u $$ (0,0) * v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,0) * v $$ (1,0)))\<^sup>2 + 
-(cmod(u $$ (1,0) * v $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0) * v $$ (1,0)))\<^sup>2)" sorry
+(cmod(u $$ (1,0) * v $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0) * v $$ (1,0)))\<^sup>2)"
+    proof-
+      have "(\<Sum>i<4. (cmod (l ! i))\<^sup>2) = (cmod (l ! 0))\<^sup>2 + (cmod (l ! 1))\<^sup>2 + (cmod (l ! 2))\<^sup>2 + 
+(cmod (l ! 3))\<^sup>2"
+        using sum_insert
+        by (smt One_nat_def empty_iff finite.emptyI finite.insertI insertE lessThan_0 lessThan_Suc 
+numeral_2_eq_2 numeral_3_eq_3 numeral_plus_one one_plus_numeral_commute plus_1_eq_Suc semiring_norm(2) 
+semiring_norm(8) sum.empty) 
+      then have "(\<Sum>i<4. (cmod (l ! i))\<^sup>2) = (cmod (u $$ (0,0) * v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,0) * v $$ (1,0)))\<^sup>2 + 
+(cmod(u $$ (1,0) * v $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0) * v $$ (1,0)))\<^sup>2"
+        using d0 
+        by simp
+      thus ?thesis 
+        by (simp add: f5)
+    qed
     then have "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = 
 sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,0)))\<^sup>2 * (cmod (v $$ (1,0)))\<^sup>2 + 
 (cmod(u $$ (1,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0)))\<^sup>2 * (cmod(v $$ (1,0)))\<^sup>2)"
@@ -397,12 +409,22 @@ sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,
     then have "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = sqrt ((((cmod(u $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0)))\<^sup>2)) * 
 (((cmod(v $$ (0,0)))\<^sup>2 + (cmod(v $$ (1,0)))\<^sup>2)))"
       by (simp add: distrib_left mult.commute)
-    then have "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel>\<^sup>2 = (((cmod(u $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0)))\<^sup>2)) * 
+    then have f6:"\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel>\<^sup>2 = (((cmod(u $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0)))\<^sup>2)) * 
 (((cmod(v $$ (0,0)))\<^sup>2 + (cmod(v $$ (1,0)))\<^sup>2))"
       by simp
-    then have f6:"\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel>\<^sup>2 = (\<Sum>i< 2.(cmod (u $$ (i,0)))\<^sup>2) * (\<Sum>i<2.(cmod (v $$ (i,0)))\<^sup>2)"
-      sorry
-    then have f7:"\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel>\<^sup>2 = (\<Sum>i< 2.(cmod (Matrix.col u 0 $ i))\<^sup>2) * (\<Sum>i<2.(cmod (Matrix.col v 0 $ i))\<^sup>2)"
+    then have f7:"\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel>\<^sup>2 = (\<Sum>i< 2.(cmod (u $$ (i,0)))\<^sup>2) * (\<Sum>i<2.(cmod (v $$ (i,0)))\<^sup>2)"
+    proof-
+      have f1:"(\<Sum>i< 2.(cmod (u $$ (i,0)))\<^sup>2) = (cmod(u $$ (0,0)))\<^sup>2 + (cmod(u $$ (1,0)))\<^sup>2"
+        apply (auto simp: sum_insert)
+        by (simp add: numeral_2_eq_2)
+      have "(\<Sum>i<2.(cmod (v $$ (i,0)))\<^sup>2) = (cmod(v $$ (0,0)))\<^sup>2 + (cmod(v $$ (1,0)))\<^sup>2"
+        apply (auto simp: sum_insert)
+        by (simp add: numeral_2_eq_2)
+      thus ?thesis
+        using f1 f6 
+        by simp
+    qed
+    then have f8:"\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel>\<^sup>2 = (\<Sum>i< 2.(cmod (Matrix.col u 0 $ i))\<^sup>2) * (\<Sum>i<2.(cmod (Matrix.col v 0 $ i))\<^sup>2)"
     proof-
       have f1:"\<forall>i::nat. i < 2 \<longrightarrow> Matrix.col u 0 $ i = u $$ (i,0)"
         using index_col assms(1) state_def
@@ -411,7 +433,7 @@ sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,
         using index_col assms(2) state_def
         by simp
       thus ?thesis
-        using f1 f2 f6 
+        using f1 f2 f7 
         by simp
     qed
     thus ?thesis
@@ -423,7 +445,7 @@ sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,
         using assms(2) state_def cpx_vec_length_def 
         by auto
       thus ?thesis
-        using f1 f2 f7
+        using f1 f2 f8
         by (simp add: \<open>\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = sqrt (((cmod (u $$ (0, 0)))\<^sup>2 + 
 (cmod (u $$ (1, 0)))\<^sup>2) * ((cmod (v $$ (0, 0)))\<^sup>2 + (cmod (v $$ (1, 0)))\<^sup>2))\<close>)
     qed
