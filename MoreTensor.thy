@@ -357,7 +357,7 @@ lemma sum_insert:
   using assms insert_def
   by (simp add: add.commute) 
 
-lemma tensor_state:
+lemma tensor_state2:
   assumes "state 1 u" and "state 1 v"
   shows "state 2 (u \<Otimes> v)"
 proof-
@@ -455,6 +455,9 @@ sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,
     by simp
 qed
 
+lemma tensor_state:
+assumes "state m u" and "state n v"
+shows "state (m + n) (u \<Otimes> v)" sorry
 
 lemma tensor_gate:
   assumes "gate m G1" and "gate n G2"
