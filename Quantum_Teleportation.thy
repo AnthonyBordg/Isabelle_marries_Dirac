@@ -6,15 +6,33 @@ imports
   Jordan_Normal_Form.Matrix
   Quantum
   Tensor
+  MoreTensor
 begin
 
 
 definition Alice ::"complex Matrix.mat \<Rightarrow> complex Matrix.mat" where
-"Alice \<phi> \<equiv> app (H \<Otimes> id 4) (app (CNOT \<Otimes> id 2) (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
+"Alice \<phi> \<equiv> app (H \<Otimes> id 2) (app (CNOT \<Otimes> id 1) (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
 
 lemma Alice_state:
   assumes "state 1 \<phi>"
-  shows "state 3 (Alice \<phi>)" sorry
+  shows "state 3 (Alice \<phi>)"
+proof-
+  have f1:"state 3 (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)"
+    using assms bell_is_state(1) tensor_state
+    by fastforce
+  have f2:"gate 3 (CNOT \<Otimes> id 1)"
+    using CNOT_is_gate id_is_gate tensor_gate
+    by (metis numeral_plus_one semiring_norm(5))
+  then have f3:"state 3 (app (CNOT \<Otimes> id 1) (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
+    using f1 f2 gate_on_state_is_state
+    by simp
+  have "gate 3 (H \<Otimes> id 2)"
+    using tensor_gate id_is_gate H_is_gate
+    by (metis eval_nat_numeral(3) plus_1_eq_Suc)
+  thus ?thesis
+    using f3 gate_on_state_is_state
+    by (simp add: Alice_def)
+qed
 
 text \<open>An application of function Alice to a state \<phi> of a 1-qubit system results in the following 
 cases.\<close>
