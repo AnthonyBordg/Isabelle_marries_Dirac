@@ -937,6 +937,9 @@ text\<open>Our first quantum gate: the identity matrix ! Arguably, not a very in
 definition id :: "nat \<Rightarrow> complex mat" where
 "id n \<equiv> 1\<^sub>m (2^n)"
 
+lemma id_is_gate:
+  shows "gate n (id n)" sorry
+
 text\<open>More interesting: the Pauli matrices.\<close>
 
 definition X ::"complex mat" where
