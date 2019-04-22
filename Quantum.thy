@@ -938,7 +938,18 @@ definition id :: "nat \<Rightarrow> complex mat" where
 "id n \<equiv> 1\<^sub>m (2^n)"
 
 lemma id_is_gate:
-  shows "gate n (id n)" sorry
+  shows "gate n (id n)"
+proof-
+  have f1:"dim_row (id n) = 2^n"
+    using id_def 
+    by simp
+  then have f2:"square_mat (id n)"
+    using id_def 
+    by simp
+  thus ?thesis
+    using gate_def f1 f2 id_is_unitary id_def 
+    by simp
+qed
 
 text\<open>More interesting: the Pauli matrices.\<close>
 
