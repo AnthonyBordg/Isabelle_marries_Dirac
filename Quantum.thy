@@ -1276,7 +1276,9 @@ proof
     fix x::nat assume "x \<in> {k |k. select_index n i k}"
     show "x \<in> {0..<2^n}" 
       using select_index_def
-      by (metis (no_types, lifting) \<open>x \<in> {k |k. select_index n i k}\<close> atLeastLessThan_iff diff_diff_cancel diff_is_0_eq' diff_le_mono2 le_less_linear le_numeral_extra(2) mem_Collect_eq one_le_numeral one_le_power select_index_def zero_order(1))
+      by (metis (no_types, lifting) \<open>x \<in> {k |k. select_index n i k}\<close> atLeastLessThan_iff 
+diff_diff_cancel diff_is_0_eq' diff_le_mono2 le_less_linear le_numeral_extra(2) mem_Collect_eq 
+one_le_numeral one_le_power select_index_def zero_order(1))
   qed
   have f2:"{k |k. k < 2 ^ n \<and> \<not> select_index n i k} \<subseteq> {0..<2 ^ n}"
   proof
