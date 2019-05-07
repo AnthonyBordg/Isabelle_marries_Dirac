@@ -488,9 +488,9 @@ lemma inner_prod_csqrt [simp]:
 
 
 subsection "Unitary Matrices and Length-preservation"
-(* What's wrong with the comment below ?
-text \<open>The bra-vector $\langle Av|$ is given by $\langle v|A\<^sup>^{\dag}$\<close>
-*)
+
+text \<open>The bra-vector $\langle Av|$ is given by $\langle v|A^{\dag}$\<close>
+
 
 lemma bra_mat_on_vec:
   fixes v::"complex vec" and A::"complex mat"
