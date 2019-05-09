@@ -415,7 +415,7 @@ lemma inner_prod_with_itself_Im [simp]:
   "Im (\<langle>u|u\<rangle>) = 0"
   using inner_prod_cnj by (metis Reals_cnj_iff complex_is_Real_iff)
 
-lemma inner_prod_with_itself_real:
+lemma inner_prod_with_itself_real [simp]:
   "\<langle>u|u\<rangle> \<in> \<real>"
   using inner_prod_with_itself_Im by (simp add: complex_is_Real_iff)
 
@@ -463,10 +463,6 @@ lemma inner_prod_with_itself_nonneg_reals_non0:
   assumes "u \<noteq> 0\<^sub>v (dim_vec u)"
   shows "\<langle>u|u\<rangle> \<noteq> 0"
   using assms inner_prod_with_itself_Re_non0 by fastforce
-
-(* We declare a coercion from real numbers to complex numbers.*)
-
-declare [[coercion complex_of_real]]
 
 lemma cpx_vec_length_inner_prod [simp]:
   "\<parallel>v\<parallel>\<^sup>2 = \<langle>v|v\<rangle>"
