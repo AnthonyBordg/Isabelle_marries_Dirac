@@ -637,24 +637,24 @@ lemma unitary_length_bis [simp]:
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
 lemma inner_prod_with_unitary_mat [simp]:
-  assumes a1:"unitary U" and a2:"dim_vec u = dim_col U" and a3:"dim_vec v = dim_col U"
+  assumes "unitary U" and "dim_vec u = dim_col U" and "dim_vec v = dim_col U"
   shows "\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = \<langle>u|v\<rangle>"
 proof -
   have f1:"\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = (\<langle>|u\<rangle>| * (U\<^sup>\<dagger>) * U * |v\<rangle>) $$ (0,0)"
-    using a2 a3 bra_mat_on_vec mult_ket_vec_is_ket_vec_of_mult
+    using assms(2-3) bra_mat_on_vec mult_ket_vec_is_ket_vec_of_mult
     by (smt assoc_mult_mat carrier_mat_triv col_fst_def dim_vec hermite_cnj_dim_col index_mult_mat(2) 
         index_mult_mat(3) inner_prod_with_times_mat ket_vec_def mat_carrier)
   moreover have f2:"\<langle>|u\<rangle>| \<in> carrier_mat 1 (dim_vec v)"
-    using bra_def ket_vec_def a2 a3 by simp
+    using bra_def ket_vec_def assms(2-3) by simp
   moreover have f3:"U\<^sup>\<dagger> \<in> carrier_mat (dim_col U) (dim_row U)"
     using hermite_cnj_def by simp
   ultimately have "\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = (\<langle>|u\<rangle>| * (U\<^sup>\<dagger> * U) * |v\<rangle>) $$ (0,0)"
-    using a3 assoc_mult_mat by (metis carrier_mat_triv)
+    using assms(3) assoc_mult_mat by (metis carrier_mat_triv)
   also have "\<dots> = (\<langle>|u\<rangle>| * |v\<rangle>) $$ (0,0)"
-    using a1 unitary_def
-    by (simp add: a2 bra_def ket_vec_def)
+    using assms(1) unitary_def
+    by (simp add: assms(2) bra_def ket_vec_def)
   finally show ?thesis
-    using a2 a3 inner_prod_with_times_mat by presburger
+    using assms(2-3) inner_prod_with_times_mat by presburger
 qed
 
 text \<open>As a consequence we prove that columns and rows of a unitary matrix are orthonormal vectors.\<close>
@@ -669,22 +669,22 @@ lemma unitary_unit_row [simp]:
   shows "\<parallel>row U i\<parallel> = 1"
 proof -
   have "row U i = col (U\<^sup>t) i"
-    using  assms(2) assms(3) by simp
+    using  assms(2-3) by simp
   thus ?thesis
     using assms transpose_of_unitary_is_unitary unitary_unit_col
     by (metis index_transpose_mat(3))
 qed
 
 lemma orthogonal_col_of_unitary [simp]:
-  assumes a1:"unitary U" and a2:"dim_col U = n" and a3:"i < n" and a4:"j < n" and a5:"i \<noteq> j"
+  assumes "unitary U" and "dim_col U = n" and "i < n" and "j < n" and "i \<noteq> j"
   shows "\<langle>col U i|col U j\<rangle> = 0"
 proof -
   have "\<langle>col U i|col U j\<rangle> = \<langle>U * |unit_vec n i\<rangle>| U * |unit_vec n j\<rangle>\<rangle>"
-    using a2 a3 a4 unit_vec_to_col by simp
+    using assms(2-4) unit_vec_to_col by simp
   also have "\<dots> = \<langle>unit_vec n i |unit_vec n j\<rangle>"
-    using a1 a2 inner_prod_with_unitary_mat index_unit_vec(3) by simp
+    using assms(1-2) inner_prod_with_unitary_mat index_unit_vec(3) by simp
   finally show ?thesis
-    using a3 a4 a5 by simp
+    using assms(3-5) by simp
 qed
 
 lemma orthogonal_row_of_unitary [simp]:
@@ -1824,5 +1824,11 @@ next
 qed
 
 
+(*
+Biblio:
+
+- Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang, 
+10th Anniversary Edition, Cambridge University Press, 2010.
+*)
 
 end
