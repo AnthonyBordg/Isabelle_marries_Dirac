@@ -1,266 +1,146 @@
-(* Author: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk *)
+(* Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk,
+ 
+            Yijun He, University of Cambridge, yh403@cam.ac.uk
+*)
 
 theory Entanglement
 imports
-  Main
-  Jordan_Normal_Form.Matrix
   Quantum
-  Tensor
+  MoreTensor
 begin
 
 
-section\<open>Quantum Entanglement\<close>
+section \<open>Quantum Entanglement\<close>
 
-subsection\<open>The Product States and Entangled States of a 2-qubits System\<close>
+subsection \<open>The Product States and Entangled States of a 2-qubits System\<close>
 
-(* Here I added the condition that v, w \<in> state_qbit 1, otherwise u can always be represented by the
-   tensor product of the 1-dimensional vector (1) and u itself *)
+text \<open>Below we add the condition that @{term v} and @{term w} are two-dimensional states, otherwise 
+@{term u} can always be represented by the tensor product of the 1-dimensional vector @{term 1} and 
+@{term u} itself.\<close>
 
-definition prod_state ::"complex Matrix.vec \<Rightarrow> bool" where
-"prod_state u \<equiv> if u \<in> state_qbit 2 then \<exists>v \<in> state_qbit 1.\<exists> w \<in> state_qbit 1. u = v \<otimes> w else undefined"
+definition prod_state2:: "complex Matrix.mat \<Rightarrow> bool" where
+"prod_state2 u \<equiv> if state 2 u then \<exists>v w. state 1 v \<and> state 1 w \<and> u = v \<Otimes> w else undefined"
 
-definition entangled2 ::"complex Matrix.vec \<Rightarrow> bool" where
-"entangled2 u \<equiv> \<not> prod_state u"
+definition entangled2:: "complex Matrix.mat \<Rightarrow> bool" where
+"entangled2 u \<equiv> \<not> prod_state2 u"
 
-text\<open>The Bell states are entangled states\<close>
+text \<open>The Bell states are entangled states.\<close>
 
-lemma tensor_prod_2:"mult.vec_vec_Tensor ( * ) [x1::complex,x2] [x3,x4] = [x1*x3,x1*x4,x2*x3,x2*x4]"
-proof-
-  have f0:"Matrix_Tensor.mult (1::complex) ( * )" 
-  proof
-    fix a::complex and b::complex and c::complex and x::complex
-    show "a * b = b * a" by simp
-    show "a * b * c = a * (b * c)" by simp
-    show "1 * x = x" by simp
-    show "x * 1 = x" by simp
+lemma bell00_is_entangled2 [simp]:
+  "entangled2 |\<beta>\<^sub>0\<^sub>0\<rangle>" 
+proof -
+  have "\<forall>v w. state 1 v \<longrightarrow> state 1 w \<longrightarrow> |\<beta>\<^sub>0\<^sub>0\<rangle> \<noteq> v \<Otimes> w"
+  proof((rule allI)+,(rule impI)+, rule notI)
+    fix v w
+    assume a0:"state 1 v" and a1:"state 1 w" and a2:"|\<beta>\<^sub>0\<^sub>0\<rangle> = v \<Otimes> w"
+    have "(v $$ (0,0) * w $$ (0,0)) * (v $$ (1,0) * w $$ (1,0)) = 
+          (v $$ (0,0) * w $$ (1,0)) * (v $$ (1,0) * w $$ (0,0))" by simp
+    then have "(v \<Otimes> w) $$ (0,0) * (v \<Otimes> w) $$ (3,0) = (v \<Otimes> w) $$ (1,0) * (v \<Otimes> w) $$ (2,0)"
+      using a0 a1 by simp
+    then have "|\<beta>\<^sub>0\<^sub>0\<rangle> $$ (0,0) * |\<beta>\<^sub>0\<^sub>0\<rangle> $$ (3,0) = |\<beta>\<^sub>0\<^sub>0\<rangle> $$ (1,0) * |\<beta>\<^sub>0\<^sub>0\<rangle> $$ (2,0)"
+      using a2 by simp
+    then have "1/ sqrt 2 * 1/sqrt 2 = 0" by simp
+    thus False by simp
   qed
-  show "mult.vec_vec_Tensor ( * ) [x1::complex,x2] [x3,x4] = [x1*x3,x1*x4,x2*x3,x2*x4]"
-    using mult.vec_vec_Tensor_def[of "(1::complex)" "( * )"] mult.times_def[of "(1::complex)" "( * )"]
-  by(simp add: f0)
+  thus ?thesis by(simp add: entangled2_def prod_state2_def)
 qed
 
-lemma list_vec: 
-  assumes "v \<in> state_qbit 1"
-  shows "list_of_vec v = [v $ 0, v $ 1]"
-proof-
-  have a1:"Rep_vec v = (fst(Rep_vec v), snd(Rep_vec v))" by auto
-  have a2:"fst(Rep_vec v) = 2" 
-    using state_qbit_def assms
-    by(auto simp add: dim_vec.rep_eq)
-  have a3:"Rep_vec v = (2, vec_index v)"
-    using a1 a2 vec_index.rep_eq
-    by(auto simp add: vec_index.rep_eq)
-  have a4:"[0..<2::nat] = [0,1]"
-    by(simp add: upt_rec) 
-  show ?thesis
-    using a3 a4
-    by(auto simp add: list_of_vec_def)
+lemma bell01_is_entangled2 [simp]:
+  "entangled2 |\<beta>\<^sub>0\<^sub>1\<rangle>"
+proof -
+  have "\<forall>v w. state 1 v \<longrightarrow> state 1 w \<longrightarrow> |\<beta>\<^sub>0\<^sub>1\<rangle> \<noteq> v \<Otimes> w"
+  proof((rule allI)+,(rule impI)+, rule notI)
+    fix v w
+    assume a0:"state 1 v" and a1:"state 1 w" and a2:"|\<beta>\<^sub>0\<^sub>1\<rangle> = v \<Otimes> w"
+    have "(v $$ (0,0) * w $$ (1,0)) * (v $$ (1,0) * w $$ (0,0)) = 
+          (v $$ (0,0) * w $$ (0,0)) * (v $$ (1,0) * w $$ (1,0))" by simp
+    then have "(v \<Otimes> w) $$ (1,0) * (v \<Otimes> w) $$ (2,0) = (v \<Otimes> w) $$ (0,0) * (v \<Otimes> w) $$ (3,0)"
+      using a0 a1 by simp
+    then have "|\<beta>\<^sub>0\<^sub>1\<rangle> $$ (1,0) * |\<beta>\<^sub>0\<^sub>1\<rangle> $$ (2,0) = |\<beta>\<^sub>0\<^sub>1\<rangle> $$ (0,0) * |\<beta>\<^sub>0\<^sub>1\<rangle> $$ (3,0)"
+      using a2 by simp
+    then have "1/sqrt 2 * 1/sqrt 2 = 0" 
+      using bell01_index by simp
+    thus False by simp
+  qed
+  thus ?thesis by(simp add: entangled2_def prod_state2_def)
 qed
 
-lemma vec_tensor_prod_2:
-  assumes "v \<in> state_qbit 1" and "w \<in> state_qbit 1"
-  shows "v \<otimes> w = vec_of_list [v $ 0 * w $ 0, v $ 0 * w $ 1, v $ 1 * w $ 0, v $ 1 * w $ 1]"
-proof-
-  have f1:"list_of_vec v = [v $ 0, v $ 1]"
-    using list_vec assms
-    by simp
-  have f2:"list_of_vec w = [w $ 0, w $ 1]"
-    using list_vec assms
-    by simp
-  show "v \<otimes> w = vec_of_list [v $ 0 * w $ 0, v $ 0 * w $ 1, v $ 1 * w $ 0, v $ 1 * w $ 1]"
-    by(simp add: tensor_vec_def f1 f2 tensor_prod_2)
+lemma bell10_is_entangled2 [simp]:
+  "entangled2 |\<beta>\<^sub>1\<^sub>0\<rangle>"
+proof -
+  have "\<forall>v w. state 1 v \<longrightarrow> state 1 w \<longrightarrow> |\<beta>\<^sub>1\<^sub>0\<rangle> \<noteq> v \<Otimes> w"
+  proof((rule allI)+,(rule impI)+, rule notI)
+    fix v w
+    assume a0:"state 1 v" and a1:"state 1 w" and a2:"|\<beta>\<^sub>1\<^sub>0\<rangle> = v \<Otimes> w"
+    have "(v $$ (0,0) * w $$ (0,0)) * (v $$ (1,0) * w $$ (1,0)) = 
+          (v $$ (0,0) * w $$ (1,0)) * (v $$ (1,0) * w $$ (0,0))" by simp
+    then have "(v \<Otimes> w) $$ (0,0) * (v \<Otimes> w) $$ (3,0) = (v \<Otimes> w) $$ (1,0) * (v \<Otimes> w) $$ (2,0)"
+      using a0 a1 by simp
+    then have "|\<beta>\<^sub>1\<^sub>0\<rangle> $$ (1,0) * |\<beta>\<^sub>1\<^sub>0\<rangle> $$ (2,0) = |\<beta>\<^sub>1\<^sub>0\<rangle> $$ (0,0) * |\<beta>\<^sub>1\<^sub>0\<rangle> $$ (3,0)"
+      using a2 by simp
+    then have "1/sqrt 2 * 1/sqrt 2 = 0" by simp
+    thus False by simp
+  qed
+  thus ?thesis by(simp add: entangled2_def prod_state2_def)
 qed
 
-lemma bell_00_is_entangled2:
-  shows "entangled2 bell_00" 
-proof-
-  have "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>0\<rangle> \<noteq> v \<otimes> w"
-  proof-
-    have "\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>0\<rangle> = v \<otimes> w \<Longrightarrow> False"
-    proof-
-      assume asm:"\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>0\<rangle> = v \<otimes> w"
-      obtain v and w where a0:"v \<in> state_qbit 1" and a1:"w \<in> state_qbit 1" and a2:"|\<beta>\<^sub>0\<^sub>0\<rangle> = v \<otimes> w"
-        using asm
-        by blast
-      have "|\<beta>\<^sub>0\<^sub>0\<rangle> $ 0 = (v \<otimes> w) $ 0"
-        using a2
-        by simp
-      then have f1:"v $ 0 * w $ 0 = 1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_00_def)
-      have "|\<beta>\<^sub>0\<^sub>0\<rangle> $ 1 = (v \<otimes> w) $ 1"
-        using a2
-        by simp
-      then have f2:"v $ 0 * w $ 1 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_00_def)
-      have "|\<beta>\<^sub>0\<^sub>0\<rangle> $ 2 = (v \<otimes> w) $ 2"
-        using a2
-        by simp
-      then have f3:"v $ 1 * w $ 0 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_00_def numeral_2_eq_2)
-      have "|\<beta>\<^sub>0\<^sub>0\<rangle> $ 3 = (v \<otimes> w) $ 3"
-        using a2
-        by simp
-      then have f4:"v $ 1 * w $ 1 = 1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_00_def numeral_3_eq_3)
-      have "1 / complex_of_real (sqrt 2) * 1 / complex_of_real (sqrt 2) = 0"
-        using f1 f2 f3 f4
-        by auto
-      then show False
-        by simp
+lemma bell11_is_entangled2 [simp]:
+  "entangled2 |\<beta>\<^sub>1\<^sub>1\<rangle>"
+proof -
+  have "\<forall>v w. state 1 v \<longrightarrow> state 1 w \<longrightarrow> |\<beta>\<^sub>1\<^sub>1\<rangle> \<noteq> v \<Otimes> w"
+  proof((rule allI)+,(rule impI)+, rule notI)
+    fix v w
+    assume a0:"state 1 v" and a1:"state 1 w" and a2:"|\<beta>\<^sub>1\<^sub>1\<rangle> = v \<Otimes> w"
+    have "(v $$ (0,0) * w $$ (1,0)) * (v $$ (1,0) * w $$ (0,0)) = 
+          (v $$ (0,0) * w $$ (0,0)) * (v $$ (1,0) * w $$ (1,0))" by simp
+    then have "(v \<Otimes> w) $$ (1,0) * (v \<Otimes> w) $$ (2,0) = (v \<Otimes> w) $$ (0,0) * (v \<Otimes> w) $$ (3,0)"
+      using a0 a1 by simp
+    then have "|\<beta>\<^sub>1\<^sub>1\<rangle> $$ (1,0) * |\<beta>\<^sub>1\<^sub>1\<rangle> $$ (2,0) = |\<beta>\<^sub>1\<^sub>1\<rangle> $$ (0,0) * |\<beta>\<^sub>1\<^sub>1\<rangle> $$ (3,0)"
+      using a2 by simp
+    then have "1/sqrt 2 * 1/sqrt 2 = 0"
+      using bell_11_index by simp
+    thus False by simp
+  qed
+  thus ?thesis by(simp add: entangled2_def prod_state2_def)
+qed
+
+text \<open>
+An entangled state is a state that cannot be broken down as the tensor product of smaller states.
+\<close>
+
+definition prod_state:: "nat \<Rightarrow> complex Matrix.mat \<Rightarrow> bool" where
+"prod_state m u \<equiv> if state m u then \<exists>n p::nat.\<exists>v w. state n v \<and> state p w \<and> 
+  n < m \<and> p < m \<and>  u = v \<Otimes> w else undefined"
+
+definition entangled:: "nat \<Rightarrow> complex Matrix.mat \<Rightarrow> bool" where
+"entangled n v \<equiv> \<not> (prod_state n v)"
+
+(* To do: as an exercise prove the equivalence between entangled2 and (entangled 2). *)
+
+lemma sanity_check: 
+  "\<not>(entangled 2 (mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]] \<Otimes> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]))"
+proof -
+  define u where "u = mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
+  then have "state 1 u"
+  proof -
+    have "dim_col u = 1"
+      using u_def mat_of_cols_list_def by simp
+    moreover have f:"dim_row u = 2"
+      using u_def mat_of_cols_list_def by simp
+    moreover have "\<parallel>Matrix.col u 0\<parallel> = 1"
+    proof -
+      have "(\<Sum>i<2. (cmod (u $$ (i, 0)))\<^sup>2) = (1/sqrt 2)\<^sup>2 + (1/sqrt 2)\<^sup>2"
+        by(simp add: u_def cmod_def numeral_2_eq_2)
+      then have "\<parallel>Matrix.col u 0\<parallel> = sqrt ((1/sqrt 2)\<^sup>2 + (1/sqrt 2)\<^sup>2)"
+        using f by(auto simp: Matrix.col_def u_def cpx_vec_length_def)
+      thus ?thesis by(simp add: power_divide)
     qed
-    then show "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>0\<rangle> \<noteq> v \<otimes> w"
-      by blast
+    ultimately show ?thesis by(simp add: state_def)
   qed
-  then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_00_is_state)
-qed
-
-lemma bell_01_is_entangled2:
-  shows "entangled2 bell_01" 
-proof-
-  have "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>1\<rangle> \<noteq> v \<otimes> w"
-  proof-
-    have "\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>1\<rangle> = v \<otimes> w \<Longrightarrow> False"
-    proof-
-      assume asm:"\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>1\<rangle> = v \<otimes> w"
-      obtain v and w where a0:"v \<in> state_qbit 1" and a1:"w \<in> state_qbit 1" and a2:"|\<beta>\<^sub>0\<^sub>1\<rangle> = v \<otimes> w"
-        using asm
-        by blast
-      have "|\<beta>\<^sub>0\<^sub>1\<rangle> $ 0 = (v \<otimes> w) $ 0"
-        using a2
-        by simp
-      then have f1:"v $ 0 * w $ 0 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_01_def)
-      have "|\<beta>\<^sub>0\<^sub>1\<rangle> $ 1 = (v \<otimes> w) $ 1"
-        using a2
-        by simp
-      then have f2:"v $ 0 * w $ 1 = 1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_01_def)
-      have "|\<beta>\<^sub>0\<^sub>1\<rangle> $ 2 = (v \<otimes> w) $ 2"
-        using a2
-        by simp
-      then have f3:"v $ 1 * w $ 0 = 1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_01_def numeral_2_eq_2)
-      have "|\<beta>\<^sub>0\<^sub>1\<rangle> $ 3 = (v \<otimes> w) $ 3"
-        using a2
-        by simp
-      then have f4:"v $ 1 * w $ 1 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_01_def numeral_3_eq_3)
-      have "1 / complex_of_real (sqrt 2) * 1 / complex_of_real (sqrt 2) = 0"
-        using f1 f2 f3 f4
-        by auto
-      then show False
-        by simp
-    qed
-    then show "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>0\<^sub>1\<rangle> \<noteq> v \<otimes> w"
-      by blast
-  qed
-  then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_01_is_state)
-qed
-
-lemma bell_10_is_entangled2:
-  shows "entangled2 bell_10" 
-proof-
-  have "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>0\<rangle> \<noteq> v \<otimes> w"
-  proof-
-    have "\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>0\<rangle> = v \<otimes> w \<Longrightarrow> False"
-    proof-
-      assume asm:"\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>0\<rangle> = v \<otimes> w"
-      obtain v and w where a0:"v \<in> state_qbit 1" and a1:"w \<in> state_qbit 1" and a2:"|\<beta>\<^sub>1\<^sub>0\<rangle> = v \<otimes> w"
-        using asm
-        by blast
-      have "|\<beta>\<^sub>1\<^sub>0\<rangle> $ 0 = (v \<otimes> w) $ 0"
-        using a2
-        by simp
-      then have f1:"v $ 0 * w $ 0 = 1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_10_def)
-      have "|\<beta>\<^sub>1\<^sub>0\<rangle> $ 1 = (v \<otimes> w) $ 1"
-        using a2
-        by simp
-      then have f2:"v $ 0 * w $ 1 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_10_def)
-      have "|\<beta>\<^sub>1\<^sub>0\<rangle> $ 2 = (v \<otimes> w) $ 2"
-        using a2
-        by simp
-      then have f3:"v $ 1 * w $ 0 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_10_def numeral_2_eq_2)
-      have "|\<beta>\<^sub>1\<^sub>0\<rangle> $ 3 = (v \<otimes> w) $ 3"
-        using a2
-        by simp
-      then have f4:"v $ 1 * w $ 1 = -1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_10_def numeral_3_eq_3)
-      have "1 / complex_of_real (sqrt 2) * 1 / complex_of_real (sqrt 2) = 0"
-        using f1 f2 f3 f4
-        by auto
-      then show False
-        by simp
-    qed
-    then show "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>0\<rangle> \<noteq> v \<otimes> w"
-      by blast
-  qed
-  then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_10_is_state)
-qed
-
-lemma bell_11_is_entangled2:
-  shows "entangled2 bell_11"
-proof-
-  have "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>1\<rangle> \<noteq> v \<otimes> w"
-  proof-
-    have "\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>1\<rangle> = v \<otimes> w \<Longrightarrow> False"
-    proof-
-      assume asm:"\<exists>v \<in> state_qbit 1. \<exists> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>1\<rangle> = v \<otimes> w"
-      obtain v and w where a0:"v \<in> state_qbit 1" and a1:"w \<in> state_qbit 1" and a2:"|\<beta>\<^sub>1\<^sub>1\<rangle> = v \<otimes> w"
-        using asm
-        by blast
-      have "|\<beta>\<^sub>1\<^sub>1\<rangle> $ 0 = (v \<otimes> w) $ 0"
-        using a2
-        by simp
-      then have f1:"v $ 0 * w $ 0 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_11_def)
-      have "|\<beta>\<^sub>1\<^sub>1\<rangle> $ 1 = (v \<otimes> w) $ 1"
-        using a2
-        by simp
-      then have f2:"v $ 0 * w $ 1 = 1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_11_def)
-      have "|\<beta>\<^sub>1\<^sub>1\<rangle> $ 2 = (v \<otimes> w) $ 2"
-        using a2
-        by simp
-      then have f3:"v $ 1 * w $ 0 = -1 / complex_of_real (sqrt 2)"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_11_def numeral_2_eq_2)
-      have "|\<beta>\<^sub>1\<^sub>1\<rangle> $ 3 = (v \<otimes> w) $ 3"
-        using a2
-        by simp
-      then have f4:"v $ 1 * w $ 1 = 0"
-        using a0 a1
-        by(auto simp add: vec_tensor_prod_2 mult.times.simps bell_11_def numeral_3_eq_3)
-      have "1 / complex_of_real (sqrt 2) * 1 / complex_of_real (sqrt 2) = 0"
-        using f1 f2 f3 f4
-        by auto
-      then show False
-        by simp
-    qed
-    then show "\<forall>v \<in> state_qbit 1. \<forall> w \<in> state_qbit 1. |\<beta>\<^sub>1\<^sub>1\<rangle> \<noteq> v \<otimes> w"
-      by blast
-  qed
-  then show ?thesis 
-    by(simp add: entangled2_def prod_state_def bell_11_is_state)
+  then have "state 2 (u \<Otimes> u)"
+    using tensor_state by(metis one_add_one)
+  thus ?thesis
+    using entangled_def prod_state_def by(metis \<open>state 1 u\<close> one_less_numeral_iff semiring_norm(76) u_def)
 qed
 
 
