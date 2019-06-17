@@ -310,13 +310,272 @@ sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,
   qed
 qed
 
+lemma sum_diff:
+  fixes f::"nat \<Rightarrow> complex"
+  shows "(\<Sum>i\<in>{a..<a+b}. f(i-a)) = (\<Sum>i\<in>{..<b}. f(i))"
+proof (induction b)
+  case 0
+  then show ?case by auto
+next
+  case (Suc b)
+  then show ?case by auto
+qed
+
+lemma sum_distr:
+  fixes f::"nat \<Rightarrow> complex"
+  shows "(\<Sum>i\<in>A. c * f(i)) = c * (\<Sum>i\<in>A. f(i))"
+proof-
+  show ?thesis
+    by (simp add: mult_hom.hom_sum)
+qed
+
+lemma sum_prod:
+  fixes f::"nat \<Rightarrow> complex" and g::"nat \<Rightarrow> complex"
+  shows "(\<Sum>i<a*b. f(i div b) * g(i mod b)) = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j))"
+proof (induction a)
+  case 0
+  then show ?case by auto
+next
+  case (Suc a)
+  then have f0:"(\<Sum>i<a*b. f(i div b) * g(i mod b)) = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j))"
+    by simp
+  have f1:"sum f {..<Suc a} * sum g {..<b} = sum f {..<a} * sum g {..<b} + f(a) * sum g {..<b}"
+    by (simp add: semiring_normalization_rules(1))
+  have a0:"\<And>i. i\<in>{a*b..<(a+1)*b} \<Longrightarrow> i div b \<ge> a"
+    by (metis Suc_eq_plus1 atLeastLessThan_iff le_refl semiring_normalization_rules(7) split_div')
+  have a1:"\<And>i. i\<in>{a*b..<(a+1)*b} \<Longrightarrow> i div b < a+1"
+    by (simp add: less_mult_imp_div_less)
+  have a2:"\<And>i. i\<in>{a*b..<(a+1)*b} \<Longrightarrow> i div b = a"
+    using a0 a1
+    by fastforce
+  have b0:"\<And>i. i\<in>{a*b..<(a+1)*b} \<Longrightarrow> i mod b = i-a*b"
+    by (simp add: a2 modulo_nat_def)
+  have f2:"(\<Sum>i\<in>{a*b..<(a+1)*b}. f (i div b) * g (i mod b)) = (\<Sum>i\<in>{a*b..<(a+1)*b}. f(a) * g(i-a*b))"
+    using a2 b0 sum.cong
+    by auto
+  have f3:"(\<Sum>i\<in>{a*b..<(a+1)*b}. g(i-a*b)) = (\<Sum>i\<in>{..<b}. g(i))"
+    using sum_diff[of "g" "(a*b)" "b"]
+    by (metis Suc_eq_plus1 add.commute mult_Suc)
+  have f4:"(\<Sum>i\<in>{a*b..<(a+1)*b}. f(a) * g(i-a*b)) = f(a) * (\<Sum>i\<in>{a*b..<(a+1)*b}. g(i-a*b))"
+    using sum_distr
+    by auto
+  have f5:"(\<Sum>i<(a+1)*b. f (i div b) * g (i mod b)) = (\<Sum>i<a*b. f (i div b) * g (i mod b)) + 
+(\<Sum>i\<in>{a*b..<(a+1)*b}. f (i div b) * g (i mod b))"
+    by (smt Suc_eq_plus1 mult.left_neutral semiring_normalization_rules(8) sum_lessThan_Suc sum_nat_group)
+  then show ?case
+    using f0 f1 f2 f3 f4 f5
+    by auto
+qed
+
 lemma tensor_state [simp]:
 assumes "state m u" and "state n v"
-shows "state (m + n) (u \<Otimes> v)" sorry
+shows "state (m + n) (u \<Otimes> v)"
+proof
+  show a0:"dim_col (u \<Otimes> v) = 1"
+    using assms dim_col_tensor_mat state.dim_col by presburger
+  show a1:"dim_row (u \<Otimes> v) = 2 ^ (m + n)" 
+    using assms dim_row_tensor_mat state.dim_row
+    by (metis power_add)
+  have f0:"\<And>i. i\<in> {0..<2 ^ (m + n)} \<Longrightarrow> (u \<Otimes> v) $$ (i, 0) = u $$ (i div 2 ^ n, 0) * v $$ (i mod 2 ^ n, 0)"
+    using assms state_def a0 a1
+    by force
+  have f1:"(cmod (u $$ (i div 2 ^ n, 0) * v $$ (i mod 2 ^ n, 0)))\<^sup>2 = 
+(cmod (u $$ (i div 2 ^ n, 0)))\<^sup>2 * (cmod (v $$ (i mod 2 ^ n, 0)))\<^sup>2"
+    by (simp add: norm_mult power_mult_distrib)
+  have f2:"(\<Sum>i<2 ^ (m + n). (cmod (u $$ (i div 2 ^ n, 0) * v $$ (i mod 2 ^ n, 0)))\<^sup>2) = 
+(\<Sum>i<2 ^ (m + n). (cmod (u $$ (i div 2 ^ n, 0)))\<^sup>2 * (cmod (v $$ (i mod 2 ^ n, 0)))\<^sup>2)"
+    using f1
+    by (metis (no_types, hide_lams) norm_mult power_mult_distrib)
+  have c0:"(\<Sum>i<2 ^ (m + n). (cmod (u $$ (i div 2 ^ n, 0)))\<^sup>2 * (cmod (v $$ (i mod 2 ^ n, 0)))\<^sup>2) = 
+(\<Sum>i<2 ^ (m + n). complex_of_real((cmod (u $$ (i div 2 ^ n, 0)))\<^sup>2) *  complex_of_real((cmod (v $$ (i mod 2 ^ n, 0)))\<^sup>2))"
+    by simp
+  have c1:"(\<Sum>i<2^m. (cmod (u $$ (i, 0)))\<^sup>2) = (\<Sum>i<2 ^ m. complex_of_real ((cmod (u $$ (i, 0)))\<^sup>2))"
+    by simp
+  have c2:"(\<Sum>i<2^n. (cmod (v $$ (i, 0)))\<^sup>2) = (\<Sum>i<2 ^ n. complex_of_real ((cmod (v $$ (i, 0)))\<^sup>2))"
+    by simp
+  have f3:"(\<Sum>i<2 ^ (m + n). (cmod (u $$ (i div 2 ^ n, 0)))\<^sup>2 * (cmod (v $$ (i mod 2 ^ n, 0)))\<^sup>2) = 
+(\<Sum>i<2^m. (cmod (u $$ (i, 0)))\<^sup>2) * (\<Sum>i<2^n. (cmod (v $$ (i, 0)))\<^sup>2)"
+    using c0 c1 c2 sum_prod[of "\<lambda>i. (cmod (u $$ (i , 0)))\<^sup>2" "2^n" "\<lambda>i. (cmod (v $$ (i , 0)))\<^sup>2" "2^m"]
+    by (smt of_real_eq_iff of_real_mult power_add)
+  have f4:"(\<Sum>i<2^m. (cmod (u $$ (i, 0)))\<^sup>2) = 1"
+    using assms state_def cpx_vec_length_def
+    by auto
+  have f5:"(\<Sum>i<2^n. (cmod (v $$ (i, 0)))\<^sup>2) = 1"
+    using assms state_def cpx_vec_length_def
+    by auto
+  have f6:"(\<Sum>i<2 ^ (m + n). (cmod (u $$ (i div 2 ^ n, 0) * v $$ (i mod 2 ^ n, 0)))\<^sup>2) = 1"
+    using f2 f3 f4 f5
+    by auto
+  show "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = 1"
+    using f6 a0 a1 assms state_def
+    by (auto simp add: cpx_vec_length_def)
+qed
+
+lemma matrixProd:
+  assumes "i < dim_row A" and "j < dim_col B" and "dim_col A = dim_row B"
+  shows "(A*B) $$ (i,j) = (\<Sum>k<dim_row B. (A $$ (i,k)) * (B $$ (k,j)))"
+proof-
+  show ?thesis
+    using assms
+    apply(auto simp add: times_mat_def scalar_prod_def)
+    by (smt atLeast0LessThan index_vec lessThan_iff sum.cong vec.abs_eq)
+qed
+
+lemma one_mat_Tensor:
+  assumes "i < 2^(m+n)" and "j < 2^(m+n)"
+  shows "1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) * 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n) = 1\<^sub>m (2^(m+n)) $$ (i, j)"
+proof-
+  show ?thesis
+    sorry
+qed
 
 lemma tensor_gate [simp]:
   assumes "gate m G1" and "gate n G2"
-  shows "gate  (m + n) (G1 \<Otimes> G2)" sorry
+  shows "gate (m + n) (G1 \<Otimes> G2)" 
+proof
+  show c0:"dim_row (G1 \<Otimes> G2) = 2^(m+n)"
+    using assms dim_row_tensor_mat gate.dim_row
+    by (simp add: power_add)
+  show c1:"square_mat (G1 \<Otimes> G2)"
+    using assms gate.square_mat by auto
+  have u1:"(G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2) = 1\<^sub>m (dim_col G1 * dim_col G2)"
+  proof
+    show "dim_row ((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) = dim_row (1\<^sub>m (dim_col G1 * dim_col G2))"
+      by simp
+    show "dim_col ((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) = dim_col (1\<^sub>m (dim_col G1 * dim_col G2))"
+      by simp
+    fix i j assume asm1:"i < dim_row (1\<^sub>m (dim_col G1 * dim_col G2))" and asm2:"j < dim_col (1\<^sub>m (dim_col G1 * dim_col G2))"
+    show "((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i, j) = 1\<^sub>m (dim_col G1 * dim_col G2) $$ (i, j)"
+    proof-
+      have a1:"i < 2^(m+n)"
+        using asm1 assms gate_def c0 by auto
+      have a2:"j < 2^(m+n)"
+        using asm2 assms gate_def c0 by auto
+      have f0:"((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i, j) = (\<Sum>k<2^(m+n). cnj((G1 \<Otimes> G2) $$ (k,i)) * ((G1 \<Otimes> G2) $$ (k,j)))"
+        using c0 c1 a1 a2 matrixProd[of "i" "(G1 \<Otimes> G2)\<^sup>\<dagger>" "j" "(G1 \<Otimes> G2)"] hermite_cnj_def
+        by auto
+      have f1:"\<And>k. k\<in>{..<2^(m+n)} \<Longrightarrow> cnj((G1 \<Otimes> G2) $$ (k,i)) = 
+        cnj(G1 $$ (k div 2^n, i div 2^n)) * cnj(G2 $$ (k mod 2^n, i mod 2^n))"
+        using assms a1
+        by (simp add: gate_def power_add)
+      have f2:"\<And>k. k\<in>{..<2^(m+n)} \<Longrightarrow> (G1 \<Otimes> G2) $$ (k,j) = 
+        G1 $$ (k div 2^n, j div 2^n) * G2 $$ (k mod 2^n, j mod 2^n)"
+        using assms a2
+        by (simp add: gate_def power_add)
+      have f3:"\<And>k. k\<in>{..<2^(m+n)} \<Longrightarrow> cnj((G1 \<Otimes> G2) $$ (k,i)) * ((G1 \<Otimes> G2) $$ (k,j)) = 
+        cnj(G1 $$ (k div 2^n, i div 2^n)) * G1 $$ (k div 2^n, j div 2^n) * 
+        cnj(G2 $$ (k mod 2^n, i mod 2^n)) * G2 $$ (k mod 2^n, j mod 2^n)"
+        using f1 f2
+        by auto
+      then have f4:"(\<Sum>k<2^(m+n). cnj((G1 \<Otimes> G2) $$ (k,i)) * ((G1 \<Otimes> G2) $$ (k,j))) = 
+        (\<Sum>k<2^(m+n). cnj(G1 $$ (k div 2^n, i div 2^n)) * G1 $$ (k div 2^n, j div 2^n) * 
+                      cnj(G2 $$ (k mod 2^n, i mod 2^n)) * G2 $$ (k mod 2^n, j mod 2^n))"
+        by auto
+      have f5:"(\<Sum>k<2^(m+n). cnj(G1 $$ (k div 2^n, i div 2^n)) * G1 $$ (k div 2^n, j div 2^n) * 
+                             cnj(G2 $$ (k mod 2^n, i mod 2^n)) * G2 $$ (k mod 2^n, j mod 2^n)) = 
+               (\<Sum>k<2^m. cnj(G1 $$ (k, i div 2^n)) * G1 $$ (k, j div 2^n)) * 
+               (\<Sum>k<2^n. cnj(G2 $$ (k, i mod 2^n)) * G2 $$ (k, j mod 2^n))"
+        using sum_prod[of "\<lambda>x. cnj(G1 $$ (x, i div 2^n)) * G1 $$ (x, j div 2^n)" "2^n" 
+                          "\<lambda>x. cnj(G2 $$ (x, i mod 2^n)) * G2 $$ (x, j mod 2^n)" "2^m"]
+        (*by (auto simp add: power_add)*)
+        sorry
+      have f6: "((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i,j) = 
+        (\<Sum>k1<2^m. cnj(G1 $$ (k1, i div 2^n)) * G1 $$ (k1, j div 2^n)) * 
+        (\<Sum>k2<2^n. cnj(G2 $$ (k2, i mod 2^n)) * G2 $$ (k2, j mod 2^n))"
+        using f0 f3 f5
+        by simp
+      have "(\<Sum>k<2^m. cnj(G1 $$ (k, i div 2^n))* G1 $$ (k, j div 2^n)) = (G1\<^sup>\<dagger> * G1) $$ (i div 2^n, j div 2^n)"
+        using a1 a2 assms gate_def hermite_cnj_def matrixProd[of "i div 2^n" "G1\<^sup>\<dagger>" "j div 2^n" "G1"]
+        by (simp add: less_mult_imp_div_less power_add)
+      then have f7:"(\<Sum>k<2^m. cnj(G1 $$ (k, i div 2^n))* G1 $$ (k, j div 2^n)) = 1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n)"
+        using assms gate_def unitary_def
+        by simp
+      have "(\<Sum>k<2^n. cnj(G2 $$ (k, i mod 2^n))* G2 $$ (k, j mod 2^n)) = (G2\<^sup>\<dagger> * G2) $$ (i mod 2^n, j mod 2^n)"
+        using assms gate_def hermite_cnj_def matrixProd[of "i mod 2^n" "G2\<^sup>\<dagger>" "j mod 2^n" "G2"]
+        by simp
+      then have f8:"(\<Sum>k<2^n. cnj(G2 $$ (k, i mod 2^n))* G2 $$ (k, j mod 2^n)) = 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n)"
+        using assms gate_def unitary_def
+        by simp
+      have f9:"((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i,j) = 1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) * 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n)"
+        using f6 f7 f8
+        by simp
+      show ?thesis
+        using a1 a2 assms gate_def f9 one_mat_Tensor[of "i" "m" "n" "j"]
+        by (simp add: power_add)
+    qed
+  qed
+  have u2:"(G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>) = 1\<^sub>m (dim_col G1 * dim_col G2)"
+    proof
+      show "dim_row ((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) = dim_row (1\<^sub>m (dim_col G1 * dim_col G2))"
+        using assms gate_def
+        by simp
+      show "dim_col ((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) = dim_col (1\<^sub>m (dim_col G1 * dim_col G2))"
+        using assms gate_def
+        by simp
+      fix i j assume asm1:"i < dim_row (1\<^sub>m (dim_col G1 * dim_col G2))" and asm2:"j < dim_col (1\<^sub>m (dim_col G1 * dim_col G2))"
+      show "((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i, j) = 1\<^sub>m (dim_col G1 * dim_col G2) $$ (i, j)"
+      proof-
+        have a1:"i < 2^(m+n)"
+          using asm1 assms gate_def c0 by auto
+        have a2:"j < 2^(m+n)"
+          using asm2 assms gate_def c0 by auto
+        have f0:"((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i, j) = (\<Sum>k<2^(m+n). (G1 \<Otimes> G2) $$ (i,k) * cnj((G1 \<Otimes> G2) $$ (j,k)))"
+          using c0 c1 a1 a2 matrixProd[of "i" "(G1 \<Otimes> G2)" "j" "(G1 \<Otimes> G2)\<^sup>\<dagger>"] hermite_cnj_def
+          by auto
+        have f1:"\<And>k. k\<in>{..<2^(m+n)} \<Longrightarrow> (G1 \<Otimes> G2) $$ (i,k) = 
+          G1 $$ (i div 2^n, k div 2^n) * G2 $$ (i mod 2^n, k mod 2^n)"
+          using assms a1
+          by (simp add: gate_def power_add)
+        have f2:"\<And>k. k\<in>{..<2^(m+n)} \<Longrightarrow> cnj((G1 \<Otimes> G2) $$ (j,k)) = 
+          cnj(G1 $$ (j div 2^n, k div 2^n)) * cnj(G2 $$ (j mod 2^n, k mod 2^n))"
+          using assms a2
+          by (simp add: gate_def power_add)
+        have f3:"\<And>k. k\<in>{..<2^(m+n)} \<Longrightarrow> (G1 \<Otimes> G2) $$ (i,k) * cnj((G1 \<Otimes> G2) $$ (j,k)) = 
+          G1 $$ (i div 2^n, k div 2^n) * cnj(G1 $$ (j div 2^n, k div 2^n)) * 
+          G2 $$ (i mod 2^n, k mod 2^n) * cnj(G2 $$ (j mod 2^n, k mod 2^n))"
+          using f1 f2
+          by auto
+        then have f4:"(\<Sum>k<2^(m+n). (G1 \<Otimes> G2) $$ (i,k) * cnj((G1 \<Otimes> G2) $$ (j,k))) = 
+          (\<Sum>k<2^(m+n). G1 $$ (i div 2^n, k div 2^n) * cnj(G1 $$ (j div 2^n, k div 2^n)) * 
+                        G2 $$ (i mod 2^n, k mod 2^n) * cnj(G2 $$ (j mod 2^n, k mod 2^n)))"
+          by auto
+        have f5:"(\<Sum>k<2^(m+n). G1 $$ (i div 2^n, k div 2^n) * cnj(G1 $$ (j div 2^n, k div 2^n)) * 
+                               G2 $$ (i mod 2^n, k mod 2^n) * cnj(G2 $$ (j mod 2^n, k mod 2^n))) = 
+                 (\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) * 
+                 (\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k)))"
+          using sum_prod[of "\<lambda>k. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))" "2^n" 
+                            "\<lambda>k. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k))" "2^m"]
+          (*by (auto simp add: power_add)*)
+          sorry
+        have f6: "((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i,j) = 
+          (\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) * 
+          (\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k)))"
+          using f0 f3 f5
+          by simp
+        have "(\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) = (G1 * (G1\<^sup>\<dagger>)) $$ (i div 2^n, j div 2^n)"
+          using a1 a2 assms gate_def hermite_cnj_def matrixProd[of "i div 2^n" "G1" "j div 2^n" "G1\<^sup>\<dagger>"]
+          by (simp add: less_mult_imp_div_less power_add)
+        then have f7:"(\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) = 1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n)"
+          using assms gate_def unitary_def
+          by simp
+        have "(\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k))) = (G2 * (G2\<^sup>\<dagger>)) $$ (i mod 2^n, j mod 2^n)"
+          using assms gate_def hermite_cnj_def matrixProd[of "i mod 2^n" "G2" "j mod 2^n" "G2\<^sup>\<dagger>"]
+          by simp
+        then have f8:"(\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k))) = 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n)"
+          using assms gate_def unitary_def
+          by simp
+        have f9:"((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i,j) = 1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) * 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n)"
+          using f6 f7 f8
+          by simp
+        show ?thesis
+          using a1 a2  assms gate_def f9 one_mat_Tensor[of "i" "m" "n" "j"]
+          by (simp add: power_add)
+      qed
+    qed
+  show "unitary (G1 \<Otimes> G2)"
+    using unitary_def c0 c1 u1 u2
+    by simp
+qed
 
 
 end

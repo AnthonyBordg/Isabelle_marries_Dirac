@@ -10,6 +10,56 @@ begin
 definition Alice:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat" where
 "Alice \<phi> \<equiv> (H \<Otimes> id 2) * ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
 
+definition M :: "complex Matrix.mat" where
+"M = Matrix.mat 8 8
+  (\<lambda>(i,j). if i=0 \<and> j=0 then 1::complex else 
+    (if i=1 \<and> j=1 then 1 else 
+      (if i=2 \<and> j=2 then 1 else 
+        (if i=3 \<and> j=3 then 1 else 
+          (if i=4 \<and> j=6 then 1 else 
+             (if i=5 \<and> j=7 then 1 else 
+               (if i=6 \<and> j=4 then 1 else 
+                 (if i=7 \<and> j=5 then 1 else 0))))))))"
+
+lemma CNOT_id_1: shows "(CNOT \<Otimes> id 1) = M"
+proof
+  show f0:"dim_col (CNOT \<Otimes> Quantum.id 1) = dim_col M"
+    by(simp add: CNOT_def id_def M_def)
+next
+  show f1:"dim_row (CNOT \<Otimes> Quantum.id 1) = dim_row M"
+    by(simp add: CNOT_def id_def M_def)
+next
+  fix i j::nat assume a1:"i < dim_row M" and a2:"j < dim_col M"
+  then have "i \<in> {0,1,2,3,4,5,6,7} \<and> j \<in> {0,1,2,3,4,5,6,7}"
+    by(auto simp add: M_def)
+  have f0:"dim_row M = 8"
+    by (simp add: M_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 0) = M $$ (0, 0)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 1) = M $$ (0, 1)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 2) = M $$ (0, 2)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 3) = M $$ (0, 3)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 4) = M $$ (0, 4)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 5) = M $$ (0, 5)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 6) = M $$ (0, 6)"
+    by (simp add: id_def M_def CNOT_def)
+  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 7) = M $$ (0, 7)"
+    by (simp add: id_def M_def CNOT_def)
+  have "(CNOT \<Otimes> 1\<^sub>m 2) $$ (i, j) = CNOT $$ (i div 2, j div 2) * (1\<^sub>m 2) $$ (i mod 2, j mod 2)"
+    using a1 a2
+    by (simp add: CNOT_def M_def mult.commute one_mat_def)
+  show "(CNOT \<Otimes> Quantum.id 1) $$ (i, j) = M $$ (i, j)"
+    using mat_eq mat_eqI cong_mat CNOT_def id_def M_def
+    apply (auto simp add: CNOT_def id_def M_def)
+    using cong_mat mat_eq mat_eqI
+    sorry
+qed
+
 lemma Alice_state [simp]:
   assumes "state 1 \<phi>"
   shows "state 3 (Alice \<phi>)"
@@ -45,8 +95,8 @@ definition Alice_pos:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat \<Ri
 
 lemma Alice_case [simp]:
   assumes "state 1 \<phi>" and "state 3 q" and "List.member (Alice_meas \<phi>) (p, q)"
-  shows "Alice_pos \<phi> q"  sorry
-(*proof-
+  shows "Alice_pos \<phi> q"
+proof-
   fix \<phi>::"complex Matrix.mat"
   define \<alpha> \<beta> where "\<alpha> = \<phi> $$ (0,0)" and "\<beta> = \<phi> $$ (1,0)"
   then have "post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1 = 
@@ -59,9 +109,15 @@ mat_of_cols_list 8 [[\<alpha>, \<beta>, 0, 0, 0, 0, 0, 0]]"
       have "\<forall>j::nat. j < 8 \<and> j \<notin> {4,5,6,7} \<longrightarrow> j \<in> {0,1,2,3}" 
         by auto
       thus ?thesis
-        apply (auto simp: f1 select_index_def).
+        by (auto simp: f1 select_index_def)
     qed
-*)
+    show ?thesis
+      sorry
+  qed
+  show ?thesis
+    sorry
+qed
+
 
 datatype bit = zero | one
 
