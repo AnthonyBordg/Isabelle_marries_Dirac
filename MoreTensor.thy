@@ -329,7 +329,7 @@ proof-
     by (simp add: mult_hom.hom_sum)
 qed
 
-lemma sum_prod:
+lemma sum_prod [simp]:
   fixes f::"nat \<Rightarrow> complex" and g::"nat \<Rightarrow> complex"
   shows "(\<Sum>i<a*b. f(i div b) * g(i mod b)) = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j))"
 proof (induction a)
@@ -423,10 +423,31 @@ qed
 
 lemma one_mat_Tensor:
   assumes "i < 2^(m+n)" and "j < 2^(m+n)"
-  shows "1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) * 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n) = 1\<^sub>m (2^(m+n)) $$ (i, j)"
-proof-
-  show ?thesis
-    sorry
+  shows "((1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n))::complex) * 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n) = 1\<^sub>m (2^(m+n)) $$ (i, j)"
+proof (cases "i = j")
+  have a0:"i div 2^n < 2^m \<and> j div 2^n < 2^m"
+    using assms
+    by (simp add: less_mult_imp_div_less power_add)
+  case c0:True
+  then show ?thesis
+    using assms c0 a0
+    by simp
+next
+  case c1:False
+  have a0:"i div 2^n < 2^m \<and> j div 2^n < 2^m"
+    using assms
+    by (simp add: less_mult_imp_div_less power_add)
+  have "i-j = (i div 2^n) * 2^n + i mod 2^n - (j div 2^n) * 2^n - j mod 2^n"
+    by (simp add: div_mult_mod_eq algebra_simps)
+  then have "i div 2^n \<noteq> j div 2^n \<or> i mod 2^n \<noteq> j mod 2^n"
+    using c1
+    by (metis div_mult_mod_eq)
+  then have "1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) = 0 \<or> 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n) = 0"
+    using assms a0
+    by simp
+  then show ?thesis
+    using assms
+    by (simp add: c1)
 qed
 
 lemma tensor_gate [simp]:
@@ -477,8 +498,7 @@ proof
                (\<Sum>k<2^n. cnj(G2 $$ (k, i mod 2^n)) * G2 $$ (k, j mod 2^n))"
         using sum_prod[of "\<lambda>x. cnj(G1 $$ (x, i div 2^n)) * G1 $$ (x, j div 2^n)" "2^n" 
                           "\<lambda>x. cnj(G2 $$ (x, i mod 2^n)) * G2 $$ (x, j mod 2^n)" "2^m"]
-        (*by (auto simp add: power_add)*)
-        sorry
+        by (smt f1 f2 f3 power_add semiring_normalization_rules(13) sum.cong)
       have f6: "((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i,j) = 
         (\<Sum>k1<2^m. cnj(G1 $$ (k1, i div 2^n)) * G1 $$ (k1, j div 2^n)) * 
         (\<Sum>k2<2^n. cnj(G2 $$ (k2, i mod 2^n)) * G2 $$ (k2, j mod 2^n))"
@@ -545,8 +565,7 @@ proof
                  (\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k)))"
           using sum_prod[of "\<lambda>k. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))" "2^n" 
                             "\<lambda>k. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k))" "2^m"]
-          (*by (auto simp add: power_add)*)
-          sorry
+          by (smt f1 f2 f3 power_add semiring_normalization_rules(13) sum.cong)
         have f6: "((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i,j) = 
           (\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) * 
           (\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k)))"
