@@ -34,22 +34,6 @@ next
     by(auto simp add: M_def)
   have f0:"dim_row M = 8"
     by (simp add: M_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 0) = M $$ (0, 0)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 1) = M $$ (0, 1)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 2) = M $$ (0, 2)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 3) = M $$ (0, 3)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 4) = M $$ (0, 4)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 5) = M $$ (0, 5)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 6) = M $$ (0, 6)"
-    by (simp add: id_def M_def CNOT_def)
-  then have "(CNOT \<Otimes> Quantum.id 1) $$ (0, 7) = M $$ (0, 7)"
-    by (simp add: id_def M_def CNOT_def)
   have "(CNOT \<Otimes> 1\<^sub>m 2) $$ (i, j) = CNOT $$ (i div 2, j div 2) * (1\<^sub>m 2) $$ (i mod 2, j mod 2)"
     using a1 a2
     by (simp add: CNOT_def M_def mult.commute one_mat_def)
