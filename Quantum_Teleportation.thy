@@ -67,8 +67,8 @@ definition Alice_meas:: "complex Matrix.mat \<Rightarrow> _list" where
 "Alice_meas \<phi> \<equiv> [
 ((prob0 3 (Alice \<phi>) 0) * (prob0 3 (post_meas0 3 (Alice \<phi>) 0) 1), post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1)
 , ((prob0 3 (Alice \<phi>) 0) * (prob1 3 (post_meas0 3 (Alice \<phi>) 0) 1), post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1)
-,((prob1 3 (Alice \<phi>) 0) * (prob0 3 (post_meas1 3 (Alice \<phi>) 0) 1), post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1)
-,((prob1 3 (Alice \<phi>) 0) * (prob1 3 (post_meas1 3 (Alice \<phi>) 0) 1), post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1)
+, ((prob1 3 (Alice \<phi>) 0) * (prob0 3 (post_meas1 3 (Alice \<phi>) 0) 1), post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1)
+, ((prob1 3 (Alice \<phi>) 0) * (prob1 3 (post_meas1 3 (Alice \<phi>) 0) 1), post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1)
 ]"
 
 definition Alice_pos:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat \<Rightarrow> bool" where
