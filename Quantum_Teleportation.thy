@@ -186,24 +186,42 @@ definition Alice_pos:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat \<Ri
                   q = mat_of_cols_list 8 [[0, 0, 0, 0, \<phi> $$ (0,0), - \<phi> $$ (1,0), 0, 0]] \<or>
                   q = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, - \<phi> $$ (1,0), \<phi> $$ (0,0)]]"
 
-lemma Alice_case [simp]:
-  assumes "state 1 \<phi>" and "state 3 q" and "List.member (Alice_meas \<phi>) (p, q)"
-  shows "Alice_pos \<phi> q"
+lemma two_div_sqrt_two [simp]:
+  shows "2 * complex_of_real (sqrt (1/2)) = complex_of_real (sqrt 2)"
 proof-
-  define \<alpha> \<beta> where a0:"\<alpha> = \<phi> $$ (0,0)" and a1:"\<beta> = \<phi> $$ (1,0)"
-  then have a2:"cmod(\<alpha>)^2 + cmod(\<beta>)^2 = 1"
-    using set_2 assms(1) state_def a0 a1 Matrix.col_def cpx_vec_length_def
-    by (auto simp add: atLeast0LessThan)
-  have a3:"{j::nat. select_index 3 0 j} = {4,5,6,7}"
+  have f1: "\<And>r ra. r *\<^sub>R (1::complex) / ra *\<^sub>R 1 = (r / ra) *\<^sub>R 1"
+    by (metis of_real_def of_real_divide)
+  { assume "sqrt (1 / 2) *\<^sub>R (1::complex) \<noteq> 0"
+    then have "sqrt 2 *\<^sub>R (1::complex) / sqrt (1 / 2) *\<^sub>R 1 = 2 \<and> sqrt (1 / 2) *\<^sub>R (1::complex) \<noteq> 0"
+      using f1 by (metis div_by_1 divide_divide_eq_right numeral_times_numeral of_real_def of_real_numeral real_sqrt_divide real_sqrt_four semiring_norm(12) semiring_norm(13))
+    then have "2 * sqrt (1 / 2) *\<^sub>R (1::complex) = sqrt 2 *\<^sub>R 1"
+      by (metis (full_types) nonzero_eq_divide_eq) }
+  then show ?thesis
+    by (simp add: of_real_def)
+qed
+
+lemma phi_vec_length:
+  assumes "state 1 \<phi>"
+  shows "cmod(\<phi> $$ (0,0))^2 + cmod(\<phi> $$ (Suc 0,0))^2 = 1"
+  using set_2 assms state_def Matrix.col_def cpx_vec_length_def
+  by (auto simp add: atLeast0LessThan)
+
+lemma select_index_3_subsets [simp]: 
+  shows "{j::nat. select_index 3 0 j} = {4,5,6,7} \<and>
+         {j::nat. j < 8 \<and> \<not> select_index 3 0 j} = {0,1,2,3} \<and>
+         {j::nat. select_index 3 1 j} = {2,3,6,7} \<and>
+         {j::nat. j < 8 \<and> \<not> select_index 3 1 j} = {0,1,4,5}"
+proof-
+  have "{j::nat. select_index 3 0 j} = {4,5,6,7}"
     by (auto simp add: select_index_def)
-  have a4:"{j::nat. j < 8 \<and> \<not> select_index 3 0 j} = {0,1,2,3}"
+  moreover have "{j::nat. j < 8 \<and> \<not> select_index 3 0 j} = {0,1,2,3}"
   proof-
     have "\<And>j::nat. j < 8 \<and> j \<notin> {4,5,6,7} \<Longrightarrow> j \<in> {0,1,2,3}" 
       by auto
     then show ?thesis
       by (auto simp add: select_index_def)
   qed
-  have a5:"{j::nat. select_index 3 (Suc 0) j} = {2,3,6,7}"
+  moreover have f1:"{j::nat. select_index 3 (Suc 0) j} = {2,3,6,7}"
   proof
     show "{j. select_index 3 (Suc 0) j} \<subseteq> {2, 3, 6, 7}"
     proof
@@ -216,54 +234,42 @@ proof-
     show "{2, 3, 6, 7} \<subseteq> {j. select_index 3 (Suc 0) j}"
       by (auto simp add: select_index_def)
   qed
-  have a6:"{j::nat. j < 8 \<and> \<not> select_index 3 (Suc 0) j} = {0,1,4,5}"
+  moreover have "{j::nat. j < 8 \<and> \<not> select_index 3 (Suc 0) j} = {0,1,4,5}"
   proof-
     have "{j::nat. j < 8 \<and> j \<notin> {2,3,6,7}} = {0,1,4,5}" 
       by auto
     then show ?thesis
-      using a5
+      using f1
       by blast
   qed
-  have a7:"select_index 3 0 0 = False \<and> select_index 3 0 1 = False \<and> 
-           select_index 3 0 2 = False \<and> select_index 3 0 3 = False "
-    using a4
-    by auto
-  have a8:"select_index 3 1 0 = False \<and> select_index 3 1 1 = False \<and> 
-           select_index 3 1 4 = False \<and> select_index 3 1 5 = False "
-    using a6
-    by auto
-  have m0:"2 * complex_of_real (sqrt (1/2)) = complex_of_real (sqrt 2)"
-  proof -
-    have f1: "\<And>r ra. r *\<^sub>R (1::complex) / ra *\<^sub>R 1 = (r / ra) *\<^sub>R 1"
-      by (metis of_real_def of_real_divide)
-    { assume "sqrt (1 / 2) *\<^sub>R (1::complex) \<noteq> 0"
-      then have "sqrt 2 *\<^sub>R (1::complex) / sqrt (1 / 2) *\<^sub>R 1 = 2 \<and> sqrt (1 / 2) *\<^sub>R (1::complex) \<noteq> 0"
-        using f1 by (metis div_by_1 divide_divide_eq_right numeral_times_numeral of_real_def of_real_numeral real_sqrt_divide real_sqrt_four semiring_norm(12) semiring_norm(13))
-      then have "2 * sqrt (1 / 2) *\<^sub>R (1::complex) = sqrt 2 *\<^sub>R 1"
-        by (metis (full_types) nonzero_eq_divide_eq) }
-    then show ?thesis
-      by (simp add: of_real_def)
-  qed
+  ultimately show ?thesis
+    by simp
+qed
 
-  have c0:"prob0 3 (Alice \<phi>) 0 = 1/2"
+lemma prob_index_0_alice:
+  assumes "state 1 \<phi>"
+  shows "prob0 3 (Alice \<phi>) 0 = 1/2 \<and> prob1 3 (Alice \<phi>) 0 = 1/2"
+proof
+  show "prob0 3 (Alice \<phi>) 0 = 1/2"
     using Alice_result assms prob0_def Alice_state
-    apply (auto simp add: a4)
-    by (metis (no_types, hide_lams) One_nat_def a0 a1 a2 four_x_squared mult.commute 
+    apply auto
+    by (metis (no_types, hide_lams) One_nat_def phi_vec_length four_x_squared mult.commute 
 nonzero_mult_div_cancel_right times_divide_eq_right zero_neq_numeral)
-  have c1:"prob1 3 (Alice \<phi>) 0 = 1/2"
-    using Alice_result assms prob1_def Alice_state
-    apply (auto simp add: a3)
-    by (metis (no_types, hide_lams) One_nat_def a0 a1 a2 four_x_squared mult.commute 
-nonzero_mult_div_cancel_right times_divide_eq_right zero_neq_numeral)
+  then show"prob1 3 (Alice \<phi>) 0 = 1/2"
+    using prob_sum_is_one[of "3" "Alice \<phi>" "0"] Alice_state[of "\<phi>"] assms(1)
+    by linarith
+qed
 
-  have c2:"post_meas0 3 (Alice \<phi>) 0 = mat_of_cols_list 8 [[\<alpha>/sqrt(2), \<beta>/sqrt(2), \<beta>/sqrt(2), \<alpha>/sqrt(2), 0, 0, 0, 0]]"
+lemma post_meas0_index_0_alice:
+  assumes "state 1 \<phi>" and "\<alpha> = \<phi> $$ (0,0)" and "\<beta> = \<phi> $$ (1,0)"
+  shows "post_meas0 3 (Alice \<phi>) 0 = mat_of_cols_list 8 [[\<alpha>/sqrt(2), \<beta>/sqrt(2), \<beta>/sqrt(2), \<alpha>/sqrt(2), 0, 0, 0, 0]]"
   proof
     define v where asm:"v = mat_of_cols_list 8 [[\<alpha>/sqrt(2), \<beta>/sqrt(2), \<beta>/sqrt(2), \<alpha>/sqrt(2), 0, 0, 0, 0]]"
     show "dim_row (post_meas0 3 (Alice \<phi>) 0) = dim_row v"
-      using mat_of_cols_list_def post_meas0_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas0_def assms(1) Alice_state ket_vec_def asm
       by auto
     show "dim_col (post_meas0 3 (Alice \<phi>) 0) = dim_col v"
-      using mat_of_cols_list_def post_meas0_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas0_def assms(1) Alice_state ket_vec_def asm
       by auto
     show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> post_meas0 3 (Alice \<phi>) 0 $$ (i, j) = v $$ (i, j)"
     proof-
@@ -272,20 +278,23 @@ nonzero_mult_div_cancel_right times_divide_eq_right zero_neq_numeral)
         using asm set_8 mat_of_cols_list_def
         by auto
       then show "post_meas0 3 (Alice \<phi>) 0 $$ (i, j) = v $$ (i, j)"
-        using post_meas0_def assms asm mat_of_cols_list_def ket_vec_def a3
-        apply (auto simp add: c0)
-        using assms Alice_result a0 a1 m0 a4
-        by (auto)
+        using post_meas0_def assms asm mat_of_cols_list_def ket_vec_def
+        apply (auto simp add: prob_index_0_alice)
+        using assms(1) Alice_result select_index_def
+        by auto
     qed
   qed
-  have c3:"post_meas1 3 (Alice \<phi>) 0 = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>/sqrt(2), -\<beta>/sqrt(2), -\<beta>/sqrt(2), \<alpha>/sqrt(2)]]"
+
+lemma post_meas1_index_0_alice:
+  assumes "state 1 \<phi>" and "\<alpha> = \<phi> $$ (0,0)" and "\<beta> = \<phi> $$ (1,0)"
+  shows "post_meas1 3 (Alice \<phi>) 0 = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>/sqrt(2), -\<beta>/sqrt(2), -\<beta>/sqrt(2), \<alpha>/sqrt(2)]]"
   proof
     define v where asm:"v = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>/sqrt(2), -\<beta>/sqrt(2), -\<beta>/sqrt(2), \<alpha>/sqrt(2)]]"
     show "dim_row (post_meas1 3 (Alice \<phi>) 0) = dim_row v"
-      using mat_of_cols_list_def post_meas1_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas1_def assms(1) Alice_state ket_vec_def asm
       by auto
     show "dim_col (post_meas1 3 (Alice \<phi>) 0) = dim_col v"
-      using mat_of_cols_list_def post_meas1_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas1_def assms(1) Alice_state ket_vec_def asm
       by auto
     show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> post_meas1 3 (Alice \<phi>) 0 $$ (i, j) = v $$ (i, j)"
     proof-
@@ -294,43 +303,58 @@ nonzero_mult_div_cancel_right times_divide_eq_right zero_neq_numeral)
         using asm set_8 mat_of_cols_list_def
         by auto
       then show "post_meas1 3 (Alice \<phi>) 0 $$ (i, j) = v $$ (i, j)"
-        using post_meas1_def assms asm mat_of_cols_list_def ket_vec_def a7
-        apply (auto simp add: c1)
-        using assms Alice_result a0 a1 m0 a3
-        by (auto)
+        using post_meas1_def assms asm mat_of_cols_list_def ket_vec_def
+        apply (auto simp add: prob_index_0_alice)
+        using assms(1) Alice_result select_index_def
+        by auto
     qed
   qed
 
-  have c4:"state 3 (post_meas0 3 (Alice \<phi>) 0)"
-    using assms c0
-    by auto
-  have c5:"state 3 (post_meas1 3 (Alice \<phi>) 0)"
-    using assms c1
-    by auto
+lemma post_meas0_index_0_alice_state [simp]:
+  assumes "state 1 \<phi>"
+  shows "state 3 (post_meas0 3 (Alice \<phi>) 0)"
+  using assms
+  by (auto simp add: prob_index_0_alice)
 
-  have c6:"prob0 3 (Matrix.mat 8 (Suc 0) 
-          (\<lambda>(i, j). [[\<alpha>/sqrt 2, \<beta>/sqrt 2, \<beta>/sqrt 2, \<alpha>/sqrt 2, 0, 0, 0, 0]] ! j ! i)) (Suc 0) = 1/2"
-    using c2 prob0_def mat_of_cols_list_def c4
-    by (auto simp add: a6 norm_divide power_divide a2)
-  have c7:"prob1 3 (Matrix.mat 8 (Suc 0) 
-          (\<lambda>(i, j). [[\<alpha>/sqrt 2, \<beta>/sqrt 2, \<beta>/sqrt 2, \<alpha>/sqrt 2, 0, 0, 0, 0]] ! j ! i)) (Suc 0) = 1/2"
-    using c2 prob1_def mat_of_cols_list_def c4
-    by (auto simp add: a5 norm_divide power_divide a2 algebra_simps)
-  have c8:"prob0 3 (Matrix.mat 8 (Suc 0) 
-          (\<lambda>(i, j). [[0, 0, 0, 0, \<alpha>/complex_of_real (sqrt 2), -(\<beta>/complex_of_real (sqrt 2)), -(\<beta>/complex_of_real (sqrt 2)),
-                      \<alpha>/complex_of_real (sqrt 2)]] ! j ! i)) (Suc 0) = 1/2"
-    using c3 prob0_def mat_of_cols_list_def c5
-    by (auto simp add: a6 norm_divide power_divide a2)
-  have c9:"prob1 3 (Matrix.mat 8 (Suc 0) 
-          (\<lambda>(i, j). [[0, 0, 0, 0, \<alpha>/complex_of_real (sqrt 2), -(\<beta>/complex_of_real (sqrt 2)), -(\<beta>/complex_of_real (sqrt 2)),
-                      \<alpha>/complex_of_real (sqrt 2)]] ! j ! i)) (Suc 0) = 1/2"
-    using c3 prob1_def mat_of_cols_list_def c5
-    by (auto simp add: a5 norm_divide power_divide a2 algebra_simps)
+lemma post_meas1_index_0_alice_state [simp]:
+  assumes "state 1 \<phi>"
+  shows "state 3 (post_meas1 3 (Alice \<phi>) 0)"
+  using assms
+  by (auto simp add: prob_index_0_alice)
+
+
+lemma Alice_case [simp]:
+  assumes "state 1 \<phi>" and "state 3 q" and "List.member (Alice_meas \<phi>) (p, q)"
+  shows "Alice_pos \<phi> q"
+proof-
+  define \<alpha> \<beta> where a0:"\<alpha> = \<phi> $$ (0,0)" and a1:"\<beta> = \<phi> $$ (1,0)"
+  have f0:"prob0 3 (Matrix.mat 8 (Suc 0) (\<lambda>(i, j). [[\<phi> $$ (0,0)/sqrt 2, \<phi> $$ (Suc 0,0)/sqrt 2, 
+                    \<phi> $$ (Suc 0,0)/sqrt 2, \<phi> $$ (0,0)/sqrt 2, 0, 0, 0, 0]] ! j ! i)) (Suc 0) = 1/2"
+    using post_meas0_index_0_alice prob0_def mat_of_cols_list_def post_meas0_index_0_alice_state 
+      assms(1) a0 a1 select_index_3_subsets
+    by (auto simp add: norm_divide power_divide phi_vec_length)
+  have f1:"prob1 3 (Matrix.mat 8 (Suc 0) (\<lambda>(i, j). [[\<phi> $$ (0,0)/sqrt 2, \<phi> $$ (Suc 0,0)/sqrt 2, 
+                    \<phi> $$ (Suc 0,0)/sqrt 2, \<phi> $$ (0,0)/sqrt 2, 0, 0, 0, 0]] ! j ! i)) (Suc 0) = 1/2"
+    using post_meas0_index_0_alice prob1_def mat_of_cols_list_def post_meas0_index_0_alice_state 
+      assms(1) a0 a1 select_index_3_subsets
+    by (auto simp add: norm_divide power_divide phi_vec_length algebra_simps)
+  have f2:"prob0 3 (Matrix.mat 8 (Suc 0) 
+          (\<lambda>(i, j). [[0, 0, 0, 0, \<phi> $$ (0,0)/complex_of_real (sqrt 2), -(\<phi> $$ (Suc 0,0)/complex_of_real (sqrt 2)), 
+                      -(\<phi> $$ (Suc 0,0)/complex_of_real (sqrt 2)), \<phi> $$ (0,0)/complex_of_real (sqrt 2)]] ! j ! i)) (Suc 0) = 1/2"
+    using post_meas1_index_0_alice prob0_def mat_of_cols_list_def post_meas1_index_0_alice_state 
+      assms(1) a0 a1 select_index_3_subsets
+    by (auto simp add: norm_divide power_divide phi_vec_length)
+  have f3:"prob1 3 (Matrix.mat 8 (Suc 0) 
+          (\<lambda>(i, j). [[0, 0, 0, 0, \<phi> $$ (0,0)/complex_of_real (sqrt 2), -(\<phi> $$ (Suc 0,0)/complex_of_real (sqrt 2)), 
+                      -(\<phi> $$ (Suc 0,0)/complex_of_real (sqrt 2)), \<phi> $$ (0,0)/complex_of_real (sqrt 2)]] ! j ! i)) (Suc 0) = 1/2"
+    using post_meas1_index_0_alice prob1_def mat_of_cols_list_def post_meas1_index_0_alice_state 
+      assms(1) a0 a1 select_index_3_subsets
+    by (auto simp add: norm_divide power_divide phi_vec_length algebra_simps)
   have "(p, q) = ((prob0 3 (Alice \<phi>) 0) * (prob0 3 (post_meas0 3 (Alice \<phi>) 0) 1), post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1) \<or>
         (p, q) = ((prob0 3 (Alice \<phi>) 0) * (prob1 3 (post_meas0 3 (Alice \<phi>) 0) 1), post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1) \<or>
         (p, q) = ((prob1 3 (Alice \<phi>) 0) * (prob0 3 (post_meas1 3 (Alice \<phi>) 0) 1), post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1) \<or>
         (p, q) = ((prob1 3 (Alice \<phi>) 0) * (prob1 3 (post_meas1 3 (Alice \<phi>) 0) 1), post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1)"
-    using assms Alice_meas_def List.member_def
+    using assms(3) Alice_meas_def List.member_def
     by (smt list.distinct(1) list.exhaust list.inject member_rec(1) member_rec(2))
   then have "q = post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1 \<or> q = post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1 \<or>
              q = post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1 \<or> q = post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1"
@@ -339,88 +363,88 @@ nonzero_mult_div_cancel_right times_divide_eq_right zero_neq_numeral)
   proof
     define v where asm:"v = mat_of_cols_list 8 [[\<alpha>, \<beta>, 0, 0, 0, 0, 0, 0]]"
     show "dim_row (post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1) = dim_row v"
-      using mat_of_cols_list_def post_meas0_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas0_def ket_vec_def asm
       by auto
     show "dim_col (post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1) = dim_col v"
-      using mat_of_cols_list_def post_meas0_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas0_def ket_vec_def asm
       by auto
     show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
     proof-
       fix i j assume "i < dim_row v" and "j < dim_col v"
       then have "i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def
+        using asm mat_of_cols_list_def
         by auto
       then show "post_meas0 3 (post_meas0 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
-        using c2
+        using post_meas0_index_0_alice assms(1) a0 a1
         apply (auto)
-        using post_meas0_def assms asm mat_of_cols_list_def ket_vec_def a8 a5
-        by (auto simp add: c6 real_sqrt_divide)
+        using post_meas0_def asm mat_of_cols_list_def ket_vec_def select_index_def
+        by (auto simp add: f0 real_sqrt_divide)
     qed
   qed
   moreover have "post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1 = mat_of_cols_list 8 [[0, 0, \<beta>, \<alpha>, 0, 0, 0, 0]]"
   proof
     define v where asm:"v = mat_of_cols_list 8 [[0, 0, \<beta>, \<alpha>, 0, 0, 0, 0]]"
     show "dim_row (post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1) = dim_row v"
-      using mat_of_cols_list_def post_meas1_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas1_def ket_vec_def asm
       by auto
     show "dim_col (post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1) = dim_col v"
-      using mat_of_cols_list_def post_meas1_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas1_def ket_vec_def asm
       by auto
     show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
     proof-
       fix i j assume "i < dim_row v" and "j < dim_col v"
       then have "i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def
+        using asm mat_of_cols_list_def
         by auto
       then show "post_meas1 3 (post_meas0 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
-        using c2
+        using post_meas0_index_0_alice assms(1) a0 a1
         apply (auto)
-        using post_meas1_def assms asm mat_of_cols_list_def ket_vec_def a8 a5
-        by (auto simp add: c7 real_sqrt_divide)
+        using post_meas1_def asm mat_of_cols_list_def ket_vec_def select_index_def
+        by (auto simp add: f1 real_sqrt_divide)
     qed
   qed
   moreover have "post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1 = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>, -\<beta>, 0, 0]]"
   proof
     define v where asm:"v = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>, -\<beta>, 0, 0]]"
     show "dim_row (post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1) = dim_row v"
-      using mat_of_cols_list_def post_meas0_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas0_def ket_vec_def asm
       by auto
     show "dim_col (post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1) = dim_col v"
-      using mat_of_cols_list_def post_meas0_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas0_def ket_vec_def asm
       by auto
     show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
     proof-
       fix i j assume "i < dim_row v" and "j < dim_col v"
       then have "i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def
+        using asm mat_of_cols_list_def
         by auto
       then show "post_meas0 3 (post_meas1 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
-        using c3
+        using post_meas1_index_0_alice assms(1) a0 a1
         apply (auto)
-        using post_meas0_def assms asm mat_of_cols_list_def ket_vec_def a8 a5
-        by (auto simp add: c8 real_sqrt_divide)
+        using post_meas0_def asm mat_of_cols_list_def ket_vec_def select_index_def
+        by (auto simp add: f2 real_sqrt_divide)
     qed
   qed
   moreover have "post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1 = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, -\<beta>, \<alpha>]]"
   proof
     define v where asm:"v = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, -\<beta>, \<alpha>]]"
     show "dim_row (post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1) = dim_row v"
-      using mat_of_cols_list_def post_meas1_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas1_def ket_vec_def asm
       by auto
     show "dim_col (post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1) = dim_col v"
-      using mat_of_cols_list_def post_meas1_def assms Alice_state ket_vec_def asm
+      using mat_of_cols_list_def post_meas1_def ket_vec_def asm
       by auto
     show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
     proof-
       fix i j assume "i < dim_row v" and "j < dim_col v"
       then have "i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def
+        using asm mat_of_cols_list_def
         by auto
       then show "post_meas1 3 (post_meas1 3 (Alice \<phi>) 0) 1 $$ (i, j) = v $$ (i, j)"
-        using c3
+        using post_meas1_index_0_alice assms(1) a0 a1
         apply (auto)
-        using post_meas1_def assms asm mat_of_cols_list_def ket_vec_def a8 a5
-        by (auto simp add: c9 real_sqrt_divide)
+        using post_meas1_def asm mat_of_cols_list_def ket_vec_def select_index_def
+        by (auto simp add: f3 real_sqrt_divide)
     qed
   qed
   ultimately show ?thesis
@@ -587,9 +611,9 @@ lemma teleportation:
 proof-
   define \<alpha> \<beta> where a0:"\<alpha> = \<phi> $$ (0,0)" and a1:"\<beta> = \<phi> $$ (1,0)"
   then have "q = mat_of_cols_list 8 [[\<alpha>, \<beta>, 0, 0, 0, 0, 0, 0]] \<or>
-        q = mat_of_cols_list 8 [[0, 0, \<beta>, \<alpha>, 0, 0, 0, 0]] \<or>
-        q = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>, -\<beta>, 0, 0]] \<or>
-        q = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, -\<beta>, \<alpha>]]"
+             q = mat_of_cols_list 8 [[0, 0, \<beta>, \<alpha>, 0, 0, 0, 0]] \<or>
+             q = mat_of_cols_list 8 [[0, 0, 0, 0, \<alpha>, -\<beta>, 0, 0]] \<or>
+             q = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, -\<beta>, \<alpha>]]"
     using assms Alice_case Alice_pos_def
     by auto
   moreover have "q = mat_of_cols_list 8 [[\<alpha>, \<beta>, 0, 0, 0, 0, 0, 0]] \<Longrightarrow> Bob q (Alice_out \<phi> q) = 
@@ -597,10 +621,10 @@ mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>"
   proof
     assume asm:"q = Tensor.mat_of_cols_list 8 [[\<alpha>, \<beta>, 0, 0, 0, 0, 0, 0]]"
     show "dim_row (Bob q (Alice_out \<phi> q)) = dim_row (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>)"
-      using mat_of_cols_list_def a0 a1 assms state_def Bob_def Alice_out_def asm
+      using mat_of_cols_list_def a0 a1 assms(1) state_def Bob_def Alice_out_def asm
       by auto
     show "dim_col (Bob q (Alice_out \<phi> q)) = dim_col (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>)"
-      using mat_of_cols_list_def a0 a1 assms state_def Bob_def Alice_out_def asm
+      using mat_of_cols_list_def a0 a1 assms(1) state_def Bob_def Alice_out_def asm
       by auto
     show "\<And>i j. i < dim_row (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>) \<Longrightarrow> 
                 j < dim_col (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>) \<Longrightarrow>
@@ -609,7 +633,7 @@ mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>"
       fix i j assume "i < dim_row (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>)" and
                      "j < dim_col (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>)"
       then have "i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def assms state_def
+        using asm mat_of_cols_list_def assms state_def
         by auto
       then show "Bob q (Alice_out \<phi> q) $$ (i, j) = (Tensor.mat_of_cols_list 4 [[1, 0, 0, 0]] \<Otimes> \<phi>) $$ (i, j)"
         using Bob_def Alice_out_def asm mat_of_cols_list_def a0 a1 assms state_def
@@ -633,7 +657,7 @@ mat_of_cols_list 4 [[0, 1, 0, 0]] \<Otimes> \<phi>"
       fix i j assume "i < dim_row (Tensor.mat_of_cols_list 4 [[0, 1, 0, 0]] \<Otimes> \<phi>)" and
                      "j < dim_col (Tensor.mat_of_cols_list 4 [[0, 1, 0, 0]] \<Otimes> \<phi>)"
       then have c1:"i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def assms(1) state_def
+        using asm mat_of_cols_list_def assms(1) state_def
         by auto
       then have "(M3 * (Matrix.mat 8 (Suc 0) (\<lambda>(i, j). [[0, 0, \<phi> $$ (Suc 0, 0), \<phi> $$ (0, 0), 0, 0, 0, 0]] ! j ! i))) $$ (i, j) = 
 (Tensor.mat_of_cols_list 4 [[0, 1, 0, 0]] \<Otimes> \<phi>) $$ (i, j)"
@@ -661,7 +685,7 @@ mat_of_cols_list 4 [[0, 0, 1, 0]] \<Otimes> \<phi>"
       fix i j assume "i < dim_row (Tensor.mat_of_cols_list 4 [[0, 0, 1, 0]] \<Otimes> \<phi>)" and
                      "j < dim_col (Tensor.mat_of_cols_list 4 [[0, 0, 1, 0]] \<Otimes> \<phi>)"
       then have c1:"i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def assms state_def
+        using asm mat_of_cols_list_def assms state_def
         by auto
       then have "(M5 * (Matrix.mat 8 (Suc 0) (\<lambda>(i, j). [[0, 0, 0, 0, \<phi> $$ (0, 0), -\<phi> $$ (Suc 0, 0), 0, 0]] ! j ! i))) $$ (i, j) = 
 (Tensor.mat_of_cols_list 4 [[0, 0, 1, 0]] \<Otimes> \<phi>) $$ (i, j)"
@@ -689,7 +713,7 @@ mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>"
       fix i j assume "i < dim_row (Tensor.mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>)" and
                      "j < dim_col (Tensor.mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>)"
       then have c1:"i \<in> {0,1,2,3,4,5,6,7} \<and> j = 0"
-        using asm set_8 mat_of_cols_list_def assms state_def
+        using asm mat_of_cols_list_def assms state_def
         by auto
       then have "(M4 * (Matrix.mat 8 (Suc 0) (\<lambda>(i, j). [[0, 0, 0, 0, 0, 0, -\<phi> $$ (Suc 0, 0), \<phi> $$ (0, 0)]] ! j ! i))) $$ (i, j) = 
 (Tensor.mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>) $$ (i, j)"
@@ -702,16 +726,16 @@ mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>"
   qed
   moreover have "state 2 (mat_of_cols_list 4 [[1, 0, 0, 0]])"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0
-    by (auto)
+    by auto
   moreover have "state 2 (mat_of_cols_list 4 [[0, 1, 0, 0]])"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0
-    by (auto)
+    by auto
   moreover have "state 2 (mat_of_cols_list 4 [[0, 0, 1, 0]])"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0
-    by (auto)
+    by auto
   moreover have "state 2 (mat_of_cols_list 4 [[0, 0, 0, -\<i>]])"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0
-    by (auto)
+    by auto
   ultimately show ?thesis
     by auto
 qed
