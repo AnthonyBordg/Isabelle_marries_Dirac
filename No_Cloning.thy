@@ -185,6 +185,14 @@ locale quantum_machine =
     and dim_col [simp]: "dim_col U = 2^n * 2^n"
     and square [simp]: "square_mat U" and unitary [simp]: "unitary U"
 
+lemma inner_prod_of_unit_vec:
+  fixes n i:: nat
+  assumes "i < n"
+  shows "\<langle>unit_vec n i| unit_vec n i\<rangle> = 1"
+  apply (auto simp add: inner_prod_def unit_vec_def) 
+  by (simp add: assms sum.cong[of "{0..<n}" "{0..<n}" 
+"\<lambda>j. cnj (if j = i then 1 else 0) * (if j = i then 1 else 0)" "\<lambda>j. (if j = i then 1 else 0)"]) 
+
 theorem (in quantum_machine) no_cloning:
   assumes [simp]: "dim_vec v = 2^n" and [simp]: "dim_vec w = 2^n" and 
     cloning1: "\<And>s. U * ( |v\<rangle> \<Otimes> |s\<rangle>) = |v\<rangle> \<Otimes> |v\<rangle>" and
@@ -192,42 +200,44 @@ theorem (in quantum_machine) no_cloning:
     "\<langle>v|v\<rangle> = 1" and "\<langle>w|w\<rangle> = 1"
   shows "v = w \<or> \<langle>v|w\<rangle> = 0"
 proof-
-  define s:: "complex Matrix.vec" where a0:"s = Matrix.vec (2^n) (\<lambda>i. if i = 0 then 1 else 0)"
-  have f1:"\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| = (( |v\<rangle> \<Otimes> |s\<rangle>)\<^sup>\<dagger>)"
+  define s:: "complex Matrix.vec" where d0:"s = unit_vec (2^n) 0"
+  have f0:"\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| = (( |v\<rangle> \<Otimes> |s\<rangle>)\<^sup>\<dagger>)" 
     using hermite_cnj_of_tensor[of "|v\<rangle>" "|s\<rangle>"] bra_def hermite_cnj_def ket_vec_def by simp
-  have f2:"\<langle>|v\<rangle>| \<Otimes> \<langle>|v\<rangle>| = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>)"
-    using hermite_cnj_of_tensor[of "|v\<rangle>" "|v\<rangle>"] bra_def hermite_cnj_def ket_vec_def by simp
-  have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>)"
-    using hermite_cnj_of_prod[of "U" "|v\<rangle> \<Otimes> |s\<rangle>"] f1 a0 by (simp add: ket_vec_def)
-  then have f3:"(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U * ( |w\<rangle> \<Otimes> |s\<rangle>)" by simp
-  have f4:"(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>) * ( |w\<rangle> \<Otimes> |w\<rangle>)"
-    using assms(2-4) a0 by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
+  moreover have f1:"( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger> * ( |w\<rangle> \<Otimes> |w\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ( |w\<rangle> \<Otimes> |s\<rangle>)"
+  proof-
+    have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>)"
+      using hermite_cnj_of_prod[of "U" "|v\<rangle> \<Otimes> |s\<rangle>"] f0 d0 by (simp add: ket_vec_def)
+    then have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U * ( |w\<rangle> \<Otimes> |s\<rangle>)" by simp
+    moreover have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>) * ( |w\<rangle> \<Otimes> |w\<rangle>)"
+      using assms(2-4) d0 unit_vec_def by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
 dim_row_tensor_mat hermite_cnj_dim_col index_mult_mat(2) ket_vec_def square square_mat.elims(2))
-  have f5:"(U\<^sup>\<dagger>) * U = 1\<^sub>m (2^n * 2^n)"
-    using unitary_def dim_col unitary by simp
-  have f6:"(\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ((U\<^sup>\<dagger>) * U)"
-    using a0 assms(1) by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
-dim_row_tensor_mat f1 hermite_cnj_dim_col hermite_cnj_dim_row ket_vec_def local.dim_col)
-  have f7:"(\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * 1\<^sub>m (2^n * 2^n) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| )"
-    using f1 ket_vec_def a0 by simp
-  have "( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger> * ( |w\<rangle> \<Otimes> |w\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ( |w\<rangle> \<Otimes> |s\<rangle>)"
-    using f3 f4 f5 f6 f7 by simp
-  then have f8:"(\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|v\<rangle>| * |w\<rangle>) = (\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|s\<rangle>| * |s\<rangle>)"
-    using f2 a0 by (simp add: bra_def mult_distr_tensor ket_vec_def)
-  have f9:"((\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|v\<rangle>| * |w\<rangle>)) $$ (0,0) = \<langle>v|w\<rangle> * \<langle>v|w\<rangle>"
-    using assms inner_prod_with_times_mat[of "v" "w"] by (simp add: bra_def ket_vec_def)
-  have f10:"((\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|s\<rangle>| * |s\<rangle>)) $$ (0,0) = \<langle>v|w\<rangle> * \<langle>s|s\<rangle>"
-    using inner_prod_with_times_mat[of "v" "w"] inner_prod_with_times_mat[of "s" "s"] by(simp add: bra_def ket_vec_def)
-  have "\<langle>v|w\<rangle> * \<langle>v|w\<rangle> = \<langle>v|w\<rangle> * \<langle>s|s\<rangle>"
-    using f8 f9 f10 by simp
-  then have f11:"\<langle>v|w\<rangle> = 0 \<or> \<langle>v|w\<rangle> = \<langle>s|s\<rangle>"
-    using mult_left_cancel by simp
-  have "\<And>i. cnj (if i = 0 then 1 else 0) * (if i = 0 then 1 else 0) = (if i = 0 then 1 else 0)" by simp
-  then have "\<langle>s|s\<rangle> = 1"
-    using a0 inner_prod_def by (simp add: inner_prod_def sum.cong[of "{0..<2 ^ n}" "{0..<2 ^ n}" 
-"\<lambda>i. cnj (if i = 0 then 1 else 0) * (if i = 0 then 1 else 0)" "\<lambda>i. (if i = 0 then 1 else 0)"])
-  then show ?thesis
-    using f11 assms by auto
+    moreover have "(U\<^sup>\<dagger>) * U = 1\<^sub>m (2^n * 2^n)"
+      using unitary_def dim_col unitary by simp
+    moreover have "(\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ((U\<^sup>\<dagger>) * U)"
+      using d0 assms(1) unit_vec_def by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
+dim_row_tensor_mat f0 hermite_cnj_dim_col hermite_cnj_dim_row ket_vec_def local.dim_col)
+    moreover have "(\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * 1\<^sub>m (2^n * 2^n) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| )"
+      using f0 ket_vec_def d0 by simp
+    ultimately show ?thesis by simp
+  qed
+  then have f2:"(\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|v\<rangle>| * |w\<rangle>) = (\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|s\<rangle>| * |s\<rangle>)"
+  proof-
+    have "\<langle>|v\<rangle>| \<Otimes> \<langle>|v\<rangle>| = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>)"
+      using hermite_cnj_of_tensor[of "|v\<rangle>" "|v\<rangle>"] bra_def hermite_cnj_def ket_vec_def by simp
+    then show ?thesis
+      using f1 d0 by (simp add: bra_def mult_distr_tensor ket_vec_def)
+  qed
+  then have "\<langle>v|w\<rangle> * \<langle>v|w\<rangle> = \<langle>v|w\<rangle> * \<langle>s|s\<rangle>"
+  proof-
+    have "((\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|v\<rangle>| * |w\<rangle>)) $$ (0,0) = \<langle>v|w\<rangle> * \<langle>v|w\<rangle>"
+      using assms inner_prod_with_times_mat[of "v" "w"] by (simp add: bra_def ket_vec_def)
+    moreover have "((\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|s\<rangle>| * |s\<rangle>)) $$ (0,0) = \<langle>v|w\<rangle> * \<langle>s|s\<rangle>"
+      using inner_prod_with_times_mat[of "v" "w"] inner_prod_with_times_mat[of "s" "s"] by(simp add: bra_def ket_vec_def)
+    ultimately show ?thesis using f2 by auto 
+  qed
+  then have "\<langle>v|w\<rangle> = 0 \<or> \<langle>v|w\<rangle> = \<langle>s|s\<rangle>" by (simp add: mult_left_cancel)
+  moreover have "\<langle>s|s\<rangle> = 1" by(simp add: d0 inner_prod_of_unit_vec)
+  ultimately show ?thesis using assms(1,2,5,6) by auto
 qed
 
 
