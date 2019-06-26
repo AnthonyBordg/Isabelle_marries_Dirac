@@ -486,16 +486,16 @@ proof
     have f0:"gate 3 (Id 2 \<Otimes> Y)"
       using Y_is_gate tensor_gate[of "2" "Id 2" "1" "Y"] by simp
     then show "dim_row (Id 2 \<Otimes> Y) = dim_row M4"
-      using gate_def by (simp add:  mat_of_cols_list_def)
+      using gate_def by (simp add: mat_of_cols_list_def)
     show "dim_col (Id 2 \<Otimes> Y) = dim_col M4"
-      using f0 gate_def by (simp add:  mat_of_cols_list_def)
+      using f0 gate_def by (simp add: mat_of_cols_list_def)
     show "\<And>i j. i < dim_row M4 \<Longrightarrow> j < dim_col M4 \<Longrightarrow> (Id 2 \<Otimes> Y) $$ (i,j) = M4 $$ (i,j)"
     proof-
       fix i j assume "i < dim_row M4" and "j < dim_col M4"
-      then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add:  mat_of_cols_list_def)
+      then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add: mat_of_cols_list_def)
       then show "(Id 2 \<Otimes> Y) $$ (i, j) = M4 $$ (i,j)"
         using Id_def Y_def index_tensor_mat[of "Id 2" "4" "4" "Y" "2" "2" "i" "j"] gate_def Y_is_gate 
-id_is_gate Id_def by (auto simp add:  mat_of_cols_list_def Y_def)
+id_is_gate Id_def by (auto simp add: mat_of_cols_list_def Y_def)
     qed
 qed
 
