@@ -27,14 +27,16 @@ definition const:: "nat \<Rightarrow> bool" where (* AB, the standard abbreviati
 not "con". Moreover, your def of a constant function was wrong. *)
       "const n = (\<forall>x.(f x = n))"
 
-definition balanced where (* "balanced" is longer but not too long. It's the standard name and
+definition balanced where (* AB, "balanced" is longer but not too long. It's the standard name and
 I don't think there is a standard abbreviation in this case. Moreover, your def of balanced is not
 the right one. From {0,1} to {0,1} there are two balanced functions, with your def you take only
 into account the identity. *)
       "balanced = (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
 
-lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by blast
-end
+lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by simp (* AB, better to use
+the least powerful tactic, "Don't kill a fly with a hammer" as one says. 
+Below, in front of the "end" I like to recall the reader what we're ending exactly. *) 
+end (* context deutsch*)
 
 definition inv_b :: "nat \<Rightarrow> int" where (*Better than (1-n) since it captures the partiality? *)
 "inv_b n \<equiv> (case n of 0 \<Rightarrow> 1 
