@@ -27,8 +27,12 @@ definition const:: "nat \<Rightarrow> bool" where (* AB, the standard abbreviati
 not "con". Moreover, your def of a constant function was wrong. *)
       "const n = (\<forall>x.(f x = n))"
 
-definition bal where
-      "bal = (\<forall>x.(f x = x))"
+definition balanced where (* "balanced" is longer but not too long. It's the standard name and
+I don't think there is a standard abbreviation in this case. Moreover, your def of balanced is not
+the right one. From {0,1} to {0,1} there are two balanced functions, with your def you take only
+into account the identity. *)
+      "balanced = (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
+
 lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by blast
 end
 
