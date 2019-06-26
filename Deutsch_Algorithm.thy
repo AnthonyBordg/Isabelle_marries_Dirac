@@ -6,7 +6,9 @@ imports
             Quantum , no need for those files since they are imported when you import MoreTensor 
             HL: just temp seems to finds relevant facts better*)
 begin
- 
+
+(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_id2 
+much easier.*)
 (*sledgehammer_params [verbose=true]*)
 
 section \<open>Deutsch's algorithm\<close>
@@ -308,17 +310,21 @@ lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2: (*TODO:current proof calculates each ele
                                     (if i=1 then ((f(0)::int)  -(inv_b (f(0)))) else
                                     (if i=2 then ((inv_b (f(1))) - (f(1)::int)) else ((f(1)::int) -inv_b(f(1))))))\<rangle>"
   shows "(U\<^sub>f f) * \<psi>\<^sub>1 = \<psi>\<^sub>2"
-proof 
-  fix i j ::nat
+proof -
+  (*fix i j ::nat
   assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
   then have a1: "i\<in>{0,1,2,3}" and a2: "j=0" using assms ket_vec_def by auto 
-  then have "((U\<^sub>f f) * \<psi>\<^sub>1) $$ (i, j) = Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 j " using a2 times_mat_def sorry
-  then have "Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 0 = (\<Sum> k \<in> {0 ..< 4}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
-    by (smt a1 a2 assms(2) dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
-  then have "... = (\<Sum> k \<in> {0,1,2,3}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)" by simp
-  then have "(U\<^sub>f f * \<psi>\<^sub>1) $$ (i, j)= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
-    using set_4 a1 a2 sorry
-  (*have f1:"i<dim_row (U\<^sub>f f) \<longrightarrow> i\<in>{0,1,2,3}" for i
+  then have "((U\<^sub>f f) * \<psi>\<^sub>1) $$ (i, j) = Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 j "   
+    using a1 assms times_mat_def dim_col_mat(1) dim_vec ket_vec_def by force
+  also have "... = (\<Sum> k \<in> {0,1,2,3}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
+    by (smt a1 a2 set_4 assms(2) dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
+  also have "...= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
+    sorry
+  finally have "((U\<^sub>f f) * \<psi>\<^sub>1) $$ (i, j) = ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
+    sorry
+  then have  "(U\<^sub>f f * \<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)" 
+   sorry*)
+(*have f1:"i<dim_row (U\<^sub>f f) \<longrightarrow> i\<in>{0,1,2,3}" for i
     using U\<^sub>f_def by auto
   have r1: "j<dim_col \<psi>\<^sub>1 \<longrightarrow> j=0" for j by (simp add: assms(2) ket_vec_def)
   then have "i<dim_row (U\<^sub>f f)\<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow>  Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 0 = (\<Sum> k \<in> {0 ..< 4}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
@@ -342,31 +348,37 @@ proof
   ultimately have "i<dim_row (U\<^sub>f f) \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f f * \<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)"
     for i j using assms f1 f2 set_4 r1
     by (smt atLeastLessThan_iff empty_iff index_mat(1) insert_iff prod.simps(2) less_numeral_extra(1))*)
-  moreover have "dim_row (U\<^sub>f f * \<psi>\<^sub>1) = dim_row \<psi>\<^sub>2"
-    by (simp add: U\<^sub>f_def assms(3))
+  (*moreover have "dim_row (U\<^sub>f f * \<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" sorry
   moreover have "dim_col (U\<^sub>f f * \<psi>\<^sub>1) = dim_col \<psi>\<^sub>2"
-    by (simp add: assms(2) assms(3) ket_vec_def)
-  ultimately show "(U\<^sub>f f * \<psi>\<^sub>1) = \<psi>\<^sub>2"
-    by (simp add: eq_matI)
+    by (simp add: assms(2) assms(3) ket_vec_def)*)
+   show "(U\<^sub>f f * \<psi>\<^sub>1) = \<psi>\<^sub>2" sorry
+    (*by (simp add: eq_matI)*)
 qed
 
-lemma H_on_id2: 
-  assumes "v \<equiv> 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else  
-                                                (if i=0 \<and> j=2 then 1 else
-                                                (if i=1 \<and> j=1 then 1 else
-                                                (if i=1 \<and> j=3 then 1 else
-                                                (if i=2 \<and> j=0 then 1 else
-                                                (if i=2 \<and> j=2 then -1 else
-                                                (if i=3 \<and> j=1 then 1 else
-                                                (if i=3 \<and> j=3 then -1 else 0))))))))"
-(* 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=2 \<and> j=2 then -1 else      
-                                       (if i=3 \<and> j=3 then -1 else 0))"*)
+
+
+lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
+
+lemma H_tensor_id2: 
+assumes "v \<equiv>  mat_of_cols_list 8 [[1/sqrt(2), 0, 0, 0, 1/sqrt(2), 0, 0, 0],
+                                 [0, 1/sqrt(2), 0, 0, 0, 1/sqrt(2), 0, 0],
+                                 [0, 0, 1/sqrt(2), 0, 0, 0, 1/sqrt(2), 0],
+                                 [0, 0, 0, 1/sqrt(2), 0, 0, 0, 1/sqrt(2)],
+                                 [1/sqrt(2), 0, 0, 0, -1/sqrt(2), 0, 0, 0],
+                                 [0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2), 0, 0],
+                                 [0, 0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2), 0],
+                                 [0, 0, 0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2)]]"
   shows "(H \<Otimes> id 2) = v" 
 proof
-  fix i j::nat
-  assume a1: "i<dim_row v" and a2: "j<dim_col v" 
-  then have "i\<in>{0,1,2,3}" and "j\<in>{0,1,2,3}" using assms by auto     
-  sorry
+  show "Matrix.dim_col (H \<Otimes> Quantum.id 2) = Matrix.dim_col v"  
+    by(simp add: assms H_def Quantum.id_def mat_of_cols_list_def)
+  show "dim_row (H \<Otimes> id 2) = dim_row v"
+    by(simp add: assms H_def id_def mat_of_cols_list_def)
+  fix i j::nat assume "i < dim_row v" and "j < dim_col v"
+  then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" 
+    by (auto simp add: assms mat_of_cols_list_def)
+  then show "(H \<Otimes> id 2) $$ (i, j) = v $$ (i, j)"
+    by (auto simp add: assms id_def H_def mat_of_cols_list_def)
 qed
 
 
