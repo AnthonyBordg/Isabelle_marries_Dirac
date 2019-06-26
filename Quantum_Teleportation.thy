@@ -10,7 +10,7 @@ begin
 
 
 definition alice:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat" where
-"alice \<phi> \<equiv> (H \<Otimes> id 2) * ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
+"alice \<phi> \<equiv> (H \<Otimes> Id 2) * ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
 
 lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
 
@@ -25,17 +25,17 @@ abbreviation M1:: "complex Matrix.mat" where
                           [0, 0, 0, 0, 0, 1, 0, 0]]"
 
 lemma tensor_prod_of_cnot_id_1: 
-  shows "(CNOT \<Otimes> id 1) = M1"
+  shows "(CNOT \<Otimes> Id 1) = M1"
 proof
-  show "dim_col (CNOT \<Otimes> id 1) = dim_col M1" 
-    by(simp add: CNOT_def id_def mat_of_cols_list_def)
-  show "dim_row (CNOT \<Otimes> id 1) = dim_row M1"
-    by(simp add: CNOT_def id_def  mat_of_cols_list_def)
+  show "dim_col (CNOT \<Otimes> Id 1) = dim_col M1" 
+    by(simp add: CNOT_def Id_def mat_of_cols_list_def)
+  show "dim_row (CNOT \<Otimes> Id 1) = dim_row M1"
+    by(simp add: CNOT_def Id_def  mat_of_cols_list_def)
   fix i j::nat assume "i < dim_row M1" and "j < dim_col M1"
   then have "i \<in> {0..<8} \<and> j \<in> {0..<8}"
     by (auto simp add:  mat_of_cols_list_def)
-  then show "(CNOT \<Otimes> id 1) $$ (i, j) = M1 $$ (i, j)"
-    by (auto simp add: id_def CNOT_def mat_of_cols_list_def)
+  then show "(CNOT \<Otimes> Id 1) $$ (i, j) = M1 $$ (i, j)"
+    by (auto simp add: Id_def CNOT_def mat_of_cols_list_def)
 qed
 
 abbreviation M2:: "complex Matrix.mat" where
@@ -49,17 +49,17 @@ abbreviation M2:: "complex Matrix.mat" where
                           [0, 0, 0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2)]]"
 
 lemma tensor_prod_of_h_id_2: 
-  shows "(H \<Otimes> id 2) = M2"
+  shows "(H \<Otimes> Id 2) = M2"
 proof
-  show "dim_col (H \<Otimes> id 2) = dim_col M2"
-    by(simp add: H_def id_def mat_of_cols_list_def)
-  show "dim_row (H \<Otimes> id 2) = dim_row M2"
-    by(simp add: H_def id_def mat_of_cols_list_def)
+  show "dim_col (H \<Otimes> Id 2) = dim_col M2"
+    by(simp add: H_def Id_def mat_of_cols_list_def)
+  show "dim_row (H \<Otimes> Id 2) = dim_row M2"
+    by(simp add: H_def Id_def mat_of_cols_list_def)
   fix i j::nat assume "i < dim_row M2" and "j < dim_col M2"
   then have "i \<in> {0..<8} \<and> j \<in> {0..<8}"
     by (auto simp add:  mat_of_cols_list_def)
-  then show "(H \<Otimes> id 2) $$ (i, j) = M2 $$ (i, j)"
-    by (auto simp add: id_def H_def mat_of_cols_list_def)
+  then show "(H \<Otimes> Id 2) $$ (i, j) = M2 $$ (i, j)"
+    by (auto simp add: Id_def H_def mat_of_cols_list_def)
 qed
 
 lemma alice_step_1_state [simp]:
@@ -69,18 +69,18 @@ lemma alice_step_1_state [simp]:
 
 lemma alice_step_2_state:
   assumes "state 1 \<phi>"
-  shows "state 3 ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
+  shows "state 3 ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
 proof-
-  have "gate 3 (CNOT \<Otimes> id 1)"
+  have "gate 3 (CNOT \<Otimes> Id 1)"
     using CNOT_is_gate id_is_gate tensor_gate by (metis numeral_plus_one semiring_norm(5))
-  then show "state 3 ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))" using assms by simp
+  then show "state 3 ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))" using assms by simp
 qed
 
 lemma alice_state [simp]:
   assumes "state 1 \<phi>"
   shows "state 3 (alice \<phi>) "
 proof-
-  have "gate 3 (H \<Otimes> id 2)"
+  have "gate 3 (H \<Otimes> Id 2)"
     using tensor_gate id_is_gate H_is_gate by(metis eval_nat_numeral(3) plus_1_eq_Suc)
   then show ?thesis 
     using assms alice_step_2_state by(simp add: alice_def)
@@ -117,23 +117,23 @@ qed
 
 lemma alice_step_2:
   assumes "state 1 \<phi>" and "\<alpha> = \<phi> $$ (0,0)" and "\<beta> = \<phi> $$ (1,0)"
-  shows "(CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>) = mat_of_cols_list 8 [[\<alpha>/sqrt(2),0,0,\<alpha>/sqrt(2),0,\<beta>/sqrt(2),\<beta>/sqrt(2),0]]"
+  shows "(CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>) = mat_of_cols_list 8 [[\<alpha>/sqrt(2),0,0,\<alpha>/sqrt(2),0,\<beta>/sqrt(2),\<beta>/sqrt(2),0]]"
 proof
   have f0:"(\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>) = mat_of_cols_list 8 [[\<alpha>/sqrt(2),0,0,\<alpha>/sqrt(2),\<beta>/sqrt(2),0,0,\<beta>/sqrt(2)]]"
     using assms alice_step_1 by simp
   define v where asm:"v = mat_of_cols_list 8 [[\<alpha>/sqrt(2),0,0,\<alpha>/sqrt(2),0,\<beta>/sqrt(2),\<beta>/sqrt(2),0]]"
-  then show "dim_row ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) = dim_row v"
+  then show "dim_row ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) = dim_row v"
     using assms(1) alice_step_2_state state.dim_row mat_of_cols_list_def by fastforce
-  show "dim_col ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) = dim_col v"
+  show "dim_col ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) = dim_col v"
     using assms(1) alice_step_2_state state.dim_col asm mat_of_cols_list_def by fastforce
-  show "\<And>i j. i<dim_row v \<Longrightarrow> j<dim_col v \<Longrightarrow> ((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) $$ (i,j) = v $$ (i,j)"
+  show "\<And>i j. i<dim_row v \<Longrightarrow> j<dim_col v \<Longrightarrow> ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) $$ (i,j) = v $$ (i,j)"
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
     then have "i \<in> {0..<8::nat} \<and> j = 0"
       using asm by (auto simp add: mat_of_cols_list_def)
     then have "(M1 * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) $$ (i,j) = v $$ (i,j)"
       by (auto simp add: f0 asm mat_of_cols_list_def times_mat_def scalar_prod_def)
-    then show "((CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) $$ (i,j) = v $$ (i,j)"
+    then show "((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) $$ (i,j) = v $$ (i,j)"
       using tensor_prod_of_cnot_id_1 by simp
   qed
 qed
@@ -143,7 +143,7 @@ lemma alice_result:
   shows "alice \<phi> = mat_of_cols_list 8 [[\<alpha>/2, \<beta>/2, \<beta>/2, \<alpha>/2, \<alpha>/2, -\<beta>/2, -\<beta>/2, \<alpha>/2]]"
 proof
   define v where a0:"v = mat_of_cols_list 8 [[\<alpha>/2, \<beta>/2, \<beta>/2, \<alpha>/2, \<alpha>/2, -\<beta>/2, -\<beta>/2, \<alpha>/2]]"
-  define w where a1:"w = (CNOT \<Otimes> id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)"
+  define w where a1:"w = (CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)"
   then have f0:"w = mat_of_cols_list 8 [[\<alpha>/sqrt(2), 0, 0, \<alpha>/sqrt(2), 0, \<beta>/sqrt(2), \<beta>/sqrt(2), 0]]"
     using assms alice_step_2 by simp
   show "dim_row (alice \<phi>) = dim_row v"
@@ -405,9 +405,9 @@ if q = mat_of_cols_list 8 [[\<phi> $$ (0,0), \<phi> $$ (1,0), 0, 0, 0, 0, 0, 0]]
 definition bob:: "complex Matrix.mat => bit \<times> bit \<Rightarrow> complex Matrix.mat" where
 "bob q b \<equiv> 
 if (fst b, snd b) = (zero, zero) then q else 
-  if (fst b, snd b) = (zero, one) then (id 2 \<Otimes> X) * q else
-    if (fst b, snd b) = (one, zero) then (id 2 \<Otimes> Z) * q else
-      if (fst b, snd b) = (one, one) then (id 2 \<Otimes> Y) * q else 
+  if (fst b, snd b) = (zero, one) then (Id 2 \<Otimes> X) * q else
+    if (fst b, snd b) = (one, zero) then (Id 2 \<Otimes> Z) * q else
+      if (fst b, snd b) = (one, one) then (Id 2 \<Otimes> Y) * q else 
         undefined"
 
 lemma alice_out_unique [simp]:
@@ -452,21 +452,21 @@ abbreviation M3:: "complex Matrix.mat" where
                           [0, 0, 0, 0, 0, 0, 1, 0]]"
 
 lemma tensor_prod_of_id_2_x:
-  shows "(id 2 \<Otimes> X) = M3"
+  shows "(Id 2 \<Otimes> X) = M3"
 proof
-    have f0:"gate 3 (id 2 \<Otimes> X)"
-      using X_is_gate tensor_gate[of "2" "id 2" "1" "X"] by simp
-    then show "dim_row (id 2 \<Otimes> X) = dim_row M3"
+    have f0:"gate 3 (Id 2 \<Otimes> X)"
+      using X_is_gate tensor_gate[of "2" "Id 2" "1" "X"] by simp
+    then show "dim_row (Id 2 \<Otimes> X) = dim_row M3"
       using gate_def by (simp add: mat_of_cols_list_def)
-    show "dim_col (id 2 \<Otimes> X) = dim_col M3"
+    show "dim_col (Id 2 \<Otimes> X) = dim_col M3"
       using f0 gate_def by (simp add: mat_of_cols_list_def)
-    show "\<And>i j. i < dim_row M3 \<Longrightarrow> j < dim_col M3 \<Longrightarrow> (id 2 \<Otimes> X) $$ (i,j) = M3 $$ (i,j)"
+    show "\<And>i j. i < dim_row M3 \<Longrightarrow> j < dim_col M3 \<Longrightarrow> (Id 2 \<Otimes> X) $$ (i,j) = M3 $$ (i,j)"
     proof-
       fix i j assume "i < dim_row M3" and "j < dim_col M3"
       then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add: mat_of_cols_list_def)
-      then show "(id 2 \<Otimes> X) $$ (i,j) = M3 $$ (i,j)"
-        using id_def X_def index_tensor_mat[of "id 2" "4" "4" "X" "2" "2" "i" "j"] gate_def X_is_gate 
-id_is_gate id_def by (auto simp add: mat_of_cols_list_def X_def)
+      then show "(Id 2 \<Otimes> X) $$ (i,j) = M3 $$ (i,j)"
+        using Id_def X_def index_tensor_mat[of "Id 2" "4" "4" "X" "2" "2" "i" "j"] gate_def X_is_gate 
+id_is_gate Id_def by (auto simp add: mat_of_cols_list_def X_def)
     qed
 qed
 
@@ -481,21 +481,21 @@ abbreviation M4:: "complex Matrix.mat" where
                           [0, 0, 0, 0, 0, 0, -\<i>, 0]]"
 
 lemma tensor_prod_of_id_2_y:
-  shows "(id 2 \<Otimes> Y) = M4"
+  shows "(Id 2 \<Otimes> Y) = M4"
 proof
-    have f0:"gate 3 (id 2 \<Otimes> Y)"
-      using Y_is_gate tensor_gate[of "2" "id 2" "1" "Y"] by simp
-    then show "dim_row (id 2 \<Otimes> Y) = dim_row M4"
+    have f0:"gate 3 (Id 2 \<Otimes> Y)"
+      using Y_is_gate tensor_gate[of "2" "Id 2" "1" "Y"] by simp
+    then show "dim_row (Id 2 \<Otimes> Y) = dim_row M4"
       using gate_def by (simp add:  mat_of_cols_list_def)
-    show "dim_col (id 2 \<Otimes> Y) = dim_col M4"
+    show "dim_col (Id 2 \<Otimes> Y) = dim_col M4"
       using f0 gate_def by (simp add:  mat_of_cols_list_def)
-    show "\<And>i j. i < dim_row M4 \<Longrightarrow> j < dim_col M4 \<Longrightarrow> (id 2 \<Otimes> Y) $$ (i,j) = M4 $$ (i,j)"
+    show "\<And>i j. i < dim_row M4 \<Longrightarrow> j < dim_col M4 \<Longrightarrow> (Id 2 \<Otimes> Y) $$ (i,j) = M4 $$ (i,j)"
     proof-
       fix i j assume "i < dim_row M4" and "j < dim_col M4"
       then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add:  mat_of_cols_list_def)
-      then show "(id 2 \<Otimes> Y) $$ (i, j) = M4 $$ (i,j)"
-        using id_def Y_def index_tensor_mat[of "id 2" "4" "4" "Y" "2" "2" "i" "j"] gate_def Y_is_gate 
-id_is_gate id_def by (auto simp add:  mat_of_cols_list_def Y_def)
+      then show "(Id 2 \<Otimes> Y) $$ (i, j) = M4 $$ (i,j)"
+        using Id_def Y_def index_tensor_mat[of "Id 2" "4" "4" "Y" "2" "2" "i" "j"] gate_def Y_is_gate 
+id_is_gate Id_def by (auto simp add:  mat_of_cols_list_def Y_def)
     qed
 qed
 
@@ -510,21 +510,21 @@ abbreviation M5:: "complex Matrix.mat" where
                           [0, 0, 0, 0, 0, 0, 0, -1]]"
 
 lemma tensor_prod_of_id_2_z:
-  shows "(id 2 \<Otimes> Z) = M5"
+  shows "(Id 2 \<Otimes> Z) = M5"
 proof
-    have f0:"gate 3 (id 2 \<Otimes> Z)"
-      using Z_is_gate tensor_gate[of "2" "id 2" "1" "Z"] by simp
-    then show "dim_row (id 2 \<Otimes> Z) = dim_row M5"
+    have f0:"gate 3 (Id 2 \<Otimes> Z)"
+      using Z_is_gate tensor_gate[of "2" "Id 2" "1" "Z"] by simp
+    then show "dim_row (Id 2 \<Otimes> Z) = dim_row M5"
       using gate_def by (simp add:  mat_of_cols_list_def)
-    show "dim_col (id 2 \<Otimes> Z) = dim_col M5"
+    show "dim_col (Id 2 \<Otimes> Z) = dim_col M5"
       using f0 gate_def by (simp add:  mat_of_cols_list_def)
-    show "\<And>i j. i < dim_row M5 \<Longrightarrow> j < dim_col M5 \<Longrightarrow> (id 2 \<Otimes> Z) $$ (i,j) = M5 $$ (i,j)"
+    show "\<And>i j. i < dim_row M5 \<Longrightarrow> j < dim_col M5 \<Longrightarrow> (Id 2 \<Otimes> Z) $$ (i,j) = M5 $$ (i,j)"
     proof-
       fix i j assume "i < dim_row M5" and "j < dim_col M5"
       then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add: mat_of_cols_list_def)
-      then show "(id 2 \<Otimes> Z) $$ (i, j) = M5 $$ (i,j)"
-        using id_def Z_def index_tensor_mat[of "id 2" "4" "4" "Z" "2" "2" "i" "j"] gate_def Z_is_gate 
-id_is_gate id_def by (auto simp add: mat_of_cols_list_def Z_def)
+      then show "(Id 2 \<Otimes> Z) $$ (i, j) = M5 $$ (i,j)"
+        using Id_def Z_def index_tensor_mat[of "Id 2" "4" "4" "Z" "2" "2" "i" "j"] gate_def Z_is_gate 
+id_is_gate Id_def by (auto simp add: mat_of_cols_list_def Z_def)
     qed
 qed
 
