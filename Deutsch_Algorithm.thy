@@ -1,4 +1,4 @@
-theory Deutsch_Algorithm (* AB, Convention: we use capitals for the names of theories *)
+theory Deutsch_Algorithm (* AB, convention: we use capitals for the names of theories *)
 imports
   MoreTensor
   (* AB, Jordan_Normal_Form.Matrix
@@ -23,8 +23,8 @@ locale deutsch = (* AB, not a big fan of the previous name *)
 context deutsch
 begin
 
-definition const:: "nat \<Rightarrow> bool" where (* AB, the standard abbreviation for "constant" is "const" not "const". Moreover,
-your def of a constant function was wrong. *)
+definition const:: "nat \<Rightarrow> bool" where (* AB, the standard abbreviation for "constant" is "const" 
+not "con". Moreover, your def of a constant function was wrong. *)
       "const n = (\<forall>x.(f x = n))"
 
 definition bal where
