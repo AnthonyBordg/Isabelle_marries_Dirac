@@ -28,15 +28,10 @@ begin
 definition const:: "nat \<Rightarrow> bool" where 
       "const n = (\<forall>x.(f x = n))"
 
-definition balanced where (* AB, "balanced" is longer but not too long. It's the standard name and
-I don't think there is a standard abbreviation in this case. Moreover, your def of balanced is not
-the right one. From {0,1} to {0,1} there are two balanced functions, with your def you take only
-into account the identity. *)
-      "balanced = (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
+definition balanced where
+      "balanced  \<equiv> (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
 
-lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by simp (* AB, better to use
-the least powerful tactic, "Don't kill a fly with a hammer" as one says. 
-Below, in front of the "end" I like to recall the reader what we're ending exactly. *) 
+lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by simp 
 end (* context deutsch*)
 
 definition inv_b :: "nat \<Rightarrow> int" where (*Better than (1-n) since it captures the partiality? *)
@@ -296,7 +291,7 @@ proof -
                                              if i = 1 then -1 else 1)\<rangle>" 
     using smult_mat_def ket_vec_def cong_mat by auto
   finally show "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"  
-    using cong_mat ket_vec_def numeral_eq_one_iff prod.simps(2) semiring_norm(85) semiring_norm(89) set_four sledgehammer
+    using cong_mat ket_vec_def numeral_eq_one_iff prod.simps(2) semiring_norm(85) semiring_norm(89) set_four 
     by (smt dim_vec index_vec numeral_eq_iff)
 qed
 
@@ -305,7 +300,7 @@ qed
 
 text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
 
-lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2:
+lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2: (*TODO:current proof calculates each element seperately, would be nice without*)
   fixes f::"nat\<Rightarrow>nat" 
   assumes "deutsch f" 
       and "\<psi>\<^sub>1 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
@@ -313,8 +308,17 @@ lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2:
                                     (if i=1 then ((f(0)::int)  -(inv_b (f(0)))) else
                                     (if i=2 then ((inv_b (f(1))) - (f(1)::int)) else ((f(1)::int) -inv_b(f(1))))))\<rangle>"
   shows "(U\<^sub>f f) * \<psi>\<^sub>1 = \<psi>\<^sub>2"
-proof -
-  have f1:"i<dim_row (U\<^sub>f f) \<longrightarrow> i\<in>{0,1,2,3}" for i
+proof 
+  fix i j ::nat
+  assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
+  then have a1: "i\<in>{0,1,2,3}" and a2: "j=0" using assms ket_vec_def by auto 
+  then have "((U\<^sub>f f) * \<psi>\<^sub>1) $$ (i, j) = Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 j " using a2 times_mat_def sorry
+  then have "Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 0 = (\<Sum> k \<in> {0 ..< 4}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
+    by (smt a1 a2 assms(2) dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
+  then have "... = (\<Sum> k \<in> {0,1,2,3}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)" by simp
+  then have "(U\<^sub>f f * \<psi>\<^sub>1) $$ (i, j)= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
+    using set_4 a1 a2 sorry
+  (*have f1:"i<dim_row (U\<^sub>f f) \<longrightarrow> i\<in>{0,1,2,3}" for i
     using U\<^sub>f_def by auto
   have r1: "j<dim_col \<psi>\<^sub>1 \<longrightarrow> j=0" for j by (simp add: assms(2) ket_vec_def)
   then have "i<dim_row (U\<^sub>f f)\<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow>  Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 0 = (\<Sum> k \<in> {0 ..< 4}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
@@ -337,7 +341,7 @@ proof -
     by (simp add: U\<^sub>f_def assms(2) ket_vec_def)
   ultimately have "i<dim_row (U\<^sub>f f) \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f f * \<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)"
     for i j using assms f1 f2 set_4 r1
-    by (smt atLeastLessThan_iff empty_iff index_mat(1) insert_iff prod.simps(2) less_numeral_extra(1))
+    by (smt atLeastLessThan_iff empty_iff index_mat(1) insert_iff prod.simps(2) less_numeral_extra(1))*)
   moreover have "dim_row (U\<^sub>f f * \<psi>\<^sub>1) = dim_row \<psi>\<^sub>2"
     by (simp add: U\<^sub>f_def assms(3))
   moreover have "dim_col (U\<^sub>f f * \<psi>\<^sub>1) = dim_col \<psi>\<^sub>2"
@@ -346,16 +350,8 @@ proof -
     by (simp add: eq_matI)
 qed
 
-lemma H_on_id2: "(H \<Otimes> id 2) = 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else    \<comment> \<open>TODO\<close>
-                                                (if i=0 \<and> j=2 then 1 else
-                                                (if i=1 \<and> j=1 then 1 else
-                                                (if i=1 \<and> j=3 then 1 else
-                                                (if i=2 \<and> j=0 then 1 else
-                                                (if i=2 \<and> j=2 then -1 else
-                                                (if i=3 \<and> j=1 then 1 else
-                                                (if i=3 \<and> j=3 then -1 else 0))))))))" 
-proof
-  define v::"complex Matrix.mat" where "v = 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else    \<comment> \<open>TODO\<close>
+lemma H_on_id2: 
+  assumes "v \<equiv> 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else  
                                                 (if i=0 \<and> j=2 then 1 else
                                                 (if i=1 \<and> j=1 then 1 else
                                                 (if i=1 \<and> j=3 then 1 else
@@ -363,18 +359,19 @@ proof
                                                 (if i=2 \<and> j=2 then -1 else
                                                 (if i=3 \<and> j=1 then 1 else
                                                 (if i=3 \<and> j=3 then -1 else 0))))))))"
+(* 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=2 \<and> j=2 then -1 else      
+                                       (if i=3 \<and> j=3 then -1 else 0))"*)
+  shows "(H \<Otimes> id 2) = v" 
+proof
   fix i j::nat
-  assume "i<dim_row v" and "j<dim_col v" 
-  then have "i\<in>{0,1,2,3}" and "j\<in>{0,1,2,3}"  using v_def by auto
-  moreover have "Matrix.row (H \<Otimes> id 2) i \<bullet> Matrix.col v j = (\<Sum>k = 0..<4. Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i $ k * Matrix.col |x\<rangle> j $ k)"
-        by (smt a1 a2 One_nat_def dim_col_mat(1) dim_vec index_add_mat(3) ket_vec_col ket_vec_def less_Suc0 scalar_prod_def sum.cong)
-     
-  then have "v$$(i,j) = (H \<Otimes> id 2)$$(i,j)" using v_def scalar_prod_def cong_mat sorry
+  assume a1: "i<dim_row v" and a2: "j<dim_col v" 
+  then have "i\<in>{0,1,2,3}" and "j\<in>{0,1,2,3}" using assms by auto     
+  sorry
 qed
 
 
 
-lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3:
+lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3: (*TODO*)
   fixes "f"
   assumes "\<psi>\<^sub>2 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i=0 then ((inv_b (f 0))+ -f(0)) else
                                     (if i=1 then (f(0) + -(inv_b (f(0)))) else
