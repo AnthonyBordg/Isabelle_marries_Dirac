@@ -14,73 +14,60 @@ subsection \<open>Black-box function \<close>
 text \<open>A constant function returns either always 0 or always 1. A balanced function
 is 0 for half of the values and 1 for the other half\<close>
 
-(*TODO: Replace definition of blackbox function below with a locale and change lemmata 
-below that use the old definition
-
-locale fun_bal_con2 =
+locale fun_bal_con =
   fixes f:: "nat \<Rightarrow> nat"
-  assumes "f \<in> ({0,1} \<rightarrow> {0,1})"
+  assumes f: "f \<in> ({0,1} \<rightarrow> {0,1})"
   
-context fun_bal_con2
+context fun_bal_con
 begin
 definition con where
       "con = (\<forall>x.(f x = x))"
 definition bal where
       "bal = (\<forall>x.(f x = x))"
-end*)
+lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by blast
+end
 
-definition fun_is_con :: "(nat\<Rightarrow>nat) \<Rightarrow> bool" where
-"fun_is_con f \<equiv> if (f(0) = f(1)) then True else False"
-
-definition fun_is_bal :: "(nat\<Rightarrow>nat) \<Rightarrow> bool" where
-"fun_is_bal f \<equiv> if (f(0) = f(1)) then False else True"
-
-definition fun_bal_con :: "(nat\<Rightarrow>nat) \<Rightarrow> bool" where
-"fun_bal_con f \<equiv> \<forall>x . (f(x) = 0 \<or> f(x) = 1) \<and> (fun_is_bal f \<or> fun_is_con f)"
-
-lemma fun_always_con_or_bal: "\<forall>x . (f(x) = 0 \<or> f(x) = 1) \<longrightarrow> (fun_is_bal f \<or> fun_is_con f)"
-  by (simp add: fun_is_bal_def fun_is_con_def)
-
-
-definition inv_b :: "nat \<Rightarrow> int" where
-"inv_b n \<equiv> (1-n)"
+definition inv_b :: "nat \<Rightarrow> int" where (*Better than (1-n) since it captures the partiality? *)
+"inv_b n \<equiv> (case n of 0 \<Rightarrow> 1 
+                     |(Suc 0) \<Rightarrow> 0)"
 
 lemma inv_b_values:
   fixes f::"nat\<Rightarrow>nat" 
-  shows "f(0) = 0 \<longrightarrow> inv_b (f(0)) - f(0) = 1"
+  assumes "fun_bal_con f"
+  shows "f(0) = 0 \<or> f(0) = 1" 
+  and  "f(1) = 0 \<or> f(1) = 1" 
+  and  "f(0) = 0 \<longrightarrow> inv_b (f(0)) - f(0) = 1"
   and "f(0) = 1 \<longrightarrow> inv_b (f 0) - f(0) = -1"
   and "f(1) = 0 \<longrightarrow> inv_b (f(1)) - f(1) = 1"
   and "f(1) = 1 \<longrightarrow> inv_b (f(1)) - f(1) = -1"
-  using  inv_b_def by auto
+  using  inv_b_def assms fun_bal_con.f_values by auto
 
 lemma inv_b_add_mult1:
   fixes f::"nat\<Rightarrow>nat" 
   assumes "fun_bal_con f"
-  shows "inv_b (f(0))*inv_b (f(0)) + f(0)*f(0) = 1"
-  by (smt assms fun_bal_con_def inv_b_values(1) inv_b_values(2) mult_cancel_left1 mult_is_0 nat_mult_eq_1_iff of_nat_0_eq_iff of_nat_1)
+  shows "inv_b (f(0))*inv_b (f(0)) + f(0)*f(0) = 1" 
+  using One_nat_def assms fun_bal_con.f_values inv_b_def by fastforce
 
 lemma inv_b_add_mult2:
   fixes f::"nat\<Rightarrow>nat" 
   assumes "fun_bal_con f"
-  shows "inv_b (f(1))*inv_b (f(1)) + f(1)*f(1) = 1" 
-  by (smt One_nat_def assms fun_bal_con_def inv_b_values(2) inv_b_values(3) mult_cancel_left1 mult_is_0 nat_mult_eq_1_iff of_nat_0 of_nat_Suc)
+  shows "inv_b (f(1))*inv_b (f(1)) + f(1)*f(1) = 1"  
+  using fun_bal_con.f_values assms inv_b_def of_nat_1 by fastforce
 
 lemma inv_b_add_mult3:
   fixes f::"nat\<Rightarrow>nat" 
   assumes "fun_bal_con f"
-  shows "inv_b (f(0))*f(0) + inv_b (f(0))*f(0) = 0"
-  by (metis (no_types, hide_lams) add_cancel_right_left assms diff_0 diff_minus_eq_add fun_bal_con_def inv_b_values(2) mult.commute mult_zero_left of_nat_0 of_nat_1)
+  shows "inv_b (f(0))*f(0) + inv_b (f(0))*f(0) = 0" 
+  using fun_bal_con.f_values diff_diff_cancel inv_b_def assms by force
 
 lemma inv_b_add_mult4:
   fixes f::"nat\<Rightarrow>nat" 
   assumes "fun_bal_con f"
-  shows "inv_b (f(1))*f(1) + inv_b (f(1))*f(1) = 0"
-  by (smt One_nat_def assms fun_bal_con_def inv_b_values(2) mult_not_zero of_nat_0_eq_iff of_nat_Suc)
+  shows "inv_b (f(1))*f(1) + inv_b (f(1))*f(1) = 0"  
+  using fun_bal_con.f_values inv_b_def assms by force
 
 
-text \<open>Black box function @{text U\<^sub>f}. For each possible function $f:\{0,1\}\mapsto\{0,1\}$ define
-a matrix $U_{f(0)f(1)}$ and show that it is unitary and an
- instantiation of @{text U\<^sub>f} \<close>
+text \<open>Black box function @{text U\<^sub>f}. \<close>
 
 definition U\<^sub>f ::"(nat \<Rightarrow> nat) => complex Matrix.mat" where
 "U\<^sub>f f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then (inv_b (f(0))) else
@@ -93,12 +80,10 @@ definition U\<^sub>f ::"(nat \<Rightarrow> nat) => complex Matrix.mat" where
                       (if i=3 \<and> j=3 then (inv_b (f(1))) else 0))))))))"
 
 lemma U\<^sub>f_dim [simp]: 
-  fixes f::"nat\<Rightarrow>nat"
   shows "dim_row (U\<^sub>f f) = 4" and "dim_col (U\<^sub>f f) = 4"
   using U\<^sub>f_def by auto
 
 lemma U\<^sub>f_is_zero [simp]:
-  fixes f::"nat\<Rightarrow>nat"
   shows "(U\<^sub>f f)$$(0,2) = 0" and "(U\<^sub>f f)$$(0,3) = 0"
     and "(U\<^sub>f f)$$(1,2) = 0" and "(U\<^sub>f f)$$(1,3) = 0"
     and "(U\<^sub>f f)$$(2,0) = 0" and "(U\<^sub>f f)$$(2,1) = 0"
@@ -106,15 +91,13 @@ lemma U\<^sub>f_is_zero [simp]:
   using U\<^sub>f_def by auto
 
 lemma U\<^sub>f_is_not_zero [simp]:
-  fixes f::"nat\<Rightarrow>nat"
   shows "(U\<^sub>f f)$$(0,1) = f(0)" and "(U\<^sub>f f)$$(1,0) = f(0)"
     and "(U\<^sub>f f)$$(2,3) = f(1)" and "(U\<^sub>f f)$$(3,2) = f(1)"
     and "(U\<^sub>f f)$$(0,0) = inv_b (f(0))" and "(U\<^sub>f f)$$(1,1) = inv_b (f(0))"
     and "(U\<^sub>f f)$$(2,2) = inv_b (f(1))" and "(U\<^sub>f f)$$(3,3) = inv_b (f(1))"
   using U\<^sub>f_def by auto
 
-lemma U\<^sub>f_simp [simp]:
-    fixes "f"
+(*lemma U\<^sub>f_simp [simp]:
     shows "((Matrix.row (U\<^sub>f f) 0)$0 ) = (inv_b(f(0)))"
     and "((Matrix.row (U\<^sub>f f) 0)$1 ) = f(0)"
     and "((Matrix.row (U\<^sub>f f) 1)$0 ) = f(0)"
@@ -123,7 +106,9 @@ lemma U\<^sub>f_simp [simp]:
     and "((Matrix.row (U\<^sub>f f) 2)$3 ) = f(1)"
     and "((Matrix.row (U\<^sub>f f) 3)$2 ) = f(1)"
     and "((Matrix.row (U\<^sub>f f) 3)$3 ) = (inv_b(f(1)))"
-  using U\<^sub>f_def by auto
+  using U\<^sub>f_def by auto*)
+
+text \<open>@{text U\<^sub>f} is a gate. \<close>
 
 lemma set_four [simp]: "\<forall>i::nat. i < 4 \<longrightarrow> i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" by auto
 
@@ -141,7 +126,7 @@ qed
 
 lemma U\<^sub>f_is_gate:
   fixes f::"nat\<Rightarrow>nat"
-  assumes a1: "f(0) = 0 \<or> f(0) =1 " and a2: "f(1) = 0 \<or> f(0) = 1" and "fun_bal_con f"
+  assumes "fun_bal_con f"
   shows "gate 2 (U\<^sub>f f)"
 proof
   show "dim_row (U\<^sub>f f) = 2\<^sup>2"
@@ -153,21 +138,18 @@ next
   have "(U\<^sub>f f)*(U\<^sub>f f) = 1\<^sub>m (dim_col (U\<^sub>f f))" 
   proof 
     fix i j::nat
-    assume "i < dim_row (1\<^sub>m (dim_col (U\<^sub>f f)))" and
-           "j < dim_col (1\<^sub>m (dim_col (U\<^sub>f f)))" 
-    then have "((U\<^sub>f f)*(U\<^sub>f f))$$(i,j) = Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col (U\<^sub>f f) j"  by simp
-    then have f2: "((U\<^sub>f f)*(U\<^sub>f f))$$(i,j) =(Matrix.row (U\<^sub>f f) i $ 0 * Matrix.col (U\<^sub>f f) j $ 0) + (Matrix.row (U\<^sub>f f) i $ 1 * Matrix.col (U\<^sub>f f) j $ 1) + (Matrix.row (U\<^sub>f f) i $ 2 * Matrix.col (U\<^sub>f f) j $ 2) + (Matrix.row (U\<^sub>f f) i $ 3 * Matrix.col (U\<^sub>f f) j $ 3)"
+    assume a1: "i < dim_row (1\<^sub>m (dim_col (U\<^sub>f f)))" and a2: "j < dim_col (1\<^sub>m (dim_col (U\<^sub>f f)))" 
+    then have "((U\<^sub>f f)*(U\<^sub>f f))$$(i,j) =(Matrix.row (U\<^sub>f f) i $ 0 * Matrix.col (U\<^sub>f f) j $ 0) + (Matrix.row (U\<^sub>f f) i $ 1 * Matrix.col (U\<^sub>f f) j $ 1) + (Matrix.row (U\<^sub>f f) i $ 2 * Matrix.col (U\<^sub>f f) j $ 2) + (Matrix.row (U\<^sub>f f) i $ 3 * Matrix.col (U\<^sub>f f) j $ 3)"
       by (simp add: scalar_prod_def)
     then show "(U\<^sub>f f * U\<^sub>f f) $$ (i, j) = 1\<^sub>m (dim_col (U\<^sub>f f)) $$ (i, j)"
-      using inv_b_add_mult1 inv_b_add_mult2 inv_b_add_mult3 inv_b_add_mult4 
-      by (smt U\<^sub>f_dim(1) U\<^sub>f_dim(2) U\<^sub>f_is_not_zero(1) U\<^sub>f_is_not_zero(2) U\<^sub>f_is_not_zero(3) U\<^sub>f_is_not_zero(4) U\<^sub>f_is_not_zero(5) U\<^sub>f_is_not_zero(6) U\<^sub>f_is_not_zero(7) U\<^sub>f_is_not_zero(8) U\<^sub>f_is_zero(1) U\<^sub>f_is_zero(2) U\<^sub>f_is_zero(3) U\<^sub>f_is_zero(4) U\<^sub>f_is_zero(5) U\<^sub>f_is_zero(6) U\<^sub>f_is_zero(7) U\<^sub>f_is_zero(8) \<open>i < dim_row (1\<^sub>m (dim_col (U\<^sub>f f)))\<close> \<open>j < dim_col (1\<^sub>m (dim_col (U\<^sub>f f)))\<close> add.commute add_Suc add_cancel_right_left add_less_cancel_left assms fun_bal_con_def index_col index_one_mat(1) index_one_mat(2) index_one_mat(3) index_row(1) inv_b_values(1) mult.commute mult_cancel_left1 neq0_conv numeral_2_eq_2 numeral_Bit0 numeral_Bit1 of_int_hom.hom_one of_int_hom.hom_zero of_nat_0 of_nat_1 plus_1_eq_Suc set_four zero_neq_numeral)
+      by (smt U\<^sub>f_dim U\<^sub>f_is_not_zero U\<^sub>f_is_zero a1 a2 add.commute add_Suc add_cancel_right_left add_less_cancel_left assms index_col index_one_mat(1) index_one_mat(2) index_one_mat(3) index_row(1) inv_b_add_mult3 inv_b_add_mult4 inv_b_values(1) inv_b_values(2) inv_b_values(3) inv_b_values(5) mult.commute mult_cancel_left1 neq0_conv numeral_2_eq_2 numeral_Bit0 numeral_Bit1 of_int_hom.hom_one of_int_hom.hom_zero of_nat_0 of_nat_1 plus_1_eq_Suc set_four zero_neq_numeral)
   next 
     show "dim_row (U\<^sub>f f * U\<^sub>f f) = dim_row (1\<^sub>m (dim_col (U\<^sub>f f)))" by simp
   next
     show "dim_col (U\<^sub>f f * U\<^sub>f f) = dim_col (1\<^sub>m (dim_col (U\<^sub>f f)))" by simp
   qed
   then show "unitary (U\<^sub>f f)" 
-    by (simp add: adjoint_of_U\<^sub>f assms(3) unitary_def)
+    by (simp add: adjoint_of_U\<^sub>f assms unitary_def)
 qed
 
 
