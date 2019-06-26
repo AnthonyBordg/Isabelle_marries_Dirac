@@ -1,8 +1,6 @@
-theory Deutsch_Algorithm (* AB, convention: we use capitals for the names of theories *)
+theory Deutsch_Algorithm
 imports
   MoreTensor
-  (* AB, Jordan_Normal_Form.Matrix
-  Quantum , no need for those files since they are imported when you import MoreTensor *)
 begin
 
 (*sledgehammer_params [verbose=true]*)
@@ -16,34 +14,30 @@ A constant function returns either always 0 or always 1.
 A balanced function is 0 for half of the values and 1 for the other half. (* added a missing comma *)
 \<close>
 
-locale deutsch = (* AB, not a big fan of the previous name *)
-  fixes f:: "nat \<Rightarrow> nat"
-  assumes f: "f \<in> ({0,1} \<rightarrow> {0,1})"
+locale deutsch = (* Now, f is undefined outside of {0,1}. 
+Also, I changed  the name of the assumption. *)
+  fixes f:: "nat \<Rightarrow> nat" 
+  assumes dom: "f \<in> ({0,1} \<rightarrow>\<^sub>E {0,1})"
   
 context deutsch
 begin
 
-definition const:: "nat \<Rightarrow> bool" where (* AB, the standard abbreviation for "constant" is "const" 
-not "con". Moreover, your def of a constant function was wrong. *)
-      "const n = (\<forall>x.(f x = n))"
+definition const:: "nat \<Rightarrow> bool" where 
+"const n = (\<forall>x.(f x = n))"
 
-definition balanced where (* AB, "balanced" is longer but not too long. It's the standard name and
-I don't think there is a standard abbreviation in this case. Moreover, your def of balanced is not
-the right one. From {0,1} to {0,1} there are two balanced functions, with your def you take only
-into account the identity. *)
-      "balanced = (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
+definition balanced:: "bool" where
+"balanced \<equiv> (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
 
-lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by simp (* AB, better to use
-the least powerful tactic, "Don't kill a fly with a hammer" as one says. 
-Below, in front of the "end" I like to recall the reader what we're ending exactly. *) 
-end (* context deutsch*)
+lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto 
+end (* context deutsch *)
 
-definition inv_b :: "nat \<Rightarrow> int" where (*Better than (1-n) since it captures the partiality? *)
+definition inv_b:: "nat \<Rightarrow> int" where (* Better than (1-n) since it captures the partiality? *)
+(* AB, with the change I made in the locale, are inv_b and the lemmas below still useful ? *)
 "inv_b n \<equiv> (case n of 0 \<Rightarrow> 1 
                      |(Suc 0) \<Rightarrow> 0)"
 
 lemma inv_b_values:
-  fixes f::"nat\<Rightarrow>nat" 
+  fixes f::"nat \<Rightarrow> nat" 
   assumes "deutsch f"
   shows "f(0) = 0 \<or> f(0) = 1" 
   and  "f(1) = 0 \<or> f(1) = 1" 
