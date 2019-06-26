@@ -1,6 +1,8 @@
 theory Deutsch_Algorithm
 imports
   MoreTensor
+  Jordan_Normal_Form.Matrix
+  Quantum
 begin
 
 (*sledgehammer_params [verbose=true]*)
