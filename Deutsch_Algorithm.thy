@@ -1,10 +1,15 @@
-theory Deutsch_Algorithm
+
+theory Deutsch_Algorithm 
 imports
   MoreTensor
   Jordan_Normal_Form.Matrix
-  Quantum
+  Quantum(* , Jordan_Normal_Form.Matrix
+            Quantum , no need for those files since they are imported when you import MoreTensor 
+            HL: just temp seems to finds relevant facts better*)
 begin
 
+(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_id2 
+much easier.*)
 (*sledgehammer_params [verbose=true]*)
 
 section \<open>Deutsch's algorithm\<close>
@@ -33,11 +38,13 @@ lemma is_swap_values:
 end (* context is_swap *)
 
 sublocale is_swap \<subseteq> deutsch by (simp add: deutsch_axioms)
+
   
 context deutsch
 begin
 
 definition const:: "nat \<Rightarrow> bool" where 
+
 "const n = (\<forall>x.(f x = n))"
 
 definition balanced:: "bool" where
@@ -45,6 +52,7 @@ definition balanced:: "bool" where
 
 lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto 
 end (* context deutsch *)
+
 
 definition inv_b:: "nat \<Rightarrow> int" where (* Better than (1-n) since it captures the partiality? *)
 (* AB: with the change I made in the locale, are inv_b and the lemmas below still useful ? *)
@@ -116,17 +124,6 @@ lemma U\<^sub>f_is_not_zero [simp]:
     and "(U\<^sub>f f)$$(0,0) = inv_b (f(0))" and "(U\<^sub>f f)$$(1,1) = inv_b (f(0))"
     and "(U\<^sub>f f)$$(2,2) = inv_b (f(1))" and "(U\<^sub>f f)$$(3,3) = inv_b (f(1))"
   using U\<^sub>f_def by auto
-
-(*lemma U\<^sub>f_simp [simp]:
-    shows "((Matrix.row (U\<^sub>f f) 0)$0 ) = (inv_b(f(0)))"
-    and "((Matrix.row (U\<^sub>f f) 0)$1 ) = f(0)"
-    and "((Matrix.row (U\<^sub>f f) 1)$0 ) = f(0)"
-    and "((Matrix.row (U\<^sub>f f) 1)$1 ) = (inv_b(f(0)))"
-    and "((Matrix.row (U\<^sub>f f) 2)$2 ) = (inv_b(f(1)))"
-    and "((Matrix.row (U\<^sub>f f) 2)$3 ) = f(1)"
-    and "((Matrix.row (U\<^sub>f f) 3)$2 ) = f(1)"
-    and "((Matrix.row (U\<^sub>f f) 3)$3 ) = (inv_b(f(1)))"
-  using U\<^sub>f_def by auto*)
 
 text \<open>@{text U\<^sub>f} is a gate. \<close>
 
@@ -211,19 +208,15 @@ proof -
     next
       fix i j::nat
       assume a1:"i < dim_row ( |x\<rangle> + |y\<rangle>)" and a2:"j < dim_col ( |x\<rangle> + |y\<rangle>)"
-      then have "Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i \<bullet> Matrix.col |x\<rangle> j = (\<Sum>k = 0..<2. Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i $ k * Matrix.col |x\<rangle> j $ k)"
-        by (smt One_nat_def dim_col_mat(1) dim_vec index_add_mat(3) ket_vec_col ket_vec_def less_Suc0 scalar_prod_def sum.cong)
-      moreover have "i=0 \<or> i=1"
-        using a1 ket_vec_def by auto
-      moreover have a4:"j=0"
-        using a2 ket_vec_def by auto
+      then have "i=0 \<or> i=1" and "j=0"
+        using ket_vec_def by auto
+      moreover have "Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i \<bullet> Matrix.col |x\<rangle> j = (\<Sum>k = 0..<2. Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i $ k * Matrix.col |x\<rangle> j $ k)"
+        by (smt a1 a2 One_nat_def dim_col_mat(1) dim_vec index_add_mat(3) ket_vec_col ket_vec_def less_Suc0 scalar_prod_def sum.cong)
       ultimately show "(Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1) * |x\<rangle>) $$ (i, j) = ( |x\<rangle> + |y\<rangle>) $$(i,j) "
         using ket_vec_def by fastforce
   qed
   ultimately show "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> + |y\<rangle>)" by auto
 qed
-
-
 
 lemma H_on_one_state: "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> - |y\<rangle>)"
 proof -
@@ -238,19 +231,16 @@ proof -
         by (simp add: ket_vec_def)
     next
       fix i j::nat
-      assume a1:"i < dim_row ( |x\<rangle> - |y\<rangle>)" and a2:"j < dim_col ( |x\<rangle> - |y\<rangle>)"
-      then have "Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i \<bullet> Matrix.col |y\<rangle> j = (\<Sum>k = 0..<2. Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i $ k * Matrix.col |y\<rangle> j $ k)"
+      assume "i < dim_row ( |x\<rangle> - |y\<rangle>)" and "j < dim_col ( |x\<rangle> - |y\<rangle>)"
+      then have "i=0 \<or> i=1" and "j=0"
+        using ket_vec_def by auto
+      moreover have "Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i \<bullet> Matrix.col |y\<rangle> j = (\<Sum>k = 0..<2. Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i $ k * Matrix.col |y\<rangle> j $ k)"
         by (smt dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
-      moreover have "i=0 \<or> i=1"
-        using a1 ket_vec_def by auto
-      moreover have a4:"j=0"
-        using a2 ket_vec_def by auto
       ultimately show "(Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1) * |y\<rangle>) $$ (i, j) = ( |x\<rangle> - |y\<rangle>) $$(i,j) "
         using ket_vec_def by fastforce
    qed
   ultimately show "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> - |y\<rangle>)" by auto
 qed
-
 
 lemma x_plus_y: "( |x\<rangle> + |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). 1)"
 proof
@@ -265,7 +255,6 @@ proof
   next
     show "dim_col ( |x\<rangle> + |y\<rangle>) = dim_col (Matrix.mat 2 1 (\<lambda>(i, j). 1))" by (simp add: ket_vec_def)
 qed
-
 
 lemma x_minus_y: "( |x\<rangle> - |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else -1)"
 proof
@@ -293,99 +282,121 @@ lemma H_on_one_state_square_inside: "(H * |y\<rangle>) =  Matrix.mat 2 1 (\<lamb
 
 lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>" 
 proof -
-  have "state 1 (H * |x\<rangle>)"  
-    using gate_on_state_is_state x_is_state x_plus_y H_on_zero_state H_is_gate by fastforce
-  then have f1: "state 1 (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"  
-    by (simp add: H_on_zero_state_square_inside)
-  have "state 1 (H * |y\<rangle>)"  
-    using gate_on_state_is_state y_is_state x_minus_y H_on_one_state H_is_gate by fastforce
-  then have f2: "state 1 (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))" 
-    by (simp add: H_on_one_state_square_inside)
-  have f3:" (1/sqrt(2))*(1/sqrt(2)) = 1/2" and  f4:" (1/sqrt(2))*(-1/sqrt(2)) = -1/2" by auto
-  then have "(Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2))) \<Otimes> ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))) =
-                                                                    |Matrix.vec 4 (\<lambda>i. if i = 0 then  (1/sqrt(2))* (1/sqrt(2)) else 
-                                                                                       if i = 3 then  (1/sqrt(2))*(- 1/sqrt(2)) else
-                                                                                       if i = 1 then  (1/sqrt(2))*(- 1/sqrt(2)) else  
-                                                                                                      (1/sqrt(2)* 1/sqrt(2)))\<rangle>" 
-    using  f1 f2 mat_tensor_prod_2_bis sorry
-
-  then have "|Matrix.vec 4 (\<lambda>i. if i = 0 then  (1/sqrt(2))* (1/sqrt(2)) else 
-                                if i = 3 then  (1/sqrt(2))*(- 1/sqrt(2)) else
-                                if i = 1 then  (1/sqrt(2))*(- 1/sqrt(2)) else  
-                                               (1/sqrt(2)* 1/sqrt(2)))\<rangle>
- = |Matrix.vec 4 (\<lambda>i. if i = 0 then 1/2 else
-                      if i = 3 then  -1/2 else
-                      if i = 1 then -1/2 else 1/2)\<rangle>" 
-    using f3 f4 sorry    
-  then show ?thesis sorry
+  define v::"complex Matrix.mat" where "v\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
+  define w::"complex Matrix.mat" where "w\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))"
+  have "state 1 v"  
+    using v_def gate_on_state_is_state x_is_state x_plus_y H_on_zero_state H_is_gate H_on_zero_state_square_inside by fastforce
+  moreover have "state 1 w" 
+    using w_def gate_on_state_is_state y_is_state x_minus_y H_on_one_state H_is_gate H_on_one_state_square_inside by fastforce
+  ultimately have f1: "v \<Otimes> w = |Matrix.vec 4 (\<lambda>i. if i = 0 then v $$ (0,0) * w $$ (0,0) else 
+                                               if i = 3 then v $$ (1,0) * w $$ (1,0) else
+                                               if i = 1 then v $$ (0,0) * w $$ (1,0) else 
+                                                             v $$ (1,0) * w $$ (0,0))\<rangle>" 
+    using mat_tensor_prod_2_bis v_def w_def by blast
+  have f2:" (1/sqrt(2))*(1/sqrt(2)) = 1/2"  by auto
+  have f3:"v $$ (0,0) = 1/sqrt(2)" using v_def by simp
+  have f4:"w $$ (0,0) = 1/sqrt(2)" using w_def by simp
+  have f5:"v $$ (0,0)* w $$ (0,0)  = 1/2" using f2 f3 f4
+    by (metis (no_types, hide_lams) of_real_divide of_real_hom.hom_one of_real_mult of_real_numeral)
+  have f6: "w $$ (1,0) = -1/sqrt(2)" using w_def by simp
+  have f7:"v $$ (1,0)* w $$ (1,0)  = -1/2"
+    using v_def w_def f5 f6 by auto
+  have f8:"v $$ (1,0) = 1/sqrt(2)" using v_def by simp
+  have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = v \<Otimes> w "  by (simp add: H_on_one_state_square_inside H_on_zero_state_square_inside v_def w_def)
+  also have "...  = |Matrix.vec 4 (\<lambda>i. if i = 0 then 1/2 else
+                                if i = 3 then -1/2 else
+                                if i = 1 then -1/2 else 1/2)\<rangle>" 
+      using f1 f3 f8 f5 f7 by presburger
+  also have "...= 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i = 0 then 1 else
+                                             if i = 3 then -1 else
+                                             if i = 1 then -1 else 1)\<rangle>" 
+    using smult_mat_def ket_vec_def cong_mat by auto
+  finally show "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"  
+    using cong_mat ket_vec_def numeral_eq_one_iff prod.simps(2) semiring_norm(85) semiring_norm(89) set_four 
+    by (smt dim_vec index_vec numeral_eq_iff)
 qed
 
-lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2:
-  fixes "f"
-  assumes "v1 \<equiv>  |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else (-1))\<rangle>"
-  and "v2 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i=0 then ((inv_b (f 0)) -f(0)) else
-                                    (if i=1 then (f(0)  -(inv_b (f(0)))) else
-                                    (if i=2 then ((inv_b (f(1))) -f(1)) else (f(1) -inv_b(f(1))))))"
-  shows "(U\<^sub>f f) * v1 = v2"
+
+
+
+text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
+
+lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2: (*TODO:current proof calculates each element seperately, would be nice without*)
+  fixes f::"nat\<Rightarrow>nat" 
+  assumes "deutsch f" 
+      and "\<psi>\<^sub>1 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
+      and "\<psi>\<^sub>2 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 then ((inv_b (f 0)) - (f(0)::int)) else
+                                    (if i=1 then ((f(0)::int)  -(inv_b (f(0)))) else
+                                    (if i=2 then ((inv_b (f(1))) - (f(1)::int)) else ((f(1)::int) -inv_b(f(1))))))\<rangle>"
+  shows "(U\<^sub>f f) * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof -
-  have f1:"i<dim_row (U\<^sub>f f) \<longrightarrow> i\<in>{0,1,2,3}" for i
+  (*fix i j ::nat
+  assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
+  then have a1: "i\<in>{0,1,2,3}" and a2: "j=0" using assms ket_vec_def by auto 
+  then have "((U\<^sub>f f) * \<psi>\<^sub>1) $$ (i, j) = Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 j "   
+    using a1 assms times_mat_def dim_col_mat(1) dim_vec ket_vec_def by force
+  also have "... = (\<Sum> k \<in> {0,1,2,3}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
+    by (smt a1 a2 set_4 assms(2) dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
+  also have "...= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
+    sorry
+  finally have "((U\<^sub>f f) * \<psi>\<^sub>1) $$ (i, j) = ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
+    sorry
+  then have  "(U\<^sub>f f * \<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)" 
+   sorry*)
+(*have f1:"i<dim_row (U\<^sub>f f) \<longrightarrow> i\<in>{0,1,2,3}" for i
     using U\<^sub>f_def by auto
-  have r1: "j<dim_col v1 \<longrightarrow> j=0" for j by (simp add: assms(1) ket_vec_def)
-  then have "i<dim_row (U\<^sub>f f)\<and> j<dim_col v1 \<longrightarrow>  Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col v1 0 = (\<Sum> k \<in> {0 ..< 4}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col v1 0) $ k)"
-    for i j by (smt assms(1) dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
-  then have  "i<dim_row (U\<^sub>f f)\<and> j<dim_col v1 \<longrightarrow> (U\<^sub>f f * v1) $$ (i, 0)= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col v1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col v1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col v1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col v1 0) $ 3) "
+  have r1: "j<dim_col \<psi>\<^sub>1 \<longrightarrow> j=0" for j by (simp add: assms(2) ket_vec_def)
+  then have "i<dim_row (U\<^sub>f f)\<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow>  Matrix.row (U\<^sub>f f) i \<bullet> Matrix.col \<psi>\<^sub>1 0 = (\<Sum> k \<in> {0 ..< 4}. (Matrix.row (U\<^sub>f f) i) $ k * ( Matrix.col \<psi>\<^sub>1 0) $ k)"
+    for i j by (smt assms(2) dim_col dim_row_mat(1) dim_vec ket_vec_def scalar_prod_def sum.cong)
+  then have  "i<dim_row (U\<^sub>f f)\<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f f * \<psi>\<^sub>1) $$ (i, 0)= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
     for i j using f1 set_4 by auto
-  then have f2: "i<dim_row (U\<^sub>f f) \<and> j<dim_col v1 \<longrightarrow> (U\<^sub>f f * v1) $$ (i, 0)= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col v1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col v1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col v1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col v1 0) $ 3) "
+  then have f2: "i<dim_row (U\<^sub>f f) \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f f * \<psi>\<^sub>1) $$ (i, 0)= ((Matrix.row (U\<^sub>f f) i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) + ((Matrix.row (U\<^sub>f f) i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row (U\<^sub>f f) i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) + ((Matrix.row (U\<^sub>f f) i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
     for i j by (simp add: assms(1) ket_vec_def)
-  have "(U\<^sub>f f * v1) $$ (0, 0) = inv_b (f(0)) + -(f(0))"
+  have "(U\<^sub>f f * \<psi>\<^sub>1) $$ (0, 0) = inv_b (f(0)) + -(f(0))"
     using f2[of 0 0]
-    by (simp add: U\<^sub>f_def assms(1) ket_vec_def)
-  moreover have "(U\<^sub>f f * v1) $$ (1, 0) = (f(0)) + - inv_b (f(0))"
+    by (simp add: U\<^sub>f_def assms(2) ket_vec_def)
+  moreover have "(U\<^sub>f f * \<psi>\<^sub>1) $$ (1, 0) = (f(0)) + - inv_b (f(0))"
     using f2[of 1 0]
-    by (simp add: U\<^sub>f_def assms(1) ket_vec_def)
-  moreover have "(U\<^sub>f f * v1) $$ (2, 0) = inv_b (f(1)) + -(f(1))"
+    by (simp add: U\<^sub>f_def assms(2) ket_vec_def)
+  moreover have "(U\<^sub>f f * \<psi>\<^sub>1) $$ (2, 0) = inv_b (f(1)) + -(f(1))"
     using f2[of 2 0]
-    by (simp add: U\<^sub>f_def assms(1) ket_vec_def)
-  moreover have "(U\<^sub>f f * v1) $$ (3, 0) = (f(1)) + -inv_b (f(1))"
+    by (simp add: U\<^sub>f_def assms(2) ket_vec_def)
+  moreover have "(U\<^sub>f f * \<psi>\<^sub>1) $$ (3, 0) = (f(1)) + -inv_b (f(1))"
     using f2[of 3 0]
-    by (simp add: U\<^sub>f_def assms(1) ket_vec_def)
-  ultimately have "i<dim_row (U\<^sub>f f) \<and> j<dim_col v1 \<longrightarrow> (U\<^sub>f f * v1) $$(i,j) = v2 $$(i,j)"
+    by (simp add: U\<^sub>f_def assms(2) ket_vec_def)
+  ultimately have "i<dim_row (U\<^sub>f f) \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f f * \<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)"
     for i j using assms f1 f2 set_4 r1
-    by (smt atLeastLessThan_iff empty_iff index_mat(1) insert_iff prod.simps(2) less_numeral_extra(1))
-  moreover have "dim_row (U\<^sub>f f * v1) = dim_row v2"
-    by (simp add: U\<^sub>f_def assms(2))
-  moreover have "dim_col (U\<^sub>f f * v1) = dim_col v2"
-    by (simp add: assms(1) assms(2) ket_vec_def)
-  ultimately show "(U\<^sub>f f * v1) = v2"
-    by (simp add: eq_matI)
+    by (smt atLeastLessThan_iff empty_iff index_mat(1) insert_iff prod.simps(2) less_numeral_extra(1))*)
+  (*moreover have "dim_row (U\<^sub>f f * \<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" sorry
+  moreover have "dim_col (U\<^sub>f f * \<psi>\<^sub>1) = dim_col \<psi>\<^sub>2"
+    by (simp add: assms(2) assms(3) ket_vec_def)*)
+   show "(U\<^sub>f f * \<psi>\<^sub>1) = \<psi>\<^sub>2" sorry
+    (*by (simp add: eq_matI)*)
 qed
 
-lemma H_on_id2: "(H \<Otimes> Id 2) = 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else    \<comment> \<open>TODO\<close>
-                                                (if i=0 \<and> j=2 then 1 else
-                                                (if i=1 \<and> j=1 then 1 else
-                                                (if i=1 \<and> j=3 then 1 else
-                                                (if i=2 \<and> j=0 then 1 else
-                                                (if i=2 \<and> j=2 then -1 else
-                                                (if i=3 \<and> j=1 then 1 else
-                                                (if i=3 \<and> j=3 then -1 else 0))))))))" 
+
+
+lemma H_tensor_Id: 
+assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
+                                 [0, 1/sqrt(2), 0, 1/sqrt(2)],
+                                 [1/sqrt(2), 0, -1/sqrt(2), 0],
+                                 [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
+  shows "(H \<Otimes> Id 1) = v" 
 proof
-  define v::"complex Matrix.mat" where "v = 1/sqrt(2) \<cdot>\<^sub>m  Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else    \<comment> \<open>TODO\<close>
-                                                (if i=0 \<and> j=2 then 1 else
-                                                (if i=1 \<and> j=1 then 1 else
-                                                (if i=1 \<and> j=3 then 1 else
-                                                (if i=2 \<and> j=0 then 1 else
-                                                (if i=2 \<and> j=2 then -1 else
-                                                (if i=3 \<and> j=1 then 1 else
-                                                (if i=3 \<and> j=3 then -1 else 0))))))))"
-  fix i j::nat
-  assume "i<dim_row v" and "j<dim_col v" 
-  then have "i\<in>{0,1,2,3}" and "j\<in>{0,1,2,3}"  using v_def by auto
-  then have "v$$(i,j) = (H \<Otimes> Id 2)$$(i,j)" using v_def scalar_prod_def sorry
+  show "Matrix.dim_col (H \<Otimes> Id 1) = Matrix.dim_col v"  
+    by(simp add: assms H_def Id_def mat_of_cols_list_def)
+  show "dim_row (H \<Otimes> Id 1) = dim_row v"
+    by(simp add: assms H_def Id_def mat_of_cols_list_def)
+  fix i j::nat assume "i < dim_row v" and "j < dim_col v"
+  then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
+    by (auto simp add: assms mat_of_cols_list_def)
+  then show "(H \<Otimes> Id 1) $$ (i, j) = v $$ (i, j)"
+    by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
 
 
-lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3:
+lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3: (*TODO*)
   fixes "f"
   assumes "\<psi>\<^sub>2 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i=0 then ((inv_b (f 0))+ -f(0)) else
                                     (if i=1 then (f(0) + -(inv_b (f(0)))) else
