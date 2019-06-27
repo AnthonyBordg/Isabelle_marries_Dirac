@@ -8,7 +8,7 @@ imports
             HL: just temp seems to finds relevant facts better*)
 begin
 
-(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_id2 
+(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_Id 
 much easier.*)
 (*sledgehammer_params [verbose=true]*)
 
@@ -17,8 +17,8 @@ section \<open>Deutsch's algorithm\<close>
 subsection \<open>Black-box function\<close>
 
 text \<open>
-A constant function with values in {0,1} returns either always 0 or always 1. (* AB: made the comment more precise *) 
-A balanced function is 0 for half of the inputs and 1 for the other half. (* AB: idem *)
+A constant function with values in {0,1} returns either always 0 or always 1. 
+A balanced function is 0 for half of the inputs and 1 for the other half. 
 \<close>
 
 locale deutsch = (* AB: now f is undefined outside of {0,1}. 
@@ -97,76 +97,84 @@ lemma inv_b_add_mult4:
 
 text \<open>Black box function @{text U\<^sub>f}. \<close>
 
-definition U\<^sub>f ::"(nat \<Rightarrow> nat) => complex Matrix.mat" where
-"U\<^sub>f f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). if i=0 \<and> j=0 then (inv_b (f(0))) else
-                  (if i=0 \<and> j=1 then f(0) else
-                  (if i=1 \<and> j=0 then f(0) else
-                  (if i=1 \<and> j=1 then (inv_b (f(0))) else
-                    (if i=2 \<and> j=2 then (inv_b (f(1))) else
-                    (if i=2 \<and> j=3 then f(1) else
+definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where (* AB: U\<^sub>f is a notation, 
+not a name. *)
+"U\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
+        if i=0 \<and> j=0 then inv_b (f(0)) else
+          (if i=0 \<and> j=1 then f(0) else
+            (if i=1 \<and> j=0 then f(0) else
+              (if i=1 \<and> j=1 then inv_b (f(0)) else
+                (if i=2 \<and> j=2 then inv_b (f(1)) else
+                  (if i=2 \<and> j=3 then f(1) else
                     (if i=3 \<and> j=2 then f(1) else
-                      (if i=3 \<and> j=3 then (inv_b (f(1))) else 0))))))))"
+                      (if i=3 \<and> j=3 then inv_b (f(1)) else 0))))))))"
 
-lemma U\<^sub>f_dim [simp]: 
-  shows "dim_row (U\<^sub>f f) = 4" and "dim_col (U\<^sub>f f) = 4"
-  using U\<^sub>f_def by auto
+lemma (in deutsch) deutsch_transform_dim [simp]: (* AB: Note that I don't need to write U\<^sub>f f anymore, simply U\<^sub>f .*)
+  shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4"
+  using deutsch_transform_def by auto
 
-lemma U\<^sub>f_is_zero [simp]:
-  shows "(U\<^sub>f f)$$(0,2) = 0" and "(U\<^sub>f f)$$(0,3) = 0"
-    and "(U\<^sub>f f)$$(1,2) = 0" and "(U\<^sub>f f)$$(1,3) = 0"
-    and "(U\<^sub>f f)$$(2,0) = 0" and "(U\<^sub>f f)$$(2,1) = 0"
-    and "(U\<^sub>f f)$$(3,0) = 0" and "(U\<^sub>f f)$$(3,1) = 0"
-  using U\<^sub>f_def by auto
+lemma (in deutsch) deutsch_transform_is_zero [simp]:
+  shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
+    and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
+    and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
+    and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
+  using deutsch_transform_def by auto
 
-lemma U\<^sub>f_is_not_zero [simp]:
-  shows "(U\<^sub>f f)$$(0,1) = f(0)" and "(U\<^sub>f f)$$(1,0) = f(0)"
-    and "(U\<^sub>f f)$$(2,3) = f(1)" and "(U\<^sub>f f)$$(3,2) = f(1)"
-    and "(U\<^sub>f f)$$(0,0) = inv_b (f(0))" and "(U\<^sub>f f)$$(1,1) = inv_b (f(0))"
-    and "(U\<^sub>f f)$$(2,2) = inv_b (f(1))" and "(U\<^sub>f f)$$(3,3) = inv_b (f(1))"
-  using U\<^sub>f_def by auto
+lemma (in deutsch) deutsch_transform_is_not_zero [simp]:
+  shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
+    and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
+    and "U\<^sub>f $$ (0,0) = inv_b (f(0))" and "U\<^sub>f $$(1,1) = inv_b (f(0))"
+    and "U\<^sub>f $$ (2,2) = inv_b (f(1))" and "U\<^sub>f $$ (3,3) = inv_b (f(1))"
+  using deutsch_transform_def by auto
 
 text \<open>@{text U\<^sub>f} is a gate. \<close>
 
 lemma set_four [simp]: "\<forall>i::nat. i < 4 \<longrightarrow> i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" by auto
 
-lemma adjoint_of_U\<^sub>f: 
-  fixes f::"nat\<Rightarrow>nat"
-  assumes "deutsch f"
-  shows "(U\<^sub>f f)\<^sup>\<dagger> = (U\<^sub>f f)"
+lemma (in deutsch) adjoint_of_deutsch_transform: 
+  shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
 proof -
-  have "(U\<^sub>f f)\<^sup>\<dagger> = ((U\<^sub>f f)\<^sup>t)" using cpx_mat_cnj_def U\<^sub>f_def 
-    by (smt U\<^sub>f_dim(1) U\<^sub>f_dim(2) cnj_transpose complex_cnj_of_int cong_mat index_mat(1) old.prod.case)
-  also have "... = (U\<^sub>f f)" using hermite_cnj_def cong_mat U\<^sub>f_def  
-    by (smt U\<^sub>f_dim U\<^sub>f_is_not_zero U\<^sub>f_is_zero eq_matI index_transpose_mat set_four)
-  finally show "(U\<^sub>f f)\<^sup>\<dagger> = (U\<^sub>f f)" by simp
+  have "(U\<^sub>f)\<^sup>\<dagger> = (U\<^sub>f)\<^sup>t" using cpx_mat_cnj_def deutsch_transform_def
+    by (smt deutsch_transform_dim(1) deutsch_transform_dim(2) cnj_transpose complex_cnj_of_int 
+cong_mat index_mat(1) old.prod.case)
+  also have "... = U\<^sub>f" using deutsch_transform_def hermite_cnj_def cong_mat   
+    by (smt deutsch_transform_dim deutsch_transform_is_not_zero deutsch_transform_is_zero 
+eq_matI index_transpose_mat set_four)
+  finally show "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f" by simp
 qed
 
-lemma U\<^sub>f_is_gate:
-  fixes f::"nat\<Rightarrow>nat"
-  assumes "deutsch f"
-  shows "gate 2 (U\<^sub>f f)"
+lemma (in deutsch) deutsch_transform_is_gate: (* AB: please note how you do not need the assumptions 
+anymore thanks to the context provided. *)
+  shows "gate 2 U\<^sub>f"
 proof
-  show "dim_row (U\<^sub>f f) = 2\<^sup>2"
-    by (simp add: U\<^sub>f_def)
+  show "dim_row U\<^sub>f = 2\<^sup>2" by (simp add: deutsch_transform_def)
 next
-  show "square_mat(U\<^sub>f f)"
-    by (simp add: U\<^sub>f_def)
+  show "square_mat U\<^sub>f" by (simp add: deutsch_transform_def)
 next
-  have "(U\<^sub>f f)*(U\<^sub>f f) = 1\<^sub>m (dim_col (U\<^sub>f f))" 
+  have "U\<^sub>f * U\<^sub>f = 1\<^sub>m (dim_col U\<^sub>f)" 
   proof 
     fix i j::nat
-    assume a1: "i < dim_row (1\<^sub>m (dim_col (U\<^sub>f f)))" and a2: "j < dim_col (1\<^sub>m (dim_col (U\<^sub>f f)))" 
-    then have "((U\<^sub>f f)*(U\<^sub>f f))$$(i,j) =(Matrix.row (U\<^sub>f f) i $ 0 * Matrix.col (U\<^sub>f f) j $ 0) + (Matrix.row (U\<^sub>f f) i $ 1 * Matrix.col (U\<^sub>f f) j $ 1) + (Matrix.row (U\<^sub>f f) i $ 2 * Matrix.col (U\<^sub>f f) j $ 2) + (Matrix.row (U\<^sub>f f) i $ 3 * Matrix.col (U\<^sub>f f) j $ 3)"
-      by (simp add: scalar_prod_def)
-    then show "(U\<^sub>f f * U\<^sub>f f) $$ (i, j) = 1\<^sub>m (dim_col (U\<^sub>f f)) $$ (i, j)"
-      by (smt U\<^sub>f_dim U\<^sub>f_is_not_zero U\<^sub>f_is_zero a1 a2 add.commute add_Suc add_cancel_right_left add_less_cancel_left assms index_col index_one_mat(1) index_one_mat(2) index_one_mat(3) index_row(1) inv_b_add_mult3 inv_b_add_mult4 inv_b_values(1) inv_b_values(2) inv_b_values(3) inv_b_values(5) mult.commute mult_cancel_left1 neq0_conv numeral_2_eq_2 numeral_Bit0 numeral_Bit1 of_int_hom.hom_one of_int_hom.hom_zero of_nat_0 of_nat_1 plus_1_eq_Suc set_four zero_neq_numeral)
+    assume a1: "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and a2: "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))" 
+    then have "(U\<^sub>f * U\<^sub>f) $$(i,j) =(Matrix.row U\<^sub>f i $ 0 * Matrix.col U\<^sub>f j $ 0) + 
+(Matrix.row U\<^sub>f i $ 1 * Matrix.col U\<^sub>f j $ 1) + (Matrix.row U\<^sub>f i $ 2 * Matrix.col U\<^sub>f j $ 2) + 
+(Matrix.row U\<^sub>f i $ 3 * Matrix.col U\<^sub>f j $ 3)" by (simp add: scalar_prod_def) 
+(* AB: Please be careful to not pass the margin, or at least not by a mile. *)
+    then show "(U\<^sub>f * U\<^sub>f) $$ (i, j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" using deutsch_transform_def a1 a2
+      apply (auto simp add: algebra_simps)
+      using f_values inv_b_def apply auto[8].
+      (*AB: please take some time to compare my proof with your former one:
+by (smt deutsch_transform_dim deutsch_transform_is_not_zero deutsch_transform_is_zero a1 a2 
+add.commute add_Suc add_cancel_right_left add_less_cancel_left index_col index_one_mat(1) 
+index_one_mat(2) index_one_mat(3) index_row(1) inv_b_add_mult3 inv_b_add_mult4 inv_b_values(1) 
+inv_b_values(2) inv_b_values(3) inv_b_values(5) mult.commute mult_cancel_left1 neq0_conv numeral_2_eq_2 
+numeral_Bit0 numeral_Bit1 of_int_hom.hom_one of_int_hom.hom_zero of_nat_0 of_nat_1 plus_1_eq_Suc set_four 
+zero_neq_numeral)*)
   next 
-    show "dim_row (U\<^sub>f f * U\<^sub>f f) = dim_row (1\<^sub>m (dim_col (U\<^sub>f f)))" by simp
+    show "dim_row (U\<^sub>f * U\<^sub>f) = dim_row (1\<^sub>m (dim_col U\<^sub>f))" by simp
   next
-    show "dim_col (U\<^sub>f f * U\<^sub>f f) = dim_col (1\<^sub>m (dim_col (U\<^sub>f f)))" by simp
+    show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
   qed
-  then show "unitary (U\<^sub>f f)" 
-    by (simp add: adjoint_of_U\<^sub>f assms unitary_def)
+  then show "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
 qed
 
 
@@ -218,6 +226,19 @@ proof -
   ultimately show "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> + |y\<rangle>)" by auto
 qed
 
+lemma H_on_zero_state_is_state: "state 1 (H * |x\<rangle>)"
+proof
+  show "gate 1 H" 
+    using H_is_gate by auto
+next
+  show "state 1 |x\<rangle>" 
+    using x_is_state by blast
+qed
+
+
+
+
+
 lemma H_on_one_state: "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> - |y\<rangle>)"
 proof -
   have "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ((Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |y\<rangle>))"
@@ -241,6 +262,17 @@ proof -
    qed
   ultimately show "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> - |y\<rangle>)" by auto
 qed
+
+
+lemma H_on_one_state_is_state: "state 1 (H * |y\<rangle>)"
+proof
+  show "gate 1 H" 
+    using H_is_gate by auto
+next
+  show "state 1 |y\<rangle>" 
+    using y_is_state by blast
+qed
+
 
 lemma x_plus_y: "( |x\<rangle> + |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). 1)"
 proof
@@ -274,13 +306,27 @@ qed
 
 
 
+
 lemma H_on_zero_state_square_inside: "(H * |x\<rangle>) =  (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
   using cong_mat x_plus_y H_on_zero_state by auto
 
 lemma H_on_one_state_square_inside: "(H * |y\<rangle>) =  Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2))" 
   using cong_mat H_on_one_state x_minus_y by auto
 
-lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>" 
+lemma \<psi>\<^sub>0_is_state: "state 2 ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+proof 
+  show  "dim_col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 1" 
+    using state.dim_col x_is_state y_is_state by auto
+next 
+  show "dim_row (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 2\<^sup>2" 
+    using H_on_one_state_is_state H_on_zero_state_is_state state_def tensor_state2 by blast
+next
+  show "\<parallel>Matrix.col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) 0\<parallel> = 1"
+    using H_on_one_state_is_state H_on_zero_state_is_state state.length tensor_state2 by blast
+qed
+
+
+lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
 proof -
   define v::"complex Matrix.mat" where "v\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
   define w::"complex Matrix.mat" where "w\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))"
@@ -321,14 +367,12 @@ qed
 
 text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
 
-lemma \<psi>\<^sub>1_to_\<psi>\<^sub>2: (*TODO:current proof calculates each element seperately, would be nice without*)
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f" 
-      and "\<psi>\<^sub>1 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
-      and "\<psi>\<^sub>2 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 then ((inv_b (f 0)) - (f(0)::int)) else
-                                    (if i=1 then ((f(0)::int)  -(inv_b (f(0)))) else
-                                    (if i=2 then ((inv_b (f(1))) - (f(1)::int)) else ((f(1)::int) -inv_b(f(1))))))\<rangle>"
-  shows "(U\<^sub>f f) * \<psi>\<^sub>1 = \<psi>\<^sub>2"
+lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: (*TODO:current proof calculates each element seperately, would be nice without*)
+  assumes "\<psi>\<^sub>1 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
+and "\<psi>\<^sub>2 \<equiv> |Matrix.vec 4 (\<lambda>i. if i=0 then ((inv_b (f 0)) - (f(0)::int)) else
+                          (if i=1 then ((f(0)::int)  -(inv_b (f(0)))) else
+                            (if i=2 then ((inv_b (f(1))) - (f(1)::int)) else ((f(1)::int) -inv_b(f(1))))))\<rangle>"
+  shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof -
   (*fix i j ::nat
   assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
@@ -394,24 +438,42 @@ proof
     by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
+lemma "gate 2 (H \<Otimes> Id 1)" 
+proof 
+  show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id   
+    by (simp add: Tensor.mat_of_cols_list_def)
+next 
+  show "square_mat (H \<Otimes> Quantum.Id 1)" 
+    using H_is_gate id_is_gate tensor_gate_sqr_mat by blast
+next 
+  show "unitary (H \<Otimes> Quantum.Id 1)" 
+    using H_is_gate gate_def id_is_gate tensor_gate by blast
+qed
+
+
+
 
 
 lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3: (*TODO*)
   fixes "f"
-  assumes "\<psi>\<^sub>2 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i=0 then ((inv_b (f 0))+ -f(0)) else
-                                    (if i=1 then (f(0) + -(inv_b (f(0)))) else
-                                    (if i=2 then ((inv_b (f(1)))+ -f(1)) else (f(1)+ -inv_b(f(1))))))" and "\<psi>\<^sub>3 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i = 0 then ((inv_b (f 0))+ -f(0))+ ((inv_b (f 1))+ -f(1)) else
-                                    (if i = 1 then (f(0) + -(inv_b (f(0))))+ (f(1)+ -inv_b(f(1))) else
-                                    (if i = 2 then  ((inv_b (f 0))+ -f(0))+-((inv_b (f(1)))+ -f(1)) else
-                                    (f(0) + -(inv_b (f(0))))+ -(f(1)+ -inv_b(f(1))))))"
-  shows "(H \<Otimes> Id 2)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
+  assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0)) - f(0)],
+                                 [f(0) - (inv_b (f(0)))],
+                                 [(inv_b (f(1))) - f(1)],
+                                 [f(1) - inv_b(f(1))]]"
+  and "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[((inv_b (f 0)) - f(0))+ ((inv_b (f 1))+ -f(1))],
+                                 [(f(0) - (inv_b (f(0))))+ (f(1) - inv_b(f(1)))],
+                                 [((inv_b (f 0)) - f(0)) - ((inv_b (f(1))) - f(1))],
+                                 [ (f(0) -(inv_b (f(0)))) -(f(1) -inv_b(f(1)))]]"
+  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
 proof
   fix i j::nat
   assume a1:"i < dim_row \<psi>\<^sub>3"
     and a2: "j < dim_col \<psi>\<^sub>3 "
-  show "((H \<Otimes> Id 2) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)"
-    (*by (smt H_inv  assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) index_mult_mat(3) index_one_mat(3) index_row(2) index_smult_vec(2) mult.left_neutral mult_cancel_right numeral_eq_one_iff row_smult semiring_norm(85) t1 zero_less_numeral zero_neq_numeral)*)
-    sorry
+  then have "i \<in> {0..<4} " 
+    using  assms Tensor.mat_of_cols_list_def atLeastLessThan_iff dim_row_mat(1) zero_le by auto
+  moreover have "j = 0" using a2 assms mat_of_cols_list_def sledgehammer
+  ultimately show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)" using assms H_tensor_Id mat_of_cols_list_def sledgehammer
+
 next
   show "dim_col ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
     by (simp add: assms(1) assms(2))
@@ -421,13 +483,12 @@ next
 qed
 
 
-definition DeutschAlgo:: "(nat\<Rightarrow>nat)\<Rightarrow> complex Matrix.mat" where (*TODO:Measurement*)
-"DeutschAlgo f \<equiv> (H \<Otimes> Id 2)*(U\<^sub>f f)*((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+definition (in deutsch) deutsch_algo:: (*AB: please no capitals and use underscore to separate words.*) 
+"complex Matrix.mat" where (*TODO:Measurement*)
+"deutsch_algo \<equiv> (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
 
-lemma 
-  fixes f::"nat\<Rightarrow>nat"
-  assumes "deutsch f"
-  shows "fun_is_con f \<longrightarrow> fst ((meas 2 (DeutschAlgo f) 0)!0) = 1" sorry
+lemma (in deutsch) (* AB: below you need to replace this "fun_is_con f"*)
+  shows "fun_is_con f \<longrightarrow> fst ((meas 2 (deutsch_algo) 0)!0) = 1" sorry
 
 
 end
