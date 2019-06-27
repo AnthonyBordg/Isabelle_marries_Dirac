@@ -743,20 +743,20 @@ text \<open>Our first quantum gate: the identity matrix! Arguably, not a very in
 
 lemma set_2 [simp]: "{0..<2::nat} = {0,1}" by auto
 
-definition id :: "nat \<Rightarrow> complex mat" where
-"id n \<equiv> 1\<^sub>m (2^n)"
+definition Id :: "nat \<Rightarrow> complex mat" where
+"Id n \<equiv> 1\<^sub>m (2^n)"
 
 lemma id_is_gate [simp]:
-  "gate n (id n)"
+  "gate n (Id n)"
 proof
-  show "dim_row (id n) = 2^n"
-    using id_def by simp
+  show "dim_row (Id n) = 2^n"
+    using Id_def by simp
 next
-  show "square_mat (id n)"
-    using id_def by simp
+  show "square_mat (Id n)"
+    using Id_def by simp
 next
-  show "unitary (id n)" 
-    by (simp add: id_def)
+  show "unitary (Id n)" 
+    by (simp add: Id_def)
 qed
 
 text \<open>More interesting: the Pauli matrices.\<close>
