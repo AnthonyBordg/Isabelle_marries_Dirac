@@ -6,7 +6,7 @@ imports
   Quantum(* , Jordan_Normal_Form.Matrix
             Quantum , no need for those files since they are imported when you import MoreTensor 
             HL: just temp seems to finds relevant facts better*)
-
+begin
 
 (*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_id2 
 much easier.*)
@@ -366,26 +366,22 @@ qed
 
 lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
 
-lemma H_tensor_id2: 
-assumes "v \<equiv>  mat_of_cols_list 8 [[1/sqrt(2), 0, 0, 0, 1/sqrt(2), 0, 0, 0],
-                                 [0, 1/sqrt(2), 0, 0, 0, 1/sqrt(2), 0, 0],
-                                 [0, 0, 1/sqrt(2), 0, 0, 0, 1/sqrt(2), 0],
-                                 [0, 0, 0, 1/sqrt(2), 0, 0, 0, 1/sqrt(2)],
-                                 [1/sqrt(2), 0, 0, 0, -1/sqrt(2), 0, 0, 0],
-                                 [0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2), 0, 0],
-                                 [0, 0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2), 0],
-                                 [0, 0, 0, 1/sqrt(2), 0, 0, 0, -1/sqrt(2)]]"
-  shows "(H \<Otimes> id 2) = v" 
+lemma H_tensor_Id: 
+assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
+                                 [0, 1/sqrt(2), 0, 1/sqrt(2)],
+                                 [1/sqrt(2), 0, -1/sqrt(2), 0],
+                                 [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
+  shows "(H \<Otimes> Id 1) = v" 
 proof
-  show "Matrix.dim_col (H \<Otimes> Quantum.id 2) = Matrix.dim_col v"  
-    by(simp add: assms H_def Quantum.id_def mat_of_cols_list_def)
-  show "dim_row (H \<Otimes> id 2) = dim_row v"
-    by(simp add: assms H_def id_def mat_of_cols_list_def)
+  show "Matrix.dim_col (H \<Otimes> Id 1) = Matrix.dim_col v"  
+    by(simp add: assms H_def Id_def mat_of_cols_list_def)
+  show "dim_row (H \<Otimes> Id 1) = dim_row v"
+    by(simp add: assms H_def Id_def mat_of_cols_list_def)
   fix i j::nat assume "i < dim_row v" and "j < dim_col v"
-  then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" 
+  then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
     by (auto simp add: assms mat_of_cols_list_def)
-  then show "(H \<Otimes> id 2) $$ (i, j) = v $$ (i, j)"
-    by (auto simp add: assms id_def H_def mat_of_cols_list_def)
+  then show "(H \<Otimes> Id 1) $$ (i, j) = v $$ (i, j)"
+    by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
 
