@@ -107,6 +107,7 @@ not a name. *)
                 (if i=2 \<and> j=2 then inv_b (f(1)) else
                   (if i=2 \<and> j=3 then f(1) else
                     (if i=3 \<and> j=2 then f(1) else
+
                       (if i=3 \<and> j=3 then inv_b (f(1)) else 0))))))))"
 
 lemma (in deutsch) deutsch_transform_dim [simp]: (* AB: Note that I don't need to write U\<^sub>f f anymore, simply U\<^sub>f .*)
@@ -126,6 +127,7 @@ lemma (in deutsch) deutsch_transform_is_not_zero [simp]:
     and "U\<^sub>f $$ (0,0) = inv_b (f(0))" and "U\<^sub>f $$(1,1) = inv_b (f(0))"
     and "U\<^sub>f $$ (2,2) = inv_b (f(1))" and "U\<^sub>f $$ (3,3) = inv_b (f(1))"
   using deutsch_transform_def by auto
+
 
 text \<open>@{text U\<^sub>f} is a gate. \<close>
 
@@ -438,7 +440,9 @@ proof
     by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
-lemma "gate 2 (H \<Otimes> Id 1)" 
+
+lemma H_tensor_Id_is_gate: "gate 2 (H \<Otimes> Id 1)" 
+
 proof 
   show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id   
     by (simp add: Tensor.mat_of_cols_list_def)
@@ -452,34 +456,35 @@ qed
 
 
 
+<
 
 
 lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3: (*TODO*)
   fixes "f"
-  assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0)) - f(0)],
-                                 [f(0) - (inv_b (f(0)))],
-                                 [(inv_b (f(1))) - f(1)],
-                                 [f(1) - inv_b(f(1))]]"
-  and "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[((inv_b (f 0)) - f(0))+ ((inv_b (f 1))+ -f(1))],
-                                 [(f(0) - (inv_b (f(0))))+ (f(1) - inv_b(f(1)))],
-                                 [((inv_b (f 0)) - f(0)) - ((inv_b (f(1))) - f(1))],
-                                 [ (f(0) -(inv_b (f(0)))) -(f(1) -inv_b(f(1)))]]"
+
+  assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0)) - f(0),
+                                 f(0) - (inv_b (f(0))),
+                                 (inv_b (f(1))) - f(1),
+                                 f(1) - inv_b(f(1))]]"
+  and "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[((inv_b (f 0)) - f(0))+ ((inv_b (f 1)) -f(1)),
+                                 (f(0) - (inv_b (f(0))))+ (f(1) - inv_b(f(1))),
+                                 ((inv_b (f 0)) - f(0)) - ((inv_b (f(1))) - f(1)),
+                                  (f(0) -(inv_b (f(0)))) -(f(1) -inv_b(f(1)))]]"
   shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
 proof
   fix i j::nat
-  assume a1:"i < dim_row \<psi>\<^sub>3"
-    and a2: "j < dim_col \<psi>\<^sub>3 "
-  then have "i \<in> {0..<4} " 
-    using  assms Tensor.mat_of_cols_list_def atLeastLessThan_iff dim_row_mat(1) zero_le by auto
-  moreover have "j = 0" using a2 assms mat_of_cols_list_def sledgehammer
-  ultimately show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)" using assms H_tensor_Id mat_of_cols_list_def sledgehammer
-
+  assume a1:"i < dim_row \<psi>\<^sub>3" and a2: "j < dim_col \<psi>\<^sub>3"
+  have a3:"i \<in> {0,1,2,3}" 
+    using a1 assms Tensor.mat_of_cols_list_def atLeastLessThan_iff dim_row_mat(1) zero_le by auto
+  have "j =0" using assms mat_of_cols_list_def a2 by auto
+  then show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)" 
+    using  H_tensor_Id assms mat_of_cols_list_def times_mat_def scalar_prod_def sorry
 next
-  show "dim_col ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
-    by (simp add: assms(1) assms(2))
+  show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" 
+    using assms mat_of_cols_list_def H_tensor_Id sorry
 next
-  show "dim_row ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" sorry
-     (*simp add:  H_on_id2 assms(1) assms(2) ket_vec_def*)
+  show "dim_col ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3" 
+    using  mat_of_cols_list_def assms  by auto
 qed
 
 
