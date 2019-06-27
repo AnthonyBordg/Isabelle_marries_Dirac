@@ -17,15 +17,27 @@ section \<open>Deutsch's algorithm\<close>
 subsection \<open>Black-box function\<close>
 
 text \<open>
-A constant function returns either always 0 or always 1. 
-A balanced function is 0 for half of the values and 1 for the other half. (* added a missing comma *)
+A constant function with values in {0,1} returns either always 0 or always 1. (* AB: made the comment more precise *) 
+A balanced function is 0 for half of the inputs and 1 for the other half. (* AB: idem *)
 \<close>
 
-
-locale deutsch = (* Now, f is undefined outside of {0,1}. 
+locale deutsch = (* AB: now f is undefined outside of {0,1}. 
 Also, I changed  the name of the assumption. *)
   fixes f:: "nat \<Rightarrow> nat" 
   assumes dom: "f \<in> ({0,1} \<rightarrow>\<^sub>E {0,1})"
+
+locale is_swap = deutsch +
+  assumes swapping: "\<forall>x. f x = 1 - x"
+
+context is_swap
+begin
+
+lemma is_swap_values:
+  shows "f 0 = 1" and "f 1 = 0" using swapping by auto
+
+end (* context is_swap *)
+
+sublocale is_swap \<subseteq> deutsch by (simp add: deutsch_axioms)
 
   
 context deutsch
@@ -36,14 +48,14 @@ definition const:: "nat \<Rightarrow> bool" where
 "const n = (\<forall>x.(f x = n))"
 
 definition balanced:: "bool" where
-"balanced \<equiv> (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
+"balanced \<equiv> f = id \<or> is_swap f"
 
 lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto 
 end (* context deutsch *)
 
 
 definition inv_b:: "nat \<Rightarrow> int" where (* Better than (1-n) since it captures the partiality? *)
-(* AB, with the change I made in the locale, are inv_b and the lemmas below still useful ? *)
+(* AB: with the change I made in the locale, are inv_b and the lemmas below still useful ? *)
 "inv_b n \<equiv> (case n of 0 \<Rightarrow> 1 
                      |(Suc 0) \<Rightarrow> 0)"
 
@@ -122,7 +134,7 @@ lemma adjoint_of_U\<^sub>f:
   assumes "deutsch f"
   shows "(U\<^sub>f f)\<^sup>\<dagger> = (U\<^sub>f f)"
 proof -
-  have "(U\<^sub>f f)\<^sup>\<dagger> = ((U\<^sub>f f)\<^sup>t)" using cpx_mat_cnj_def deutsch_def U\<^sub>f_def 
+  have "(U\<^sub>f f)\<^sup>\<dagger> = ((U\<^sub>f f)\<^sup>t)" using cpx_mat_cnj_def U\<^sub>f_def 
     by (smt U\<^sub>f_dim(1) U\<^sub>f_dim(2) cnj_transpose complex_cnj_of_int cong_mat index_mat(1) old.prod.case)
   also have "... = (U\<^sub>f f)" using hermite_cnj_def cong_mat U\<^sub>f_def  
     by (smt U\<^sub>f_dim U\<^sub>f_is_not_zero U\<^sub>f_is_zero eq_matI index_transpose_mat set_four)
@@ -364,8 +376,6 @@ qed
 
 
 
-lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
-
 lemma H_tensor_Id: 
 assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
@@ -394,25 +404,25 @@ lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3: (*TODO*)
                                     (if i = 1 then (f(0) + -(inv_b (f(0))))+ (f(1)+ -inv_b(f(1))) else
                                     (if i = 2 then  ((inv_b (f 0))+ -f(0))+-((inv_b (f(1)))+ -f(1)) else
                                     (f(0) + -(inv_b (f(0))))+ -(f(1)+ -inv_b(f(1))))))"
-  shows "(H \<Otimes> id 2)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
+  shows "(H \<Otimes> Id 2)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
 proof
   fix i j::nat
   assume a1:"i < dim_row \<psi>\<^sub>3"
     and a2: "j < dim_col \<psi>\<^sub>3 "
-  show "((H \<Otimes> Quantum.id 2) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)"
+  show "((H \<Otimes> Id 2) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)"
     (*by (smt H_inv  assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) index_mult_mat(3) index_one_mat(3) index_row(2) index_smult_vec(2) mult.left_neutral mult_cancel_right numeral_eq_one_iff row_smult semiring_norm(85) t1 zero_less_numeral zero_neq_numeral)*)
     sorry
 next
-  show "dim_col ((H \<Otimes> Quantum.id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
+  show "dim_col ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
     by (simp add: assms(1) assms(2))
 next
-  show "dim_row ((H \<Otimes> Quantum.id 2) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" sorry
+  show "dim_row ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" sorry
      (*simp add:  H_on_id2 assms(1) assms(2) ket_vec_def*)
 qed
 
 
 definition DeutschAlgo:: "(nat\<Rightarrow>nat)\<Rightarrow> complex Matrix.mat" where (*TODO:Measurement*)
-"DeutschAlgo f \<equiv> (H \<Otimes> id 2)*(U\<^sub>f f)*((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+"DeutschAlgo f \<equiv> (H \<Otimes> Id 2)*(U\<^sub>f f)*((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
 
 lemma 
   fixes f::"nat\<Rightarrow>nat"
