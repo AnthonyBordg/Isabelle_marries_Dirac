@@ -398,14 +398,14 @@ proof
   fix i j::nat
   assume a1:"i < dim_row \<psi>\<^sub>3"
     and a2: "j < dim_col \<psi>\<^sub>3 "
-  show "((H \<Otimes> Quantum.Id 2) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)"
+  show "((H \<Otimes> Id 2) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)"
     (*by (smt H_inv  assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) index_mult_mat(3) index_one_mat(3) index_row(2) index_smult_vec(2) mult.left_neutral mult_cancel_right numeral_eq_one_iff row_smult semiring_norm(85) t1 zero_less_numeral zero_neq_numeral)*)
     sorry
 next
-  show "dim_col ((H \<Otimes> Quantum.Id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
+  show "dim_col ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
     by (simp add: assms(1) assms(2))
 next
-  show "dim_row ((H \<Otimes> Quantum.Id 2) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" sorry
+  show "dim_row ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" sorry
      (*simp add:  H_on_id2 assms(1) assms(2) ket_vec_def*)
 qed
 
