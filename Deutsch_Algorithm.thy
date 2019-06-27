@@ -8,7 +8,7 @@ imports
             HL: just temp seems to finds relevant facts better*)
 begin
 
-(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_id2 
+(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_Id 
 much easier.*)
 (*sledgehammer_params [verbose=true]*)
 
@@ -17,8 +17,8 @@ section \<open>Deutsch's algorithm\<close>
 subsection \<open>Black-box function\<close>
 
 text \<open>
-A constant function with values in {0,1} returns either always 0 or always 1. (* AB: made the comment more precise *) 
-A balanced function is 0 for half of the inputs and 1 for the other half. (* AB: idem *)
+A constant function with values in {0,1} returns either always 0 or always 1. 
+A balanced function is 0 for half of the inputs and 1 for the other half. 
 \<close>
 
 locale deutsch = (* AB: now f is undefined outside of {0,1}. 
@@ -218,6 +218,19 @@ proof -
   ultimately show "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> + |y\<rangle>)" by auto
 qed
 
+lemma H_on_zero_state_is_state: "state 1 (H * |x\<rangle>)"
+proof
+  show "gate 1 H" 
+    using H_is_gate by auto
+next
+  show "state 1 |x\<rangle>" 
+    using x_is_state by blast
+qed
+
+
+
+
+
 lemma H_on_one_state: "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> - |y\<rangle>)"
 proof -
   have "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ((Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |y\<rangle>))"
@@ -241,6 +254,17 @@ proof -
    qed
   ultimately show "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> - |y\<rangle>)" by auto
 qed
+
+
+lemma H_on_one_state_is_state: "state 1 (H * |y\<rangle>)"
+proof
+  show "gate 1 H" 
+    using H_is_gate by auto
+next
+  show "state 1 |y\<rangle>" 
+    using y_is_state by blast
+qed
+
 
 lemma x_plus_y: "( |x\<rangle> + |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). 1)"
 proof
@@ -274,13 +298,27 @@ qed
 
 
 
+
 lemma H_on_zero_state_square_inside: "(H * |x\<rangle>) =  (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
   using cong_mat x_plus_y H_on_zero_state by auto
 
 lemma H_on_one_state_square_inside: "(H * |y\<rangle>) =  Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2))" 
   using cong_mat H_on_one_state x_minus_y by auto
 
-lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>" 
+lemma \<psi>\<^sub>0_is_state: "state 2 ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+proof 
+  show  "dim_col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 1" 
+    using state.dim_col x_is_state y_is_state by auto
+next 
+  show "dim_row (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 2\<^sup>2" 
+    using H_on_one_state_is_state H_on_zero_state_is_state state_def tensor_state2 by blast
+next
+  show "\<parallel>Matrix.col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) 0\<parallel> = 1"
+    using H_on_one_state_is_state H_on_zero_state_is_state state.length tensor_state2 by blast
+qed
+
+
+lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
 proof -
   define v::"complex Matrix.mat" where "v\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
   define w::"complex Matrix.mat" where "w\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))"
@@ -394,24 +432,42 @@ proof
     by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
+lemma "gate 2 (H \<Otimes> Id 1)" 
+proof 
+  show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id   
+    by (simp add: Tensor.mat_of_cols_list_def)
+next 
+  show "square_mat (H \<Otimes> Quantum.Id 1)" 
+    using H_is_gate id_is_gate tensor_gate_sqr_mat by blast
+next 
+  show "unitary (H \<Otimes> Quantum.Id 1)" 
+    using H_is_gate gate_def id_is_gate tensor_gate by blast
+qed
+
+
+
 
 
 lemma \<psi>\<^sub>2_to_\<psi>\<^sub>3: (*TODO*)
   fixes "f"
-  assumes "\<psi>\<^sub>2 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i=0 then ((inv_b (f 0))+ -f(0)) else
-                                    (if i=1 then (f(0) + -(inv_b (f(0)))) else
-                                    (if i=2 then ((inv_b (f(1)))+ -f(1)) else (f(1)+ -inv_b(f(1))))))" and "\<psi>\<^sub>3 \<equiv> Matrix.mat 4 1 (\<lambda>(i,j). if i = 0 then ((inv_b (f 0))+ -f(0))+ ((inv_b (f 1))+ -f(1)) else
-                                    (if i = 1 then (f(0) + -(inv_b (f(0))))+ (f(1)+ -inv_b(f(1))) else
-                                    (if i = 2 then  ((inv_b (f 0))+ -f(0))+-((inv_b (f(1)))+ -f(1)) else
-                                    (f(0) + -(inv_b (f(0))))+ -(f(1)+ -inv_b(f(1))))))"
-  shows "(H \<Otimes> Id 2)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
+  assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0)) - f(0)],
+                                 [f(0) - (inv_b (f(0)))],
+                                 [(inv_b (f(1))) - f(1)],
+                                 [f(1) - inv_b(f(1))]]"
+  and "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[((inv_b (f 0)) - f(0))+ ((inv_b (f 1))+ -f(1))],
+                                 [(f(0) - (inv_b (f(0))))+ (f(1) - inv_b(f(1)))],
+                                 [((inv_b (f 0)) - f(0)) - ((inv_b (f(1))) - f(1))],
+                                 [ (f(0) -(inv_b (f(0)))) -(f(1) -inv_b(f(1)))]]"
+  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3"
 proof
   fix i j::nat
   assume a1:"i < dim_row \<psi>\<^sub>3"
     and a2: "j < dim_col \<psi>\<^sub>3 "
-  show "((H \<Otimes> Id 2) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)"
-    (*by (smt H_inv  assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) index_mult_mat(3) index_one_mat(3) index_row(2) index_smult_vec(2) mult.left_neutral mult_cancel_right numeral_eq_one_iff row_smult semiring_norm(85) t1 zero_less_numeral zero_neq_numeral)*)
-    sorry
+  then have "i \<in> {0..<4} " 
+    using  assms Tensor.mat_of_cols_list_def atLeastLessThan_iff dim_row_mat(1) zero_le by auto
+  moreover have "j = 0" using a2 assms mat_of_cols_list_def sledgehammer
+  ultimately show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)" using assms H_tensor_Id mat_of_cols_list_def sledgehammer
+
 next
   show "dim_col ((H \<Otimes> Id 2) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"
     by (simp add: assms(1) assms(2))
