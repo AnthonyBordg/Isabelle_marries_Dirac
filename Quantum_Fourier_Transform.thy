@@ -29,6 +29,11 @@ qed
 definition fourier:: "nat \<Rightarrow> complex Matrix.mat" where
 "fourier n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). (root (2^n))^(i*j) / sqrt(2^n))"
 
+lemma sqrt_power_of_2:
+  fixes "n":: nat
+  shows "2^n = sqrt (2^n) * sqrt (2^n)"
+  by simp
+
 lemma fourier_inv_0 [simp]: (* AB: this lemma is not true. Take n = 0, then the sum is 1 *)
   fixes "i" "j":: nat 
   assumes "i < 2^n" and "j < 2^n" and "i \<noteq> j"
