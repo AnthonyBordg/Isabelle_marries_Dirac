@@ -1,3 +1,4 @@
+
 theory Deutsch_Algorithm 
 imports
   MoreTensor
@@ -5,7 +6,7 @@ imports
   Quantum(* , Jordan_Normal_Form.Matrix
             Quantum , no need for those files since they are imported when you import MoreTensor 
             HL: just temp seems to finds relevant facts better*)
-begin
+
 
 (*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_id2 
 much easier.*)
@@ -20,28 +21,34 @@ A constant function returns either always 0 or always 1.
 A balanced function is 0 for half of the values and 1 for the other half. (* added a missing comma *)
 \<close>
 
-locale deutsch = 
-  fixes f:: "nat \<Rightarrow> nat"
-  assumes f: "f \<in> ({0,1} \<rightarrow> {0,1})"
+
+locale deutsch = (* Now, f is undefined outside of {0,1}. 
+Also, I changed  the name of the assumption. *)
+  fixes f:: "nat \<Rightarrow> nat" 
+  assumes dom: "f \<in> ({0,1} \<rightarrow>\<^sub>E {0,1})"
+
   
 context deutsch
 begin
 
 definition const:: "nat \<Rightarrow> bool" where 
-      "const n = (\<forall>x.(f x = n))"
 
-definition balanced where
-      "balanced  \<equiv> (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
+"const n = (\<forall>x.(f x = n))"
 
-lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using f by simp 
-end (* context deutsch*)
+definition balanced:: "bool" where
+"balanced \<equiv> (\<forall>x. f x = x) \<or> (\<forall>x. f x = 1 - x)"
 
-definition inv_b :: "nat \<Rightarrow> int" where (*Better than (1-n) since it captures the partiality? *)
+lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto 
+end (* context deutsch *)
+
+
+definition inv_b:: "nat \<Rightarrow> int" where (* Better than (1-n) since it captures the partiality? *)
+(* AB, with the change I made in the locale, are inv_b and the lemmas below still useful ? *)
 "inv_b n \<equiv> (case n of 0 \<Rightarrow> 1 
                      |(Suc 0) \<Rightarrow> 0)"
 
 lemma inv_b_values:
-  fixes f::"nat\<Rightarrow>nat" 
+  fixes f::"nat \<Rightarrow> nat" 
   assumes "deutsch f"
   shows "f(0) = 0 \<or> f(0) = 1" 
   and  "f(1) = 0 \<or> f(1) = 1" 
