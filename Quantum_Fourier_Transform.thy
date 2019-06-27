@@ -37,22 +37,19 @@ lemma fourier_inv_0 [simp]: (* AB: this lemma is not true. Take n = 0, then the 
   sorry
 
 lemma fourier_inv_1 [simp]:
-  fixes "j":: nat 
-  assumes "j < 2^n"
+  fixes "j"::nat assumes "j < 2^n"
   shows "(\<Sum>i = 0..<2^n. root (2^n) ^ (j*i) * cnj (root (2^n)) ^ (j*i) /
          (complex_of_real (sqrt (2^n)) * complex_of_real (sqrt (2^n)))) = 1"
 proof-
-  have "(complex_of_real(sqrt(2^n)) * complex_of_real (sqrt(2^n))) = complex_of_real(sqrt(2^n) * sqrt(2^n))"
-    by (metis of_real_mult)
-  moreover have "\<dots> = complex_of_real (2^n)" by simp
-  ultimately have "(\<Sum>i = 0..<2^n. (root (2^n))^(j*i) * (cnj(root(2^n)))^(j*i) /
-         (complex_of_real (sqrt(2^n)) * complex_of_real (sqrt(2^n)))) =
-(\<Sum>i = 0..<2^n. (1/complex_of_real (2^n)) * (root(2^n))^(j*i) * (cnj(root(2^n)))^(j*i))" by simp
-  moreover have "\<dots> = (1/complex_of_real (2^n)) * (\<Sum>i = 0..<2^n.(root(2^n))^(j*i) * (cnj(root(2^n)))^(j*i))"
-    using sum_distrib_left[of "1/complex_of_real (2^n)"] by (smt sum.cong algebra_simps)
-  moreover have "\<forall>i::nat. root (2^n) ^ (j*i) * cnj (root (2^n)) ^ (j*i) = 1"
+  have "\<And>i. root (2^n) ^ (j*i) * cnj (root (2^n)) ^ (j*i) = 1"
     by (metis power_mult_distrib power_one root_unit_length)
-  ultimately show ?thesis by (simp add: power_divide)
+  then have "(\<Sum>i = 0..<2^n. root (2^n) ^ (j*i) * cnj (root (2^n)) ^ (j*i) /
+             (complex_of_real (sqrt (2^n)) * complex_of_real (sqrt (2^n)))) = 2^n /
+             (complex_of_real (sqrt (2^n)) * complex_of_real (sqrt (2^n)))"
+    by simp
+  then show ?thesis
+    apply simp
+    by (metis sqrt_power_of_2 of_real_mult of_real_numeral of_real_power)
 qed
 
 lemma fourier_is_gate [simp]:
