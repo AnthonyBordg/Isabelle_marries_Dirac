@@ -34,12 +34,47 @@ lemma sqrt_power_of_2:
   shows "2^n = sqrt (2^n) * sqrt (2^n)"
   by simp
 
-lemma fourier_inv_0 [simp]: (* AB: this lemma is not true. Take n = 0, then the sum is 1 *)
+lemma fourier_inv_0 [simp]:
   fixes "i" "j":: nat 
   assumes "i < 2^n" and "j < 2^n" and "i \<noteq> j"
-  shows "(\<Sum>k = 0..<2^n. root (2^n) ^(i*k) * cnj (root (2^n)) ^(j*k) /
+  shows "(\<Sum>k = 0..<2^n. root (2^n)^(i*k) * cnj (root (2^n))^(j*k) /
          (complex_of_real (sqrt (2^n)) * complex_of_real (sqrt (2^n)))) = 0"
-  sorry
+proof (cases "i>j")
+  case c0:True
+  then have f0:"i-j>0" by simp
+  then have "\<And>k. root (2^n)^(i*k) / (root (2^n))^(j*k) = root (2^n)^((i-j)*k)"
+    by (metis (no_types, lifting) linorder_not_le nat_diff_split order_less_irrefl power_diff 
+power_divide power_mult root_nonzero)
+  moreover have "\<And>k. cnj (root (2^n))^(j*k) = 1 / root (2^n)^(j*k)"
+    by (metis nonzero_mult_div_cancel_left power_one_over root_nonzero root_unit_length)
+  ultimately have "\<And>k. root (2^n)^(i*k) * cnj (root (2^n))^(j*k) = (root (2^n)^(i-j))^k"
+    by (simp add: power_mult)
+  moreover have "i-j<2^n" using assms(1,2) c0 by simp
+  ultimately have "(\<Sum>k = 0..<2^n. root (2^n)^(i*k) * cnj (root (2^n))^(j*k)) = 0"
+    using root_summation[of "i-j" "2^n"] f0 by auto
+  then show ?thesis
+    using sum_divide_distrib[of "\<lambda>k. (root (2^n)^(i*k) * cnj (root (2^n))^(j*k))" "{0..<2^n}"
+ "(complex_of_real (sqrt (2^n)) * complex_of_real (sqrt (2^n)))"]
+    by simp
+next
+  case c1:False
+  then have f1:"j-i>0" using assms(3) by simp
+  then have "\<And>k. root (2^n)^(i*k) / (root (2^n))^(j*k) * (root (2^n)^((j-i)*k)) = 1"
+    by (simp add: diff_mult_distrib power_diff root_nonzero)
+  then have "\<And>k. root (2^n)^(i*k) / (root (2^n))^(j*k) = 1 / (root (2^n)^((j-i)*k))"
+    by (metis nonzero_mult_div_cancel_right power_not_zero root_nonzero)
+  moreover have "\<And>k. cnj (root (2^n))^(j*k) = 1 / root (2^n)^(j*k)"
+    by (metis nonzero_mult_div_cancel_left power_one_over root_nonzero root_unit_length)
+  ultimately have "\<And>k. root (2^n)^(i*k) * cnj (root (2^n))^(j*k) = ((1 / root (2^n))^(j-i))^k"
+    by (simp add: power_mult power_one_over)
+  moreover have "j-i<2^n" using assms(1,2) c1 by simp
+  ultimately have "(\<Sum>k = 0..<2^n. root (2^n)^(i*k) * cnj (root (2^n))^(j*k)) = 0"
+    using root_summation_inv[of "j-i" "2^n"] f1 by auto
+  then show ?thesis
+    using sum_divide_distrib[of "\<lambda>k. (root (2^n)^(i*k) * cnj (root (2^n))^(j*k))" "{0..<2^n}"
+ "(complex_of_real (sqrt (2^n)) * complex_of_real (sqrt (2^n)))"]
+    by simp
+qed
 
 lemma fourier_inv_1 [simp]:
   fixes "j"::nat assumes "j < 2^n"
