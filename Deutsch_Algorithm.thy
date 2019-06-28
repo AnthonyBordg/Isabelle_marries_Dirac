@@ -384,7 +384,8 @@ next
 qed
 
 
-
+(*This is wrong need to find other matrice that does what is needed. Unfortunately no description of
+output matrix available*)
 lemma H_tensor_Id: 
 assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
@@ -438,11 +439,47 @@ lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3:
                                       (f(0)::int)/2 - (inv_b (f(0)))/2,
                                       (inv_b (f(1)))/2 - (f(1)::int)/2,
                                       (f(1)::int)/2 - inv_b(f(1))/2]]"
-  and "\<psi>\<^sub>3 \<equiv> (1/2* 1/sqrt(2)) \<cdot>\<^sub>m mat_of_cols_list 4 [[((inv_b (f 0)) - f(0))+ ((inv_b (f 1)) -f(1)),
-                                 (f(0) - (inv_b (f(0))))+ (f(1) - inv_b(f(1))),
-                                 ((inv_b (f 0)) - f(0)) - ((inv_b (f(1))) - f(1)),
-                                  (f(0) -(inv_b (f(0)))) -(f(1) -inv_b(f(1)))]]"
-  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" sorry
+  and "\<psi>\<^sub>3 \<equiv>  mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
+                                    + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
+                                 (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
+                                    + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
+                                 ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
+                                    - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
+                                  (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
+                                    -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
+ shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" 
+proof
+  fix i j ::nat
+  assume "i < dim_row \<psi>\<^sub>3" and "j < dim_col \<psi>\<^sub>3" 
+  then have a0: "i\<in>{0,1,2,3} \<and> j=0 " 
+    using assms ket_vec_def mat_of_cols_list_def by auto
+  then have "i<dim_row (H \<Otimes> Id 1)" and "j<dim_col \<psi>\<^sub>2" 
+    using H_tensor_Id assms mat_of_cols_list_def by auto 
+  then have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) 
+        = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
+    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong
+    by (smt a0)
+  then have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = ((Matrix.row (H \<Otimes> Id 1) i) $ 0 * ( Matrix.col \<psi>\<^sub>2 0) $ 0) 
+             + ((Matrix.row (H \<Otimes> Id 1) i) $ 1 * ( Matrix.col \<psi>\<^sub>2 0) $ 1) 
+             + ((Matrix.row (H \<Otimes> Id 1) i) $ 2 * ( Matrix.col \<psi>\<^sub>2 0) $ 2) 
+             + ((Matrix.row (H \<Otimes> Id 1) i) $ 3 * ( Matrix.col \<psi>\<^sub>2 0) $ 3) "
+    using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def a0 by simp
+  then show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
+    using  H_tensor_Id mat_of_cols_list_def deutsch_transform_def assms a0 assms
+      apply (auto simp add: algebra_simps)
+    done
+next
+  show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" 
+    using H_tensor_Id assms mat_of_cols_list_def by auto
+next
+  show "dim_col ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"    
+    using assms mat_of_cols_list_def by auto
+qed
+
+
+
+
+
 (*proof-
   have f0: "(H \<Otimes> Id 1) = (mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
@@ -495,7 +532,8 @@ next
 qed*)
 
 
-definition (in deutsch) deutsch_algo:: 
+
+definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where (*TODO:Measurement*)
 "deutsch_algo \<equiv> (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
 
