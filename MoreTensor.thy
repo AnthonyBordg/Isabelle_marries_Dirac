@@ -11,12 +11,12 @@ imports
 begin
 
 lemma tensor_prod_2 [simp]: 
-"mult.vec_vec_Tensor ( * ) [x1::complex,x2] [x3, x4] = [x1 * x3, x1 * x4, x2 * x3, x2 * x4]"
+"mult.vec_vec_Tensor (*) [x1::complex,x2] [x3, x4] = [x1 * x3, x1 * x4, x2 * x3, x2 * x4]"
 proof -
-  have "Matrix_Tensor.mult (1::complex) ( * )"
+  have "Matrix_Tensor.mult (1::complex) (*)"
     by (simp add: Matrix_Tensor.mult_def)
-  thus "mult.vec_vec_Tensor ( * ) [x1::complex,x2] [x3,x4] = [x1*x3,x1*x4,x2*x3,x2*x4]"
-    using mult.vec_vec_Tensor_def[of "(1::complex)" "( * )"] mult.times_def[of "(1::complex)" "( * )"] by simp
+  thus "mult.vec_vec_Tensor (*) [x1::complex,x2] [x3,x4] = [x1*x3,x1*x4,x2*x3,x2*x4]"
+    using mult.vec_vec_Tensor_def[of "(1::complex)" "(*)"] mult.times_def[of "(1::complex)" "(*)"] by simp
 qed
 
 lemma list_vec [simp]: 
@@ -79,33 +79,33 @@ lemma index_col_mat_of_cols_list [simp]:
 lemma multTensor2 [simp]:
   assumes a1:"A = Matrix.mat 2 1 (\<lambda>(i,j). if i = 0 then a0 else a1)" and 
           a2:"B = Matrix.mat 2 1 (\<lambda>(i,j). if i = 0 then b0 else b1)"
-  shows "mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list B) = [[a0*b0, a0*b1, a1*b0, a1*b1]]"
+  shows "mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B) = [[a0*b0, a0*b1, a1*b0, a1*b1]]"
 proof -
   have "mat_to_cols_list A = [[a0, a1]]"
     apply (auto simp: a1 mat_to_cols_list_def) by(simp add: numeral_2_eq_2)
   moreover have f2:"mat_to_cols_list B = [[b0, b1]]"
     apply (auto simp: a2 mat_to_cols_list_def) by(simp add: numeral_2_eq_2)
-  ultimately have "mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list B) = 
-                   mult.Tensor ( * ) [[a0,a1]] [[b0,b1]]" by simp
+  ultimately have "mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B) = 
+                   mult.Tensor (*) [[a0,a1]] [[b0,b1]]" by simp
   thus ?thesis
-    using mult.Tensor_def[of "(1::complex)" "( * )"] mult.times_def[of "(1::complex)" "( * )"]
+    using mult.Tensor_def[of "(1::complex)" "(*)"] mult.times_def[of "(1::complex)" "(*)"]
     by (metis (mono_tags, lifting) append_self_conv list.simps(6) mult.Tensor.simps(2) mult.vec_mat_Tensor.simps(1) 
 mult.vec_mat_Tensor.simps(2) plus_mult_cpx plus_mult_def tensor_prod_2)
 qed
 
 lemma multTensor2_bis [simp]:
   assumes a1:"dim_row A = 2" and a2:"dim_col A = 1" and a3:"dim_row B = 2" and a4:"dim_col B = 1"
-  shows "mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list B) =  
+  shows "mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B) =  
 [[A $$ (0,0) * B $$ (0,0), A $$ (0,0) *  B $$ (1,0), A $$ (1,0) * B $$ (0,0), A $$ (1,0) * B $$ (1,0)]]" 
 proof -
   have "mat_to_cols_list A = [[A $$ (0,0), A $$ (1,0)]]"
     apply (auto simp: a1 a2 mat_to_cols_list_def) by(simp add: numeral_2_eq_2)
   moreover have f2:"mat_to_cols_list B = [[B $$ (0,0), B $$ (1,0)]]"
     apply (auto simp: a3 a4 mat_to_cols_list_def) by(simp add: numeral_2_eq_2)
-  ultimately have "mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list B) =
-                   mult.Tensor ( * ) [[A $$ (0,0), A $$ (1,0)]] [[B $$ (0,0), B $$ (1,0)]]" by simp
+  ultimately have "mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B) =
+                   mult.Tensor (*) [[A $$ (0,0), A $$ (1,0)]] [[B $$ (0,0), B $$ (1,0)]]" by simp
   thus ?thesis
-    using mult.Tensor_def[of "(1::complex)" "( * )"] mult.times_def[of "(1::complex)" "( * )"]
+    using mult.Tensor_def[of "(1::complex)" "(*)"] mult.times_def[of "(1::complex)" "(*)"]
     by (smt append_self_conv list.simps(6) mult.Tensor.simps(2) mult.vec_mat_Tensor.simps(1) 
 mult.vec_mat_Tensor.simps(2) plus_mult_cpx plus_mult_def tensor_prod_2)
 qed
@@ -353,7 +353,7 @@ next
   have "(\<Sum>i<(a+1)*b. f (i div b) * g (i mod b)) = (\<Sum>i<a*b. f (i div b) * g (i mod b)) + 
 (\<Sum>i\<in>{a*b..<(a+1)*b}. f (i div b) * g (i mod b))"
     apply (auto simp: algebra_simps)
-    by (smt add.commute sum_lessThan_Suc sum_nat_group times_nat.simps(2))
+    by (smt add.commute mult_Suc sum.lessThan_Suc sum.nat_group)
   also have "\<dots> = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j)) + (\<Sum>i\<in>{a*b..<(a+1)*b}. f (i div b) * g (i mod b))"
     by (simp add: Suc.IH)
   also have "\<dots> = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j)) + (\<Sum>i\<in>{a*b..<(a+1)*b}. f (a) * g(i-a*b))" by simp
