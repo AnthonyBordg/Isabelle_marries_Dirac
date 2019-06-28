@@ -191,27 +191,27 @@ denote the inputs of the Uf gate (e.g. Nielsen and Chuang)*)
 
 (*From here on under construction*)
 
-abbreviation x where "x \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
-abbreviation y where "y \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
+abbreviation zero_state where "zero_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
+abbreviation one_state where "one_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
 
 
-lemma x_is_unit[simp]: 
-  shows "x = unit_vec 2 0" 
-  by (simp add: unit_vec_def)
+lemma zero_state_is_unit[simp]: 
+  shows "zero_state = unit_vec 2 0" 
+  by auto
 
-lemma x_is_state: 
-  shows "state 1 |x\<rangle>" 
+lemma zero_state_is_state: 
+  shows "state 1 |zero_state\<rangle>" 
   by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def pos2 power_one_right 
-      state_def unit_cpx_vec_length x_is_unit)
+      state_def unit_cpx_vec_length zero_state_is_unit)
 
-lemma y_is_unit[simp]: 
-  shows "y = unit_vec 2 1"  
+lemma one_state_is_unit[simp]: 
+  shows "one_state = unit_vec 2 1"  
   by auto
 
 lemma y_is_state: 
-  shows "state 1 |y\<rangle>" 
+  shows "state 1 |one_state\<rangle>" 
   by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def one_less_numeral_iff 
-      power_one_right semiring_norm(76) state_def unit_cpx_vec_length y_is_unit)
+      power_one_right semiring_norm(76) state_def unit_cpx_vec_length one_state_is_unit)
 
 
 
@@ -219,33 +219,23 @@ text\<open>
 State @{text \<psi>\<^sub>1} is obtained by applying an Hadamard gate to x and an Hadamard gate to y and then 
 taking the tensor product of the results
 \<close>
-(*TODO: It would be nicer to have a lemma like (a \<cdot>\<^sub>m A) \<Otimes> (b \<cdot>\<^sub>m B) = (a*b) \<cdot>\<^sub>m (A \<Otimes> B) *)
+
+abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
+"\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
 
 lemma H_on_zero_state: 
-  shows "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> + |y\<rangle>)"
-proof -
-  define H'::"complex Matrix.mat" where "H'\<equiv> (Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>)"
-  have "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m (Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>)"
-    by (metis (no_types, lifting) H_def dim_vec ket_vec_def mat_carrier mult_smult_assoc_mat)
-  moreover have "(Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>) = ( |x\<rangle> + |y\<rangle>)"
-  proof
-      show "dim_row (Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>) = dim_row( |x\<rangle> + |y\<rangle>)"
-        by (simp add: ket_vec_def)
-    next
-      show "dim_col (Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>) = dim_col( |x\<rangle> + |y\<rangle>)"
-        by (simp add: ket_vec_def)
-    next
-      fix i j::nat
-      assume a1:"i < dim_row ( |x\<rangle> + |y\<rangle>)" and a2:"j < dim_col ( |x\<rangle> + |y\<rangle>)"
-      then have "i=0 \<or> i=1" and "j=0"
-        using ket_vec_def by auto
-      moreover have "Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i \<bullet> Matrix.col |x\<rangle> j = 
-                    (\<Sum>k = 0..<2. Matrix.row (Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1)) i $ k * Matrix.col |x\<rangle> j $ k)"
-        by (smt a1 a2 One_nat_def dim_col_mat(1) dim_vec index_add_mat(3) ket_vec_col ket_vec_def less_Suc0 scalar_prod_def sum.cong)
-      ultimately show "(Matrix.mat 2 2 (\<lambda>(i, j). if i \<noteq> j then 1 else if i = 0 then 1 else - 1) * |x\<rangle>) $$ (i, j) = ( |x\<rangle> + |y\<rangle>) $$(i,j) "
-        using ket_vec_def by fastforce
-  qed
-  ultimately show "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> + |y\<rangle>)" by auto
+  shows "(H * |zero_state\<rangle>) = \<psi>\<^sub>0\<^sub>0"
+proof 
+  fix i j::nat
+  assume a0: "i < dim_row \<psi>\<^sub>0\<^sub>0" and a1: "j < dim_col \<psi>\<^sub>0\<^sub>0"
+  then have a2: "i\<in>{0,1}" using a0 mat_of_cols_list_def by auto
+  then have a3: "j=0" using a1 mat_of_cols_list_def by auto
+  then have "i < dim_row H" using  a2 H_def  by auto
+  then have "j < dim_col |zero_state\<rangle>" sorry
+    then have "(H * |zero_state\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>0 $$ (i,j)" using mat_of_cols_list_def set_four times_mat_def scalar_prod_def
+    ket_vec_def less_Suc0 index_add_mat      
+
+
 qed
 
 lemma x_plus_y: 
