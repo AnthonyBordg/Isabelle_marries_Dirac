@@ -8,8 +8,7 @@ imports
             HL: just temp seems to finds relevant facts better*)
 begin
 
-(*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_Id 
-much easier.*)
+
 (*sledgehammer_params [verbose=true]*)
   
 section \<open>Deutsch's algorithm\<close>
@@ -56,56 +55,33 @@ lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using d
 end (* context deutsch *)
 
 
-(*
-AB: I don't think this definition is useful, it's not really 
-shorter than 1 - f(x) and it's less transparent
-definition 1 - :: "nat \<Rightarrow> int" where
-"1 -  n \<equiv> (case n of 0 \<Rightarrow> 1 
-                     |(Suc 0) \<Rightarrow> 0)" *)
-
-
 text \<open>Black box function @{text U\<^sub>f}. \<close>
 
 definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 
-(*"U\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
-        if i=0 \<and> j=0 then 1 -  (f(0)) else
-          (if i=0 \<and> j=1 then f(0) else
-            (if i=1 \<and> j=0 then f(0) else
-              (if i=1 \<and> j=1 then 1 -  (f(0)) else
-                (if i=2 \<and> j=2 then 1 -  (f(1)) else
-                  (if i=2 \<and> j=3 then f(1) else
-                    (if i=3 \<and> j=2 then f(1) else
-                      (if i=3 \<and> j=3 then 1 -  (f(1)) else 0))))))))"
-AB: the representation of U\<^sub>f below should be easier to handle. Also, note that this matrix being its
-own transpose by writing the columns one below another we get the picture of our matrix ! *)
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
                           [0, 0, f(1), 1 - f(1)]]"
 
-lemma set_four [simp]: (* AB: for the statements themselves, I always prefer the structured style,
-even when the statement is fairly simple like this one. *)
+lemma set_four [simp]: 
   fixes i:: nat
   assumes "i < 4"
   shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
   by (auto simp add: assms)
-(*"\<forall>i::nat. i < 4 \<longrightarrow> i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" by auto*)
 
 lemma (in deutsch) deutsch_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
   by (auto simp add: deutsch_transform_def mat_of_cols_list_def)
-  (* using deutsch_transform_def by auto *)
 
-lemma (in deutsch) deutsch_transform_coeff_is_zero [simp]: (* AB: I chose a less misleading name *)
+lemma (in deutsch) deutsch_transform_coeff_is_zero [simp]: 
   shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
     and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
     and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
     and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
   using deutsch_transform_def by auto
 
-lemma (in deutsch) deutsch_transform_coeff [simp]: (* AB: idem, indeed if f 0 = 0 then 
-U\<^sub>f $$ (0,1) = 0 for instance *)
+lemma (in deutsch) deutsch_transform_coeff [simp]: 
   shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
     and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
     and "U\<^sub>f $$ (0,0) = 1 - f(0)" and "U\<^sub>f $$(1,1) = 1 - f(0)"
@@ -137,8 +113,6 @@ lemma (in deutsch) deutsch_transform_alt_rep_coeff [simp]:
     and "V\<^sub>f $$ (2,2) = 1 - f(1)" and "V\<^sub>f $$ (3,3) = 1 - f(1)"
   by auto
 
-(* AB: by proving the lemma below one can build a bridge between the new representation of your matrix
-and the former one, I am not sure it's useful though *)
 lemma (in deutsch) deutsch_transform_alt_rep:
   shows "U\<^sub>f = V\<^sub>f"
 proof
@@ -155,7 +129,6 @@ qed
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
 
-(* AB: intermediate lemmas are needed to have a clean proof of adjoint_of_deutsch_transform *)
 
 lemma (in deutsch) transpose_of_deutsch_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
@@ -212,8 +185,11 @@ qed
 
 text \<open>Two qubits x and y are prepared, x in state 0 and y in state 1.\<close>
 
+(*TODO: Change all matrices to mat_of_cols_list.*)
 (*TODO: These two should be renamed. While sometimes x and y denote these matrices they might also 
 denote the inputs of the Uf gate (e.g. Nielsen and Chuang)*)
+
+(*From here on under construction*)
 
 abbreviation x where "x \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
 abbreviation y where "y \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
@@ -677,28 +653,5 @@ proof -
 qed
 
 
-(*lemma inv_b_add_mult1:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "1 -  (f(0))*1 -  (f(0)) + f(0)*f(0) = 1" 
-  using One_nat_def assms deutsch.f_values inv_b_def by fastforce
-
-lemma inv_b_add_mult2:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "1 -  (f(1))*1 -  (f(1)) + f(1)*f(1) = 1"  
-  using deutsch.f_values assms inv_b_def of_nat_1 by fastforce
-
-lemma inv_b_add_mult3:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "1 -  (f(0))*f(0) + 1 -  (f(0))*f(0) = 0" 
-  using deutsch.f_values diff_diff_cancel inv_b_def assms by force
-
-lemma inv_b_add_mult4:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "1 -  (f(1))*f(1) + 1 -  (f(1))*f(1) = 0"  
-  using deutsch.f_values inv_b_def assms by force*)
 
 end
