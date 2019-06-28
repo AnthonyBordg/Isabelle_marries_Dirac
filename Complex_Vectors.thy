@@ -13,7 +13,7 @@ definition module_cpx_vec:: "nat \<Rightarrow> (complex, complex vec) module" wh
 "module_cpx_vec n \<equiv> module_vec TYPE(complex) n"
 
 definition cpx_rng:: "complex ring" where
-"cpx_rng \<equiv> \<lparr>carrier = UNIV, mult = ( * ), one = 1, zero = 0, add = (+)\<rparr>"
+"cpx_rng \<equiv> \<lparr>carrier = UNIV, mult = (*), one = 1, zero = 0, add = (+)\<rparr>"
 
 lemma cpx_cring_is_field [simp]:
   "field cpx_rng"
