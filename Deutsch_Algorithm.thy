@@ -141,7 +141,7 @@ denote the inputs of the Uf gate (e.g. Nielsen and Chuang)*)
 abbreviation x where "x \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
 abbreviation y where "y \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
 
-lemma x_is_unit: 
+lemma x_is_unit[simp]: 
   shows "x = unit_vec 2 0" 
   by (simp add: unit_vec_def)
 
@@ -150,9 +150,9 @@ lemma x_is_state:
   by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def pos2 power_one_right 
       state_def unit_cpx_vec_length x_is_unit)
 
-lemma y_is_unit: 
+lemma y_is_unit[simp]: 
   shows "y = unit_vec 2 1"  
-  using index_unit_vec(1) index_unit_vec(3) index_vec one_less_numeral_iff one_neq_zero by auto
+  by auto
 
 lemma y_is_state: 
   shows "state 1 |y\<rangle>" 
@@ -294,6 +294,23 @@ next
 qed
 
 
+(*lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: 
+  assumes  "v\<equiv>  mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
+  shows "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) =  v"
+proof 
+  show "Matrix.dim_col ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = Matrix.dim_col v"  sorry
+next
+  show "dim_row ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = Matrix.dim_row v" sorry
+next 
+  fix i j::nat assume "i < dim_row v" and "j < dim_col v"
+  then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
+    by (auto simp add: assms mat_of_cols_list_def)
+  then show "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) $$ (i, j) = v $$ (i, j)"
+    using  H_on_one_state H_on_zero_state mat_of_cols_list_def
+    sledgehammer*)
+
+
+
 lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
 proof -
   define v::"complex Matrix.mat" where "v\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
@@ -318,8 +335,8 @@ proof -
   have f7:"v $$ (1,0)* w $$ (1,0)  = -1/2"
     using v_def w_def f5 f6 by auto
   have f8:"v $$ (1,0) = 1/sqrt(2)" using v_def by simp
-  have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = v \<Otimes> w "  
-    by (simp add: H_on_one_state_square_inside H_on_zero_state_square_inside v_def w_def)
+  have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = v \<Otimes> w " sorry 
+    (*by (simp add: H_on_one_state_square_inside H_on_zero_state_square_inside v_def w_def)*)
   also have "...  = |Matrix.vec 4 (\<lambda>i. if i = 0 then 1/2 else
                                 if i = 3 then -1/2 else
                                 if i = 1 then -1/2 else 1/2)\<rangle>" 
@@ -384,8 +401,6 @@ next
 qed
 
 
-(*This is wrong need to find other matrice that does what is needed. Unfortunately no description of
-output matrix available*)
 lemma H_tensor_Id: 
 assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
@@ -417,9 +432,6 @@ next
   show "unitary (H \<Otimes> Quantum.Id 1)" 
     using H_is_gate gate_def id_is_gate tensor_gate by blast
 qed
-
-
-
 
 
 lemma (in deutsch) \<psi>\<^sub>3_is_state: 
@@ -480,98 +492,99 @@ qed
 
 
 
-(*proof-
-  have f0: "(H \<Otimes> Id 1) = (mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, 1/sqrt(2)],
-                                 [1/sqrt(2), 0, -1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, -1/sqrt(2)]])"
-    using H_tensor_Id by simp
-  have a0: "i<dim_row (H \<Otimes> Id 1) \<longrightarrow> i\<in>{0,1,2,3} \<and> j<dim_col \<psi>\<^sub>2 \<longrightarrow> j=0" for i j 
-    by (simp add: assms ket_vec_def mat_of_cols_list_def)
-  have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2 \<longrightarrow> ((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) 
-        = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
-    for i j by (simp add: scalar_prod_def)
-  then have f1: "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2 \<longrightarrow> ((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = 
-             ((Matrix.row (H \<Otimes> Id 1) i) $ 0 * ( Matrix.col \<psi>\<^sub>2 0) $ 0) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 1 * ( Matrix.col \<psi>\<^sub>2 0) $ 1) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 2 * ( Matrix.col \<psi>\<^sub>2 0) $ 2) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 3 * ( Matrix.col \<psi>\<^sub>2 0) $ 3) "
-    for i j using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def by simp
-  have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (0, 0) = ((inv_b (f 0)) - f(0))+ ((inv_b (f 1)) -f(1))"
-    using f1[of 0 0] f0 mat_of_cols_list_def deutsch_transform_def assms sledgehammer
-  moreover have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (1, 0) = \<psi>\<^sub>3 $$ (1, 0)"
-    using f0[of 1 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  moreover have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (2, 0) = \<psi>\<^sub>3 $$ (2, 0)"
-    using f0[of 2 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  moreover have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (3, 0) = \<psi>\<^sub>3 $$ (3, 0)"
-    using f0[of 3 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  ultimately have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2 \<longrightarrow> ((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$(i,j) = \<psi>\<^sub>3 $$(i,j)"
-    for i j using assms f0 a0 
-    by (metis deutsch_transform_dim(1) insertCI set_4 set_four zero_less_numeral)
-  then show "((H \<Otimes> Id 1) * \<psi>\<^sub>1) = \<psi>\<^sub>2"
-
-
-  fix i j::nat
-  assume a0:"i < dim_row \<psi>\<^sub>3" and a1: "j < dim_col \<psi>\<^sub>3"
-  then have a2:"i \<in> {0,1,2,3}" 
-    using assms Tensor.mat_of_cols_list_def atLeastLessThan_iff dim_row_mat(1) zero_le by auto
-  have a3: "j =0" using assms mat_of_cols_list_def a1 by auto
-  then have "( (mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, 1/sqrt(2)],
-                                 [1/sqrt(2), 0, -1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, -1/sqrt(2)]]) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)" 
-    using  index_mat_of_cols_list H_tensor_Id assms mat_of_cols_list_def times_mat_def scalar_prod_def sledgehammer
-
-  then show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i,j)" 
-    using  H_tensor_Id assms mat_of_cols_list_def times_mat_def scalar_prod_def sorry
-next
-   show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" using  H_tensor_Id mat_of_cols_list_def assms by auto
-next
-  show "dim_col ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3" 
-    using  mat_of_cols_list_def assms  by auto
-qed*)
-
-
-
 definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where (*TODO:Measurement*)
 "deutsch_algo \<equiv> (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
 
-lemma (in deutsch) (* AB: below you need to replace this "fun_is_con f"*)
-  shows "fun_is_con f \<longrightarrow> fst ((meas 2 (deutsch_algo) 0)!0) = 1" sorry
-(*lemma inv_b_values:
-  fixes f::"nat \<Rightarrow> nat" 
-  assumes "deutsch f"
-  shows "f(0) = 0 \<or> f(0) = 1" 
-  and  "f(1) = 0 \<or> f(1) = 1" 
-  and  "f(0) = 0 \<longrightarrow> inv_b (f(0)) - f(0) = 1"
-  and "f(0) = 1 \<longrightarrow> inv_b (f 0) - f(0) = -1"
-  and "f(1) = 0 \<longrightarrow> inv_b (f(1)) - f(1) = 1"
-  and "f(1) = 1 \<longrightarrow> inv_b (f(1)) - f(1) = -1"
-  using  inv_b_def assms deutsch.f_values by auto*)
+lemma (in deutsch) deutsch_algo_result: "deutsch_algo = mat_of_cols_list 4 
+                                        [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
+                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
+                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
+                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
+                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
+                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
+                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
+                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
+proof-
+  have "deutsch_algo = (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))" 
+    using deutsch_algo_def by auto
+  also have "... = (H \<Otimes> Id 2) * U\<^sub>f * (mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]])" 
+    using \<psi>\<^sub>0_to_\<psi>\<^sub>1 sorry
+  also have "... = (H \<Otimes> Id 2) * (mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
+                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
+                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
+                                      (f(1)::int)/2 - inv_b(f(1))/2]])" 
+    apply (auto simp: \<psi>\<^sub>1_to_\<psi>\<^sub>2) sorry
+  also have "... = mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
+                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
+                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
+                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
+                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
+                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
+                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
+                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
+    using \<psi>\<^sub>2_to_\<psi>\<^sub>3 sorry
+  finally show "deutsch_algo = mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
+                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
+                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
+                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
+                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
+                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
+                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
+                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"  by blast
+qed
 
-(*lemma inv_b_add_mult1:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "inv_b (f(0))*inv_b (f(0)) + f(0)*f(0) = 1" 
-  using One_nat_def assms deutsch.f_values inv_b_def by fastforce
+lemma (in deutsch) deutsch_algo_result_state: 
+  shows "state 2 deutsch_algo"
+  sorry
 
-lemma inv_b_add_mult2:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "inv_b (f(1))*inv_b (f(1)) + f(1)*f(1) = 1"  
-  using deutsch.f_values assms inv_b_def of_nat_1 by fastforce
 
-lemma inv_b_add_mult3:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "inv_b (f(0))*f(0) + inv_b (f(0))*f(0) = 0" 
-  using deutsch.f_values diff_diff_cancel inv_b_def assms by force
+lemma (in deutsch)
+  assumes "const 0 \<or> const 1" 
+  shows "fst ((meas 2 deutsch_algo 0)!0) = 0" sorry
 
-lemma inv_b_add_mult4:
-  fixes f::"nat\<Rightarrow>nat" 
-  assumes "deutsch f"
-  shows "inv_b (f(1))*f(1) + inv_b (f(1))*f(1) = 0"  
-  using deutsch.f_values inv_b_def assms by force*)
+
+
+lemma (in deutsch) prob0_bell_fst:
+  assumes "const 0 \<or> const 1" 
+  shows "prob0 2 deutsch_algo 0 = 1" 
+proof -
+  have set_0 [simp]:"{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+    using select_index_def by auto
+  have "state 2 deutsch_algo" sorry
+  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+     apply (auto simp: prob0_def).
+  then have "prob0 2 deutsch_algo 0= (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using set_0 by simp
+  show "prob0 2 deutsch_algo 0 = 1" 
+  proof (rule disjE)
+    show "const 0 \<or> const 1" using assms by simp
+  next
+    assume a0: "const 0"
+    have "prob0 2 deutsch_algo 0 = (cmod(1/sqrt(2)))\<^sup>2 + (cmod(-1/sqrt(2)))\<^sup>2" sorry
+    moreover have "deutsch_algo $$ (0,0)  = 1/ sqrt(2)" 
+      using assms a0 const_def inv_b_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (1,0)  = -1/ sqrt(2)" 
+      using assms a0 const_def inv_b_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (2,0)  = 0" 
+      using assms const_def inv_b_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (3,0)  = 0" 
+      using assms const_def inv_b_def deutsch_algo_result by auto  
+    ultimately show "prob0 2 deutsch_algo 0 = 1" sorry
+  next
+    assume a1: "const 1"
+    have "prob0 2 deutsch_algo 0 = (cmod(1/sqrt(2)))\<^sup>2 + (cmod(-1/sqrt(2)))\<^sup>2" sorry
+    moreover have "deutsch_algo $$ (0,0)  = -1/ sqrt(2)" 
+      using assms a1 const_def inv_b_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (1,0)  = 1/ sqrt(2)" 
+      using assms a1 const_def inv_b_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (2,0)  = 0" 
+      using assms const_def inv_b_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (3,0)  = 0" 
+      using assms const_def inv_b_def deutsch_algo_result by auto  
+    ultimately show "prob0 2 deutsch_algo 0 = 1" sorry
+qed
+
+
 
 end
