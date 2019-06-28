@@ -46,6 +46,9 @@ definition const:: "nat \<Rightarrow> bool" where
 
 "const n = (\<forall>x.(f x = n))"
 
+definition deutsch_const:: "bool" where (* AB: this definition might be useful later *)
+"deutsch_const \<equiv> const 0 \<or> const 1"
+
 definition balanced:: "bool" where
 "balanced \<equiv> f = id \<or> is_swap f"
 
@@ -53,75 +56,151 @@ lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using d
 end (* context deutsch *)
 
 
-definition inv_b:: "nat \<Rightarrow> int" where 
-"inv_b n \<equiv> (case n of 0 \<Rightarrow> 1 
-                     |(Suc 0) \<Rightarrow> 0)"
+(*
+AB: I don't think this definition is useful, it's not really 
+shorter than 1 - f(x) and it's less transparent
+definition 1 - :: "nat \<Rightarrow> int" where
+"1 -  n \<equiv> (case n of 0 \<Rightarrow> 1 
+                     |(Suc 0) \<Rightarrow> 0)" *)
+
 
 text \<open>Black box function @{text U\<^sub>f}. \<close>
 
 definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
-"U\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
-        if i=0 \<and> j=0 then inv_b (f(0)) else
+
+(*"U\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
+        if i=0 \<and> j=0 then 1 -  (f(0)) else
           (if i=0 \<and> j=1 then f(0) else
             (if i=1 \<and> j=0 then f(0) else
-              (if i=1 \<and> j=1 then inv_b (f(0)) else
-                (if i=2 \<and> j=2 then inv_b (f(1)) else
+              (if i=1 \<and> j=1 then 1 -  (f(0)) else
+                (if i=2 \<and> j=2 then 1 -  (f(1)) else
                   (if i=2 \<and> j=3 then f(1) else
                     (if i=3 \<and> j=2 then f(1) else
-                      (if i=3 \<and> j=3 then inv_b (f(1)) else 0))))))))"
+                      (if i=3 \<and> j=3 then 1 -  (f(1)) else 0))))))))"
+AB: the representation of U\<^sub>f below should be easier to handle. Also, note that this matrix being its
+own transpose by writing the columns one below another we get the picture of our matrix ! *)
+"U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
+                          [f(0), 1 - f(0), 0, 0],
+                          [0, 0, 1 - f(1), f(1)],
+                          [0, 0, f(1), 1 - f(1)]]"
+
+lemma set_four [simp]: (* AB: for the statements themselves, I always prefer the structured style,
+even when the statement is fairly simple like this one. *)
+  fixes i:: nat
+  assumes "i < 4"
+  shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
+  by (auto simp add: assms)
+(*"\<forall>i::nat. i < 4 \<longrightarrow> i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" by auto*)
 
 lemma (in deutsch) deutsch_transform_dim [simp]: 
-  shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4"
-  using deutsch_transform_def by auto
+  shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
+  by (auto simp add: deutsch_transform_def mat_of_cols_list_def)
+  (* using deutsch_transform_def by auto *)
 
-lemma (in deutsch) deutsch_transform_is_zero [simp]:
+lemma (in deutsch) deutsch_transform_coeff_is_zero [simp]: (* AB: I chose a less misleading name *)
   shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
     and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
     and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
     and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
   using deutsch_transform_def by auto
 
-lemma (in deutsch) deutsch_transform_is_not_zero [simp]:
+lemma (in deutsch) deutsch_transform_coeff [simp]: (* AB: idem, indeed if f 0 = 0 then 
+U\<^sub>f $$ (0,1) = 0 for instance *)
   shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
     and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
-    and "U\<^sub>f $$ (0,0) = inv_b (f(0))" and "U\<^sub>f $$(1,1) = inv_b (f(0))"
-    and "U\<^sub>f $$ (2,2) = inv_b (f(1))" and "U\<^sub>f $$ (3,3) = inv_b (f(1))"
+    and "U\<^sub>f $$ (0,0) = 1 - f(0)" and "U\<^sub>f $$(1,1) = 1 - f(0)"
+    and "U\<^sub>f $$ (2,2) = 1 - f(1)" and "U\<^sub>f $$ (3,3) = 1 - f(1)"
   using deutsch_transform_def by auto
 
+abbreviation (in deutsch) V\<^sub>f:: "complex Matrix.mat" where
+"V\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
+                if i=0 \<and> j=0 then 1 - f(0) else
+                  (if i=0 \<and> j=1 then f(0) else
+                    (if i=1 \<and> j=0 then f(0) else
+                      (if i=1 \<and> j=1 then 1 - f(0) else
+                        (if i=2 \<and> j=2 then 1 - f(1) else
+                          (if i=2 \<and> j=3 then f(1) else
+                            (if i=3 \<and> j=2 then f(1) else
+                              (if i=3 \<and> j=3 then 1 - f(1) else 0))))))))"
 
-text \<open>@{text U\<^sub>f} is a gate. \<close>
+lemma (in deutsch) deutsch_transform_alt_rep_coeff_is_zero [simp]:
+  shows "V\<^sub>f $$ (0,2) = 0" and "V\<^sub>f $$ (0,3) = 0"
+    and "V\<^sub>f $$ (1,2) = 0" and "V\<^sub>f $$(1,3) = 0"
+    and "V\<^sub>f $$ (2,0) = 0" and "V\<^sub>f $$(2,1) = 0"
+    and "V\<^sub>f $$ (3,0) = 0" and "V\<^sub>f $$ (3,1) = 0"
+  by auto
 
-lemma set_four [simp]: "\<forall>i::nat. i < 4 \<longrightarrow> i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" by auto
+lemma (in deutsch) deutsch_transform_alt_rep_coeff [simp]:
+  shows "V\<^sub>f $$ (0,1) = f(0)" and "V\<^sub>f $$ (1,0) = f(0)"
+    and "V\<^sub>f $$(2,3) = f(1)" and "V\<^sub>f $$ (3,2) = f(1)"
+    and "V\<^sub>f $$ (0,0) = 1 - f(0)" and "V\<^sub>f $$(1,1) = 1 - f(0)"
+    and "V\<^sub>f $$ (2,2) = 1 - f(1)" and "V\<^sub>f $$ (3,3) = 1 - f(1)"
+  by auto
+
+(* AB: by proving the lemma below one can build a bridge between the new representation of your matrix
+and the former one, I am not sure it's useful though *)
+lemma (in deutsch) deutsch_transform_alt_rep:
+  shows "U\<^sub>f = V\<^sub>f"
+proof
+  show c0:"dim_row U\<^sub>f = dim_row V\<^sub>f" by simp
+  show c1:"dim_col U\<^sub>f = dim_col V\<^sub>f" by simp
+  fix i j:: nat
+  assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
+  then have "i < 4" and "j < 4" by auto
+  then show "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
+    by (smt deutsch_transform_alt_rep_coeff deutsch_transform_alt_rep_coeff_is_zero deutsch_transform_coeff
+ deutsch_transform_coeff_is_zero set_four)
+qed
+
+
+text \<open>@{text U\<^sub>f} is a gate.\<close>
+
+(* AB: intermediate lemmas are needed to have a clean proof of adjoint_of_deutsch_transform *)
+
+lemma (in deutsch) transpose_of_deutsch_transform:
+  shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
+proof
+  show "dim_row U\<^sub>f\<^sup>t = dim_row U\<^sub>f" by simp
+  show "dim_col U\<^sub>f\<^sup>t = dim_col U\<^sub>f" by simp
+  fix i j:: nat
+  assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+  then show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+    apply (auto simp add: transpose_mat_def)
+    by (metis deutsch_transform_coeff(1-4) deutsch_transform_coeff_is_zero set_four)
+qed
 
 lemma (in deutsch) adjoint_of_deutsch_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
-proof -
-  have "(U\<^sub>f)\<^sup>\<dagger> = (U\<^sub>f)\<^sup>t" using cpx_mat_cnj_def deutsch_transform_def
-    by (smt deutsch_transform_dim(1) deutsch_transform_dim(2) cnj_transpose complex_cnj_of_int 
-cong_mat index_mat(1) old.prod.case)
-  also have "... = U\<^sub>f" using deutsch_transform_def hermite_cnj_def cong_mat   
-    by (smt deutsch_transform_dim deutsch_transform_is_not_zero deutsch_transform_is_zero 
-eq_matI index_transpose_mat set_four)
-  finally show "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f" by simp
+proof
+  show "dim_row U\<^sub>f\<^sup>\<dagger> = dim_row U\<^sub>f" by simp
+  show "dim_col U\<^sub>f\<^sup>\<dagger> = dim_col U\<^sub>f" by simp
+  fix i j:: nat
+  assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+  then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
+    apply (auto simp add: hermite_cnj_def)
+    by (metis complex_cnj_of_nat complex_cnj_zero deutsch_transform_coeff 
+deutsch_transform_coeff_is_zero set_four)
 qed
 
 lemma (in deutsch) deutsch_transform_is_gate: 
   shows "gate 2 U\<^sub>f"
 proof
-  show "dim_row U\<^sub>f = 2\<^sup>2" by (simp add: deutsch_transform_def)
+  show "dim_row U\<^sub>f = 2\<^sup>2" by simp
 next
-  show "square_mat U\<^sub>f" by (simp add: deutsch_transform_def)
+  show "square_mat U\<^sub>f" by simp
 next
   have "U\<^sub>f * U\<^sub>f = 1\<^sub>m (dim_col U\<^sub>f)" 
   proof 
     fix i j::nat
     assume a1: "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and a2: "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))" 
-    then have "(U\<^sub>f * U\<^sub>f) $$(i,j) =(Matrix.row U\<^sub>f i $ 0 * Matrix.col U\<^sub>f j $ 0) + 
+    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (Matrix.row U\<^sub>f i $ 0 * Matrix.col U\<^sub>f j $ 0) + 
 (Matrix.row U\<^sub>f i $ 1 * Matrix.col U\<^sub>f j $ 1) + (Matrix.row U\<^sub>f i $ 2 * Matrix.col U\<^sub>f j $ 2) + 
 (Matrix.row U\<^sub>f i $ 3 * Matrix.col U\<^sub>f j $ 3)" by (simp add: scalar_prod_def) 
-    then show "(U\<^sub>f * U\<^sub>f) $$ (i, j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" using deutsch_transform_def a1 a2
-      apply (auto simp add: algebra_simps)
-      using f_values inv_b_def apply auto[8].
+    moreover have "\<dots> = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+      using a1 a2 deutsch_transform_alt_rep
+      apply auto
+      using f_values by auto[4]
+    ultimately show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" by simp
   next 
     show "dim_row (U\<^sub>f * U\<^sub>f) = dim_row (1\<^sub>m (dim_col U\<^sub>f))" by simp
   next
@@ -129,17 +208,16 @@ next
   qed
   then show "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
 qed
+   
 
+text \<open>Two qubits x and y are prepared, x in state 0 and y in state 1.\<close>
 
-
-
-
-text\<open>Two qubits x and y are prepared, x in state 0 and y in state 1.\<close>
 (*TODO: These two should be renamed. While sometimes x and y denote these matrices they might also 
 denote the inputs of the Uf gate (e.g. Nielsen and Chuang)*)
 
 abbreviation x where "x \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
 abbreviation y where "y \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
+
 
 lemma x_is_unit[simp]: 
   shows "x = unit_vec 2 0" 
@@ -161,8 +239,10 @@ lemma y_is_state:
 
 
 
-text\<open>State @{text \<psi>\<^sub>1} is obtained by applying an Hadamard gate to x and an Hadamard gate to y and then 
-taking the tensor product of the results\<close>
+text\<open>
+State @{text \<psi>\<^sub>1} is obtained by applying an Hadamard gate to x and an Hadamard gate to y and then 
+taking the tensor product of the results
+\<close>
 (*TODO: It would be nicer to have a lemma like (a \<cdot>\<^sub>m A) \<Otimes> (b \<cdot>\<^sub>m B) = (a*b) \<cdot>\<^sub>m (A \<Otimes> B) *)
 
 lemma H_on_zero_state: "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> + |y\<rangle>)"
@@ -335,8 +415,8 @@ proof -
   have f7:"v $$ (1,0)* w $$ (1,0)  = -1/2"
     using v_def w_def f5 f6 by auto
   have f8:"v $$ (1,0) = 1/sqrt(2)" using v_def by simp
-  have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = v \<Otimes> w " sorry 
-    (*by (simp add: H_on_one_state_square_inside H_on_zero_state_square_inside v_def w_def)*)
+  have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = v \<Otimes> w "  
+    by (simp add: H_on_one_state_square_inside H_on_zero_state_square_inside v_def w_def)
   also have "...  = |Matrix.vec 4 (\<lambda>i. if i = 0 then 1/2 else
                                 if i = 3 then -1/2 else
                                 if i = 1 then -1/2 else 1/2)\<rangle>" 
@@ -350,7 +430,18 @@ proof -
     by (smt dim_vec index_vec numeral_eq_iff)
 qed
 
+text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
 
+lemma (in deutsch) \<psi>\<^sub>2_is_state:
+  assumes "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
+  shows "state 2 (U\<^sub>f * \<psi>\<^sub>1)" 
+proof-
+  have "gate 2 U\<^sub>f"
+    using deutsch_transform_is_gate by auto
+  moreover have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))  =  \<psi>\<^sub>1" using assms mat_of_cols_list_def sorry
+  ultimately show "state 2 (U\<^sub>f * \<psi>\<^sub>1)" using deutsch_transform_is_gate assms \<psi>\<^sub>1_is_state gate_on_state_is_state 
+    by simp
+qed
 
 
 text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
@@ -586,5 +677,28 @@ proof -
 qed
 
 
+(*lemma inv_b_add_mult1:
+  fixes f::"nat\<Rightarrow>nat" 
+  assumes "deutsch f"
+  shows "1 -  (f(0))*1 -  (f(0)) + f(0)*f(0) = 1" 
+  using One_nat_def assms deutsch.f_values inv_b_def by fastforce
+
+lemma inv_b_add_mult2:
+  fixes f::"nat\<Rightarrow>nat" 
+  assumes "deutsch f"
+  shows "1 -  (f(1))*1 -  (f(1)) + f(1)*f(1) = 1"  
+  using deutsch.f_values assms inv_b_def of_nat_1 by fastforce
+
+lemma inv_b_add_mult3:
+  fixes f::"nat\<Rightarrow>nat" 
+  assumes "deutsch f"
+  shows "1 -  (f(0))*f(0) + 1 -  (f(0))*f(0) = 0" 
+  using deutsch.f_values diff_diff_cancel inv_b_def assms by force
+
+lemma inv_b_add_mult4:
+  fixes f::"nat\<Rightarrow>nat" 
+  assumes "deutsch f"
+  shows "1 -  (f(1))*f(1) + 1 -  (f(1))*f(1) = 0"  
+  using deutsch.f_values inv_b_def assms by force*)
 
 end
