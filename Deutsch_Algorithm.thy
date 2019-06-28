@@ -11,7 +11,7 @@ begin
 (*TODO: Change all matrices to mat_of_cols_list representation? Made proof of H_tensor_Id 
 much easier.*)
 (*sledgehammer_params [verbose=true]*)
-
+  
 section \<open>Deutsch's algorithm\<close>
 
 subsection \<open>Black-box function\<close>
@@ -349,39 +349,38 @@ proof-
     by simp
 qed
 
-
 lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: 
   assumes "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
       and "\<psi>\<^sub>2 \<equiv> mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
                                       (f(0)::int)/2 - (inv_b (f(0)))/2,
                                       (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]]" 
+                                      (f(1)::int)/2 - inv_b(f(1))/2]]"
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
-proof -
-  have a0: "i<dim_row U\<^sub>f \<longrightarrow> i\<in>{0,1,2,3} \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> j=0" for i j 
-    by (simp add: assms ket_vec_def mat_of_cols_list_def)
-  have "i<dim_row U\<^sub>f \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) 
+proof 
+  fix i j:: nat
+  assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
+  then have a0: "i\<in>{0,1,2,3} \<and> j=0 " 
+    using assms ket_vec_def mat_of_cols_list_def by auto
+  then have "i<dim_row U\<^sub>f" and "j<dim_col \<psi>\<^sub>1" 
+    using deutsch_transform_def assms mat_of_cols_list_def by auto 
+  then have "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) 
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>1}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col \<psi>\<^sub>1 j) $ k)"     
-    for i j using scalar_prod_def  
-    by (smt col_fst_is_col dim_col index_mult_mat(1) sum.cong)
-  then have f0: "i<dim_row U\<^sub>f \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = ((Matrix.row U\<^sub>f i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) 
+    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong
+    by (smt a0)
+  then have "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = ((Matrix.row U\<^sub>f i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) 
              + ((Matrix.row U\<^sub>f i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row U\<^sub>f i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) 
              + ((Matrix.row U\<^sub>f i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
-    for i j using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def by simp
-  have "(U\<^sub>f * \<psi>\<^sub>1) $$ (0, 0) = \<psi>\<^sub>2 $$ (0, 0)"
-    using f0[of 0 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  moreover have "(U\<^sub>f * \<psi>\<^sub>1) $$ (1, 0) = \<psi>\<^sub>2 $$ (1, 0)"
-    using f0[of 1 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  moreover have "(U\<^sub>f * \<psi>\<^sub>1) $$ (2, 0) = \<psi>\<^sub>2 $$ (2, 0)"
-    using f0[of 2 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  moreover have "(U\<^sub>f * \<psi>\<^sub>1) $$ (3, 0) = \<psi>\<^sub>2 $$ (3, 0)"
-    using f0[of 3 0] mat_of_cols_list_def deutsch_transform_def assms by auto 
-  ultimately have "i<dim_row U\<^sub>f \<and> j<dim_col \<psi>\<^sub>1 \<longrightarrow> (U\<^sub>f * \<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)"
-    for i j using assms f0 a0 
-    by (metis deutsch_transform_dim(1) insertCI set_4 set_four zero_less_numeral)
-  then show "(U\<^sub>f * \<psi>\<^sub>1) = \<psi>\<^sub>2"
-    using mat_of_cols_list_def assms deutsch_transform_dim eq_matI times_mat_def
-    by (smt  dim_col_mat(1) dim_row_mat(1) length_map list.size)
+    using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def a0 by simp
+  then show "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = \<psi>\<^sub>2 $$ (i, j)"
+    using  mat_of_cols_list_def deutsch_transform_def assms a0 assms
+      apply (auto simp add: algebra_simps)
+    done
+next
+  show "dim_row (U\<^sub>f * \<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" 
+    using assms mat_of_cols_list_def by auto
+next
+  show "dim_col (U\<^sub>f * \<psi>\<^sub>1) = dim_col \<psi>\<^sub>2"    
+    using assms mat_of_cols_list_def by auto
 qed
 
 
