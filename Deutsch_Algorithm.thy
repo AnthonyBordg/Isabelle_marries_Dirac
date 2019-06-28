@@ -221,7 +221,8 @@ taking the tensor product of the results
 \<close>
 (*TODO: It would be nicer to have a lemma like (a \<cdot>\<^sub>m A) \<Otimes> (b \<cdot>\<^sub>m B) = (a*b) \<cdot>\<^sub>m (A \<Otimes> B) *)
 
-lemma H_on_zero_state: "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> + |y\<rangle>)"
+lemma H_on_zero_state: 
+  shows "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> + |y\<rangle>)"
 proof -
   define H'::"complex Matrix.mat" where "H'\<equiv> (Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>)"
   have "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m (Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |x\<rangle>)"
@@ -247,7 +248,8 @@ proof -
   ultimately show "(H * |x\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> + |y\<rangle>)" by auto
 qed
 
-lemma x_plus_y: "( |x\<rangle> + |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). 1)"
+lemma x_plus_y: 
+  shows "( |x\<rangle> + |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). 1)"
 proof
     fix i j::nat
     assume "i<dim_row (Matrix.mat 2 1 (\<lambda>(i,j). 1))" and "j<dim_col ( Matrix.mat 2 1 (\<lambda>(i,j). 1))"
@@ -261,10 +263,12 @@ proof
     show "dim_col ( |x\<rangle> + |y\<rangle>) = dim_col (Matrix.mat 2 1 (\<lambda>(i, j). 1))" by (simp add: ket_vec_def)
 qed
 
-lemma H_on_zero_state_square_inside: "(H * |x\<rangle>) =  (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
+lemma H_on_zero_state_square_inside: 
+  shows "(H * |x\<rangle>) =  (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
   using cong_mat x_plus_y H_on_zero_state by auto
 
-lemma H_on_zero_state_is_state: "state 1 (H * |x\<rangle>)"
+lemma H_on_zero_state_is_state: 
+  shows "state 1 (H * |x\<rangle>)"
 proof
   show "gate 1 H" 
     using H_is_gate by auto
@@ -275,7 +279,8 @@ qed
 
 
 
-lemma H_on_one_state: "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> - |y\<rangle>)"
+lemma H_on_one_state: 
+  shows "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ( |x\<rangle> - |y\<rangle>)"
 proof -
   have "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m ((Matrix.mat 2 2 (\<lambda>(i,j). if i\<noteq>j then 1 else (if i=0 then 1 else -1)) * |y\<rangle>))"
     by (metis (no_types, lifting) H_def dim_vec ket_vec_def mat_carrier mult_smult_assoc_mat)
@@ -302,7 +307,8 @@ proof -
   ultimately show "(H * |y\<rangle>) = 1/sqrt(2) \<cdot>\<^sub>m  ( |x\<rangle> - |y\<rangle>)" by auto
 qed
 
-lemma x_minus_y: "( |x\<rangle> - |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else -1)"
+lemma x_minus_y: 
+  shows "( |x\<rangle> - |y\<rangle>) = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else -1)"
 proof
   fix i j::nat
   assume "i<dim_row (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else -1))" 
@@ -321,10 +327,12 @@ next
     by (simp add: ket_vec_def)
 qed
 
-lemma H_on_one_state_square_inside: "(H * |y\<rangle>) =  Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2))" 
+lemma H_on_one_state_square_inside: 
+  shows"(H * |y\<rangle>) =  Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2))" 
   using cong_mat H_on_one_state x_minus_y by auto
 
-lemma H_on_one_state_is_state: "state 1 (H * |y\<rangle>)"
+lemma H_on_one_state_is_state: 
+  shows "state 1 (H * |y\<rangle>)"
 proof
   show "gate 1 H" 
     using H_is_gate by auto
@@ -337,7 +345,8 @@ qed
 
 
 
-lemma \<psi>\<^sub>1_is_state: "state 2 ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+lemma \<psi>\<^sub>1_is_state: 
+  shows "state 2 ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
 proof 
   show  "dim_col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 1" 
     using state.dim_col x_is_state y_is_state by auto
@@ -367,7 +376,8 @@ next
 
 
 
-lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
+lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: 
+  shows "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
 proof -
   define v::"complex Matrix.mat" where "v\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
   define w::"complex Matrix.mat" where "w\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))"
@@ -563,7 +573,8 @@ definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where (*TODO:Measurement*)
 "deutsch_algo \<equiv> (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
 
-lemma (in deutsch) deutsch_algo_result: "deutsch_algo = mat_of_cols_list 4 
+lemma (in deutsch) deutsch_algo_result: 
+  shows "deutsch_algo = mat_of_cols_list 4 
                                         [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
                                         + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
                                         (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
