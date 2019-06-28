@@ -11,7 +11,11 @@ lemma root_unit_length [simp]:
   shows "root n * cnj(root n) = 1"
   by (simp add: root_def complex_eq_iff)
 
-definition R:: "nat \<Rightarrow> complex Matrix.mat" where (* AB: What is the name of this gate ? *)
+text\<open>
+This is the phase shift gate R_\<phi> on Wikipedia, but in the book it is denoted as R_k, with \<phi> = 2\<pi>/(2^k).
+\<close>
+
+definition R :: "nat \<Rightarrow> complex Matrix.mat" where
 "R n \<equiv> Matrix.mat 2 2 (\<lambda>(i,j). if i = j then (if i = 0 then 1 else root (2^n)) else 0)"
 
 lemma R_is_gate [simp]:
@@ -26,8 +30,42 @@ proof
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
 qed
 
-definition fourier:: "nat \<Rightarrow> complex Matrix.mat" where
-"fourier n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). (root (2^n))^(i*j) / sqrt(2^n))"
+text\<open>
+This is the controlled phase shift gate controlled-R_k. It is an n-gate using the b-th qubit to 
+control an R_(b-a+1) gate on the a-th qubit. 
+\<close>
+
+definition CR :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
+"CR n a b \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if i = j then 
+            (if (select_index n a i \<and> select_index n b i) then root (2^(b-a+1)) else 1) else 0)"
+
+lemma CR_is_gate [simp]:
+  fixes "n":: nat
+  assumes "b>a"
+  shows "gate n (CR n a b)"
+proof
+  show "dim_row (CR n a b) = 2^n" by (simp add: CR_def)
+  moreover show "square_mat (CR n a b)" by (simp add: CR_def)
+  moreover have "(CR n a b) * ((CR n a b)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def CR_def times_mat_def unitary_def)
+    apply (rule cong_mat)
+    apply (auto simp: scalar_prod_def complex_eqI algebra_simps)
+    sorry
+  moreover have "((CR n a b)\<^sup>\<dagger>) * (CR n a b)= 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def CR_def times_mat_def unitary_def)
+    apply (rule cong_mat)
+    apply (auto simp: scalar_prod_def complex_eqI algebra_simps)
+    sorry
+  ultimately show "unitary (CR n a b)" by (simp add: unitary_def)
+qed
+
+text\<open>
+This is the Fourier transform on n qubits, which can be represented by a 2^n*2^n unitary matrix, i.e.
+an n-gate.
+\<close>
+
+definition Fourier:: "nat \<Rightarrow> complex Matrix.mat" where
+"Fourier n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). (root (2^n))^(i*j) / sqrt(2^n))"
 
 lemma sqrt_power_of_2:
   fixes "n":: nat
@@ -92,21 +130,24 @@ proof-
     by (metis sqrt_power_of_2 of_real_mult of_real_numeral of_real_power)
 qed
 
-lemma fourier_is_gate [simp]:
-  "gate n (fourier n)"
+lemma Fourier_is_gate [simp]:
+  "gate n (Fourier n)"
 proof
-  show "dim_row (fourier n) = 2^n" by (simp add: fourier_def)
-  moreover show "square_mat (fourier n)" by (simp add: fourier_def)
-  moreover have "(fourier n) * ((fourier n)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def fourier_def times_mat_def unitary_def)
+  show "dim_row (Fourier n) = 2^n" by (simp add: Fourier_def)
+  moreover show "square_mat (Fourier n)" by (simp add: Fourier_def)
+  moreover have "(Fourier n) * ((Fourier n)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def Fourier_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
-  moreover have "((fourier n)\<^sup>\<dagger>) * (fourier n)= 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def fourier_def times_mat_def unitary_def)
+  moreover have "((Fourier n)\<^sup>\<dagger>) * (Fourier n)= 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def Fourier_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
-  ultimately show "unitary (fourier n)" by (simp add: unitary_def)
+  ultimately show "unitary (Fourier n)" by (simp add: unitary_def)
 qed
 
+primrec qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
+  "qft 0 v = v"
+| "qft (Suc n) v = |v\<rangle>" (* Still trying to find a nice way to formalize the composition of gates *)
 
 end
