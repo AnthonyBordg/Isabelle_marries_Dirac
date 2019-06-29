@@ -15,17 +15,19 @@ text\<open>
 This is the phase shift gate R_\<phi> on Wikipedia, but in the book it is denoted as R_k, with \<phi> = 2\<pi>/(2^k).
 \<close>
 
-definition R :: "nat \<Rightarrow> complex Matrix.mat" where
+(* AB: I changed the name below and then introduced a notation. When giving names to definitions, 
+think of people who will search the library. *)
+definition phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("R _") where 
 "R n \<equiv> Matrix.mat 2 2 (\<lambda>(i,j). if i = j then (if i = 0 then 1 else root (2^n)) else 0)"
 
-lemma R_is_gate [simp]:
+lemma phase_shift_is_gate [simp]:
   fixes "n":: nat
   shows "gate 1 (R n)"
 proof
-  show "dim_row (R n) = 2^1" by (simp add: R_def)
-  show "square_mat (R n)" by (simp add: R_def)
+  show "dim_row (R n) = 2^1" by (simp add: phase_shift_def)
+  show "square_mat (R n)" by (simp add: phase_shift_def)
   show "unitary (R n)"
-    apply (auto simp add: one_mat_def R_def times_mat_def unitary_def)
+    apply (auto simp add: one_mat_def phase_shift_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
 qed
@@ -35,37 +37,77 @@ This is the controlled phase shift gate controlled-R_k. It is an n-gate using th
 control an R_(b-a+1) gate on the a-th qubit. 
 \<close>
 
-definition CR :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
+definition ctld_phase_shift:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR _ _ _") where
 "CR n a b \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if i = j then 
             (if (select_index n a i \<and> select_index n b i) then root (2^(b-a+1)) else 1) else 0)"
 
-lemma CR_is_gate [simp]:
-  fixes "n":: nat
-  assumes "b>a"
+lemma transpose_of_ctld_phase_shift: 
+  fixes n a b:: nat
+  shows "(CR n a b)\<^sup>t = CR n a b"
+  by (auto simp add: ctld_phase_shift_def)
+
+lemma hermite_cnj_of_ctld_phase_shift [simp]:
+  fixes n a b:: nat
+  shows "(CR n a b)\<^sup>\<dagger> = Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if i = j then 
+            (if (select_index n a i \<and> select_index n b i) then cnj(root (2^(b-a+1))) else 1) else 0)"
+  by (auto simp add: ctld_phase_shift_def hermite_cnj_def)
+
+lemma empty_sum_but_one:
+  fixes j n:: nat and z:: complex
+  assumes "j < n"
+  shows "(\<Sum>i = 0..<n. if j = i then z else 0) = z" 
+  by (simp add: assms)
+
+lemma empty_sum_but_one_mult:
+  fixes j n:: nat and z:: complex
+  assumes "j < n"
+  shows "(\<Sum>i = 0..<n. (if j = i then z else 0) * cnj(if j = i then z else 0)) = z * cnj z"
+proof-
+  have "(\<Sum>i = 0..<n. (if j = i then z else 0) * cnj(if j = i then z else 0)) =
+(\<Sum>i \<in> ({0..<n}-{j}). (if j = i then z else 0) * cnj(if j = i then z else 0)) + (z * cnj z)"
+    using assms by (simp add: sum.remove)
+  thus ?thesis by simp
+qed
+
+lemma empty_sum_in_disguise:
+  fixes i j n:: nat and z1 z2:: complex
+  assumes "i \<noteq> j" and "i < n" and "j < n"
+  shows "(\<Sum>k = 0..<n. (if i = k then z1 else 0) * (if j = k then z2 else 0)) = 0"
+  by (simp add: assms sum.neutral)
+
+lemma empty_sum_in_disguise_cnj:
+  fixes i j n:: nat and z1 z2:: complex
+  assumes "i \<noteq> j" and "i < n" and "j < n"
+  shows "(\<Sum>k = 0..<n. (if i = k then z1 else 0) * cnj(if j = k then z2 else 0)) = 0"
+  by (simp add: assms sum.neutral)
+
+lemma ctld_phase_shift_is_gate [simp]:
+  fixes n:: nat
+  assumes "b > a"
   shows "gate n (CR n a b)"
 proof
-  show "dim_row (CR n a b) = 2^n" by (simp add: CR_def)
-  moreover show "square_mat (CR n a b)" by (simp add: CR_def)
+  show "dim_row (CR n a b) = 2^n" by (simp add: ctld_phase_shift_def)
+  moreover show "square_mat (CR n a b)" by (simp add: ctld_phase_shift_def)
   moreover have "(CR n a b) * ((CR n a b)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def CR_def times_mat_def unitary_def)
+    apply (auto simp add: one_mat_def ctld_phase_shift_def times_mat_def)
     apply (rule cong_mat)
     apply (auto simp: scalar_prod_def complex_eqI algebra_simps)
-    sorry
+    apply (auto simp: empty_sum_but_one_mult sum.neutral).
   moreover have "((CR n a b)\<^sup>\<dagger>) * (CR n a b)= 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def CR_def times_mat_def unitary_def)
+    apply (auto simp add: one_mat_def ctld_phase_shift_def times_mat_def)
     apply (rule cong_mat)
     apply (auto simp: scalar_prod_def complex_eqI algebra_simps)
-    sorry
+    apply (auto simp: empty_sum_but_one_mult sum.neutral sum.remove).
   ultimately show "unitary (CR n a b)" by (simp add: unitary_def)
 qed
 
 text\<open>
-This is the Fourier transform on n qubits, which can be represented by a 2^n*2^n unitary matrix, i.e.
+This is the fourier transform on n qubits, which can be represented by a 2^n*2^n unitary matrix, i.e.
 an n-gate.
 \<close>
 
-definition Fourier:: "nat \<Rightarrow> complex Matrix.mat" where
-"Fourier n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). (root (2^n))^(i*j) / sqrt(2^n))"
+definition fourier:: "nat \<Rightarrow> complex Matrix.mat" where
+"fourier n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). (root (2^n))^(i*j) / sqrt(2^n))"
 
 lemma sqrt_power_of_2:
   fixes "n":: nat
