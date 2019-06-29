@@ -37,11 +37,6 @@ This is the controlled phase shift gate controlled-R_k. It is an n-gate using th
 control an R_(b-a+1) gate on the a-th qubit. 
 \<close>
 
-(* AB: idem with the name below. If you choose CR for the name of the def, some people
-would be confused. Indeed, R might be a standard notation, but one also find the notation B for the
-controlled phase shift gate in the literature. So, you see that names should not be notations since
-the library would be then difficult to search. Notations are somewhat arbitrary (even if some are 
-better than others), names are less so. *)
 definition ctld_phase_shift:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR _ _ _") where
 "CR n a b \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if i = j then 
             (if (select_index n a i \<and> select_index n b i) then root (2^(b-a+1)) else 1) else 0)"
@@ -111,8 +106,6 @@ This is the fourier transform on n qubits, which can be represented by a 2^n*2^n
 an n-gate.
 \<close>
 
-(* AB: no capital please. It's cool to not bother users with capitals. It's not even plain
-English anyway, so why do you use capitals ? *)
 definition fourier:: "nat \<Rightarrow> complex Matrix.mat" where
 "fourier n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). (root (2^n))^(i*j) / sqrt(2^n))"
 
@@ -182,20 +175,20 @@ proof-
   ultimately show ?thesis by (simp add: power_divide)
 qed
 
-lemma fourier_is_gate [simp]:
-  "gate n (fourier n)"
+lemma Fourier_is_gate [simp]:
+  "gate n (Fourier n)"
 proof
-  show "dim_row (fourier n) = 2^n" by (simp add: fourier_def)
-  moreover show "square_mat (fourier n)" by (simp add: fourier_def)
-  moreover have "(fourier n) * ((fourier n)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def fourier_def times_mat_def unitary_def)
+  show "dim_row (Fourier n) = 2^n" by (simp add: Fourier_def)
+  moreover show "square_mat (Fourier n)" by (simp add: Fourier_def)
+  moreover have "(Fourier n) * ((Fourier n)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def Fourier_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
-  moreover have "((fourier n)\<^sup>\<dagger>) * (fourier n)= 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def fourier_def times_mat_def unitary_def)
+  moreover have "((Fourier n)\<^sup>\<dagger>) * (Fourier n)= 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def Fourier_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
-  ultimately show "unitary (fourier n)" by (simp add: unitary_def)
+  ultimately show "unitary (Fourier n)" by (simp add: unitary_def)
 qed
 
 primrec qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
