@@ -124,7 +124,7 @@ proof
   fix i j:: nat
   assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
   then have "i < 4" and "j < 4" by auto
-  then show "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
+  thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
     by (smt deutsch_transform_alt_rep_coeff deutsch_transform_alt_rep_coeff_is_zero deutsch_transform_coeff
  deutsch_transform_coeff_is_zero set_four)
 qed
@@ -140,7 +140,7 @@ proof
   show "dim_col U\<^sub>f\<^sup>t = dim_col U\<^sub>f" by simp
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
-  then show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+  thus "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
     apply (auto simp add: transpose_mat_def)
     by (metis deutsch_transform_coeff(1-4) deutsch_transform_coeff_is_zero set_four)
 qed
@@ -152,7 +152,7 @@ proof
   show "dim_col U\<^sub>f\<^sup>\<dagger> = dim_col U\<^sub>f" by simp
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
-  then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
+  thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
     apply (auto simp add: hermite_cnj_def)
     by (metis complex_cnj_of_nat complex_cnj_zero deutsch_transform_coeff 
 deutsch_transform_coeff_is_zero set_four)
@@ -182,7 +182,7 @@ next
   next
     show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
   qed
-  then show "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
+  thus "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
 qed
    
 
@@ -235,7 +235,7 @@ proof
   fix i j::nat
   assume "i<dim_row \<psi>\<^sub>0\<^sub>0" and "j < dim_col \<psi>\<^sub>0\<^sub>0"
   then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
-  then show "(H * |zero_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
+  thus "(H * |zero_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
 next
   show "dim_row (H * |zero_state\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
@@ -270,7 +270,7 @@ proof
   fix i j::nat
   assume "i<dim_row \<psi>\<^sub>0\<^sub>1" and "j < dim_col \<psi>\<^sub>0\<^sub>1"
   then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
-  then show "(H * |one_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>1$$(i,j)"
+  thus "(H * |one_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>1$$(i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
 next
   show "dim_row (H * |one_state\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>1" 
@@ -353,7 +353,7 @@ proof
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>1}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col \<psi>\<^sub>1 j) $ k)"     
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def 
     by (smt dim_col)
-  then show "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = \<psi>\<^sub>2 $$ (i, j)"
+  thus "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = \<psi>\<^sub>2 $$ (i, j)"
     using  mat_of_cols_list_def deutsch_transform_def a0 
       apply auto.
 next
@@ -395,7 +395,7 @@ proof
   fix i j::nat assume "i < dim_row v" and "j < dim_col v"
   then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
     by (auto simp add: assms mat_of_cols_list_def)
-  then show "(H \<Otimes> Id 1) $$ (i, j) = v $$ (i, j)"
+  thus "(H \<Otimes> Id 1) $$ (i, j) = v $$ (i, j)"
     by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
@@ -439,7 +439,7 @@ proof
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def   
     by (smt dim_col)
-  then show "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
+  thus "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
     using  mat_of_cols_list_def H_tensor_Id a0 sqrt_distrib_special_case f_ge_0
       apply auto.
 next
@@ -457,7 +457,7 @@ lemma (in deutsch) \<psi>\<^sub>3_is_state:
 proof -
   have "gate 2 (H \<Otimes> Quantum.Id 1)" 
     using H_tensor_Id_is_gate by blast
-  then show "state 2 \<psi>\<^sub>3" using \<psi>\<^sub>2_is_state \<psi>\<^sub>2_to_\<psi>\<^sub>3 
+  thus "state 2 \<psi>\<^sub>3" using \<psi>\<^sub>2_is_state \<psi>\<^sub>2_to_\<psi>\<^sub>3 
     by (metis gate_on_state_is_state)
 qed
 
@@ -490,10 +490,10 @@ proof -
     using select_index_def by auto
   then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob0_def by auto
-  then show "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
+  thus "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
 qed
 
-lemma (in deutsch) prob1_deutsch_algo_const:
+lemma (in deutsch) prob1_deutsch_algo_const: (*TODO: But really needed but feels incomplete without*)
   assumes "const 0 \<or> const 1" 
   shows "prob1 2 deutsch_algo 0 = 0" 
 proof -
@@ -501,50 +501,40 @@ proof -
     using select_index_def by auto
   then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob1_def by auto
-  then show "prob1 2 deutsch_algo 0 = 0" 
+  thus "prob1 2 deutsch_algo 0 = 0" 
     using assms const_def by auto
 qed
 
 
 
-lemma (in is_swap) prob0_deutsch_algo_balanced:
+lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: But really needed but feels incomplete without*)
   assumes "balanced" 
   shows "prob0 2 deutsch_algo 0 = 0" 
 proof -
   have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
-  then have f0:"prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob0_def by auto
-  show "prob0 2 deutsch_algo 0 = 0" 
-  proof (rule disjE)
-    show "f = id \<or> is_swap f" using assms balanced_def by auto
-  next
-    assume a0: "f=id"
-    have "deutsch_algo $$ (0,0) = 0" 
-      using a0 balanced_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (1,0) = 0" 
-      using a0 balanced_def deutsch_algo_result by auto
-    ultimately show "prob0 2 deutsch_algo 0 = 0"  
-      using f0 by auto
-  next
-    assume a1: "is_swap f"
-    have "deutsch_algo $$ (0,0) = 0" 
-      using a1 is_swap_values
-      by auto
-    moreover have "deutsch_algo $$ (1,0) = 0" 
-      using a1 is_swap_values
-      by auto
-    ultimately show "prob0 2 deutsch_algo 0 = 0"  
-      using f0 by auto
-  qed
+  thus "prob0 2 deutsch_algo 0 = 0" using is_swap_values by auto
 qed
 
 
+lemma (in is_swap) prob1_deutsch_algo_balanced:
+  assumes "balanced" 
+  shows "prob1 2 deutsch_algo 0 = 1" 
+proof -
+  have "{k| k::nat. select_index 2 0 k} = {2,3}"
+    using select_index_def by auto
+  then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob1_def by auto
+  thus "prob1 2 deutsch_algo 0 = 1" using is_swap_values by auto
+qed
+ 
 
-lemma (in deutsch)
-  assumes "const 0 \<or> const 1" 
-  shows "fst ((meas 2 deutsch_algo 0)!0) = 1" 
-  using prob0_deutsch_algo_const meas_def assms by auto
+theorem (in is_swap) deutsch_algo_is_correct:
+  shows "(const 0 \<or> const 1) \<longrightarrow> fst ((meas 2 deutsch_algo 0)!0) = 1" 
+  and "balanced \<longrightarrow> fst ((meas 2 deutsch_algo 0)!0) = 0" 
+  using prob0_deutsch_algo_const prob0_deutsch_algo_balanced meas_def by auto
 
 
 end
