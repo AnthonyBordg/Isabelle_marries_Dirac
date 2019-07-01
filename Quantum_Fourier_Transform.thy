@@ -15,8 +15,6 @@ text\<open>
 This is the phase shift gate R_\<phi> on Wikipedia, but in the book it is denoted as R_k, with \<phi> = 2\<pi>/(2^k).
 \<close>
 
-(* AB: I changed the name below and then introduced a notation. When giving names to definitions, 
-think of people who will search the library. *)
 definition phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("R _") where 
 "R n \<equiv> Matrix.mat 2 2 (\<lambda>(i,j). if i = j then (if i = 0 then 1 else root (2^n)) else 0)"
 
@@ -34,7 +32,7 @@ qed
 
 text\<open>
 This is the controlled phase shift gate controlled-R_k. It is an n-gate using the b-th qubit to 
-control an R_(b-a+1) gate on the a-th qubit. 
+control an R_(b-a+1) gate on the a-th qubit. It is assumed that b > a.
 \<close>
 
 definition ctld_phase_shift:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR _ _ _") where
@@ -175,24 +173,34 @@ proof-
   ultimately show ?thesis by (simp add: power_divide)
 qed
 
-lemma Fourier_is_gate [simp]:
-  "gate n (Fourier n)"
+lemma fourier_is_gate [simp]:
+  "gate n (fourier n)"
 proof
-  show "dim_row (Fourier n) = 2^n" by (simp add: Fourier_def)
-  moreover show "square_mat (Fourier n)" by (simp add: Fourier_def)
-  moreover have "(Fourier n) * ((Fourier n)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def Fourier_def times_mat_def unitary_def)
+  show "dim_row (fourier n) = 2^n" by (simp add: fourier_def)
+  moreover show "square_mat (fourier n)" by (simp add: fourier_def)
+  moreover have "(fourier n) * ((fourier n)\<^sup>\<dagger>) = 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def fourier_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
-  moreover have "((Fourier n)\<^sup>\<dagger>) * (Fourier n)= 1\<^sub>m (2^n)"
-    apply (auto simp add: one_mat_def Fourier_def times_mat_def unitary_def)
+  moreover have "((fourier n)\<^sup>\<dagger>) * (fourier n)= 1\<^sub>m (2^n)"
+    apply (auto simp add: one_mat_def fourier_def times_mat_def unitary_def)
     apply (rule cong_mat)
     by (auto simp: scalar_prod_def complex_eqI algebra_simps)
-  ultimately show "unitary (Fourier n)" by (simp add: unitary_def)
+  ultimately show "unitary (fourier n)" by (simp add: unitary_def)
 qed
 
-primrec qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
-  "qft 0 v = v"
-| "qft (Suc n) v = |v\<rangle>" (* Still trying to find a nice way to formalize the composition of gates *)
+definition SWAP :: "nat \<Rightarrow> complex Matrix.mat" where
+"SWAP n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if (\<forall>k\<in>{0..<n}. (select_index n k i) = (select_index n (n-1-k) j)) then 1 else 0)"
+
+primrec qft_single_qbit :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
+  "qft_single_qbit n i 0 v = (Id i \<Otimes> H \<Otimes> Id (n-i-1)) * |v\<rangle>"
+| "qft_single_qbit n i (Suc m) v = (CR n i (i+m+1)) * |qft_single_qbit n i m v\<rangle>"
+
+primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
+  "qft_no_swap n 0 v = v"
+| "qft_no_swap n (Suc m) v = qft_single_qbit n m (n-m-1) (qft_no_swap n m v)"
+
+definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
+"qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
 end
