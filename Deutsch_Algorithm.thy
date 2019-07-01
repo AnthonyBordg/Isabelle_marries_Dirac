@@ -204,7 +204,8 @@ lemma zero_state_is_state:
   by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def pos2 power_one_right 
       state_def unit_cpx_vec_length zero_state_is_unit)
 
-lemma zero_state_to_mat_of_col_lists[simp]: "|zero_state\<rangle> = mat_of_cols_list 2 [[1,0]]"
+lemma zero_state_to_mat_of_col_lists[simp]: 
+  shows "|zero_state\<rangle> = mat_of_cols_list 2 [[1,0]]"
   using ket_vec_def mat_of_cols_list_def by auto
 
 
@@ -217,7 +218,8 @@ lemma one_state_is_state:
   by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def one_less_numeral_iff 
       power_one_right semiring_norm(76) state_def unit_cpx_vec_length one_state_is_unit)
 
-lemma one_state_to_mat_of_col_lists[simp]: "|one_state\<rangle> = mat_of_cols_list 2 [[0,1]]"
+lemma one_state_to_mat_of_col_lists[simp]: 
+  shows "|one_state\<rangle> = mat_of_cols_list 2 [[0,1]]"
    using ket_vec_def mat_of_cols_list_def by auto
 
 
@@ -423,9 +425,10 @@ abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
                            (1 - f (0))/(2*sqrt(2)) - f(0)/(2*sqrt(2))        - (1 - f(1))/(2*sqrt(2))  + f(1)/(2*sqrt(2)),
                            f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  - f(1)/(2*sqrt(2))      + (1 - f(1))/(2*sqrt(2))]]"
 
-lemma sqrt_distrib_special_case: "\<forall> x y. (x/2 - y/2)/ complex_of_real (sqrt 2) 
-= (x/(2 *complex_of_real (sqrt 2)))-(y/(2 *complex_of_real (sqrt 2)))" 
-  by (simp add: diff_divide_distrib)  (*TODO: find better name, move inside proof? But independent result*)
+lemma sqrt_distrib_special_case:  (*TODO: find better name, move inside proof? But independent result*)
+  shows "\<forall> x y. (x/2 - y/2)/ complex_of_real (sqrt 2) 
+        = (x/(2 *complex_of_real (sqrt 2)))-(y/(2 *complex_of_real (sqrt 2)))" 
+  by (simp add: diff_divide_distrib) 
 
 lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3: 
  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" 
@@ -482,6 +485,10 @@ lemma [simp]:
   by (simp add: power_divide)
 
 
+(*Question to AB: I have nice long proofs of the above (splitting up the disjunction const 0 or const 1
+or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
+proofs above. In terms of understandability/readability what is better?  *)
+
 lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
   shows "prob0 2 deutsch_algo 0 = 1" 
@@ -493,7 +500,7 @@ proof -
   thus "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
 qed
 
-lemma (in deutsch) prob1_deutsch_algo_const: (*TODO: But really needed but feels incomplete without*)
+lemma (in deutsch) prob1_deutsch_algo_const: (*TODO: Not really needed but feels incomplete without*)
   assumes "const 0 \<or> const 1" 
   shows "prob1 2 deutsch_algo 0 = 0" 
 proof -
@@ -507,7 +514,7 @@ qed
 
 
 
-lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: But really needed but feels incomplete without*)
+lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Not really needed but feels incomplete without*)
   assumes "balanced" 
   shows "prob0 2 deutsch_algo 0 = 0" 
 proof -
