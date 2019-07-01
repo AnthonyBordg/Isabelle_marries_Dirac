@@ -7,7 +7,7 @@ begin
 section \<open>Deutsch's algorithm\<close>
 
 text \<open>
-The problem Deutsch's algorithm solves is to determine for a given function $f:{0,1}\mapsto {0,1}$ 
+The problem Deutsch's algorithm seeks to solve is to determine for a given function $f:{0,1}\mapsto {0,1}$ 
 if f is constant or balanced. It makes use of quantum parallelism and quantum interference.
 \<close>
 
@@ -56,7 +56,7 @@ lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 end (* context deutsch *)
 
 
-text \<open>Black box function @{text U\<^sub>f}. \<close>
+text \<open>Transform @{text U\<^sub>f}. \<close>
 
 definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 
@@ -379,8 +379,10 @@ next
 qed
 
 
+(*Question HL: Should the lemmata below be renamed (e.g. hadamard_on_identity) since H is a notation 
+not a name? (isn't it the same as with U\<^sub>f?). Its like this in Quantum_Teleportation*)
 
-lemma H_tensor_Id: 
+lemma H_tensor_Id_1: 
 assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, 1/sqrt(2)],
                                   [1/sqrt(2), 0, -1/sqrt(2), 0],
@@ -399,10 +401,10 @@ proof
 qed
 
 
-lemma H_tensor_Id_is_gate: 
+lemma H_tensor_Id_1_is_gate: 
   shows "gate 2 (H \<Otimes> Id 1)" 
 proof 
-  show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id   
+  show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id_1  
     by (simp add: Tensor.mat_of_cols_list_def)
 next 
   show "square_mat (H \<Otimes> Quantum.Id 1)" 
@@ -430,20 +432,20 @@ proof
   assume "i<dim_row \<psi>\<^sub>3" and "j<dim_col \<psi>\<^sub>3"
   then have a0:"i\<in>{0,1,2,3} \<and> j=0 " 
     using mat_of_cols_list_def by auto
-  then have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2" using  mat_of_cols_list_def H_tensor_Id by auto
+  then have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2" using  mat_of_cols_list_def H_tensor_Id_1 by auto
   then have "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i,j)
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def   
     by (smt dim_col)
   thus "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
-    using  mat_of_cols_list_def H_tensor_Id a0 f_ge_0
+    using  mat_of_cols_list_def H_tensor_Id_1 a0 f_ge_0
       apply (auto simp: diff_divide_distrib).
 next
   show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" 
-    using H_tensor_Id mat_of_cols_list_def by auto
+    using H_tensor_Id_1 mat_of_cols_list_def by auto
 next
   show "dim_col ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"    
-    using H_tensor_Id mat_of_cols_list_def by auto
+    using H_tensor_Id_1 mat_of_cols_list_def by auto
 qed
 
 
@@ -452,7 +454,7 @@ lemma (in deutsch) \<psi>\<^sub>3_is_state:
   shows "state 2 \<psi>\<^sub>3"
 proof -
   have "gate 2 (H \<Otimes> Quantum.Id 1)" 
-    using H_tensor_Id_is_gate by blast
+    using H_tensor_Id_1_is_gate by blast
   thus "state 2 \<psi>\<^sub>3" using \<psi>\<^sub>2_is_state \<psi>\<^sub>2_to_\<psi>\<^sub>3 
     by (metis gate_on_state_is_state)
 qed
