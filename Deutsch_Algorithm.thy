@@ -52,6 +52,9 @@ definition balanced:: "bool" where
 "balanced \<equiv> f = id \<or> is_swap f"
 
 lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto 
+
+lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
+
 end (* context deutsch *)
 
 
@@ -186,8 +189,6 @@ qed
 text \<open>Two qubits are prepared. The first one is state |0\<rangle>, the second one in state |1\<rangle>.\<close>
 
 (*From here on under construction*)
-(*HL Question: in text do I need to use @{text \<psi>\<^sub>0\<^sub>0} for objects from Isabelle?
-Not done in Quantum for bell states *)
 
 (*HL: Already define these with mat_of_cols_list? *)
 abbreviation zero_state where "zero_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
@@ -340,9 +341,6 @@ abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
                             (1 - f(1))/2 - f(1)/2,
                             f(1)/2 - (1- f(1))/2]]"
 
-
-text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
-
 lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: 
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof 
@@ -383,14 +381,12 @@ qed
 
 
 
-
-
 lemma H_tensor_Id: 
 assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
                                  [1/sqrt(2), 0, -1/sqrt(2), 0],
                                  [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
-  shows "(H \<Otimes> Id 1) = v" 
+shows "(H \<Otimes> Id 1) = v" 
 proof
   show "Matrix.dim_col (H \<Otimes> Id 1) = Matrix.dim_col v"  
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
@@ -404,8 +400,8 @@ proof
 qed
 
 
-lemma H_tensor_Id_is_gate: "gate 2 (H \<Otimes> Id 1)" 
-
+lemma H_tensor_Id_is_gate: 
+  shows "gate 2 (H \<Otimes> Id 1)" 
 proof 
   show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id   
     by (simp add: Tensor.mat_of_cols_list_def)
@@ -418,106 +414,62 @@ next
 qed
 
 
-lemma (in deutsch) \<psi>\<^sub>3_is_state: 
-   assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]]"
-  shows "state 2 ((H \<Otimes> Id 1)*\<psi>\<^sub>2)"
-proof 
-  show "gate 2 (H \<Otimes> Quantum.Id 1)" 
-    using H_tensor_Id_is_gate by blast
-  show "state 2 \<psi>\<^sub>2" using \<psi>\<^sub>2_is_state \<psi>\<^sub>1_to_\<psi>\<^sub>2 assms by simp
-qed
+
+text \<open>Applying the Hadamard gate to the first qubit of $\psi$2 results in $\psi$3  \<close>
+
+abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
+"\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[(1 - f(0))/(2*sqrt(2))  - f(0)/(2*sqrt(2))        + (1 - f (1))/(2*sqrt(2)) - f(1)/(2*sqrt(2)),
+                           f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  + (f(1)/(2*sqrt(2))       - (1 - f(1))/(2*sqrt(2))),
+                           (1 - f (0))/(2*sqrt(2)) - f(0)/(2*sqrt(2))        - (1 - f(1))/(2*sqrt(2))  + f(1)/(2*sqrt(2)),
+                           f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  - f(1)/(2*sqrt(2))      + (1 - f(1))/(2*sqrt(2))]]"
+
+lemma sqrt_distrib_special_case: "\<forall> x y. (x/2 - y/2)/ complex_of_real (sqrt 2) = (x/(2 *complex_of_real (sqrt 2)))-(y/(2 *complex_of_real (sqrt 2)))" 
+  by (simp add: diff_divide_distrib)  (*TODO: find better name, move inside proof? But independent result*)
 
 lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3: 
-  assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]]"
-  and "\<psi>\<^sub>3 \<equiv>  mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                    + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                 (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                    + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                 ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                    - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                  (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                    -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" 
 proof
-  fix i j ::nat
-  assume "i < dim_row \<psi>\<^sub>3" and "j < dim_col \<psi>\<^sub>3" 
-  then have a0: "i\<in>{0,1,2,3} \<and> j=0 " 
-    using assms ket_vec_def mat_of_cols_list_def by auto
-  then have "i<dim_row (H \<Otimes> Id 1)" and "j<dim_col \<psi>\<^sub>2" 
-    using H_tensor_Id assms mat_of_cols_list_def by auto 
-  then have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) 
+  fix i j:: nat
+  assume "i<dim_row \<psi>\<^sub>3" and "j<dim_col \<psi>\<^sub>3"
+  then have a0:"i\<in>{0,1,2,3} \<and> j=0 " 
+    using mat_of_cols_list_def by auto
+  then have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2" using  mat_of_cols_list_def H_tensor_Id by auto
+  then have "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i,j)
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
-    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong
-    by (smt a0)
-  then have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = ((Matrix.row (H \<Otimes> Id 1) i) $ 0 * ( Matrix.col \<psi>\<^sub>2 0) $ 0) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 1 * ( Matrix.col \<psi>\<^sub>2 0) $ 1) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 2 * ( Matrix.col \<psi>\<^sub>2 0) $ 2) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 3 * ( Matrix.col \<psi>\<^sub>2 0) $ 3) "
-    using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def a0 by simp
-  then show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
-    using  H_tensor_Id mat_of_cols_list_def deutsch_transform_def assms a0 assms
-      apply (auto simp add: algebra_simps)
-    done
+    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def   
+    by (smt dim_col)
+  then show "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
+    using  mat_of_cols_list_def H_tensor_Id a0 sqrt_distrib_special_case f_ge_0
+      apply auto.
 next
   show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" 
-    using H_tensor_Id assms mat_of_cols_list_def by auto
+    using H_tensor_Id mat_of_cols_list_def by auto
 next
   show "dim_col ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"    
-    using assms mat_of_cols_list_def by auto
+    using H_tensor_Id mat_of_cols_list_def by auto
 qed
 
 
+
+lemma (in deutsch) \<psi>\<^sub>3_is_state: 
+  shows "state 2 \<psi>\<^sub>3"
+proof -
+  have "gate 2 (H \<Otimes> Quantum.Id 1)" 
+    using H_tensor_Id_is_gate by blast
+  then show "state 2 \<psi>\<^sub>3" using \<psi>\<^sub>2_is_state \<psi>\<^sub>2_to_\<psi>\<^sub>3 
+    by (metis gate_on_state_is_state)
+qed
 
 
 
 definition (in deutsch) deutsch_algo::
-"complex Matrix.mat" where (*TODO:Measurement*)
-"deutsch_algo \<equiv> (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+"complex Matrix.mat" where 
+"deutsch_algo \<equiv> (H \<Otimes> Id 1) * (U\<^sub>f * ((H * |zero_state\<rangle>) \<Otimes> (H * |one_state\<rangle>)))"
 
 lemma (in deutsch) deutsch_algo_result: 
-  shows "deutsch_algo = mat_of_cols_list 4 
-                                        [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
-proof-
-  have "deutsch_algo = (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))" 
-    using deutsch_algo_def by auto
-  also have "... = (H \<Otimes> Id 2) * U\<^sub>f * (mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]])" 
-    using \<psi>\<^sub>0_to_\<psi>\<^sub>1 sorry
-  also have "... = (H \<Otimes> Id 2) * (mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]])" 
-    apply (auto simp: \<psi>\<^sub>1_to_\<psi>\<^sub>2) sorry
-  also have "... = mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
-    using \<psi>\<^sub>2_to_\<psi>\<^sub>3 sorry
-  finally show "deutsch_algo = mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"  by blast
-qed
+  shows "deutsch_algo = \<psi>\<^sub>3" 
+  using deutsch_algo_def H_on_zero_state H_on_one_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
+
 
 lemma (in deutsch) deutsch_algo_result_state: 
   shows "state 2 deutsch_algo"
