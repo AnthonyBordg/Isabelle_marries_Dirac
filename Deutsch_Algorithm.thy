@@ -417,7 +417,8 @@ qed
 
 
 
-text \<open>Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3}  \<close>
+text \<open>Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3} = 
+$\pm |f(0) \oplus f(1)\<rangle> [(|0\<rangle>-|1\<rangle>)/\sqrt(2)] $  \<close>
 
 abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[(1 - f(0))/(2*sqrt(2))  - f(0)/(2*sqrt(2))        + (1 - f (1))/(2*sqrt(2)) - f(1)/(2*sqrt(2)),
@@ -465,6 +466,9 @@ proof -
 qed
 
 
+text \<open>Finally, all steps are put together. The result depends on the function f. If f is constant
+the first qubit of $\pm |f(0) \oplus f(1)\<rangle> [(|0\<rangle>-|1\<rangle>)/\sqrt(2)] $ is 0, if it is balanced it is 1.
+The algorithm only uses one evaluation of f(x) and will always succeed. \<close>
 
 definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where 
@@ -489,6 +493,9 @@ lemma [simp]:
 or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
 proofs above. In terms of understandability/readability what is better?  *)
 
+text \<open>If the function is constant measurement of the first qubit should result in state 0 with 
+probability 1. \<close>
+
 lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
   shows "prob0 2 deutsch_algo 0 = 1" 
@@ -500,7 +507,7 @@ proof -
   thus "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
 qed
 
-lemma (in deutsch) prob1_deutsch_algo_const: (*TODO: Not really needed but feels incomplete without*)
+lemma (in deutsch) prob1_deutsch_algo_const: (*TODO:  Delete? Not really needed but feels incomplete without*)
   assumes "const 0 \<or> const 1" 
   shows "prob1 2 deutsch_algo 0 = 0" 
 proof -
@@ -512,9 +519,10 @@ proof -
     using assms const_def by auto
 qed
 
+text \<open>If the function is balanced measurement of the first qubit should result in state 1 with 
+probability 1. \<close>
 
-
-lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Not really needed but feels incomplete without*)
+lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Delete? Not really needed but feels incomplete without*)
   assumes "balanced" 
   shows "prob0 2 deutsch_algo 0 = 0" 
 proof -
@@ -538,10 +546,18 @@ proof -
 qed
  
 
+text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$  \<close>
+
+definition (in deutsch) deutsch_algo_with_meas::"real" where 
+"deutsch_algo_with_meas \<equiv> fst ((meas 2 deutsch_algo 0)!0)"
+
+text \<open>Now, it can be verified that the algorithm returns one if the input function is constant and
+zero if it is balanced. \<close>
+
 theorem (in is_swap) deutsch_algo_is_correct:
-  shows "(const 0 \<or> const 1) \<longrightarrow> fst ((meas 2 deutsch_algo 0)!0) = 1" 
-  and "balanced \<longrightarrow> fst ((meas 2 deutsch_algo 0)!0) = 0" 
-  using prob0_deutsch_algo_const prob0_deutsch_algo_balanced meas_def by auto
+  shows "(const 0 \<or> const 1) \<longrightarrow> deutsch_algo_with_meas = 1" 
+  and "balanced \<longrightarrow> deutsch_algo_with_meas = 0" 
+  using prob0_deutsch_algo_const prob0_deutsch_algo_balanced meas_def deutsch_algo_with_meas_def by auto
 
 
 end
