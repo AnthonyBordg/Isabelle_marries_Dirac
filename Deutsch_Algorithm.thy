@@ -481,37 +481,64 @@ lemma [simp]:
   shows " 2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" using cmod_def 
   by (simp add: power_divide)
 
+
 lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
   shows "prob0 2 deutsch_algo 0 = 1" 
 proof -
-  have set_0 [simp]:"{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+  have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
-  then have f0: "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
-    using deutsch_algo_result_state set_0 prob0_def by auto
-  show "prob0 2 deutsch_algo 0 = 1" 
+  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob0_def by auto
+  then show "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
+qed
+
+lemma (in deutsch) prob1_deutsch_algo_const:
+  assumes "const 0 \<or> const 1" 
+  shows "prob1 2 deutsch_algo 0 = 0" 
+proof -
+  have "{k| k::nat. select_index 2 0 k} = {2,3}"
+    using select_index_def by auto
+  then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob1_def by auto
+  then show "prob1 2 deutsch_algo 0 = 0" 
+    using assms const_def by auto
+qed
+
+
+
+lemma (in is_swap) prob0_deutsch_algo_balanced:
+  assumes "balanced" 
+  shows "prob0 2 deutsch_algo 0 = 0" 
+proof -
+  have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+    using select_index_def by auto
+  then have f0:"prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob0_def by auto
+  show "prob0 2 deutsch_algo 0 = 0" 
   proof (rule disjE)
-    show "const 0 \<or> const 1" using assms by simp
+    show "f = id \<or> is_swap f" using assms balanced_def by auto
   next
-    assume a0: "const 0"
-    have "deutsch_algo $$ (0,0) = 1/(2*sqrt(2)) + 1/(2*sqrt(2))" 
-      using a0 const_def by auto
-    moreover have "deutsch_algo $$ (1,0) = -1/(2*sqrt(2)) - 1/(2*sqrt(2))" 
-      using a0 const_def by auto
-    ultimately show "prob0 2 deutsch_algo 0 = 1" 
-      using f0 
-      apply auto.
+    assume a0: "f=id"
+    have "deutsch_algo $$ (0,0) = 0" 
+      using a0 balanced_def deutsch_algo_result by auto
+    moreover have "deutsch_algo $$ (1,0) = 0" 
+      using a0 balanced_def deutsch_algo_result by auto
+    ultimately show "prob0 2 deutsch_algo 0 = 0"  
+      using f0 by auto
   next
-    assume a1: "const 1"
-    have "deutsch_algo $$ (0,0) = -1/(2*sqrt(2)) - 1/(2*sqrt(2))" 
-      using a1 const_def by auto
-    moreover have "deutsch_algo $$ (1,0) = 1/(2*sqrt(2)) + 1/(2*sqrt(2))" 
-      using a1 const_def by auto
-    ultimately show "prob0 2 deutsch_algo 0 = 1" 
-      using f0 
-      apply auto.
+    assume a1: "is_swap f"
+    have "deutsch_algo $$ (0,0) = 0" 
+      using a1 is_swap_values
+      by auto
+    moreover have "deutsch_algo $$ (1,0) = 0" 
+      using a1 is_swap_values
+      by auto
+    ultimately show "prob0 2 deutsch_algo 0 = 0"  
+      using f0 by auto
   qed
 qed
+
 
 
 lemma (in deutsch)
