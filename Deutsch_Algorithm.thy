@@ -1,20 +1,18 @@
-
 theory Deutsch_Algorithm 
 imports
   MoreTensor
-  Jordan_Normal_Form.Matrix
-  Quantum(* , Jordan_Normal_Form.Matrix
-            Quantum , no need for those files since they are imported when you import MoreTensor 
-            HL: just temp seems to finds relevant facts better*)
 begin
 
-
-(*sledgehammer_params [verbose=true]*)
   
 section \<open>Deutsch's algorithm\<close>
 
-subsection \<open>Black-box function\<close>
+text \<open>
+The problem Deutsch's algorithm solves is to determine for a given function $f:{0,1}\mapsto {0,1}$ 
+if f is constant or balanced. It makes use of quantum parallelism and quantum interference.
+\<close>
 
+subsection \<open>Input function\<close>
+                                   
 text \<open>
 A constant function with values in {0,1} returns either always 0 or always 1. 
 A balanced function is 0 for half of the inputs and 1 for the other half. 
@@ -45,7 +43,7 @@ definition const:: "nat \<Rightarrow> bool" where
 
 "const n = (\<forall>x.(f x = n))"
 
-definition deutsch_const:: "bool" where (* AB: this definition might be useful later *)
+definition deutsch_const:: "bool" where 
 "deutsch_const \<equiv> const 0 \<or> const 1"
 
 definition balanced:: "bool" where
@@ -188,7 +186,6 @@ qed
 
 text \<open>Two qubits are prepared. The first one is state |0\<rangle>, the second one in state |1\<rangle>.\<close>
 
-(*From here on under construction*)
 
 (*HL: Already define these with mat_of_cols_list? *)
 abbreviation zero_state where "zero_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
@@ -385,12 +382,12 @@ qed
 
 lemma H_tensor_Id: 
 assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, 1/sqrt(2)],
-                                 [1/sqrt(2), 0, -1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
+                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
+                                  [1/sqrt(2), 0, -1/sqrt(2), 0],
+                                  [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
 shows "(H \<Otimes> Id 1) = v" 
 proof
-  show "Matrix.dim_col (H \<Otimes> Id 1) = Matrix.dim_col v"  
+  show "dim_col (H \<Otimes> Id 1) = dim_col v"  
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
   show "dim_row (H \<Otimes> Id 1) = dim_row v"
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
@@ -426,11 +423,6 @@ abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
                            (1 - f (0))/(2*sqrt(2)) - f(0)/(2*sqrt(2))        - (1 - f(1))/(2*sqrt(2))  + f(1)/(2*sqrt(2)),
                            f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  - f(1)/(2*sqrt(2))      + (1 - f(1))/(2*sqrt(2))]]"
 
-lemma sqrt_distrib_special_case:  (*TODO: find better name, move inside proof? But independent result*)
-  shows "\<forall> x y. (x/2 - y/2)/ complex_of_real (sqrt 2) 
-        = (x/(2 *complex_of_real (sqrt 2)))-(y/(2 *complex_of_real (sqrt 2)))" 
-  by (simp add: diff_divide_distrib) 
-
 lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3: 
  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" 
 proof
@@ -444,8 +436,8 @@ proof
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def   
     by (smt dim_col)
   thus "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
-    using  mat_of_cols_list_def H_tensor_Id a0 sqrt_distrib_special_case f_ge_0
-      apply auto.
+    using  mat_of_cols_list_def H_tensor_Id a0 f_ge_0
+      apply (auto simp: diff_divide_distrib).
 next
   show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" 
     using H_tensor_Id mat_of_cols_list_def by auto
@@ -484,10 +476,6 @@ lemma (in deutsch) deutsch_algo_result_state:
   using \<psi>\<^sub>3_is_state deutsch_algo_def deutsch_algo_result by simp
 
 
-lemma [simp]:
-  shows " 2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" using cmod_def 
-  by (simp add: power_divide)
-
 
 (*Question to AB: I have nice long proofs of lemmas below (splitting up the disjunction const 0 or const 1
 or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
@@ -495,6 +483,11 @@ proofs below. In terms of understandability/readability what is better?  *)
 
 text \<open>If the function is constant measurement of the first qubit should result in state 0 with 
 probability 1. \<close>
+
+
+lemma [simp]:
+  shows " 2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" using cmod_def 
+  by (simp add: power_divide)
 
 lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
