@@ -489,9 +489,9 @@ lemma [simp]:
   by (simp add: power_divide)
 
 
-(*Question to AB: I have nice long proofs of the above (splitting up the disjunction const 0 or const 1
+(*Question to AB: I have nice long proofs of lemmas below (splitting up the disjunction const 0 or const 1
 or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
-proofs above. In terms of understandability/readability what is better?  *)
+proofs below. In terms of understandability/readability what is better?  *)
 
 text \<open>If the function is constant measurement of the first qubit should result in state 0 with 
 probability 1. \<close>
