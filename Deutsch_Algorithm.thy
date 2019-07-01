@@ -183,13 +183,13 @@ next
 qed
    
 
-text \<open>Two qubits x and y are prepared, x in state 0 and y in state 1.\<close>
-
-(*TODO: Change all matrices to mat_of_cols_list.*)
+text \<open>Two qubits are prepared. The first one is state |0\<rangle>, the second one in state |1\<rangle>.\<close>
 
 (*From here on under construction*)
+(*HL Question: in text do I need to use @{text \<psi>\<^sub>0\<^sub>0} for objects from Isabelle?
+Not done in Quantum for bell states *)
 
-(*HL Question: Already define these with mat_of_cols_list? *)
+(*HL: Already define these with mat_of_cols_list? *)
 abbreviation zero_state where "zero_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
 abbreviation one_state where "one_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
 
@@ -222,14 +222,13 @@ lemma one_state_to_mat_of_col_lists[simp]: "|one_state\<rangle> = mat_of_cols_li
 
 
 text\<open>
-State @{text \<psi>\<^sub>1} is obtained by applying an Hadamard gate to x and an Hadamard gate to y and then 
-taking the tensor product of the results
+Applying the Hadamard gate to state |0\<rangle> results in the new state @{text \<psi>\<^sub>0\<^sub>0}=(|0\<rangle>+|1\<rangle>)/$/sqrt(2)$.
 \<close>
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
 
-lemma H_on_zero_state: 
+lemma H_on_zero_state: (*TODO: maybe rename it*)
   shows "(H * |zero_state\<rangle>) = \<psi>\<^sub>0\<^sub>0"
 proof 
   fix i j::nat
@@ -257,11 +256,14 @@ qed
 
 
 
+text\<open>
+Applying the Hadamard gate to state |1\<rangle> results in the new state @{text \<psi>\<^sub>0\<^sub>1}=(|0\<rangle>-|1\<rangle>)/$/sqrt(2)$.
+\<close>
 
 abbreviation \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>1 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), -1/sqrt(2)]]"
 
-lemma H_on_one_state: 
+lemma H_on_one_state: (*TODO: maybe rename it*)
   shows "(H * |one_state\<rangle>) = \<psi>\<^sub>0\<^sub>1"
 proof 
   fix i j::nat
@@ -288,140 +290,99 @@ next
 qed
 
 
+text\<open>
+Then, state @{text \<psi>\<^sub>1}=(|00\<rangle>-|01\<rangle>+|10\<rangle>-|11\<rangle>)/2 is obtained by taking the tensor product of state 
+ @{text \<psi>\<^sub>0\<^sub>0}=(|0\<rangle>+|1\<rangle>)/$/sqrt(2)$ and  @{text \<psi>\<^sub>0\<^sub>1}=(|0\<rangle>-|1\<rangle>)/$/sqrt(2)$.
+\<close>
 
+abbreviation \<psi>\<^sub>1:: "complex Matrix.mat" where
+"\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2,-1/2,1/2,-1/2]]"
+
+lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: 
+  shows "(\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) = \<psi>\<^sub>1"
+proof 
+  fix i j::nat
+  assume "i < dim_row \<psi>\<^sub>1" and "j < dim_col \<psi>\<^sub>1"
+  then have "i\<in>{0,1,2,3}" and "j=0" using mat_of_cols_list_def by auto  
+  moreover have "complex_of_real (sqrt 2) * complex_of_real (sqrt 2) = 2" 
+    by (metis mult_2_right numeral_Bit0 of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
+  ultimately show "(\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1)$$(i,j) = \<psi>\<^sub>1$$(i,j)" using mat_of_cols_list_def by auto
+next 
+  show "dim_row (\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) = dim_row \<psi>\<^sub>1" using mat_of_cols_list_def by auto
+next
+  show "dim_col (\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) = dim_col \<psi>\<^sub>1" using mat_of_cols_list_def by auto
+qed
 
 
 lemma \<psi>\<^sub>1_is_state: 
-  shows "state 2 ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+  shows "state 2 \<psi>\<^sub>1"
 proof 
-  show  "dim_col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 1" 
-    using state.dim_col x_is_state y_is_state by auto
+  show  "dim_col \<psi>\<^sub>1 = 1" 
+    by (simp add: Tensor.mat_of_cols_list_def)
 next 
-  show "dim_row (H * |x\<rangle> \<Otimes> H * |y\<rangle>) = 2\<^sup>2" 
-    using H_on_one_state_is_state H_on_zero_state_is_state state_def tensor_state2 by blast
+  show "dim_row \<psi>\<^sub>1 = 2\<^sup>2" 
+    by (simp add: Tensor.mat_of_cols_list_def)
 next
-  show "\<parallel>Matrix.col (H * |x\<rangle> \<Otimes> H * |y\<rangle>) 0\<parallel> = 1"
-    using H_on_one_state_is_state H_on_zero_state_is_state state.length tensor_state2 by blast
+  show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
+    using H_on_one_state_is_state H_on_zero_state_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1 
+    by (metis H_on_one_state H_on_zero_state)
 qed
 
 
-(*lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: 
-  assumes  "v\<equiv>  mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
-  shows "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) =  v"
-proof 
-  show "Matrix.dim_col ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = Matrix.dim_col v"  sorry
-next
-  show "dim_row ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = Matrix.dim_row v" sorry
-next 
-  fix i j::nat assume "i < dim_row v" and "j < dim_col v"
-  then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
-    by (auto simp add: assms mat_of_cols_list_def)
-  then show "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) $$ (i, j) = v $$ (i, j)"
-    using  H_on_one_state H_on_zero_state mat_of_cols_list_def
-    sledgehammer*)
 
+text \<open>Next, the gate @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1}=(|00\<rangle>-|01\<rangle>+|10\<rangle>-|11\<rangle>)/2
+ and @{text \<psi>\<^sub>2}= $(|0 f(0) \oplus 0\<rangle>-|0 f(0) \oplus 1\<rangle>+|1 f(1) \oplus 0\<rangle>-|1 f(1) \oplus 1\<rangle>)/2$ is obtained.
+This simplifies to @{text \<psi>\<^sub>2}= $(|0 f(0)\<rangle>-|0 \overline{f(0)}\<rangle>+|1 f(1)\<rangle>-|1 \overline{f(1)}\<rangle>)/2$  \<close>
 
-
-lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: 
-  shows "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"
-proof -
-  define v::"complex Matrix.mat" where "v\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2)))"
-  define w::"complex Matrix.mat" where "w\<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then  1/sqrt(2) else - 1/sqrt(2)))"
-  have "state 1 v"  
-    using v_def gate_on_state_is_state x_is_state x_plus_y H_on_zero_state H_is_gate H_on_zero_state_square_inside 
-    by fastforce
-  moreover have "state 1 w" 
-    using w_def gate_on_state_is_state y_is_state x_minus_y H_on_one_state H_is_gate H_on_one_state_square_inside 
-    by fastforce
-  ultimately have f1: "v \<Otimes> w = |Matrix.vec 4 (\<lambda>i. if i = 0 then v $$ (0,0) * w $$ (0,0) else 
-                                               if i = 3 then v $$ (1,0) * w $$ (1,0) else
-                                               if i = 1 then v $$ (0,0) * w $$ (1,0) else 
-                                                             v $$ (1,0) * w $$ (0,0))\<rangle>" 
-    using mat_tensor_prod_2_bis v_def w_def by blast
-  have f2:" (1/sqrt(2))*(1/sqrt(2)) = 1/2"  by auto
-  have f3:"v $$ (0,0) = 1/sqrt(2)" using v_def by simp
-  have f4:"w $$ (0,0) = 1/sqrt(2)" using w_def by simp
-  have f5:"v $$ (0,0)* w $$ (0,0)  = 1/2" using f2 f3 f4
-    by (metis (no_types, hide_lams) of_real_divide of_real_hom.hom_one of_real_mult of_real_numeral)
-  have f6: "w $$ (1,0) = -1/sqrt(2)" using w_def by simp
-  have f7:"v $$ (1,0)* w $$ (1,0)  = -1/2"
-    using v_def w_def f5 f6 by auto
-  have f8:"v $$ (1,0) = 1/sqrt(2)" using v_def by simp
-  have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = v \<Otimes> w "  
-    by (simp add: H_on_one_state_square_inside H_on_zero_state_square_inside v_def w_def)
-  also have "...  = |Matrix.vec 4 (\<lambda>i. if i = 0 then 1/2 else
-                                if i = 3 then -1/2 else
-                                if i = 1 then -1/2 else 1/2)\<rangle>" 
-      using f1 f3 f8 f5 f7 by presburger
-  also have "...= 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i = 0 then 1 else
-                                             if i = 3 then -1 else
-                                             if i = 1 then -1 else 1)\<rangle>" 
-    using smult_mat_def ket_vec_def cong_mat by auto
-  finally show "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>)) = 1/2 \<cdot>\<^sub>m |Matrix.vec 4 (\<lambda>i. if i=0 \<or> i=2 then 1 else -1)\<rangle>"  
-    using cong_mat ket_vec_def numeral_eq_one_iff prod.simps(2) semiring_norm(85) semiring_norm(89) set_four 
-    by (smt dim_vec index_vec numeral_eq_iff)
-qed
-
-text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
-
-lemma (in deutsch) \<psi>\<^sub>2_is_state:
-  assumes "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
-  shows "state 2 (U\<^sub>f * \<psi>\<^sub>1)" 
-proof-
-  have "gate 2 U\<^sub>f"
-    using deutsch_transform_is_gate by auto
-  moreover have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))  =  \<psi>\<^sub>1" using assms mat_of_cols_list_def sorry
-  ultimately show "state 2 (U\<^sub>f * \<psi>\<^sub>1)" using deutsch_transform_is_gate assms \<psi>\<^sub>1_is_state gate_on_state_is_state 
-    by simp
-qed
+abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
+"\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(1 - f(0))/2 - f(0)/2,
+                            f(0)/2 - (1 - f(0))/2,
+                            (1 - f(1))/2 - f(1)/2,
+                            f(1)/2 - (1- f(1))/2]]"
 
 
 text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
-
-lemma (in deutsch) \<psi>\<^sub>2_is_state:
-  assumes "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
-  shows "state 2 (U\<^sub>f * \<psi>\<^sub>1)" 
-proof-
-  have "gate 2 U\<^sub>f"
-    using deutsch_transform_is_gate by auto
-  moreover have "((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))  =  \<psi>\<^sub>1" using assms mat_of_cols_list_def sorry
-  ultimately show "state 2 (U\<^sub>f * \<psi>\<^sub>1)" using deutsch_transform_is_gate assms \<psi>\<^sub>1_is_state gate_on_state_is_state 
-    by simp
-qed
 
 lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: 
-  assumes "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
-      and "\<psi>\<^sub>2 \<equiv> mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]]"
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof 
   fix i j:: nat
   assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
-  then have a0: "i\<in>{0,1,2,3} \<and> j=0 " 
-    using assms ket_vec_def mat_of_cols_list_def by auto
-  then have "i<dim_row U\<^sub>f" and "j<dim_col \<psi>\<^sub>1" 
-    using deutsch_transform_def assms mat_of_cols_list_def by auto 
+  then have a0:"i\<in>{0,1,2,3} \<and> j=0 " 
+    using mat_of_cols_list_def by auto
+  then have "i<dim_row U\<^sub>f \<and> j<dim_col \<psi>\<^sub>1" using deutsch_transform_def mat_of_cols_list_def by auto
   then have "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) 
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>1}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col \<psi>\<^sub>1 j) $ k)"     
-    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong
-    by (smt a0)
-  then have "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = ((Matrix.row U\<^sub>f i) $ 0 * ( Matrix.col \<psi>\<^sub>1 0) $ 0) 
-             + ((Matrix.row U\<^sub>f i) $ 1 * ( Matrix.col \<psi>\<^sub>1 0) $ 1) + ((Matrix.row U\<^sub>f i) $ 2 * ( Matrix.col \<psi>\<^sub>1 0) $ 2) 
-             + ((Matrix.row U\<^sub>f i) $ 3 * ( Matrix.col \<psi>\<^sub>1 0) $ 3) "
-    using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def a0 by simp
+    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def 
+    by (smt dim_col)
   then show "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = \<psi>\<^sub>2 $$ (i, j)"
-    using  mat_of_cols_list_def deutsch_transform_def assms a0 assms
-      apply (auto simp add: algebra_simps)
-    done
+    using  mat_of_cols_list_def deutsch_transform_def a0 
+      apply auto.
 next
   show "dim_row (U\<^sub>f * \<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" 
-    using assms mat_of_cols_list_def by auto
+    using  mat_of_cols_list_def by auto
 next
   show "dim_col (U\<^sub>f * \<psi>\<^sub>1) = dim_col \<psi>\<^sub>2"    
-    using assms mat_of_cols_list_def by auto
+    using mat_of_cols_list_def by auto
 qed
+
+
+lemma (in deutsch) \<psi>\<^sub>2_is_state:
+  shows "state 2 \<psi>\<^sub>2" 
+proof
+  show  "dim_col \<psi>\<^sub>2 = 1" 
+    by (simp add: Tensor.mat_of_cols_list_def)
+next 
+  show "dim_row \<psi>\<^sub>2 = 2\<^sup>2" 
+    by (simp add: Tensor.mat_of_cols_list_def)
+next
+  show "\<parallel>Matrix.col \<psi>\<^sub>2 0\<parallel> = 1"
+    using \<psi>\<^sub>1_is_state deutsch_transform_is_gate \<psi>\<^sub>1_to_\<psi>\<^sub>2 
+    by (smt gate_on_state_is_state state_def)
+qed
+
+
+
 
 
 lemma H_tensor_Id: 
