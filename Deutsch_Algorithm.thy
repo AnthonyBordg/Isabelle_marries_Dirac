@@ -415,7 +415,7 @@ qed
 
 
 
-text \<open>Applying the Hadamard gate to the first qubit of $\psi$2 results in $\psi$3  \<close>
+text \<open>Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3}  \<close>
 
 abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[(1 - f(0))/(2*sqrt(2))  - f(0)/(2*sqrt(2))        + (1 - f (1))/(2*sqrt(2)) - f(1)/(2*sqrt(2)),
@@ -423,7 +423,8 @@ abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
                            (1 - f (0))/(2*sqrt(2)) - f(0)/(2*sqrt(2))        - (1 - f(1))/(2*sqrt(2))  + f(1)/(2*sqrt(2)),
                            f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  - f(1)/(2*sqrt(2))      + (1 - f(1))/(2*sqrt(2))]]"
 
-lemma sqrt_distrib_special_case: "\<forall> x y. (x/2 - y/2)/ complex_of_real (sqrt 2) = (x/(2 *complex_of_real (sqrt 2)))-(y/(2 *complex_of_real (sqrt 2)))" 
+lemma sqrt_distrib_special_case: "\<forall> x y. (x/2 - y/2)/ complex_of_real (sqrt 2) 
+= (x/(2 *complex_of_real (sqrt 2)))-(y/(2 *complex_of_real (sqrt 2)))" 
   by (simp add: diff_divide_distrib)  (*TODO: find better name, move inside proof? But independent result*)
 
 lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3: 
@@ -466,62 +467,57 @@ definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where 
 "deutsch_algo \<equiv> (H \<Otimes> Id 1) * (U\<^sub>f * ((H * |zero_state\<rangle>) \<Otimes> (H * |one_state\<rangle>)))"
 
-lemma (in deutsch) deutsch_algo_result: 
+lemma (in deutsch) deutsch_algo_result[simp]: 
   shows "deutsch_algo = \<psi>\<^sub>3" 
   using deutsch_algo_def H_on_zero_state H_on_one_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
 
 
 lemma (in deutsch) deutsch_algo_result_state: 
   shows "state 2 deutsch_algo"
-  sorry
+  using \<psi>\<^sub>3_is_state deutsch_algo_def deutsch_algo_result by simp
 
 
-lemma (in deutsch)
-  assumes "const 0 \<or> const 1" 
-  shows "fst ((meas 2 deutsch_algo 0)!0) = 0" sorry
+lemma [simp]:
+  shows " 2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" using cmod_def 
+  by (simp add: power_divide)
 
-
-
-lemma (in deutsch) prob0_bell_fst:
+lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
   shows "prob0 2 deutsch_algo 0 = 1" 
 proof -
   have set_0 [simp]:"{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
-  have "state 2 deutsch_algo" sorry
-  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
-     apply (auto simp: prob0_def).
-  then have "prob0 2 deutsch_algo 0= (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
-    using set_0 by simp
+  then have f0: "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state set_0 prob0_def by auto
   show "prob0 2 deutsch_algo 0 = 1" 
   proof (rule disjE)
     show "const 0 \<or> const 1" using assms by simp
   next
     assume a0: "const 0"
-    have "prob0 2 deutsch_algo 0 = (cmod(1/sqrt(2)))\<^sup>2 + (cmod(-1/sqrt(2)))\<^sup>2" sorry
-    moreover have "deutsch_algo $$ (0,0)  = 1/ sqrt(2)" 
-      using assms a0 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (1,0)  = -1/ sqrt(2)" 
-      using assms a0 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (2,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (3,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto  
-    ultimately show "prob0 2 deutsch_algo 0 = 1" sorry
+    have "deutsch_algo $$ (0,0) = 1/(2*sqrt(2)) + 1/(2*sqrt(2))" 
+      using a0 const_def by auto
+    moreover have "deutsch_algo $$ (1,0) = -1/(2*sqrt(2)) - 1/(2*sqrt(2))" 
+      using a0 const_def by auto
+    ultimately show "prob0 2 deutsch_algo 0 = 1" 
+      using f0 
+      apply auto.
   next
     assume a1: "const 1"
-    have "prob0 2 deutsch_algo 0 = (cmod(1/sqrt(2)))\<^sup>2 + (cmod(-1/sqrt(2)))\<^sup>2" sorry
-    moreover have "deutsch_algo $$ (0,0)  = -1/ sqrt(2)" 
-      using assms a1 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (1,0)  = 1/ sqrt(2)" 
-      using assms a1 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (2,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (3,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto  
-    ultimately show "prob0 2 deutsch_algo 0 = 1" sorry
+    have "deutsch_algo $$ (0,0) = -1/(2*sqrt(2)) - 1/(2*sqrt(2))" 
+      using a1 const_def by auto
+    moreover have "deutsch_algo $$ (1,0) = 1/(2*sqrt(2)) + 1/(2*sqrt(2))" 
+      using a1 const_def by auto
+    ultimately show "prob0 2 deutsch_algo 0 = 1" 
+      using f0 
+      apply auto.
+  qed
 qed
 
+
+lemma (in deutsch)
+  assumes "const 0 \<or> const 1" 
+  shows "fst ((meas 2 deutsch_algo 0)!0) = 1" 
+  using prob0_deutsch_algo_const meas_def assms by auto
 
 
 end
