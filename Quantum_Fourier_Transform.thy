@@ -12,10 +12,16 @@ lemma root_unit_length [simp]:
   by (simp add: root_def complex_eq_iff)
 
 text\<open>
-This is the phase shift gate R_\<phi> on Wikipedia, but in the book it is denoted as R_k, with \<phi> = 2\<pi>/(2^k).
+This is the phase shift gate $R_\<phi>$ on Wikipedia, but in the book it is denoted as $R_k$, with 
+$\<phi> = 2\pi/(2^k)$. 
 \<close>
+(* 
+AB: Later you should add a bibliography, otherwise the reference to "the book" above is unclear. 
+Moreover, please do not forget the math mode or the appropriate antiquotations (see 4.2 of the isar 
+manual) in your comments. 
+*)
 
-definition phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("R _") where 
+definition phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("R _") where
 "R n \<equiv> Matrix.mat 2 2 (\<lambda>(i,j). if i = j then (if i = 0 then 1 else root (2^n)) else 0)"
 
 lemma phase_shift_is_gate [simp]:
@@ -31,8 +37,8 @@ proof
 qed
 
 text\<open>
-This is the controlled phase shift gate controlled-R_k. It is an n-gate using the b-th qubit to 
-control an R_(b-a+1) gate on the a-th qubit. It is assumed that b > a.
+This is the controlled phase shift gate controlled-$R_k$. It is an n-gate using the b-th qubit to 
+control an $R_(b-a+1)$ gate on the a-th qubit. It is assumed that $b > a$.
 \<close>
 
 definition ctld_phase_shift:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR _ _ _") where
@@ -100,8 +106,8 @@ proof
 qed
 
 text\<open>
-This is the fourier transform on n qubits, which can be represented by a 2^n*2^n unitary matrix, i.e.
-an n-gate.
+This is the fourier transform on n qubits, which can be represented by a @{text "2^n * 2^n"} 
+unitary matrix, i.e. an n-gate.
 \<close>
 
 definition fourier:: "nat \<Rightarrow> complex Matrix.mat" where
@@ -190,7 +196,8 @@ proof
 qed
 
 definition SWAP :: "nat \<Rightarrow> complex Matrix.mat" where
-"SWAP n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if (\<forall>k\<in>{0..<n}. (select_index n k i) = (select_index n (n-1-k) j)) then 1 else 0)"
+"SWAP n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if (\<forall>k\<in>{0..<n}. (select_index n k i) = (select_index n (n-1-k) j)) 
+                                            then 1 else 0)"
 
 primrec qft_single_qbit :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
   "qft_single_qbit n i 0 v = (Id i \<Otimes> H \<Otimes> Id (n-i-1)) * |v\<rangle>"
