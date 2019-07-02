@@ -194,6 +194,7 @@ text \<open>Two qubits are prepared. The first one is state @{text "|0\<rangle>"
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1" 
 
+
 lemma ket_zero_is_state: 
   shows "state 1 |zero\<rangle>"
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
@@ -213,7 +214,7 @@ lemma ket_one_to_mat_of_cols_list [simp]: "|one\<rangle> = mat_of_cols_list 2 [[
 text\<open>
 Applying the Hadamard gate to state @{term "|zero\<rangle>"} results in the new state 
 @{term "\<psi>\<^sub>0\<^sub>0"}=(@{term "|zero\<rangle>"}+@{term "|one\<rangle>"})/$/sqrt(2)$.
-\<close>
+
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
