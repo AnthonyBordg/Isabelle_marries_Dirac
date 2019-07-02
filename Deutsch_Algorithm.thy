@@ -2,7 +2,9 @@ theory Deutsch_Algorithm
 imports
   MoreTensor
 begin
-  
+
+(*Important: isabelle build will require package amsmath in root*)
+
 section \<open>Deutsch's algorithm\<close>
  
 text \<open>
@@ -161,7 +163,7 @@ proof
 deutsch_transform_coeff_is_zero set_four)
 qed
 
-lemma (in deutsch) deutsch_transform_is_gate: (* AB: I tidied up the proof a little bit *)
+lemma (in deutsch) deutsch_transform_is_gate:
   shows "gate 2 U\<^sub>f"
 proof
   show "dim_row U\<^sub>f = 2\<^sup>2" by simp
@@ -189,7 +191,7 @@ qed
    
 
 
-text \<open>Two qubits are prepared. The first one is state @{text "|0\<rangle>"}, the second one in state @{text "|1\<rangle>"}.\<close>
+text \<open>Two qubits are prepared. The first one is state $|0\rangle$, the second one in state $|1\rangle$.\<close>
 
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1" 
@@ -210,10 +212,16 @@ lemma ket_one_to_mat_of_cols_list [simp]: "|one\<rangle> = mat_of_cols_list 2 [[
   apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
   using less_2_cases by fastforce
 
-(*TODO: Either define all |0\<rangle> like this or take all out. |00\<rangle> cannot be defined so maybe rather take all out*)
+(*Note: The description follows the algorithm as it is described in the literature and will not 
+always be in one-to-one correspondence to the matrices used but rather capture their meaning on 
+a higher level. This is also due to the fact that it won't be possible to express the states 
+occurring later in a simple way. Consequently, instead of using @{term "|zero\<rangle>"} |0\<rangle> will be used.
+To keep the connection between both I sticked with @{term "\<psi>\<^sub>0\<^sub>0"} but there are also arguments to 
+change it to $\psi_{00}$ *)
 text\<open>
-Applying the Hadamard gate to state @{term "|zero\<rangle>"} results in the new state 
-@{term "\<psi>\<^sub>0\<^sub>0"}=(@{term "|zero\<rangle>"}+@{term "|one\<rangle>"})/$/sqrt(2)$.
+Applying the Hadamard gate to state $|0\rangle$ results in the new state 
+@{term "\<psi>\<^sub>0\<^sub>0"} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2 } $
+\<close>
 
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
@@ -248,7 +256,8 @@ qed
 
 
 text\<open>
-Applying the Hadamard gate to state |1\<rangle> results in the new state @{text \<psi>\<^sub>0\<^sub>1}=(|0\<rangle>-|1\<rangle>)/$/sqrt(2)$.
+Applying the Hadamard gate to state $|0\rangle$ results in the new state 
+@{text \<psi>\<^sub>0\<^sub>1} = $\dfrac {(|0\rangle - |1\rangle)} {\sqrt 2}$.
 \<close>
 
 abbreviation \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where
@@ -282,8 +291,10 @@ qed
 
 
 text\<open>
-Then, state @{text \<psi>\<^sub>1}=(|00\<rangle>-|01\<rangle>+|10\<rangle>-|11\<rangle>)/2 is obtained by taking the tensor product of state 
- @{text \<psi>\<^sub>0\<^sub>0}=(|0\<rangle>+|1\<rangle>)/$/sqrt(2)$ and  @{text \<psi>\<^sub>0\<^sub>1}=(|0\<rangle>-|1\<rangle>)/$/sqrt(2)$.
+Then, state @{text \<psi>\<^sub>1} = $\dfrac {(|00\rangle - |01\rangle + |10\rangle - |11\rangle)} {2} $
+is obtained by taking the tensor product of state 
+@{text \<psi>\<^sub>0\<^sub>0} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2} $  and  
+@{text \<psi>\<^sub>0\<^sub>1} = $\dfrac {(|0\rangle - |1\rangle)} {\sqrt 2} $.
 \<close>
 
 abbreviation \<psi>\<^sub>1:: "complex Matrix.mat" where
@@ -321,9 +332,11 @@ qed
 
 
 
-text \<open>Next, the gate @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1}=(|00\<rangle>-|01\<rangle>+|10\<rangle>-|11\<rangle>)/2
- and @{text \<psi>\<^sub>2}= $(|0 f(0) \oplus 0\<rangle>-|0 f(0) \oplus 1\<rangle>+|1 f(1) \oplus 0\<rangle>-|1 f(1) \oplus 1\<rangle>)/2$ is obtained.
-This simplifies to @{text \<psi>\<^sub>2}= $(|0 f(0)\<rangle>-|0 \overline{f(0)}\<rangle>+|1 f(1)\<rangle>-|1 \overline{f(1)}\<rangle>)/2$  \<close>
+text \<open>Next, the gate @{text U\<^sub>f} is applied to state 
+@{text \<psi>\<^sub>1} = $\dfrac {(|00\rangle - |01\rangle + |10\rangle - |11\rangle)} {2}$ and 
+@{text \<psi>\<^sub>2}= $\dfrac {(|0f(0)\oplus 0\rangle - |0 f(0) \oplus 1\rangle + |1 f(1)\oplus 0\rangle - |1f(1)\oplus 1\rangle)} {2}$ 
+is obtained. This simplifies to 
+@{text \<psi>\<^sub>2}= $\dfrac {(|0f(0)\rangle - |0 \overline{f(0)} \rangle + |1 f(1)\rangle - |1\overline{f(1)}\rangle)} {2}$ \<close>
 
 abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
 "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(1 - f(0))/2 - f(0)/2,
@@ -411,8 +424,10 @@ qed
 
 
 
-text \<open>Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3} = 
-$\pm |f(0) \oplus f(1)\<rangle> [(|0\<rangle>-|1\<rangle>)/\sqrt(2)] $  \<close>
+text \<open>
+Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3} = 
+$\pm |f(0)\oplus f(1)\rangle \left[ \dfrac {(|0\rangle - |1\rangle)} {\sqrt 2}\right]$ 
+\<close>
 
 abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[(1 - f(0))/(2*sqrt(2))  - f(0)/(2*sqrt(2))        + (1 - f (1))/(2*sqrt(2)) - f(1)/(2*sqrt(2)),
@@ -444,7 +459,6 @@ next
 qed
 
 
-
 lemma (in deutsch) \<psi>\<^sub>3_is_state: 
   shows "state 2 \<psi>\<^sub>3"
 proof -
@@ -455,9 +469,11 @@ proof -
 qed
 
 
-text \<open>Finally, all steps are put together. The result depends on the function f. If f is constant
-the first qubit of $\pm |f(0) \oplus f(1)\<rangle> [(|0\<rangle>-|1\<rangle>)/\sqrt(2)] $ is 0, if it is balanced it is 1.
-The algorithm only uses one evaluation of f(x) and will always succeed. \<close>
+text \<open>
+Finally, all steps are put together. The result depends on the function f. If f is constant
+the first qubit of $\pm |f(0)\oplus f(1)\rangle \left[ \dfrac {(|0\rangle - |1\rangle)} {\sqrt 2}\right]$
+is 0, if it is balanced it is 1. The algorithm only uses one evaluation of f(x) and will always succeed. 
+\<close>
 
 definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where 
@@ -465,7 +481,7 @@ definition (in deutsch) deutsch_algo::
 
 lemma (in deutsch) deutsch_algo_result[simp]: 
   shows "deutsch_algo = \<psi>\<^sub>3" 
-  using deutsch_algo_def H_on_ket_zero_is_state H_on_ket_one_is_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
+  using deutsch_algo_def H_on_ket_zero H_on_ket_one \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
 
 lemma (in deutsch) deutsch_algo_result_state: 
   shows "state 2 deutsch_algo"
@@ -477,8 +493,10 @@ lemma (in deutsch) deutsch_algo_result_state:
 or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
 proofs below. In terms of understandability/readability what is better?  *)
 
-text \<open>If the function is constant measurement of the first qubit should result in state 0 with 
-probability 1. \<close>
+text \<open>
+If the function is constant measurement of the first qubit should result in state 0 with 
+probability 1. 
+\<close>
 
 
 lemma [simp]:
@@ -508,8 +526,10 @@ proof -
     using assms const_def by auto
 qed
 
-text \<open>If the function is balanced measurement of the first qubit should result in state 1 with 
-probability 1. \<close>
+text \<open>
+If the function is balanced measurement of the first qubit should result in state 1 with 
+probability 1. 
+\<close>
 
 lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Delete? Not really needed but feels incomplete without*)
   assumes "balanced" 
@@ -535,13 +555,15 @@ proof -
 qed
  
 
-text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$  \<close>
+text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$ \<close>
 
 definition (in deutsch) deutsch_algo_with_meas::"real" where 
 "deutsch_algo_with_meas \<equiv> fst ((meas 2 deutsch_algo 0)!0)"
 
-text \<open>Now, it can be verified that the algorithm returns one if the input function is constant and
-zero if it is balanced. \<close>
+text \<open>
+Now, it can be verified that the algorithm returns one if the input function is constant and
+zero if it is balanced.
+\<close>
 
 theorem (in is_swap) deutsch_algo_is_correct:
   shows "(const 0 \<or> const 1) \<longrightarrow> deutsch_algo_with_meas = 1" 
