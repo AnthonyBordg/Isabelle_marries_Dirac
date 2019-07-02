@@ -1,7 +1,13 @@
-(* 
-Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk; 
-         Yijun He, University of Cambridge, yh403@cam.ac.uk
-*)
+text \<open>
+Authors: 
+
+\begin{itemize}
+
+\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
+\item Yijun He, University of Cambridge, \href{mailto:yh403@cam.ac.uk}{yh403@cam.ac.uk}
+
+\end{itemize}
+\<close>
 
 theory Quantum
 imports 
@@ -61,7 +67,7 @@ locale state =
 
 text\<open> 
 Below the natural number n codes for the dimension of the complex vector space whose elements of norm
-1 we call states 
+1 we call states. 
 \<close>
 
 lemma unit_vec_of_right_length_is_state [simp]:
@@ -91,7 +97,7 @@ text \<open>The Hermitian conjugate of a complex matrix is the complex conjugate
 definition hermite_cnj :: "complex mat \<Rightarrow> complex mat" ("_\<^sup>\<dagger>") where
   "hermite_cnj M \<equiv> mat (dim_col M) (dim_row M) (\<lambda> (i,j). cnj(M $$ (j,i)))"
 
-text \<open>We introduce the type of complex square matrices. \<close>
+text \<open>We introduce the type of complex square matrices.\<close>
 
 typedef cpx_sqr_mat = "{M | M::complex mat. square_mat M}"
 proof-
@@ -331,12 +337,12 @@ lemma row_bra_vec [simp]:
   "row (bra_vec v) 0 = vec (dim_vec v) (\<lambda>i. cnj(v $ i))"
   by (auto simp: row_def bra_vec_def cpx_mat_cnj_def row_vec_def)
 
-text \<open>We introduce a definition called bra to see a vector as a column matrix.\<close>
+text \<open>We introduce a definition called @{term "bra"} to see a vector as a column matrix.\<close>
 
 definition bra :: "complex mat \<Rightarrow> complex mat" ("\<langle>_|") where
 "bra v \<equiv> mat 1 (dim_row v) (\<lambda>(i,j). cnj(v $$ (j,i)))"
 
-text \<open>The relation between bra, bra_vec and ket_vec is given as follows.\<close>
+text \<open>The relation between @{term "bra"}, @{term "bra_vec"} and @{term "ket_vec"} is given as follows.\<close>
 
 lemma bra_bra_vec [simp]:
   "bra (ket_vec v) = bra_vec v"
@@ -346,7 +352,7 @@ lemma row_bra [simp]:
   fixes v::"complex vec"
   shows "row \<langle>v| 0 = vec (dim_vec v) (\<lambda>i. cnj (v $ i))" by simp
 
-text \<open>We introduce the inner product of two complex vectors in C^n.\<close>
+text \<open>We introduce the inner product of two complex vectors in @{text "\<complex>\<^sup>n"}.\<close>
 
 definition inner_prod :: "complex vec \<Rightarrow> complex vec \<Rightarrow> complex" ("\<langle>_|_\<rangle>") where
 "inner_prod u v \<equiv> \<Sum> i \<in> {0..< dim_vec v}. cnj(u $ i) * (v $ i)"
@@ -485,7 +491,7 @@ lemma inner_prod_csqrt [simp]:
 
 subsection "Unitary Matrices and Length-preservation"
 
-text \<open>The bra-vector $\langle Av|$ is given by $\langle v|A^{\dag}$\<close>
+text \<open>The bra-vector @{text "\<langle>A * v|"} is given by @{text "\<langle>v| * A\<^sup>\<dagger>"}$\<close>
 
 
 lemma bra_mat_on_vec:
@@ -526,8 +532,8 @@ lemma col_fst_is_col [simp]:
   by (simp add: col_def col_fst_def)
 
 text \<open>
-We need to declare col_fst as a coercion from matrices to vectors in order to see a column matrix
-as a vector. 
+We need to declare @{term "col_fst"} as a coercion from matrices to vectors in order to see a column 
+matrix as a vector. 
 \<close>
 
 declare 
@@ -729,7 +735,7 @@ text \<open>
 Any unitary operation on n qubits can be implemented exactly by composing single qubits and
 CNOT-gates (controlled-NOT gates). However, no straightforward method is known to implement these 
 gates in a fashion which is resistant to errors. But, the Hadamard gate, the phase gate, the 
-CNOT-gate and the \<pi>/8 gate are also universal for quantum computations, i.e. any quantum circuit on 
+CNOT-gate and the @{text "\<pi>/8"} gate are also universal for quantum computations, i.e. any quantum circuit on 
 n qubits can be approximated to an arbitrary accuracy by using only these gates, and these gates can 
 be implemented in a fault-tolerant way. 
 \<close>
@@ -765,9 +771,9 @@ definition X ::"complex mat" where
 "X \<equiv> mat 2 2 (\<lambda>(i,j). if i=j then 0 else 1)"
 
 text\<open> 
-Be aware that "gate n A" means that the matrix A has dimension 2^n * 2^n. For instance, with this
-convention a 2 X 2 matrix A which is unitary satisfies "gate 1 A" but not "gate 2 A" as
-one might have been expected.
+Be aware that @{text "gate n A"} means that the matrix A has dimension @{text "2^n * 2^n"}. 
+For instance, with this convention a 2 X 2 matrix A which is unitary satisfies @{text "gate 1 A"}
+ but not @{text "gate 2 A"} as one might have been expected.
 \<close>
 
 lemma hermite_cnj_of_X [simp]:
@@ -881,7 +887,7 @@ text \<open>The phase gate, also known as the S-gate\<close>
 definition S ::"complex mat" where
 "S \<equiv> mat 2 2 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else (if i=1 \<and> j=1 then \<i> else 0))"
 
-text \<open>The \<pi>/8 gate, also known as the T-gate\<close>
+text \<open>The @{text "\<pi>/8"} gate, also known as the T-gate\<close>
 
 definition T ::"complex mat" where
 "T \<equiv> mat 2 2 (\<lambda>(i,j). if i=0 \<and> j=0 then 1 else (if i=1 \<and> j=1 then exp(\<i>*(pi/4)) else 0))"
@@ -910,32 +916,34 @@ lemma HZH_is_X [simp]:
 subsection \<open>Measurement\<close>
 
 text \<open>
-Given an element v  such that "state n v", its components v $ i (when v is seen as a vector, v 
-being a matrix column) for 0 <= i < n have to be understood as the coefficients of the representation 
-of v in the basis given by the unit vectors of dimension 2^n, unless stated otherwise. 
+Given an element v  such that @{text "state n v"}, its components @{text "v $ i"} (when v is seen as 
+a vector, v being a matrix column) for @{text "0 \<le> i < n"} have to be understood as the coefficients 
+of the representation of v in the basis given by the unit vectors of dimension $2^n$, unless stated otherwise. 
 Such a vector v is a state for a quantum system of n qubits.
-In the literature on quantum computing, for n = 1, i.e. for a quantum system of 1 qubit, the elements
-of the so-called computational basis are denoted |0\<rangle>,|1\<rangle>, and these last elements might be understood
-for instance as (1,0),(0,1), i.e. as the zeroth and the first elements of a given basis ; for n = 2, 
-i.e. for a quantum system of 2 qubits, the elements of the computational basis are denoted |00\<rangle>,|01\<rangle>, 
-|10\<rangle>,|11\<rangle>, and they might be understood for instance as (1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1); and 
-so on for higher values of n. 
+In the literature on quantum computing, for $n = 1$, i.e. for a quantum system of 1 qubit, the elements
+of the so-called computational basis are denoted $|0\rangle$,$|1\rangle$, and these last elements might be understood
+for instance as $(1,0)$,$(0,1)$, i.e. as the zeroth and the first elements of a given basis ; for $n = 2$, 
+i.e. for a quantum system of 2 qubits, the elements of the computational basis are denoted $|00\rangle$,
+$|01\rangle$, $|10\rangle$,$|11\rangle$, and they might be understood for instance as $(1,0,0,0)$,
+$(0,1,0,0)$, $(0,0,1,0)$, $(0,0,0,1)$; and so on for higher values of $n$. 
 The idea behind these standard notations is that the labels on the vectors of the 
 computational basis are the binary expressions of the natural numbers indexing the elements
 in a given ordered basis interpreting the computational basis in a specific context, another point of
 view is that the order of the basis corresponds to the lexicographic order for the labels. 
-Those labels also represent the possible outcomes of a measurement of the n qubits of the system, 
+Those labels also represent the possible outcomes of a measurement of the $n$ qubits of the system, 
 while the squared modules of the corresponding coefficients represent the probabilities for those 
 outcomes. The fact that the vector v has to be normalized expresses precisely the fact that the squared 
-modules of the coefficients represent some probabilities and hence their sum should be 1.
-Note that in the case of a system with multiple qubits, i.e. n>=2, one can model the simultaneous 
+modules of the coefficients represent some probabilities and hence their sum should be $1$.
+Note that in the case of a system with multiple qubits, i.e. $n \geq 2$, one can model the simultaneous 
 measurement of multiple qubits by sequential measurements of single qubits. Indeed, this last process
 leads to the same probabilities for the various possible outcomes.
-Given a system with n-qubits and i the index of one qubit among the n qubits of the system, where
-0 <= i <= n-1 (i.e. we start the indexing from 0), we want to find the indices of the states of the
-computational basis whose labels have a 1 at the ith spot (counting from 0). For instance, if n=3 and 
-i=2 then 1,3,5,7 are the indices of the elements of the computational basis with a 1 at the 2nd spot,
-namely |001\<rangle>,|011\<rangle>,|101\<rangle>,|111\<rangle>. To achieve that we define the predicate select_index below.\<close>
+Given a system with n-qubits and i the index of one qubit among the $n$ qubits of the system, where
+$0 \leq i \leq n-1$ (i.e. we start the indexing from $0$), we want to find the indices of the states of the
+computational basis whose labels have a $1$ at the ith spot (counting from $0$). For instance, 
+if $n=3$ and $i=2$ then $1$,$3$,$5$,$7$ are the indices of the elements of the computational basis 
+with a $1$ at the 2nd spot, namely $|001\rangle$,$|011\rangle$,$|101\rangle$,$|111\rangle$. To achieve that we define the 
+predicate @{term "select_index"} below.
+\<close>
 
 definition select_index ::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
 "select_index n i j \<equiv> (i\<le>n-1) \<and> (j\<le>2^n - 1) \<and> (j mod 2^(n-i) \<ge> 2^(n-1-i))"
@@ -1055,8 +1063,10 @@ definition post_meas0 ::"nat \<Rightarrow> complex mat \<Rightarrow> nat \<Right
 "post_meas0 n v i \<equiv> 
   of_real(1/sqrt(prob0 n v i)) \<cdot>\<^sub>m |vec (2^n) (\<lambda>j. if \<not> select_index n i j then v $$ (j,0) else 0)\<rangle>"
  
-text \<open>Note that a division by 0 never occurs. Indeed, if sqrt(prob0 n v i) would be 0 then prob0 n v i 
-would be 0 and it would mean that the measurement of the ith qubit gave 1.\<close>
+text \<open>
+Note that a division by 0 never occurs. Indeed, if @{text "sqrt(prob0 n v i)"} would be 0 then 
+@{text "prob0 n v i"} would be 0 and it would mean that the measurement of the ith qubit gave 1.
+\<close>
 
 lemma smult_vec_length [simp]:
   assumes "x \<ge> 0"
@@ -1107,8 +1117,10 @@ definition post_meas1 ::"nat \<Rightarrow> complex mat \<Rightarrow> nat \<Right
 "post_meas1 n v i \<equiv> 
   of_real(1/sqrt(prob1 n v i)) \<cdot>\<^sub>m |vec (2^n) (\<lambda>j. if select_index n i j then v $$ (j,0) else 0)\<rangle>"
  
-text \<open>Note that a division by 0 never occurs. Indeed, if sqrt(prob1 n v i) would be 0 then prob1 n v i 
-would be 0 and it would mean that the measurement of the ith qubit gave 0.\<close> 
+text \<open>
+Note that a division by 0 never occurs. Indeed, if @{text "sqrt(prob1 n v i)"} would be 0 then 
+@{text "prob1 n v i"} would be 0 and it would mean that the measurement of the ith qubit gave 0.
+\<close> 
 
 lemma post_meas_1_is_state [simp]:
   assumes a1:"state n v" and a2:"prob1 n v i \<noteq> 0"
@@ -1200,12 +1212,12 @@ lemma bell_11_index [simp]:
 
 text \<open>
 A Bell state is a remarkable state. Indeed, if one makes one measure, either of the first or the second 
-qubit, then one gets either 0 with probability 1/2 or 1 with probability 1/2. Moreover, in the case of 
+qubit, then one gets either $0$ with probability $1/2$ or $1$ with probability $1/2$. Moreover, in the case of 
 two successive measurements of the first and second qubit, the outcomes are correlated. 
-Indeed, in the case of |\<beta>00\<rangle> or |\<beta>10\<rangle> (resp. |\<beta>01\<rangle> or |\<beta>11\<rangle>) if one measures the second qubit after a 
-measurement of the first qubit (or the other way around) then one gets the same outcomes (resp. opposite 
-outcomes), i.e. for instance the probability of measuring 0 for the second qubit after a measure with 
-outcome 0 for the first qubit is 1 (resp. 0).
+Indeed, in the case of @{text "|\<beta>\<^sub>0\<^sub>0\<rangle>"} or @{text "|\<beta>\<^sub>1\<^sub>0\<rangle>"} (resp. @{text "|\<beta>\<^sub>0\<^sub>1\<rangle>"} or @{text "|\<beta>\<^sub>1\<^sub>1\<rangle>"}) if 
+one measures the second qubit after a measurement of the first qubit (or the other way around) then 
+one gets the same outcomes (resp. opposite outcomes), i.e. for instance the probability of measuring 
+$0$ for the second qubit after a measure with outcome $0$ for the first qubit is $1$ (resp. $0$).
 \<close>
 
 lemma prob0_bell_fst [simp]:
@@ -1824,11 +1836,15 @@ next
 qed
 
 
-(*
+text \<open>
 Biblio:
 
-- Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang, 
+\begin{itemize}
+
+\item Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang,
 10th Anniversary Edition, Cambridge University Press, 2010.
-*)
+
+\end{itemize}
+\<close>
 
 end
