@@ -205,6 +205,16 @@ primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \
 definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
 "qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
+lemma qft_no_swap_of_unit_vec:
+  fixes v::"complex Matrix.vec"
+  assumes "v = unit_vec (2^n) i" and "i < 2^n"
+  shows "qft_no_swap n n v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<n. if select_index n j i then 
+         (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1)/(sqrt(2)^n))"
+proof-
+  show ?thesis
+    sorry
+qed
+
 lemma qft_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
