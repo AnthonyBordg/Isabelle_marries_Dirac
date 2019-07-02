@@ -1,20 +1,17 @@
-
 theory Deutsch_Algorithm 
 imports
   MoreTensor
-  Jordan_Normal_Form.Matrix
-  Quantum(* , Jordan_Normal_Form.Matrix
-            Quantum , no need for those files since they are imported when you import MoreTensor 
-            HL: just temp seems to finds relevant facts better*)
 begin
-
-
-(*sledgehammer_params [verbose=true]*)
   
 section \<open>Deutsch's algorithm\<close>
 
-subsection \<open>Black-box function\<close>
+text \<open>
+The problem Deutsch's algorithm seeks to solve is to determine for a given function $f:{0,1}\mapsto {0,1}$ 
+if f is constant or balanced. It makes use of quantum parallelism and quantum interference.
+\<close>
 
+subsection \<open>Input function\<close>
+                                   
 text \<open>
 A constant function with values in {0,1} returns either always 0 or always 1. 
 A balanced function is 0 for half of the inputs and 1 for the other half. 
@@ -45,17 +42,20 @@ definition const:: "nat \<Rightarrow> bool" where
 
 "const n = (\<forall>x.(f x = n))"
 
-definition deutsch_const:: "bool" where (* AB: this definition might be useful later *)
+definition deutsch_const:: "bool" where 
 "deutsch_const \<equiv> const 0 \<or> const 1"
 
 definition balanced:: "bool" where
 "balanced \<equiv> f = id \<or> is_swap f"
 
 lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto 
+
+lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
+
 end (* context deutsch *)
 
 
-text \<open>Black box function @{text U\<^sub>f}. \<close>
+text \<open>Transform @{text U\<^sub>f}. \<close>
 
 definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 
@@ -127,7 +127,7 @@ proof
   fix i j:: nat
   assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
   then have "i < 4" and "j < 4" by auto
-  then show "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
+  thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
     by (smt deutsch_transform_alt_rep_coeff deutsch_transform_alt_rep_coeff_is_zero deutsch_transform_coeff
  deutsch_transform_coeff_is_zero set_four)
 qed
@@ -143,7 +143,7 @@ proof
   show "dim_col U\<^sub>f\<^sup>t = dim_col U\<^sub>f" by simp
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
-  then show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+  thus "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
     apply (auto simp add: transpose_mat_def)
     by (metis deutsch_transform_coeff(1-4) deutsch_transform_coeff_is_zero set_four)
 qed
@@ -155,7 +155,7 @@ proof
   show "dim_col U\<^sub>f\<^sup>\<dagger> = dim_col U\<^sub>f" by simp
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
-  then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
+  thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
     apply (auto simp add: hermite_cnj_def)
     by (metis complex_cnj_of_nat complex_cnj_zero deutsch_transform_coeff 
 deutsch_transform_coeff_is_zero set_four)
@@ -185,6 +185,7 @@ next
     qed
     thus ?thesis by (simp add: adjoint_of_deutsch_transform unitary_def)
   qed
+  thus "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
 qed
    
 (* AB: in the comment below you have forgotten the antiquotations. *)
@@ -201,10 +202,12 @@ Thanks, I will add the forgotten antiquotations in Quantum.thy. *)
 (*HL: Already define these with mat_of_cols_list? *)
 (* AB: I don't think it is necessary here, but see how it goes and then see if you need some changes.*)
 
+text \<open>Two qubits are prepared. The first one is state |0\<rangle>, the second one in state |1\<rangle>.\<close>
+
+
 
 abbreviation zero ("0") where "zero \<equiv> unit_vec 2 0"
 abbreviation one ("1") where "one \<equiv> unit_vec 2 1" 
-
 
 (* AB: why not use directly unit_vec to define zero_state ? 
 Anyway, if I understand correctly you want to use the elements |0\<rangle> and |1\<rangle>. The elements of the
@@ -220,6 +223,33 @@ lemma ket_zero_is_state:
 lemma ket_one_is_state:
   shows "state 1 |1\<rangle>" 
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
+
+lemma zero_state_is_unit: 
+  shows "zero_state = unit_vec 2 0" 
+  by auto
+
+lemma zero_state_is_state: 
+  shows "state 1 |zero_state\<rangle>" 
+  by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def pos2 power_one_right 
+      state_def unit_cpx_vec_length zero_state_is_unit)
+
+lemma zero_state_to_mat_of_col_lists[simp]: 
+  shows "|zero_state\<rangle> = mat_of_cols_list 2 [[1,0]]"
+  using ket_vec_def mat_of_cols_list_def by auto
+
+
+lemma one_state_is_unit: 
+  shows "one_state = unit_vec 2 1"  
+  by auto
+
+lemma one_state_is_state: 
+  shows "state 1 |one_state\<rangle>" 
+  by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def one_less_numeral_iff 
+      power_one_right semiring_norm(76) state_def unit_cpx_vec_length one_state_is_unit)
+
+lemma one_state_to_mat_of_col_lists[simp]: 
+  shows "|one_state\<rangle> = mat_of_cols_list 2 [[0,1]]"
+   using ket_vec_def mat_of_cols_list_def by auto
 
 lemma ket_zero_to_mat_of_cols_list [simp]: "|0\<rangle> = mat_of_cols_list 2 [[1, 0]]"
   by (auto simp add: ket_vec_def mat_of_cols_list_def)
@@ -255,6 +285,18 @@ qed
 
 lemma H_on_ket_zero_is_state: 
   shows "state 1 (H * |0\<rangle>)"
+  thus "(H * |zero_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
+    by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
+next
+  show "dim_row (H * |zero_state\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
+    by (metis H_inv mat_of_cols_list_def dim_row_mat(1) index_mult_mat(2) index_one_mat(2))
+next 
+  show "dim_col (H * |zero_state\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>0" 
+    using H_def mat_of_cols_list_def by simp
+qed
+
+lemma H_on_zero_state_is_state: 
+  shows "state 1 (H * |zero_state\<rangle>)"
 proof
   show "gate 1 H" 
     using H_is_gate by auto
@@ -350,7 +392,6 @@ abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
                             f(1)/2 - (1- f(1))/2]]"
 
 
-text \<open> @{text U\<^sub>f} is applied to state @{text \<psi>\<^sub>1} and @{text \<psi>\<^sub>2} is obtained. \<close>
 
 lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: 
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
@@ -364,7 +405,7 @@ proof
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>1}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col \<psi>\<^sub>1 j) $ k)"     
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def 
     by (smt dim_col)
-  then show "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = \<psi>\<^sub>2 $$ (i, j)"
+  thus "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) = \<psi>\<^sub>2 $$ (i, j)"
     using  mat_of_cols_list_def deutsch_transform_def a0 
       apply auto.
 next
@@ -392,31 +433,32 @@ qed
 
 
 
+(*Question HL: Should the lemmata below be renamed (e.g. hadamard_on_identity) since H is a notation 
+not a name? (isn't it the same as with U\<^sub>f?). Its like this in Quantum_Teleportation*)
 
-
-lemma H_tensor_Id: 
-  defines d:"v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, 1/sqrt(2)],
-                                 [1/sqrt(2), 0, -1/sqrt(2), 0],
-                                 [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
-  shows "(H \<Otimes> Id 1) = v" 
+lemma H_tensor_Id_1: 
+assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
+                                  [0, 1/sqrt(2), 0, 1/sqrt(2)],
+                                  [1/sqrt(2), 0, -1/sqrt(2), 0],
+                                  [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
+shows "(H \<Otimes> Id 1) = v" 
 proof
-  show "Matrix.dim_col (H \<Otimes> Id 1) = Matrix.dim_col v"  
+  show "dim_col (H \<Otimes> Id 1) = dim_col v"  
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
   show "dim_row (H \<Otimes> Id 1) = dim_row v"
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
   fix i j::nat assume "i < dim_row v" and "j < dim_col v"
   then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
     by (auto simp add: assms mat_of_cols_list_def)
-  then show "(H \<Otimes> Id 1) $$ (i, j) = v $$ (i, j)"
+  thus "(H \<Otimes> Id 1) $$ (i, j) = v $$ (i, j)"
     by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
 
-lemma H_tensor_Id_is_gate: "gate 2 (H \<Otimes> Id 1)" 
-
+lemma H_tensor_Id_1_is_gate: 
+  shows "gate 2 (H \<Otimes> Id 1)" 
 proof 
-  show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id   
+  show "dim_row (H \<Otimes> Quantum.Id 1) = 2\<^sup>2" using H_tensor_Id_1  
     by (simp add: Tensor.mat_of_cols_list_def)
 next 
   show "square_mat (H \<Otimes> Quantum.Id 1)" 
@@ -427,158 +469,143 @@ next
 qed
 
 
-lemma (in deutsch) \<psi>\<^sub>3_is_state: 
-   assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]]"
-  shows "state 2 ((H \<Otimes> Id 1)*\<psi>\<^sub>2)"
-proof 
-  show "gate 2 (H \<Otimes> Quantum.Id 1)" 
-    using H_tensor_Id_is_gate by blast
-  show "state 2 \<psi>\<^sub>2" using \<psi>\<^sub>2_is_state \<psi>\<^sub>1_to_\<psi>\<^sub>2 assms by simp
-qed
+
+text \<open>Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3} = 
+$\pm |f(0) \oplus f(1)\<rangle> [(|0\<rangle>-|1\<rangle>)/\sqrt(2)] $  \<close>
+
+abbreviation (in deutsch) \<psi>\<^sub>3:: "complex Matrix.mat" where
+"\<psi>\<^sub>3 \<equiv> mat_of_cols_list 4 [[(1 - f(0))/(2*sqrt(2))  - f(0)/(2*sqrt(2))        + (1 - f (1))/(2*sqrt(2)) - f(1)/(2*sqrt(2)),
+                           f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  + (f(1)/(2*sqrt(2))       - (1 - f(1))/(2*sqrt(2))),
+                           (1 - f (0))/(2*sqrt(2)) - f(0)/(2*sqrt(2))        - (1 - f(1))/(2*sqrt(2))  + f(1)/(2*sqrt(2)),
+                           f(0)/(2*sqrt(2))        - (1 - f(0))/(2*sqrt(2))  - f(1)/(2*sqrt(2))      + (1 - f(1))/(2*sqrt(2))]]"
 
 lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3: 
-  assumes "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]]"
-  and "\<psi>\<^sub>3 \<equiv>  mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                    + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                 (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                    + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                 ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                    - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                  (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                    -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" 
 proof
-  fix i j ::nat
-  assume "i < dim_row \<psi>\<^sub>3" and "j < dim_col \<psi>\<^sub>3" 
-  then have a0: "i\<in>{0,1,2,3} \<and> j=0 " 
-    using assms ket_vec_def mat_of_cols_list_def by auto
-  then have "i<dim_row (H \<Otimes> Id 1)" and "j<dim_col \<psi>\<^sub>2" 
-    using H_tensor_Id assms mat_of_cols_list_def by auto 
-  then have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) 
+  fix i j:: nat
+  assume "i<dim_row \<psi>\<^sub>3" and "j<dim_col \<psi>\<^sub>3"
+  then have a0:"i\<in>{0,1,2,3} \<and> j=0 " 
+    using mat_of_cols_list_def by auto
+  then have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2" using  mat_of_cols_list_def H_tensor_Id_1 by auto
+  then have "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i,j)
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
-    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong
-    by (smt a0)
-  then have "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = ((Matrix.row (H \<Otimes> Id 1) i) $ 0 * ( Matrix.col \<psi>\<^sub>2 0) $ 0) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 1 * ( Matrix.col \<psi>\<^sub>2 0) $ 1) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 2 * ( Matrix.col \<psi>\<^sub>2 0) $ 2) 
-             + ((Matrix.row (H \<Otimes> Id 1) i) $ 3 * ( Matrix.col \<psi>\<^sub>2 0) $ 3) "
-    using set_4 mat_of_cols_list_def assms scalar_prod_def times_mat_def a0 by simp
-  then show "((H \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
-    using  H_tensor_Id mat_of_cols_list_def deutsch_transform_def assms a0 assms
-      apply (auto simp add: algebra_simps)
-    done
+    using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def   
+    by (smt dim_col)
+  thus "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i, j) = \<psi>\<^sub>3 $$ (i, j)"
+    using  mat_of_cols_list_def H_tensor_Id_1 a0 f_ge_0
+      apply (auto simp: diff_divide_distrib).
 next
   show "dim_row ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3" 
-    using H_tensor_Id assms mat_of_cols_list_def by auto
+    using H_tensor_Id_1 mat_of_cols_list_def by auto
 next
   show "dim_col ((H \<Otimes> Id 1) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3"    
-    using assms mat_of_cols_list_def by auto
+    using H_tensor_Id_1 mat_of_cols_list_def by auto
 qed
 
 
 
+lemma (in deutsch) \<psi>\<^sub>3_is_state: 
+  shows "state 2 \<psi>\<^sub>3"
+proof -
+  have "gate 2 (H \<Otimes> Quantum.Id 1)" 
+    using H_tensor_Id_1_is_gate by blast
+  thus "state 2 \<psi>\<^sub>3" using \<psi>\<^sub>2_is_state \<psi>\<^sub>2_to_\<psi>\<^sub>3 
+    by (metis gate_on_state_is_state)
+qed
 
+
+text \<open>Finally, all steps are put together. The result depends on the function f. If f is constant
+the first qubit of $\pm |f(0) \oplus f(1)\<rangle> [(|0\<rangle>-|1\<rangle>)/\sqrt(2)] $ is 0, if it is balanced it is 1.
+The algorithm only uses one evaluation of f(x) and will always succeed. \<close>
 
 definition (in deutsch) deutsch_algo::
-"complex Matrix.mat" where (*TODO:Measurement*)
-"deutsch_algo \<equiv> (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))"
+"complex Matrix.mat" where 
+"deutsch_algo \<equiv> (H \<Otimes> Id 1) * (U\<^sub>f * ((H * |zero_state\<rangle>) \<Otimes> (H * |one_state\<rangle>)))"
 
-lemma (in deutsch) deutsch_algo_result: 
-  shows "deutsch_algo = mat_of_cols_list 4 
-                                        [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
-proof-
-  have "deutsch_algo = (H \<Otimes> Id 2) * U\<^sub>f * ((H * |x\<rangle>) \<Otimes> (H * |y\<rangle>))" 
-    using deutsch_algo_def by auto
-  also have "... = (H \<Otimes> Id 2) * U\<^sub>f * (mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]])" 
-    using \<psi>\<^sub>0_to_\<psi>\<^sub>1 sorry
-  also have "... = (H \<Otimes> Id 2) * (mat_of_cols_list 4 [[(inv_b (f 0))/2 - (f(0)::int)/2,
-                                      (f(0)::int)/2 - (inv_b (f(0)))/2,
-                                      (inv_b (f(1)))/2 - (f(1)::int)/2,
-                                      (f(1)::int)/2 - inv_b(f(1))/2]])" 
-    apply (auto simp: \<psi>\<^sub>1_to_\<psi>\<^sub>2) sorry
-  also have "... = mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"
-    using \<psi>\<^sub>2_to_\<psi>\<^sub>3 sorry
-  finally show "deutsch_algo = mat_of_cols_list 4 [[((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2)))
-                                        + ((inv_b (f 1))/(2* sqrt(2)) -f(1)/(2* sqrt(2))),
-                                        (f(0)/(2* sqrt(2)) - (inv_b (f(0)))/(2* sqrt(2)))
-                                        + (f(1)/(2* sqrt(2)) - inv_b(f(1))/(2* sqrt(2))),
-                                        ((inv_b (f 0))/(2* sqrt(2)) - f(0)/(2* sqrt(2))) 
-                                        - ((inv_b (f(1)))/(2* sqrt(2)) - f(1)/(2* sqrt(2))),
-                                       (f(0)/(2* sqrt(2)) -(inv_b (f(0)))/(2* sqrt(2))) 
-                                        -(f(1)/(2* sqrt(2)) -inv_b(f(1))/(2* sqrt(2)))]]"  by blast
-qed
+lemma (in deutsch) deutsch_algo_result[simp]: 
+  shows "deutsch_algo = \<psi>\<^sub>3" 
+  using deutsch_algo_def H_on_zero_state H_on_one_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
 
 lemma (in deutsch) deutsch_algo_result_state: 
   shows "state 2 deutsch_algo"
-  sorry
-
-
-lemma (in deutsch)
-  assumes "const 0 \<or> const 1" 
-  shows "fst ((meas 2 deutsch_algo 0)!0) = 0" sorry
+  using \<psi>\<^sub>3_is_state deutsch_algo_def deutsch_algo_result by simp
 
 
 
-lemma (in deutsch) prob0_bell_fst:
+(*Question to AB: I have nice long proofs of lemmas below (splitting up the disjunction const 0 or const 1
+or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
+proofs below. In terms of understandability/readability what is better?  *)
+
+text \<open>If the function is constant measurement of the first qubit should result in state 0 with 
+probability 1. \<close>
+
+
+lemma [simp]:
+  shows " 2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" using cmod_def 
+  by (simp add: power_divide)
+
+lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
   shows "prob0 2 deutsch_algo 0 = 1" 
 proof -
-  have set_0 [simp]:"{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+  have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
-  have "state 2 deutsch_algo" sorry
-  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
-     apply (auto simp: prob0_def).
-  then have "prob0 2 deutsch_algo 0= (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
-    using set_0 by simp
-  show "prob0 2 deutsch_algo 0 = 1" 
-  proof (rule disjE)
-    show "const 0 \<or> const 1" using assms by simp
-  next
-    assume a0: "const 0"
-    have "prob0 2 deutsch_algo 0 = (cmod(1/sqrt(2)))\<^sup>2 + (cmod(-1/sqrt(2)))\<^sup>2" sorry
-    moreover have "deutsch_algo $$ (0,0)  = 1/ sqrt(2)" 
-      using assms a0 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (1,0)  = -1/ sqrt(2)" 
-      using assms a0 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (2,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (3,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto  
-    ultimately show "prob0 2 deutsch_algo 0 = 1" sorry
-  next
-    assume a1: "const 1"
-    have "prob0 2 deutsch_algo 0 = (cmod(1/sqrt(2)))\<^sup>2 + (cmod(-1/sqrt(2)))\<^sup>2" sorry
-    moreover have "deutsch_algo $$ (0,0)  = -1/ sqrt(2)" 
-      using assms a1 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (1,0)  = 1/ sqrt(2)" 
-      using assms a1 const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (2,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto
-    moreover have "deutsch_algo $$ (3,0)  = 0" 
-      using assms const_def inv_b_def deutsch_algo_result by auto  
-    ultimately show "prob0 2 deutsch_algo 0 = 1" sorry
+  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob0_def by auto
+  thus "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
 qed
 
+lemma (in deutsch) prob1_deutsch_algo_const: (*TODO:  Delete? Not really needed but feels incomplete without*)
+  assumes "const 0 \<or> const 1" 
+  shows "prob1 2 deutsch_algo 0 = 0" 
+proof -
+  have "{k| k::nat. select_index 2 0 k} = {2,3}"
+    using select_index_def by auto
+  then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob1_def by auto
+  thus "prob1 2 deutsch_algo 0 = 0" 
+    using assms const_def by auto
+qed
+
+text \<open>If the function is balanced measurement of the first qubit should result in state 1 with 
+probability 1. \<close>
+
+lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Delete? Not really needed but feels incomplete without*)
+  assumes "balanced" 
+  shows "prob0 2 deutsch_algo 0 = 0" 
+proof -
+  have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+    using select_index_def by auto
+  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob0_def by auto
+  thus "prob0 2 deutsch_algo 0 = 0" using is_swap_values by auto
+qed
+
+
+lemma (in is_swap) prob1_deutsch_algo_balanced:
+  assumes "balanced" 
+  shows "prob1 2 deutsch_algo 0 = 1" 
+proof -
+  have "{k| k::nat. select_index 2 0 k} = {2,3}"
+    using select_index_def by auto
+  then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_algo_result_state prob1_def by auto
+  thus "prob1 2 deutsch_algo 0 = 1" using is_swap_values by auto
+qed
+ 
+
+text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$  \<close>
+
+definition (in deutsch) deutsch_algo_with_meas::"real" where 
+"deutsch_algo_with_meas \<equiv> fst ((meas 2 deutsch_algo 0)!0)"
+
+text \<open>Now, it can be verified that the algorithm returns one if the input function is constant and
+zero if it is balanced. \<close>
+
+theorem (in is_swap) deutsch_algo_is_correct:
+  shows "(const 0 \<or> const 1) \<longrightarrow> deutsch_algo_with_meas = 1" 
+  and "balanced \<longrightarrow> deutsch_algo_with_meas = 0" 
+  using prob0_deutsch_algo_const prob0_deutsch_algo_balanced meas_def deutsch_algo_with_meas_def by auto
 
 
 end
