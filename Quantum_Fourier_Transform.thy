@@ -203,4 +203,15 @@ primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \
 definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
 "qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
+theorem qft_fourier: 
+  fixes v::"complex Matrix.vec"
+  assumes "dim_vec v = 2^n"
+  shows "qft n v = fourier n * |v\<rangle>"
+proof
+  show "dim_vec (qft n v) = dim_vec (col_fst (fourier n * |v\<rangle>))"
+    by (simp add: qft_def fourier_def SWAP_def)
+  show "\<And>i. i < dim_vec (col_fst (fourier n * |v\<rangle>)) \<Longrightarrow> qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+    sorry
+qed
+
 end
