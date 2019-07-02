@@ -2,7 +2,6 @@ theory Deutsch_Algorithm
 imports
   MoreTensor
 begin
-
   
 section \<open>Deutsch's algorithm\<close>
 
@@ -64,6 +63,12 @@ definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") w
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
                           [0, 0, f(1), 1 - f(1)]]"
+
+lemma set_two [simp]:
+  fixes i:: nat
+  assumes "i < 2"
+  shows "i = 0 \<or> i = Suc 0"
+  using assms by auto
 
 lemma set_four [simp]: 
   fixes i:: nat
@@ -156,41 +161,68 @@ proof
 deutsch_transform_coeff_is_zero set_four)
 qed
 
-lemma (in deutsch) deutsch_transform_is_gate: 
+lemma (in deutsch) deutsch_transform_is_gate: (* AB: I tidied up the proof a little bit *)
   shows "gate 2 U\<^sub>f"
 proof
   show "dim_row U\<^sub>f = 2\<^sup>2" by simp
 next
   show "square_mat U\<^sub>f" by simp
 next
-  have "U\<^sub>f * U\<^sub>f = 1\<^sub>m (dim_col U\<^sub>f)" 
-  proof 
-    fix i j::nat
-    assume a1: "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and a2: "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))" 
-    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (Matrix.row U\<^sub>f i $ 0 * Matrix.col U\<^sub>f j $ 0) + 
-(Matrix.row U\<^sub>f i $ 1 * Matrix.col U\<^sub>f j $ 1) + (Matrix.row U\<^sub>f i $ 2 * Matrix.col U\<^sub>f j $ 2) + 
-(Matrix.row U\<^sub>f i $ 3 * Matrix.col U\<^sub>f j $ 3)" by (simp add: scalar_prod_def) 
-    moreover have "\<dots> = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
-      using a1 a2 deutsch_transform_alt_rep
-      apply auto
-      using f_values by auto[4]
-    ultimately show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" by simp
-  next 
-    show "dim_row (U\<^sub>f * U\<^sub>f) = dim_row (1\<^sub>m (dim_col U\<^sub>f))" by simp
-  next
-    show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
+  show "unitary U\<^sub>f"
+  proof-
+    have "U\<^sub>f * U\<^sub>f = 1\<^sub>m (dim_col U\<^sub>f)"
+    proof
+      show "dim_row (U\<^sub>f * U\<^sub>f) = dim_row (1\<^sub>m (dim_col U\<^sub>f))" by simp
+    next
+      show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
+    next
+      fix i j:: nat
+      assume "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
+      then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+        apply (auto simp add: deutsch_transform_alt_rep one_mat_def times_mat_def)
+         apply (auto simp: scalar_prod_def algebra_simps) 
+        using f_values apply auto.
+    qed
+    thus ?thesis by (simp add: adjoint_of_deutsch_transform unitary_def)
   qed
   thus "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
 qed
    
+(* AB: in the comment below you have forgotten the antiquotations. *)
+text \<open>Two qubits are prepared. The first one in the state |0\<rangle>, the second one in the state |1\<rangle>.\<close>
+
+(*From here on under construction*)
+(*HL Question: in text do I need to use @{text \<psi>\<^sub>0\<^sub>0} for objects from Isabelle?
+Not done in Quantum for bell states *)
+(* AB: here you may want to use @{text \<psi>\<^sub>0\<^sub>0} indeed. But it depends on what comes after the 
+antiquotation, see 4.2 of the Isar reference manual 2019. Maybe you want to use @{term } or 
+@{abbrev }.
+Thanks, I will add the forgotten antiquotations in Quantum.thy. *)
+
+(*HL: Already define these with mat_of_cols_list? *)
+(* AB: I don't think it is necessary here, but see how it goes and then see if you need some changes.*)
 
 text \<open>Two qubits are prepared. The first one is state |0\<rangle>, the second one in state |1\<rangle>.\<close>
 
 
-(*HL: Already define these with mat_of_cols_list? *)
-abbreviation zero_state where "zero_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 1 else 0)"
-abbreviation one_state where "one_state \<equiv> Matrix.vec 2 (\<lambda> i. if i= 0 then 0 else 1)"
 
+abbreviation zero ("0") where "zero \<equiv> unit_vec 2 0"
+abbreviation one ("1") where "one \<equiv> unit_vec 2 1" 
+
+(* AB: why not use directly unit_vec to define zero_state ? 
+Anyway, if I understand correctly you want to use the elements |0\<rangle> and |1\<rangle>. The elements of the
+computational basis have very standard notations, so maybe you should stick to those notations and 
+avoid something like |zero_state\<rangle>. So, I propose to use the standard notations.
+If at some point Isabelle complains too much about the ambiguity you can still use |zero\<rangle> 
+instead of |0\<rangle> and the same for 1. *)
+
+lemma ket_zero_is_state: 
+  shows "state 1 |0\<rangle>"
+  by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
+
+lemma ket_one_is_state:
+  shows "state 1 |1\<rangle>" 
+  by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
 
 lemma zero_state_is_unit: 
   shows "zero_state = unit_vec 2 0" 
@@ -219,8 +251,15 @@ lemma one_state_to_mat_of_col_lists[simp]:
   shows "|one_state\<rangle> = mat_of_cols_list 2 [[0,1]]"
    using ket_vec_def mat_of_cols_list_def by auto
 
+lemma ket_zero_to_mat_of_cols_list [simp]: "|0\<rangle> = mat_of_cols_list 2 [[1, 0]]"
+  by (auto simp add: ket_vec_def mat_of_cols_list_def)
+
+lemma ket_one_to_mat_of_cols_list [simp]: "|1\<rangle> = mat_of_cols_list 2 [[0, 1]]"
+  apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
+  using less_2_cases by fastforce
 
 
+(* AB: In the comments below you have forgotten some antiquotations. *)
 text\<open>
 Applying the Hadamard gate to state |0\<rangle> results in the new state @{text \<psi>\<^sub>0\<^sub>0}=(|0\<rangle>+|1\<rangle>)/$/sqrt(2)$.
 \<close>
@@ -228,12 +267,24 @@ Applying the Hadamard gate to state |0\<rangle> results in the new state @{text 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
 
-lemma H_on_zero_state: (*TODO: maybe rename it*)
-  shows "(H * |zero_state\<rangle>) = \<psi>\<^sub>0\<^sub>0"
+lemma H_on_ket_zero: (*TODO: maybe rename it*)
+  shows "(H * |0\<rangle>) = \<psi>\<^sub>0\<^sub>0"
 proof 
   fix i j::nat
   assume "i<dim_row \<psi>\<^sub>0\<^sub>0" and "j < dim_col \<psi>\<^sub>0\<^sub>0"
   then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
+  then show "(H * |0\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
+    by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
+next
+  show "dim_row (H * |0\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
+    by (metis H_inv mat_of_cols_list_def dim_row_mat(1) index_mult_mat(2) index_one_mat(2))
+next 
+  show "dim_col (H * |0\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>0" 
+    using H_def mat_of_cols_list_def by simp
+qed
+
+lemma H_on_ket_zero_is_state: 
+  shows "state 1 (H * |0\<rangle>)"
   thus "(H * |zero_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
 next
@@ -250,8 +301,8 @@ proof
   show "gate 1 H" 
     using H_is_gate by auto
 next
-  show "state 1 |zero_state\<rangle>" 
-    using zero_state_is_state by blast
+  show "state 1 |0\<rangle>" 
+    using ket_zero_is_state by blast
 qed
 
 
@@ -263,30 +314,30 @@ Applying the Hadamard gate to state |1\<rangle> results in the new state @{text 
 abbreviation \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>1 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), -1/sqrt(2)]]"
 
-lemma H_on_one_state: (*TODO: maybe rename it*)
-  shows "(H * |one_state\<rangle>) = \<psi>\<^sub>0\<^sub>1"
+lemma H_on_ket_one: (*TODO: maybe rename it*) (* AB: now it is renamed! *)
+  shows "(H * |1\<rangle>) = \<psi>\<^sub>0\<^sub>1"
 proof 
   fix i j::nat
   assume "i<dim_row \<psi>\<^sub>0\<^sub>1" and "j < dim_col \<psi>\<^sub>0\<^sub>1"
   then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
-  thus "(H * |one_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>1$$(i,j)"
-    by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
+  then show "(H * |1\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>1 $$ (i,j)"
+    by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def ket_vec_def)
 next
-  show "dim_row (H * |one_state\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>1" 
+  show "dim_row (H * |1\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>1" 
     by (metis H_inv mat_of_cols_list_def dim_row_mat(1) index_mult_mat(2) index_one_mat(2))
 next 
-  show "dim_col (H * |one_state\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>1" 
-    using H_def mat_of_cols_list_def by simp
+  show "dim_col (H * |1\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>1" 
+    by (simp add: H_def mat_of_cols_list_def ket_vec_def)
 qed
 
-lemma H_on_one_state_is_state: 
-  shows "state 1 (H * |one_state\<rangle>)"
+lemma H_on_ket_one_is_state: 
+  shows "state 1 (H * |1\<rangle>)"
 proof
   show "gate 1 H" 
     using H_is_gate by auto
 next
-  show "state 1 |one_state\<rangle>" 
-    using one_state_is_state by blast
+  show "state 1 |1\<rangle>" 
+    using ket_one_is_state by blast
 qed
 
 
@@ -324,8 +375,8 @@ next
     by (simp add: Tensor.mat_of_cols_list_def)
 next
   show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
-    using H_on_one_state_is_state H_on_zero_state_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1 
-    by (metis H_on_one_state H_on_zero_state)
+    using H_on_ket_one_is_state H_on_ket_zero_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
+H_on_ket_one H_on_ket_zero by force
 qed
 
 
@@ -339,6 +390,8 @@ abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
                             f(0)/2 - (1 - f(0))/2,
                             (1 - f(1))/2 - f(1)/2,
                             f(1)/2 - (1- f(1))/2]]"
+
+
 
 lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: 
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
@@ -377,6 +430,7 @@ next
     using \<psi>\<^sub>1_is_state deutsch_transform_is_gate \<psi>\<^sub>1_to_\<psi>\<^sub>2 
     by (smt gate_on_state_is_state state_def)
 qed
+
 
 
 (*Question HL: Should the lemmata below be renamed (e.g. hadamard_on_identity) since H is a notation 
@@ -471,7 +525,6 @@ definition (in deutsch) deutsch_algo::
 lemma (in deutsch) deutsch_algo_result[simp]: 
   shows "deutsch_algo = \<psi>\<^sub>3" 
   using deutsch_algo_def H_on_zero_state H_on_one_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
-
 
 lemma (in deutsch) deutsch_algo_result_state: 
   shows "state 2 deutsch_algo"
