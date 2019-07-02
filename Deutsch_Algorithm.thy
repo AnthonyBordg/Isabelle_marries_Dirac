@@ -4,7 +4,7 @@ imports
 begin
   
 section \<open>Deutsch's algorithm\<close>
-
+ 
 text \<open>
 The problem Deutsch's algorithm seeks to solve is to determine for a given function $f:{0,1}\mapsto {0,1}$ 
 if f is constant or balanced. It makes use of quantum parallelism and quantum interference.
@@ -185,36 +185,14 @@ next
     qed
     thus ?thesis by (simp add: adjoint_of_deutsch_transform unitary_def)
   qed
-  thus "unitary U\<^sub>f"  by (simp add: adjoint_of_deutsch_transform unitary_def)
 qed
    
-(* AB: in the comment below you have forgotten the antiquotations. *)
-text \<open>Two qubits are prepared. The first one in the state |0\<rangle>, the second one in the state |1\<rangle>.\<close>
-
-(*From here on under construction*)
-(*HL Question: in text do I need to use @{text \<psi>\<^sub>0\<^sub>0} for objects from Isabelle?
-Not done in Quantum for bell states *)
-(* AB: here you may want to use @{text \<psi>\<^sub>0\<^sub>0} indeed. But it depends on what comes after the 
-antiquotation, see 4.2 of the Isar reference manual 2019. Maybe you want to use @{term } or 
-@{abbrev }.
-Thanks, I will add the forgotten antiquotations in Quantum.thy. *)
-
-(*HL: Already define these with mat_of_cols_list? *)
-(* AB: I don't think it is necessary here, but see how it goes and then see if you need some changes.*)
-
-text \<open>Two qubits are prepared. The first one is state |0\<rangle>, the second one in state |1\<rangle>.\<close>
 
 
+text \<open>Two qubits are prepared. The first one is state @{text "|0\<rangle>"}, the second one in state @{text "|1\<rangle>"}.\<close>
 
 abbreviation zero ("0") where "zero \<equiv> unit_vec 2 0"
 abbreviation one ("1") where "one \<equiv> unit_vec 2 1" 
-
-(* AB: why not use directly unit_vec to define zero_state ? 
-Anyway, if I understand correctly you want to use the elements |0\<rangle> and |1\<rangle>. The elements of the
-computational basis have very standard notations, so maybe you should stick to those notations and 
-avoid something like |zero_state\<rangle>. So, I propose to use the standard notations.
-If at some point Isabelle complains too much about the ambiguity you can still use |zero\<rangle> 
-instead of |0\<rangle> and the same for 1. *)
 
 lemma ket_zero_is_state: 
   shows "state 1 |0\<rangle>"
@@ -225,31 +203,12 @@ lemma ket_one_is_state:
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
 
 lemma zero_state_is_unit: 
-  shows "zero_state = unit_vec 2 0" 
+  shows "zero = unit_vec 2 0" 
   by auto
-
-lemma zero_state_is_state: 
-  shows "state 1 |zero_state\<rangle>" 
-  by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def pos2 power_one_right 
-      state_def unit_cpx_vec_length zero_state_is_unit)
-
-lemma zero_state_to_mat_of_col_lists[simp]: 
-  shows "|zero_state\<rangle> = mat_of_cols_list 2 [[1,0]]"
-  using ket_vec_def mat_of_cols_list_def by auto
-
 
 lemma one_state_is_unit: 
-  shows "one_state = unit_vec 2 1"  
+  shows "one = unit_vec 2 1"  
   by auto
-
-lemma one_state_is_state: 
-  shows "state 1 |one_state\<rangle>" 
-  by (smt dim_col_mat(1) dim_row_mat(1) dim_vec ket_vec_col ket_vec_def one_less_numeral_iff 
-      power_one_right semiring_norm(76) state_def unit_cpx_vec_length one_state_is_unit)
-
-lemma one_state_to_mat_of_col_lists[simp]: 
-  shows "|one_state\<rangle> = mat_of_cols_list 2 [[0,1]]"
-   using ket_vec_def mat_of_cols_list_def by auto
 
 lemma ket_zero_to_mat_of_cols_list [simp]: "|0\<rangle> = mat_of_cols_list 2 [[1, 0]]"
   by (auto simp add: ket_vec_def mat_of_cols_list_def)
@@ -259,15 +218,15 @@ lemma ket_one_to_mat_of_cols_list [simp]: "|1\<rangle> = mat_of_cols_list 2 [[0,
   using less_2_cases by fastforce
 
 
-(* AB: In the comments below you have forgotten some antiquotations. *)
 text\<open>
-Applying the Hadamard gate to state |0\<rangle> results in the new state @{text \<psi>\<^sub>0\<^sub>0}=(|0\<rangle>+|1\<rangle>)/$/sqrt(2)$.
+Applying the Hadamard gate to state @{term "|0\<rangle>"} results in the new state 
+@{term "\<psi>\<^sub>0\<^sub>0"}=(@{term "|0\<rangle>"}+@{term "|1\<rangle>"})/$/sqrt(2)$.
 \<close>
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
 
-lemma H_on_ket_zero: (*TODO: maybe rename it*)
+lemma H_on_ket_zero: 
   shows "(H * |0\<rangle>) = \<psi>\<^sub>0\<^sub>0"
 proof 
   fix i j::nat
@@ -285,24 +244,12 @@ qed
 
 lemma H_on_ket_zero_is_state: 
   shows "state 1 (H * |0\<rangle>)"
-  thus "(H * |zero_state\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
-    by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
-next
-  show "dim_row (H * |zero_state\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
-    by (metis H_inv mat_of_cols_list_def dim_row_mat(1) index_mult_mat(2) index_one_mat(2))
-next 
-  show "dim_col (H * |zero_state\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>0" 
-    using H_def mat_of_cols_list_def by simp
-qed
-
-lemma H_on_zero_state_is_state: 
-  shows "state 1 (H * |zero_state\<rangle>)"
 proof
   show "gate 1 H" 
-    using H_is_gate by auto
+    using H_is_gate by simp
 next
   show "state 1 |0\<rangle>" 
-    using ket_zero_is_state by blast
+    using ket_zero_is_state by simp
 qed
 
 
@@ -314,7 +261,7 @@ Applying the Hadamard gate to state |1\<rangle> results in the new state @{text 
 abbreviation \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>1 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), -1/sqrt(2)]]"
 
-lemma H_on_ket_one: (*TODO: maybe rename it*) (* AB: now it is renamed! *)
+lemma H_on_ket_one: 
   shows "(H * |1\<rangle>) = \<psi>\<^sub>0\<^sub>1"
 proof 
   fix i j::nat
@@ -441,7 +388,7 @@ assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, 1/sqrt(2)],
                                   [1/sqrt(2), 0, -1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
-shows "(H \<Otimes> Id 1) = v" 
+shows "(H \<Otimes> Id Groups.one_class.one) = v" 
 proof
   show "dim_col (H \<Otimes> Id 1) = dim_col v"  
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
