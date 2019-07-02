@@ -385,11 +385,6 @@ next
 qed
 
 
-
-(*Question HL: Should the lemmata below be renamed (e.g. hadamard_on_identity) since H is a notation 
-not a name? (isn't it the same as with U\<^sub>f?). Its like this in Quantum_Teleportation. Or is it okay 
-because we use H as an abbreviation of Hadamard?*)
-
 lemma H_tensor_Id_1: 
 assumes "v =  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, 1/sqrt(2)],
@@ -490,10 +485,6 @@ lemma (in deutsch) deutsch_algo_result_state:
 
 
 
-(*Question to AB: I have nice long proofs of lemmas below (splitting up the disjunction const 0 or const 1
-or resp. id f or is_swap f). But after I found out what facts had to be used they shortened to the 
-proofs below. In terms of understandability/readability what is better?  *)
-
 text \<open>
 If the function is constant measurement of the first qubit should result in state 0 with 
 probability 1. 
@@ -515,7 +506,7 @@ proof -
   thus "prob0 2 deutsch_algo 0 = 1" using assms const_def by auto
 qed
 
-lemma (in deutsch) prob1_deutsch_algo_const: (*TODO:  Delete? Not really needed but feels incomplete without*)
+lemma (in deutsch) prob1_deutsch_algo_const: 
   assumes "const 0 \<or> const 1" 
   shows "prob1 2 deutsch_algo 0 = 0" 
 proof -
@@ -532,7 +523,7 @@ If the function is balanced measurement of the first qubit should result in stat
 probability 1. 
 \<close>
 
-lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Delete? Not really needed but feels incomplete without*)
+lemma (in is_swap) prob0_deutsch_algo_balanced:  
   assumes "balanced" 
   shows "prob0 2 deutsch_algo 0 = 0" 
 proof -
