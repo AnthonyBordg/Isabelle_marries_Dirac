@@ -134,9 +134,7 @@ proof
  deutsch_transform_coeff_is_zero set_four)
 qed
 
-
 text \<open>@{text U\<^sub>f} is a gate.\<close>
-
 
 lemma (in deutsch) transpose_of_deutsch_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
@@ -188,14 +186,11 @@ next
     thus ?thesis by (simp add: adjoint_of_deutsch_transform unitary_def)
   qed
 qed
-   
-
 
 text \<open>Two qubits are prepared. The first one is state $|0\rangle$, the second one in state $|1\rangle$.\<close>
 
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1" 
-
 
 lemma ket_zero_is_state: 
   shows "state 1 |zero\<rangle>"
@@ -222,7 +217,6 @@ text\<open>
 Applying the Hadamard gate to state $|0\rangle$ results in the new state 
 @{term "\<psi>\<^sub>0\<^sub>0"} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2 } $
 \<close>
-
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
@@ -252,8 +246,6 @@ next
   show "state 1 |zero\<rangle>" 
     using ket_zero_is_state by simp
 qed
-
-
 
 text\<open>
 Applying the Hadamard gate to state $|0\rangle$ results in the new state 
@@ -315,7 +307,6 @@ next
   show "dim_col (\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) = dim_col \<psi>\<^sub>1" using mat_of_cols_list_def by auto
 qed
 
-
 lemma \<psi>\<^sub>1_is_state: 
   shows "state 2 \<psi>\<^sub>1"
 proof 
@@ -330,8 +321,6 @@ next
     H_on_ket_one H_on_ket_zero by force
 qed
 
-
-
 text \<open>Next, the gate @{text U\<^sub>f} is applied to state 
 @{text \<psi>\<^sub>1} = $\dfrac {(|00\rangle - |01\rangle + |10\rangle - |11\rangle)} {2}$ and 
 @{text \<psi>\<^sub>2}= $\dfrac {(|0f(0)\oplus 0\rangle - |0 f(0) \oplus 1\rangle + |1 f(1)\oplus 0\rangle - |1f(1)\oplus 1\rangle)} {2}$ 
@@ -343,8 +332,6 @@ abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
                             f(0)/2 - (1 - f(0))/2,
                             (1 - f(1))/2 - f(1)/2,
                             f(1)/2 - (1- f(1))/2]]"
-
-
 
 lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2: 
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
@@ -369,7 +356,6 @@ next
     using mat_of_cols_list_def by auto
 qed
 
-
 lemma (in deutsch) \<psi>\<^sub>2_is_state:
   shows "state 2 \<psi>\<^sub>2" 
 proof
@@ -383,7 +369,6 @@ next
     using \<psi>\<^sub>1_is_state deutsch_transform_is_gate \<psi>\<^sub>1_to_\<psi>\<^sub>2 
     by (smt gate_on_state_is_state state_def)
 qed
-
 
 lemma H_tensor_Id_1: 
 assumes "v =  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
@@ -404,7 +389,6 @@ proof
     by (auto simp add: assms Id_def  H_def mat_of_cols_list_def)
 qed
 
-
 lemma H_tensor_Id_1_is_gate: 
   shows "gate 2 (H \<Otimes> Id 1)" 
 proof 
@@ -417,8 +401,6 @@ next
   show "unitary (H \<Otimes> Quantum.Id 1)" 
     using H_is_gate gate_def id_is_gate tensor_gate by blast
 qed
-
-
 
 text \<open>
 Applying the Hadamard gate to the first qubit of @{text \<psi>\<^sub>2} results in @{text \<psi>\<^sub>3} = 
@@ -454,7 +436,6 @@ next
     using H_tensor_Id_1 mat_of_cols_list_def by auto
 qed
 
-
 lemma (in deutsch) \<psi>\<^sub>3_is_state: 
   shows "state 2 \<psi>\<^sub>3"
 proof -
@@ -463,7 +444,6 @@ proof -
   thus "state 2 \<psi>\<^sub>3" using \<psi>\<^sub>2_is_state \<psi>\<^sub>2_to_\<psi>\<^sub>3 
     by (metis gate_on_state_is_state)
 qed
-
 
 text \<open>
 Finally, all steps are put together. The result depends on the function f. If f is constant
@@ -483,13 +463,10 @@ lemma (in deutsch) deutsch_algo_result_state:
   shows "state 2 deutsch_algo"
   using \<psi>\<^sub>3_is_state deutsch_algo_def deutsch_algo_result by simp
 
-
-
 text \<open>
 If the function is constant measurement of the first qubit should result in state 0 with 
 probability 1. 
 \<close>
-
 
 lemma [simp]:
   shows " 2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" using cmod_def 
@@ -534,7 +511,6 @@ proof -
   thus "prob0 2 deutsch_algo 0 = 0" using is_swap_values by auto
 qed
 
-
 lemma (in is_swap) prob1_deutsch_algo_balanced:
   assumes "balanced" 
   shows "prob1 2 deutsch_algo 0 = 1" 
@@ -546,7 +522,6 @@ proof -
   thus "prob1 2 deutsch_algo 0 = 1" using is_swap_values by auto
 qed
  
-
 text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$ \<close>
 
 definition (in deutsch) deutsch_algo_with_meas::"real" where 
@@ -561,6 +536,5 @@ theorem (in is_swap) deutsch_algo_is_correct:
   shows "(const 0 \<or> const 1) \<longrightarrow> deutsch_algo_with_meas = 1" 
   and "balanced \<longrightarrow> deutsch_algo_with_meas = 0" 
   using prob0_deutsch_algo_const prob0_deutsch_algo_balanced meas_def deutsch_algo_with_meas_def by auto
-
 
 end
