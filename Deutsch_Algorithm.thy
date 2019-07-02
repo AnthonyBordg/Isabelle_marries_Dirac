@@ -202,14 +202,6 @@ lemma ket_one_is_state:
   shows "state 1 |1\<rangle>" 
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
 
-lemma zero_state_is_unit: 
-  shows "zero = unit_vec 2 0" 
-  by auto
-
-lemma one_state_is_unit: 
-  shows "one = unit_vec 2 1"  
-  by auto
-
 lemma ket_zero_to_mat_of_cols_list [simp]: "|0\<rangle> = mat_of_cols_list 2 [[1, 0]]"
   by (auto simp add: ket_vec_def mat_of_cols_list_def)
 
@@ -217,7 +209,7 @@ lemma ket_one_to_mat_of_cols_list [simp]: "|1\<rangle> = mat_of_cols_list 2 [[0,
   apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
   using less_2_cases by fastforce
 
-
+(*TODO: Either define all |0\<rangle> like this or take all out. |00\<rangle> cannot be defined so maybe rather take all out*)
 text\<open>
 Applying the Hadamard gate to state @{term "|0\<rangle>"} results in the new state 
 @{term "\<psi>\<^sub>0\<^sub>0"}=(@{term "|0\<rangle>"}+@{term "|1\<rangle>"})/$/sqrt(2)$.
@@ -388,7 +380,7 @@ assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, 1/sqrt(2)],
                                   [1/sqrt(2), 0, -1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
-shows "(H \<Otimes> Id Groups.one_class.one) = v" 
+shows "(H \<Otimes> Id 1) = v" 
 proof
   show "dim_col (H \<Otimes> Id 1) = dim_col v"  
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
