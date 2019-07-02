@@ -231,9 +231,9 @@ lemma H_on_ket_zero:
   shows "(H * |zero\<rangle>) = \<psi>\<^sub>0\<^sub>0"
 proof 
   fix i j::nat
-  assume "i<dim_row \<psi>\<^sub>0\<^sub>0" and "j < dim_col \<psi>\<^sub>0\<^sub>0"
-  then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
-  then show "(H * |zero\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
+  assume "i < dim_row \<psi>\<^sub>0\<^sub>0" and "j < dim_col \<psi>\<^sub>0\<^sub>0"
+  then have "i \<in> {0,1} \<and> j = 0" using mat_of_cols_list_def by auto
+  then show "(H * |zero\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>0 $$ (i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
 next
   show "dim_row (H * |zero\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
@@ -267,8 +267,8 @@ lemma H_on_ket_one:
   shows "(H * |one\<rangle>) = \<psi>\<^sub>0\<^sub>1"
 proof 
   fix i j::nat
-  assume "i<dim_row \<psi>\<^sub>0\<^sub>1" and "j < dim_col \<psi>\<^sub>0\<^sub>1"
-  then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
+  assume "i < dim_row \<psi>\<^sub>0\<^sub>1" and "j < dim_col \<psi>\<^sub>0\<^sub>1"
+  then have "i \<in> {0,1} \<and> j = 0" using mat_of_cols_list_def by auto
   then show "(H * |one\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>1 $$ (i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def ket_vec_def)
 next
@@ -305,10 +305,10 @@ lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1:
 proof 
   fix i j::nat
   assume "i < dim_row \<psi>\<^sub>1" and "j < dim_col \<psi>\<^sub>1"
-  then have "i\<in>{0,1,2,3}" and "j=0" using mat_of_cols_list_def by auto  
+  then have "i \<in> {0,1,2,3}" and "j = 0" using mat_of_cols_list_def by auto  
   moreover have "complex_of_real (sqrt 2) * complex_of_real (sqrt 2) = 2" 
     by (metis mult_2_right numeral_Bit0 of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
-  ultimately show "(\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1)$$(i,j) = \<psi>\<^sub>1$$(i,j)" using mat_of_cols_list_def by auto
+  ultimately show "(\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) $$ (i,j) = \<psi>\<^sub>1 $$ (i,j)" using mat_of_cols_list_def by auto
 next 
   show "dim_row (\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) = dim_row \<psi>\<^sub>1" using mat_of_cols_list_def by auto
 next
@@ -327,7 +327,7 @@ next
 next
   show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
     using H_on_ket_one_is_state H_on_ket_zero_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
-H_on_ket_one H_on_ket_zero by force
+    H_on_ket_one H_on_ket_zero by force
 qed
 
 
@@ -350,10 +350,10 @@ lemma (in deutsch) \<psi>\<^sub>1_to_\<psi>\<^sub>2:
   shows "U\<^sub>f * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof 
   fix i j:: nat
-  assume "i<dim_row \<psi>\<^sub>2 " and "j<dim_col \<psi>\<^sub>2"
-  then have a0:"i\<in>{0,1,2,3} \<and> j=0 " 
+  assume "i < dim_row \<psi>\<^sub>2 " and "j < dim_col \<psi>\<^sub>2"
+  then have a0:"i \<in> {0,1,2,3} \<and> j = 0 " 
     using mat_of_cols_list_def by auto
-  then have "i<dim_row U\<^sub>f \<and> j<dim_col \<psi>\<^sub>1" using deutsch_transform_def mat_of_cols_list_def by auto
+  then have "i < dim_row U\<^sub>f \<and> j < dim_col \<psi>\<^sub>1" using deutsch_transform_def mat_of_cols_list_def by auto
   then have "(U\<^sub>f * \<psi>\<^sub>1) $$ (i, j) 
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>1}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col \<psi>\<^sub>1 j) $ k)"     
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def 
@@ -387,7 +387,8 @@ qed
 
 
 (*Question HL: Should the lemmata below be renamed (e.g. hadamard_on_identity) since H is a notation 
-not a name? (isn't it the same as with U\<^sub>f?). Its like this in Quantum_Teleportation*)
+not a name? (isn't it the same as with U\<^sub>f?). Its like this in Quantum_Teleportation. Or is it okay 
+because we use H as an abbreviation of Hadamard?*)
 
 lemma H_tensor_Id_1: 
 assumes "v =  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
@@ -439,10 +440,10 @@ lemma (in deutsch) \<psi>\<^sub>2_to_\<psi>\<^sub>3:
  shows "(H \<Otimes> Id 1)*\<psi>\<^sub>2 =  \<psi>\<^sub>3" 
 proof
   fix i j:: nat
-  assume "i<dim_row \<psi>\<^sub>3" and "j<dim_col \<psi>\<^sub>3"
-  then have a0:"i\<in>{0,1,2,3} \<and> j=0 " 
+  assume "i < dim_row \<psi>\<^sub>3" and "j < dim_col \<psi>\<^sub>3"
+  then have a0:"i \<in> {0,1,2,3} \<and> j = 0 " 
     using mat_of_cols_list_def by auto
-  then have "i<dim_row (H \<Otimes> Id 1) \<and> j<dim_col \<psi>\<^sub>2" using  mat_of_cols_list_def H_tensor_Id_1 by auto
+  then have "i < dim_row (H \<Otimes> Id 1) \<and> j < dim_col \<psi>\<^sub>2" using  mat_of_cols_list_def H_tensor_Id_1 by auto
   then have "((H \<Otimes> Id 1)*\<psi>\<^sub>2) $$ (i,j)
         = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>2}. (Matrix.row (H \<Otimes> Id 1) i) $ k * (Matrix.col \<psi>\<^sub>2 j) $ k)"     
     using scalar_prod_def col_fst_is_col index_mult_mat sum.cong times_mat_def   
@@ -507,7 +508,7 @@ lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "const 0 \<or> const 1" 
   shows "prob0 2 deutsch_algo 0 = 1" 
 proof -
-  have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+  have "{k| k::nat. (k < 4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
   then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob0_def by auto
@@ -520,7 +521,7 @@ lemma (in deutsch) prob1_deutsch_algo_const: (*TODO:  Delete? Not really needed 
 proof -
   have "{k| k::nat. select_index 2 0 k} = {2,3}"
     using select_index_def by auto
-  then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+  then have "prob1 2 deutsch_algo 0 = (\<Sum>j \<in> {2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob1_def by auto
   thus "prob1 2 deutsch_algo 0 = 0" 
     using assms const_def by auto
@@ -535,9 +536,9 @@ lemma (in is_swap) prob0_deutsch_algo_balanced:  (*TODO: Delete? Not really need
   assumes "balanced" 
   shows "prob0 2 deutsch_algo 0 = 0" 
 proof -
-  have "{k| k::nat. (k<4) \<and> \<not> select_index 2 0 k} = {0,1}"
+  have "{k| k::nat. (k < 4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
-  then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+  then have "prob0 2 deutsch_algo 0 = (\<Sum>j \<in> {0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob0_def by auto
   thus "prob0 2 deutsch_algo 0 = 0" using is_swap_values by auto
 qed
@@ -549,7 +550,7 @@ lemma (in is_swap) prob1_deutsch_algo_balanced:
 proof -
   have "{k| k::nat. select_index 2 0 k} = {2,3}"
     using select_index_def by auto
-  then have "prob1 2 deutsch_algo 0 = (\<Sum>j\<in>{2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
+  then have "prob1 2 deutsch_algo 0 = (\<Sum>j \<in> {2,3}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_state prob1_def by auto
   thus "prob1 2 deutsch_algo 0 = 1" using is_swap_values by auto
 qed
