@@ -191,56 +191,57 @@ qed
 
 text \<open>Two qubits are prepared. The first one is state @{text "|0\<rangle>"}, the second one in state @{text "|1\<rangle>"}.\<close>
 
-abbreviation zero ("0") where "zero \<equiv> unit_vec 2 0"
-abbreviation one ("1") where "one \<equiv> unit_vec 2 1" 
+abbreviation zero where "zero \<equiv> unit_vec 2 0"
+abbreviation one where "one \<equiv> unit_vec 2 1" 
+
 
 lemma ket_zero_is_state: 
-  shows "state 1 |0\<rangle>"
+  shows "state 1 |zero\<rangle>"
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
 
 lemma ket_one_is_state:
-  shows "state 1 |1\<rangle>" 
+  shows "state 1 |one\<rangle>" 
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
 
-lemma ket_zero_to_mat_of_cols_list [simp]: "|0\<rangle> = mat_of_cols_list 2 [[1, 0]]"
+lemma ket_zero_to_mat_of_cols_list [simp]: "|zero\<rangle> = mat_of_cols_list 2 [[1, 0]]"
   by (auto simp add: ket_vec_def mat_of_cols_list_def)
 
-lemma ket_one_to_mat_of_cols_list [simp]: "|1\<rangle> = mat_of_cols_list 2 [[0, 1]]"
+lemma ket_one_to_mat_of_cols_list [simp]: "|one\<rangle> = mat_of_cols_list 2 [[0, 1]]"
   apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
   using less_2_cases by fastforce
 
 (*TODO: Either define all |0\<rangle> like this or take all out. |00\<rangle> cannot be defined so maybe rather take all out*)
 text\<open>
-Applying the Hadamard gate to state @{term "|0\<rangle>"} results in the new state 
-@{term "\<psi>\<^sub>0\<^sub>0"}=(@{term "|0\<rangle>"}+@{term "|1\<rangle>"})/$/sqrt(2)$.
-\<close>
+Applying the Hadamard gate to state @{term "|zero\<rangle>"} results in the new state 
+@{term "\<psi>\<^sub>0\<^sub>0"}=(@{term "|zero\<rangle>"}+@{term "|one\<rangle>"})/$/sqrt(2)$.
+
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
 
 lemma H_on_ket_zero: 
-  shows "(H * |0\<rangle>) = \<psi>\<^sub>0\<^sub>0"
+  shows "(H * |zero\<rangle>) = \<psi>\<^sub>0\<^sub>0"
 proof 
   fix i j::nat
   assume "i<dim_row \<psi>\<^sub>0\<^sub>0" and "j < dim_col \<psi>\<^sub>0\<^sub>0"
   then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
-  then show "(H * |0\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
+  then show "(H * |zero\<rangle>)$$(i,j) = \<psi>\<^sub>0\<^sub>0$$(i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
 next
-  show "dim_row (H * |0\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
+  show "dim_row (H * |zero\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>0" 
     by (metis H_inv mat_of_cols_list_def dim_row_mat(1) index_mult_mat(2) index_one_mat(2))
 next 
-  show "dim_col (H * |0\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>0" 
+  show "dim_col (H * |zero\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>0" 
     using H_def mat_of_cols_list_def by simp
 qed
 
 lemma H_on_ket_zero_is_state: 
-  shows "state 1 (H * |0\<rangle>)"
+  shows "state 1 (H * |zero\<rangle>)"
 proof
   show "gate 1 H" 
     using H_is_gate by simp
 next
-  show "state 1 |0\<rangle>" 
+  show "state 1 |zero\<rangle>" 
     using ket_zero_is_state by simp
 qed
 
@@ -254,28 +255,28 @@ abbreviation \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>1 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), -1/sqrt(2)]]"
 
 lemma H_on_ket_one: 
-  shows "(H * |1\<rangle>) = \<psi>\<^sub>0\<^sub>1"
+  shows "(H * |one\<rangle>) = \<psi>\<^sub>0\<^sub>1"
 proof 
   fix i j::nat
   assume "i<dim_row \<psi>\<^sub>0\<^sub>1" and "j < dim_col \<psi>\<^sub>0\<^sub>1"
   then have "i\<in>{0,1} \<and> j=0" using mat_of_cols_list_def by auto
-  then show "(H * |1\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>1 $$ (i,j)"
+  then show "(H * |one\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>1 $$ (i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def ket_vec_def)
 next
-  show "dim_row (H * |1\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>1" 
+  show "dim_row (H * |one\<rangle>) = dim_row \<psi>\<^sub>0\<^sub>1" 
     by (metis H_inv mat_of_cols_list_def dim_row_mat(1) index_mult_mat(2) index_one_mat(2))
 next 
-  show "dim_col (H * |1\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>1" 
+  show "dim_col (H * |one\<rangle>) = dim_col \<psi>\<^sub>0\<^sub>1" 
     by (simp add: H_def mat_of_cols_list_def ket_vec_def)
 qed
 
 lemma H_on_ket_one_is_state: 
-  shows "state 1 (H * |1\<rangle>)"
+  shows "state 1 (H * |one\<rangle>)"
 proof
   show "gate 1 H" 
     using H_is_gate by auto
 next
-  show "state 1 |1\<rangle>" 
+  show "state 1 |one\<rangle>" 
     using ket_one_is_state by blast
 qed
 
@@ -286,7 +287,7 @@ Then, state @{text \<psi>\<^sub>1}=(|00\<rangle>-|01\<rangle>+|10\<rangle>-|11\<
 \<close>
 
 abbreviation \<psi>\<^sub>1:: "complex Matrix.mat" where
-"\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2,-1/2,1/2,-1/2]]"
+"\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[1/2, -1/2, 1/2, -1/2]]"
 
 lemma \<psi>\<^sub>0_to_\<psi>\<^sub>1: 
   shows "(\<psi>\<^sub>0\<^sub>0 \<Otimes> \<psi>\<^sub>0\<^sub>1) = \<psi>\<^sub>1"
@@ -376,11 +377,12 @@ qed
 not a name? (isn't it the same as with U\<^sub>f?). Its like this in Quantum_Teleportation*)
 
 lemma H_tensor_Id_1: 
-assumes "v \<equiv>  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
+assumes "v =  mat_of_cols_list 4 [[1/sqrt(2), 0, 1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, 1/sqrt(2)],
                                   [1/sqrt(2), 0, -1/sqrt(2), 0],
                                   [0, 1/sqrt(2), 0, -1/sqrt(2)]]"
-shows "(H \<Otimes> Id 1) = v" 
+
+shows "(H \<Otimes> Id 1) = v"
 proof
   show "dim_col (H \<Otimes> Id 1) = dim_col v"  
     by(simp add: assms H_def Id_def mat_of_cols_list_def)
@@ -459,11 +461,11 @@ The algorithm only uses one evaluation of f(x) and will always succeed. \<close>
 
 definition (in deutsch) deutsch_algo::
 "complex Matrix.mat" where 
-"deutsch_algo \<equiv> (H \<Otimes> Id 1) * (U\<^sub>f * ((H * |zero_state\<rangle>) \<Otimes> (H * |one_state\<rangle>)))"
+"deutsch_algo \<equiv> (H \<Otimes> Id 1) * (U\<^sub>f * ((H * |zero\<rangle>) \<Otimes> (H * |one\<rangle>)))"
 
 lemma (in deutsch) deutsch_algo_result[simp]: 
   shows "deutsch_algo = \<psi>\<^sub>3" 
-  using deutsch_algo_def H_on_zero_state H_on_one_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
+  using deutsch_algo_def H_on_ket_zero_is_state H_on_ket_one_is_state \<psi>\<^sub>0_to_\<psi>\<^sub>1 \<psi>\<^sub>1_to_\<psi>\<^sub>2 \<psi>\<^sub>2_to_\<psi>\<^sub>3 by auto
 
 lemma (in deutsch) deutsch_algo_result_state: 
   shows "state 2 deutsch_algo"
