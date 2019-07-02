@@ -15,11 +15,6 @@ text\<open>
 This is the phase shift gate $R_\<phi>$ on Wikipedia, but in the book it is denoted as $R_k$, with 
 $\<phi> = 2\pi/(2^k)$. 
 \<close>
-(* 
-AB: Later you should add a bibliography, otherwise the reference to "the book" above is unclear. 
-Moreover, please do not forget the math mode or the appropriate antiquotations (see 4.2 of the isar 
-manual) in your comments. 
-*)
 
 definition phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("R _") where
 "R n \<equiv> Matrix.mat 2 2 (\<lambda>(i,j). if i = j then (if i = 0 then 1 else root (2^n)) else 0)"
@@ -210,6 +205,26 @@ primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \
 definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
 "qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
+lemma qft_of_unit_vec:
+  fixes v::"complex Matrix.vec"
+  assumes "v = unit_vec (2^n) i" and "i < 2^n"
+  shows "qft n v = fourier n * |v\<rangle>"
+proof
+  show "dim_vec (qft n v) = dim_vec (col_fst (fourier n * |v\<rangle>))"
+    by (simp add: qft_def fourier_def SWAP_def)
+  show "\<And>i. i < dim_vec (col_fst (fourier n * |v\<rangle>)) \<Longrightarrow> qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+  proof-
+    fix i assume "i < dim_vec (col_fst (fourier n * |v\<rangle>))"
+    then have "i \<in> {0..<2^n}"
+      by (simp add: fourier_def)
+    show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+      apply (auto simp add: qft_def fourier_def SWAP_def qft_no_swap_def qft_single_qbit_def assms(1) 
+unit_vec_def times_mat_def scalar_prod_def ket_vec_def)
+      sorry
+  qed
+qed
+
+
 theorem qft_fourier: 
   fixes v::"complex Matrix.vec"
   assumes "dim_vec v = 2^n"
@@ -218,7 +233,21 @@ proof
   show "dim_vec (qft n v) = dim_vec (col_fst (fourier n * |v\<rangle>))"
     by (simp add: qft_def fourier_def SWAP_def)
   show "\<And>i. i < dim_vec (col_fst (fourier n * |v\<rangle>)) \<Longrightarrow> qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
-    sorry
+  proof-
+    fix i assume "i < dim_vec (col_fst (fourier n * |v\<rangle>))"
+    then have "i \<in> {0..<2^n}"
+      by (simp add: fourier_def)
+    show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+      apply (auto simp add: qft_def fourier_def SWAP_def qft_no_swap_def qft_single_qbit_def)
+      sorry
+  qed
 qed
+
+(*
+Biblio:
+
+- Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang, 
+10th Anniversary Edition, Cambridge University Press, 2010.
+*)
 
 end
