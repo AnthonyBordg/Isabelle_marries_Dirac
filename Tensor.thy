@@ -7,7 +7,8 @@ imports
   Jordan_Normal_Form.Matrix
 begin
 
-text{* There is already a formalization of tensor products in the Archive of Formal Proofs, 
+text \<open>
+There is already a formalization of tensor products in the Archive of Formal Proofs, 
 namely Matrix_Tensor.thy in Tensor Product of Matrices[1] by T.V.H. Prathamesh, but it does not build 
 on top of the formalization of vectors and matrices given in Matrices, Jordan Normal Forms, and 
 Spectral Radius Theory[2] by René Thiemann and Akihisa Yamada. 
@@ -15,14 +16,14 @@ In the present theory our purpose consists in giving such a formalization. Of co
 Prathamesh's code as much as possible, and in order to achieve that we formalize some lemmas that
 translate back and forth between vectors (resp. matrices) seen as lists (resp. lists of lists) and 
 vectors (resp. matrices) as formalized in [2].
-*}
+\<close>
 
 section \<open>Tensor Products\<close>
 
 subsection \<open>The Kronecker Product of Complex Vectors\<close>
 
 definition tensor_vec:: "complex Matrix.vec \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" (infixl "\<otimes>" 63) 
-where "tensor_vec u v \<equiv> vec_of_list (mult.vec_vec_Tensor ( * ) (list_of_vec u) (list_of_vec v))"
+where "tensor_vec u v \<equiv> vec_of_list (mult.vec_vec_Tensor (*) (list_of_vec u) (list_of_vec v))"
 
 subsection \<open>The Tensor Product of Complex Matrices\<close>
 
@@ -64,8 +65,8 @@ lemma row_length_mat_to_cols_list [simp]:
 proof -
   have "mat_to_cols_list A \<noteq> []" by (simp add: assms)
   then have "mult.row_length (mat_to_cols_list A) = length (hd (mat_to_cols_list A))"
-    using mult.row_length_def[of "1" "( * )"]
-    by (simp add: \<open>\<And>xs. Matrix_Tensor.mult 1 ( * ) \<Longrightarrow> mult.row_length xs \<equiv> if xs = [] then 0 else length (hd xs)\<close> mult.intro)
+    using mult.row_length_def[of "1" "(*)"]
+    by (simp add: \<open>\<And>xs. Matrix_Tensor.mult 1 (*) \<Longrightarrow> mult.row_length xs \<equiv> if xs = [] then 0 else length (hd xs)\<close> mult.intro)
   thus ?thesis by (simp add: assms mat_to_cols_list_def upt_conv_Cons)
 qed
 
@@ -103,7 +104,7 @@ next
 qed
 
 lemma plus_mult_cpx [simp]:
-  "plus_mult 1 ( * ) 0 (+) (a_inv cpx_rng)"
+  "plus_mult 1 (*) 0 (+) (a_inv cpx_rng)"
   apply unfold_locales
   apply (auto intro: cpx_cring_is_field simp: field_simps)
 proof -
@@ -138,7 +139,7 @@ length_col_mat_to_cols_list nth_mem)
     thus "mat_to_cols_list (Tensor.mat_of_cols_list nr l) ! j = l ! j"
       using f2 by(simp add: nth_equalityI a f1)
   qed
-  ultimately show ?thesis by(simp add: nth_equalityI)
+  ultimately show ?thesis using nth_equalityI by metis
 qed
 
 lemma col_mat_of_cols_list [simp]:
@@ -156,7 +157,7 @@ qed
 
 definition tensor_mat:: "[complex Matrix.mat, complex Matrix.mat] \<Rightarrow> complex Matrix.mat" (infixl "\<Otimes>" 63) where 
 "tensor_mat A B \<equiv> 
-  mat_of_cols_list (dim_row A * dim_row B) (mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list B))"
+  mat_of_cols_list (dim_row A * dim_row B) (mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B))"
   
 lemma dim_row_tensor_mat [simp]:
   "dim_row (A \<Otimes> B) = dim_row A * dim_row B"
@@ -164,15 +165,15 @@ lemma dim_row_tensor_mat [simp]:
 
 lemma dim_col_tensor_mat [simp]:
   "dim_col (A \<Otimes> B) = dim_col A * dim_col B"
-  using tensor_mat_def mat_of_cols_list_def mult.length_Tensor[of "1" "( * )"]
-  by(simp add: \<open>\<And>M2 M1. Matrix_Tensor.mult 1 ( * ) \<Longrightarrow> length (mult.Tensor ( * ) M1 M2) = length M1 * length M2\<close> mult.intro)
+  using tensor_mat_def mat_of_cols_list_def mult.length_Tensor[of "1" "(*)"]
+  by(simp add: \<open>\<And>M2 M1. Matrix_Tensor.mult 1 (*) \<Longrightarrow> length (mult.Tensor (*) M1 M2) = length M1 * length M2\<close> mult.intro)
 
 lemma index_tensor_mat [simp]:
   assumes a1:"dim_row A = rA" and a2:"dim_col A = cA" and a3:"dim_row B = rB" and a4:"dim_col B = cB"
     and a5:"i < rA * rB" and a6:"j < cA * cB" and a7:"cA > 0" and a8:"cB > 0"
   shows "(A \<Otimes> B) $$ (i,j) = A $$ (i div rB, j div cB) * B $$ (i mod rB, j mod cB)"
 proof -
-  have "(A \<Otimes> B) $$ (i,j) = (mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list B)) ! j ! i"
+  have "(A \<Otimes> B) $$ (i,j) = (mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B)) ! j ! i"
     using assms tensor_mat_def mat_of_cols_list_def dim_col_tensor_mat by simp
   moreover have f:"i < mult.row_length (mat_to_cols_list A) * mult.row_length (mat_to_cols_list B)"
     by (simp add: a1 a2 a3 a4 a5 a7 a8)
@@ -185,10 +186,10 @@ proof -
   ultimately have "(A \<Otimes> B) $$ (i,j) = 
     (mat_to_cols_list A) ! (j div length (mat_to_cols_list B)) ! (i div mult.row_length (mat_to_cols_list B)) 
     * (mat_to_cols_list B) ! (j mod length (mat_to_cols_list B)) ! (i mod mult.row_length (mat_to_cols_list B))"
-    using mult.matrix_Tensor_elements[of "1" "( * )"]
-    by(simp add: \<open>\<And>M2 M1. mult 1 ( * ) \<Longrightarrow> \<forall>i j. (i<mult.row_length M1 * mult.row_length M2 
+    using mult.matrix_Tensor_elements[of "1" "(*)"]
+    by(simp add: \<open>\<And>M2 M1. mult 1 (*) \<Longrightarrow> \<forall>i j. (i<mult.row_length M1 * mult.row_length M2 
     \<and> j<length M1 * length M2) \<and> mat (mult.row_length M1) (length M1) M1 \<and> mat (mult.row_length M2) (length M2) M2 \<longrightarrow> 
-    mult.Tensor ( * ) M1 M2 ! j ! i = M1 ! (j div length M2) ! (i div mult.row_length M2) * M2 ! (j mod length M2) ! (i mod mult.row_length M2)\<close>  mult.intro)
+    mult.Tensor (*) M1 M2 ! j ! i = M1 ! (j div length M2) ! (i div mult.row_length M2) * M2 ! (j mod length M2) ! (i mod mult.row_length M2)\<close>  mult.intro)
   thus ?thesis
     using mat_to_cols_list_def
     by (metis a2 a3 a4 a6 f index_mat_of_cols_list length_mat_to_cols_list less_mult_imp_div_less 
@@ -221,7 +222,9 @@ proof (rule nth_equalityI)
   show "length (row A i) = length (list_of_vec (Matrix.row (mat_of_cols_list (mult.row_length A) A) i))"
     using row_def length_list_of_vec by(metis mat_of_cols_list_def dim_col_mat(1) index_row(2) length_map)
 next
-  show "\<forall>j<length (row A i). row A i ! j = list_of_vec (Matrix.row (mat_of_cols_list (mult.row_length A) A) i) ! j"
+  fix j:: nat
+  assume "j < length (row A i)"
+  then show "row A i ! j = list_of_vec (Matrix.row (mat_of_cols_list (mult.row_length A) A) i) ! j"
     using assms index_mat_of_cols_list
     by(metis row_def mat_of_cols_list_def dim_col_mat(1) dim_row_mat(1) index_row(1) length_map list_of_vec_index nth_map)
 qed
@@ -258,7 +261,9 @@ dim_vec (Matrix.col (mat_of_cols_list (mult.row_length A) A) j)"
   finally show f2:"length (col A j) = length (list_of_vec (Matrix.col (mat_of_cols_list (mult.row_length A) A) j))"
     using a2 by (simp add: col_def)
 next
-  show "\<forall>i<length (col A j). (col A j) ! i = (list_of_vec (Matrix.col (mat_of_cols_list (mult.row_length A) A) j)) ! i"
+  fix i:: nat
+  assume "i<length (col A j)"
+  then show "(col A j) ! i = (list_of_vec (Matrix.col (mat_of_cols_list (mult.row_length A) A) j)) ! i"
     by (metis col_def a1 a2 col_mat_of_cols_list list_vec) 
 qed
 
@@ -267,22 +272,22 @@ text \<open>Link between @{term plus_mult.scalar_product} and @{term Matrix.scal
 lemma scalar_prod_is_Matrix_scalar_prod [simp]:
   fixes u::"complex list" and v::"complex list"
   assumes "length u = length v"
-  shows "plus_mult.scalar_product ( * ) 0 (+) u v = (vec_of_list u) \<bullet> (vec_of_list v)"
+  shows "plus_mult.scalar_product (*) 0 (+) u v = (vec_of_list u) \<bullet> (vec_of_list v)"
 proof -
   have f:"(vec_of_list u) \<bullet> (vec_of_list v) = (\<Sum>i=0..<length v. u ! i * v ! i)"
     using assms scalar_prod_def[of "vec_of_list u" "vec_of_list v"] Matrix.dim_vec_of_list[of v] index_vec_of_list
     by (metis (no_types, lifting) atLeastLessThan_iff sum.cong)
   thus ?thesis
   proof -
-    have "plus_mult.scalar_product ( * ) 0 (+) u v = semiring_0_class.scalar_prod u v"
-      using  plus_mult.scalar_product_def[of 1 "( * )" 0 "(+)" "a_inv cpx_rng" u v] by simp
+    have "plus_mult.scalar_product (*) 0 (+) u v = semiring_0_class.scalar_prod u v"
+      using  plus_mult.scalar_product_def[of 1 "(*)" 0 "(+)" "a_inv cpx_rng" u v] by simp
     also have "\<dots> = sum_list (map (\<lambda>(x,y). x * y) (zip u v))"
       by (simp add: scalar_prod) 
     moreover have "\<forall>i<length v. (zip u v) ! i = (u ! i, v ! i)"
       using assms zip_def by simp
     then have "\<forall>i<length v. (map (\<lambda>(x,y). x * y) (zip u v)) ! i = u ! i * v ! i"
       by (simp add: assms)
-    ultimately have "plus_mult.scalar_product ( * ) 0 (+) u v = (\<Sum>i=0..<length v. u ! i * v ! i)"
+    ultimately have "plus_mult.scalar_product (*) 0 (+) u v = (\<Sum>i=0..<length v. u ! i * v ! i)"
       by(metis (no_types, lifting) assms atLeastLessThan_iff length_map map_fst_zip sum.cong sum_list_sum_nth)
     thus ?thesis by (simp add: f)
   qed
@@ -292,12 +297,12 @@ text \<open>Link between @{term times} and @{term plus_mult.matrix_mult}\<close>
 
 lemma matrix_mult_to_times_mat:
   assumes "dim_col A > 0" and "dim_col B > 0" and "dim_col (A::complex Matrix.mat) = dim_row B"
-  shows "A * B = mat_of_cols_list (dim_row A) (plus_mult.matrix_mult ( * ) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B))"
+  shows "A * B = mat_of_cols_list (dim_row A) (plus_mult.matrix_mult (*) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B))"
 proof
-  define M where "M = mat_of_cols_list (dim_row A) (plus_mult.matrix_mult ( * ) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B))"
+  define M where "M = mat_of_cols_list (dim_row A) (plus_mult.matrix_mult (*) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B))"
   then show f1:"dim_row (A * B) = dim_row M"
     by (simp add: mat_of_cols_list_def times_mat_def)
-  have "length (plus_mult.matrix_mult ( * ) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)) = dim_col B"
+  have "length (plus_mult.matrix_mult (*) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)) = dim_col B"
     by (simp add: mat_multI_def)
   then show f2:"dim_col (A * B) = dim_col M"
     by (simp add: M_def times_mat_def mat_of_cols_list_def)
@@ -309,11 +314,11 @@ proof
       using f1 f2 by simp
     also have "\<dots> = vec_of_list (row (mat_to_cols_list A) i) \<bullet> vec_of_list (col (mat_to_cols_list B) j)"
       using f1 f2 a1 a2 by (simp add: Matrix_row_is_Legacy_row Matrix_col_is_Legacy_col)
-    also have "\<dots> = plus_mult.scalar_product ( * ) 0 (+) (row (mat_to_cols_list A) i) (col (mat_to_cols_list B) j)"
+    also have "\<dots> = plus_mult.scalar_product (*) 0 (+) (row (mat_to_cols_list A) i) (col (mat_to_cols_list B) j)"
       using a1 a2 assms(3) f1 f2 by simp
-    also have "M $$ (i,j) =  plus_mult.scalar_product ( * ) 0 (+) (row (mat_to_cols_list A) i) (col (mat_to_cols_list B) j)"
+    also have "M $$ (i,j) =  plus_mult.scalar_product (*) 0 (+) (row (mat_to_cols_list A) i) (col (mat_to_cols_list B) j)"
     proof-
-      have "M $$ (i,j) = (plus_mult.matrix_mult ( * ) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)) ! j ! i"
+      have "M $$ (i,j) = (plus_mult.matrix_mult (*) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)) ! j ! i"
         using M_def f1 f2 
 \<open>length (mat_mult (mult.row_length (mat_to_cols_list A)) (mat_to_cols_list A) (mat_to_cols_list B)) = dim_col B\<close> a1 a2 by simp
       moreover have "mat (mult.row_length (mat_to_cols_list A)) (dim_col A) (mat_to_cols_list A)"
@@ -321,7 +326,7 @@ proof
       moreover have "mat (dim_col A) (dim_col B) (mat_to_cols_list B)"
         using assms(2) assms(3) mat_to_cols_list_is_mat by simp
       ultimately show ?thesis
-        using assms(1) a1 a2 row_length_mat_to_cols_list plus_mult.matrix_index[of 1 "( * )" 0 "(+)"] plus_mult_cpx
+        using assms(1) a1 a2 row_length_mat_to_cols_list plus_mult.matrix_index[of 1 "(*)" 0 "(+)"] plus_mult_cpx
         by (smt f1 f2 index_mult_mat(2) index_mult_mat(3))
     qed
     finally show "(A * B) $$ (i, j) = M $$ (i, j)" by simp
@@ -330,44 +335,44 @@ qed
 
 lemma mat_to_cols_list_times_mat [simp]:
   assumes "dim_col A = dim_row B" and "dim_col A > 0"
-  shows "mat_to_cols_list (A * B) = plus_mult.matrix_mult ( * ) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)"
+  shows "mat_to_cols_list (A * B) = plus_mult.matrix_mult (*) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)"
 proof (rule nth_equalityI)
-  define M where "M = plus_mult.matrix_mult ( * ) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)"
-  then show f1:"length (mat_to_cols_list (A * B)) = length M"
-    by (simp add: mat_multI_def)
-  have f2:"\<And>j. j<length (mat_to_cols_list (A * B)) \<longrightarrow> mat_to_cols_list (A * B) ! j = M ! j"
+  define M where "M = plus_mult.matrix_mult (*) 0 (+) (mat_to_cols_list A) (mat_to_cols_list B)"
+  then show f0:"length (mat_to_cols_list (A * B)) = length M" by (simp add: mat_multI_def)
+  moreover have f1:"\<And>j. j<length (mat_to_cols_list (A * B)) \<longrightarrow> mat_to_cols_list (A * B) ! j = M ! j"
   proof
-    fix j::nat
-    assume a1:"j < length (mat_to_cols_list (A * B))"
-    then have f3:"length (mat_to_cols_list (A * B) ! j) = dim_row A"
+    fix j:: nat
+    assume a0:"j < length (mat_to_cols_list (A * B))"
+    then have "length (mat_to_cols_list (A * B) ! j) = dim_row A"
       by (simp add: mat_to_cols_list_def)
-    have f4:"length (M ! j) = dim_row A"
-      using M_def a1 mat_multI_def[of 0 "(+)" "( * )" "dim_row A" "mat_to_cols_list A" "mat_to_cols_list B"] 
+    then also have f2:"length (M ! j) = dim_row A"
+      using a0 M_def mat_multI_def[of 0 "(+)" "(*)" "dim_row A" "mat_to_cols_list A" "mat_to_cols_list B"] 
         row_length_mat_to_cols_list assms(2)
-      by (metis assms(1) f1 f3 length_greater_0_conv length_map length_mat_to_cols_list 
+      by (metis assms(1) f0 length_greater_0_conv length_map length_mat_to_cols_list 
 list_to_mat_to_cols_list mat_mult mat_to_cols_list_is_mat matrix_mult_to_times_mat)
-    from f3 f4 have f5:"length (mat_to_cols_list (A * B) ! j) = length (M ! j)" by simp
-    have "\<And>i. i<dim_row A \<longrightarrow> mat_to_cols_list (A * B) ! j ! i = M ! j ! i"
+    ultimately have "length (mat_to_cols_list (A * B) ! j) = length (M ! j)" by simp
+    moreover have "\<And>i. i<dim_row A \<longrightarrow> mat_to_cols_list (A * B) ! j ! i = M ! j ! i"
     proof
       fix i
-      assume a2:"i < dim_row A"
-      have f6:"mat (mult.row_length (mat_to_cols_list A)) (dim_col A) (mat_to_cols_list A)"
+      assume a1:"i < dim_row A"
+      have "mat (mult.row_length (mat_to_cols_list A)) (dim_col A) (mat_to_cols_list A)"
         using mat_to_cols_list_is_mat assms(2) by simp
-      have f7:"mat (dim_col A) (dim_col B) (mat_to_cols_list B)"
-        using mat_to_cols_list_is_mat assms(1) a1 by simp
-      from f6 f7 have "M ! j ! i = plus_mult.scalar_product ( * ) 0 (+) (row (mat_to_cols_list A) i) (col (mat_to_cols_list B) j)"
-        using plus_mult.matrix_index a1 a2 row_length_mat_to_cols_list assms(2) plus_mult_cpx M_def
+      moreover have "mat (dim_col A) (dim_col B) (mat_to_cols_list B)"
+        using mat_to_cols_list_is_mat assms(1) a0 by simp
+      ultimately have "M ! j ! i = plus_mult.scalar_product (*) 0 (+) (row (mat_to_cols_list A) i) (col (mat_to_cols_list B) j)"
+        using plus_mult.matrix_index a0 a1 row_length_mat_to_cols_list assms(2) plus_mult_cpx M_def
         by (metis index_mult_mat(3) length_mat_to_cols_list)
       also have "\<dots> = vec_of_list (row (mat_to_cols_list A) i) \<bullet> vec_of_list (col (mat_to_cols_list B) j)"
-        using a2 a1 assms(1) by simp
+        using a0 a1 assms(1) by simp
       finally show "mat_to_cols_list (A * B) ! j ! i = M ! j ! i"
-        using mat_to_cols_list_def index_mult_mat(1) a1 a2 
+        using mat_to_cols_list_def index_mult_mat(1) a0 a1 
         by(simp add: Matrix_row_is_Legacy_row Matrix_col_is_Legacy_col)
     qed
-    thus "mat_to_cols_list (A * B) ! j = M ! j"
-      using f5 by (simp add: nth_equalityI f4)
+    ultimately show "mat_to_cols_list (A * B) ! j = M ! j" by(simp add: nth_equalityI f2)
   qed
-  then show "\<forall>i<length (mat_to_cols_list (A * B)). mat_to_cols_list (A * B) ! i = M ! i" by simp
+  fix i:: nat
+  assume "i < length (mat_to_cols_list (A * B))"
+  thus "mat_to_cols_list (A * B) ! i = M ! i" by (simp add: f1)
 qed
 
 text \<open> 
@@ -382,32 +387,32 @@ lemma mult_distr_tensor:
 proof -
   define A' B' C' D' M N where "A' = mat_to_cols_list A" and "B' = mat_to_cols_list B" and 
     "C' = mat_to_cols_list C" and "D' = mat_to_cols_list D" and
-    "M = mat_of_cols_list (dim_row A * dim_row C) (mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list C))" and
-    "N = mat_of_cols_list (dim_row B * dim_row D) (mult.Tensor ( * ) (mat_to_cols_list B) (mat_to_cols_list D))"
+    "M = mat_of_cols_list (dim_row A * dim_row C) (mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list C))" and
+    "N = mat_of_cols_list (dim_row B * dim_row D) (mult.Tensor (*) (mat_to_cols_list B) (mat_to_cols_list D))"
   then have "(A \<Otimes> C) * (B \<Otimes> D) = M * N"
     by (simp add: tensor_mat_def)
-  also have "\<dots> = mat_of_cols_list (dim_row A * dim_row C) (plus_mult.matrix_mult ( * ) 0 (+) 
+  also have "\<dots> = mat_of_cols_list (dim_row A * dim_row C) (plus_mult.matrix_mult (*) 0 (+) 
   (mat_to_cols_list M) (mat_to_cols_list N))"
     using assms M_def N_def dim_col_tensor_mat dim_row_tensor_mat tensor_mat_def 
     by(simp add: matrix_mult_to_times_mat)
-  also have f1:"\<dots> = mat_of_cols_list (dim_row A * dim_row C) (plus_mult.matrix_mult ( * ) 0 (+) 
-  (mult.Tensor ( * ) A' C') (mult.Tensor ( * ) B' D'))"
+  also have f1:"\<dots> = mat_of_cols_list (dim_row A * dim_row C) (plus_mult.matrix_mult (*) 0 (+) 
+  (mult.Tensor (*) A' C') (mult.Tensor (*) B' D'))"
   proof -
-    define M' N' where "M' = mult.Tensor ( * ) (mat_to_cols_list A) (mat_to_cols_list C)" and
-      "N' = mult.Tensor ( * ) (mat_to_cols_list B) (mat_to_cols_list D)"
+    define M' N' where "M' = mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list C)" and
+      "N' = mult.Tensor (*) (mat_to_cols_list B) (mat_to_cols_list D)"
     then have "mat (mult.row_length M') (length M') M'"
-      using M'_def mult.effective_well_defined_Tensor[of 1 "( * )"] mat_to_cols_list_is_mat a3 a5
+      using M'_def mult.effective_well_defined_Tensor[of 1 "(*)"] mat_to_cols_list_is_mat a3 a5
       by (smt mult.length_Tensor mult.row_length_mat plus_mult_cpx plus_mult_def)
     moreover have "mat (mult.row_length N') (length N') N'"
-      using N'_def mult.effective_well_defined_Tensor[of 1 "( * )"] mat_to_cols_list_is_mat a4 a6
+      using N'_def mult.effective_well_defined_Tensor[of 1 "(*)"] mat_to_cols_list_is_mat a4 a6
       by (smt mult.length_Tensor mult.row_length_mat plus_mult_cpx plus_mult_def)
     ultimately show ?thesis
       using list_to_mat_to_cols_list M_def N_def mult.row_length_mat row_length_mat_to_cols_list 
       assms(3) a4 a5 a6 A'_def B'_def C'_def D'_def by(metis M'_def N'_def plus_mult_cpx plus_mult_def)
    qed
-   also have "\<dots> = mat_of_cols_list (dim_row A * dim_row C) (mult.Tensor ( * )
-    (plus_mult.matrix_mult ( * ) 0 (+) A' B')
-    (plus_mult.matrix_mult ( * ) 0 (+) C' D'))"
+   also have "\<dots> = mat_of_cols_list (dim_row A * dim_row C) (mult.Tensor (*)
+    (plus_mult.matrix_mult (*) 0 (+) A' B')
+    (plus_mult.matrix_mult (*) 0 (+) C' D'))"
    proof -
      have f2:"mat (mult.row_length A') (length A') A'"
        using A'_def a3 mat_to_cols_list_is_mat by simp
@@ -424,11 +429,11 @@ proof -
      moreover have "A' \<noteq> [] \<and> B' \<noteq> [] \<and> C' \<noteq> [] \<and> D' \<noteq> []"
        using A'_def B'_def C'_def D'_def a3 a4 a5 a6 by simp
      ultimately have "plus_mult.matrix_match A' B' C' D'"
-       using plus_mult.matrix_match_def[of 1 "( * )" 0 "(+)" "a_inv cpx_rng"] by simp
+       using plus_mult.matrix_match_def[of 1 "(*)" 0 "(+)" "a_inv cpx_rng"] by simp
      thus ?thesis
        using f1 plus_mult.distributivity plus_mult_cpx by fastforce
    qed
-   also have "\<dots> = mat_of_cols_list (dim_row A * dim_row C) (mult.Tensor ( * ) 
+   also have "\<dots> = mat_of_cols_list (dim_row A * dim_row C) (mult.Tensor (*) 
    (mat_to_cols_list (A * B)) (mat_to_cols_list (C * D)))"
      using A'_def B'_def C'_def D'_def a1 a2 a3 a5 by simp
    finally show ?thesis by(simp add: tensor_mat_def)
