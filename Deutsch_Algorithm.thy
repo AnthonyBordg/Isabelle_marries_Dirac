@@ -244,7 +244,6 @@ change it to $\psi_{00}$ *)
 text\<open>
 Applying the Hadamard gate to state $|0\rangle$ results in the new state 
 @{term "\<psi>\<^sub>0\<^sub>0"} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2 }$
-\<close>
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
@@ -264,8 +263,14 @@ next
 qed
 
 lemma H_on_ket_zero_is_state: 
-  shows "state 1 (H * |zero\<rangle>)" 
-  using H_is_gate ket_zero_is_state by simp
+  shows "state 1 (H * |zero\<rangle>)"
+proof
+  show "gate 1 H" 
+    using H_is_gate by simp
+next
+  show "state 1 |zero\<rangle>" 
+    using ket_zero_is_state by simp
+qed
 
 text\<open>
 Applying the Hadamard gate to state $|0\rangle$ results in the new state 
@@ -328,8 +333,8 @@ next
     by (simp add: Tensor.mat_of_cols_list_def)
 next
   show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
-    using tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1 H_on_ket_one_is_state H_on_ket_zero_is_state state.length
-    H_on_ket_one H_on_ket_zero by fastforce
+    using H_on_ket_one_is_state H_on_ket_zero_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
+    H_on_ket_one H_on_ket_zero by force
 qed
 
 text \<open>Next, the gate @{text U\<^sub>f} is applied to state 
@@ -468,6 +473,7 @@ lemma (in deutsch) deutsch_algo_result_is_state:
   shows "state 2 deutsch_algo" 
   using \<psi>\<^sub>3_is_state by simp
 
+
 text \<open>
 If the function is constant measurement of the first qubit should result in state 0 with 
 probability 1. 
@@ -480,7 +486,7 @@ lemma [simp]:
 lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "is_const" 
   shows "prob0 2 deutsch_algo 0 = 1" 
-proof-
+proof -
   have "{k| k::nat. (k < 4) \<and> \<not> select_index 2 0 k} = {0,1}"
     using select_index_def by auto
   then have "prob0 2 deutsch_algo 0 = (\<Sum>j\<in>{0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
@@ -527,6 +533,7 @@ Now, it can be verified that the algorithm returns one if the input function is 
 zero if it is is_balanced.
 \<close>
 
+
 lemma (in deutsch) sum_mod_2_cases:
   shows "(f 0 + f 1) mod 2 = 0 \<longrightarrow> is_const" 
   and "(f 0 + f 1) mod 2 = 1 \<longrightarrow> is_balanced"
@@ -540,6 +547,5 @@ prob1_deutsch_algo_const prob1_deutsch_algo_balanced by auto
 theorem (in deutsch) deutsch_algo_is_correct:
   shows "deutsch_algo_eval = 0 \<longrightarrow> is_const" and "deutsch_algo_eval = 1 \<longrightarrow> is_balanced"
   using deutsch_algo_eval_is_sum_mod_2 sum_mod_2_cases by auto
-
 
 end
