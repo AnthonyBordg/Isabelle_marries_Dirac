@@ -24,7 +24,7 @@ locale deutsch =
   assumes dom: "f \<in> ({0,1} \<rightarrow>\<^sub>E {0,1})"
 
 definition (in deutsch) is_swap:: bool where
-"is_swap = (\<forall>x. f x = 1 - x)"
+"is_swap = (\<forall>x \<in> {0,1}. f x = 1 - x)"
 
 lemma (in deutsch) is_swap_values:
   assumes "is_swap"
@@ -41,18 +41,19 @@ context deutsch
 begin
 
 definition const:: "nat \<Rightarrow> bool" where 
-"const n = (\<forall>x.(f x = n))"
+"const n = (\<forall>x \<in> {0,1}.(f x = n))"
 
 definition is_const:: "bool" where 
 "is_const \<equiv> const 0 \<or> const 1"
 
 definition is_balanced:: "bool" where
-"is_balanced \<equiv> f = id \<or> is_swap"
+"is_balanced \<equiv> (\<forall>x \<in> {0,1}.(f x = x)) \<or> is_swap"
 
 lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto
-
+ 
 lemma f_cases:
-  shows "is_const \<or> is_balanced" sorry
+  shows "is_const \<or> is_balanced"   
+  using dom is_balanced_def const_def is_const_def is_swap_def f_values by auto 
 
 lemma const_0_sum_mod_2:
   assumes "const 0"
@@ -82,7 +83,6 @@ lemma is_balanced_sum_mod_2:
 lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 
 end (* context deutsch *)
-
 
 text \<open>Transform @{text U\<^sub>f}. \<close>
 
@@ -244,6 +244,7 @@ change it to $\psi_{00}$ *)
 text\<open>
 Applying the Hadamard gate to state $|0\rangle$ results in the new state 
 @{term "\<psi>\<^sub>0\<^sub>0"} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2 }$
+\<close>
 
 abbreviation \<psi>\<^sub>0\<^sub>0:: "complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 2 [[1/sqrt(2), 1/sqrt(2)]]"
@@ -514,7 +515,8 @@ proof-
     using select_index_def by auto
   then have "prob0 2 deutsch_algo 0 = (\<Sum>j \<in> {0,1}. (cmod(deutsch_algo $$ (j,0)))\<^sup>2)"
     using deutsch_algo_result_is_state prob0_def by simp
-  thus "prob0 2 deutsch_algo 0 = 0" sorry
+  thus "prob0 2 deutsch_algo 0 = 0" 
+    using is_swap_values assms is_balanced_def by auto
 qed
 
 lemma (in deutsch) prob1_deutsch_algo_balanced:
