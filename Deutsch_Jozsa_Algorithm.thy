@@ -36,6 +36,8 @@ lemma f_dom_not_zero: "f \<in> ({(i::nat). n \<ge> 1 \<and>  i < 2^n} \<rightarr
 end (* context deutsch *)
 
 
+
+
 definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
@@ -133,13 +135,55 @@ abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1"
 
 fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
-  "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 but might avoid stress if we fix the number to be the number of \<oplus>?*)
+  "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 (also like this in literature) but might avoid stress if we fix the number to be the number of \<oplus>?*)
 | "A ^\<^sub>\<oplus> (Suc k) =  A \<Otimes> (A ^\<^sub>\<oplus> k)"
 
 lemma pow_tensor_1_is_id[simp]:
   fixes A
   shows "A ^\<^sub>\<oplus> 1 = A"
   using one_mat_def by auto
+
+
+(*As n has to be at least one 1 we have to adapt the induction rule *)
+lemma ind_from_1[case_names ge 1 step]:
+  assumes "n\<ge>1"
+  assumes "P(1)" 
+  assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
+  shows " P n"
+  using nat_induct_at_least assms by auto
+
+
+
+
+lemma pow_tensor_dim_row[simp]:
+  fixes A n
+  assumes "n\<ge>1"
+  shows "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto 
+next
+  show "dim_row(A ^\<^sub>\<oplus> 1) = (dim_row A)^1" by simp
+next
+  fix n
+  assume "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
+  then show "dim_row(A ^\<^sub>\<oplus> (Suc n)) = (dim_row A)^(Suc n)" 
+    by (metis One_nat_def Suc_inject Zero_not_Suc dim_row_tensor_mat pow_tensor.elims power_Suc power_one_right)
+qed
+
+lemma pow_tensor_dim_col[simp]:
+  fixes A n
+  assumes "n\<ge>1"
+  shows "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto 
+next
+  show "dim_col(A ^\<^sub>\<oplus> 1) = (dim_col A)^1" by simp
+next
+  fix n
+  assume "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
+  then show "dim_col(A ^\<^sub>\<oplus> (Suc n)) = (dim_col A)^(Suc n)" 
+    by (metis dim_col_tensor_mat One_nat_def Suc_inject Zero_not_Suc pow_tensor.elims power_Suc power_one_right )
+qed
 
 (*TODO: Use mat_of_cols_lists or Matrix.mat??? For Deutsch mat_of_cols_lists was better but
 it seems as if Isabelle is not good with list comprehension and also Matrix.mat gives more natural
@@ -156,13 +200,40 @@ definition \<psi>\<^sub>0\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where
 "\<psi>\<^sub>0\<^sub>0 k \<equiv> Matrix.mat (2^k) 1 (\<lambda>(i,j). if i=0 then 1 else 0)"
 
 lemma \<psi>\<^sub>0\<^sub>0_is_unit:
-  shows "\<psi>\<^sub>0\<^sub>0 n = |unit_vec (2^n) 0\<rangle>"
-sorry 
+  shows "\<psi>\<^sub>0\<^sub>0 n = |unit_vec (2^n) 0\<rangle>" 
+  using \<psi>\<^sub>0\<^sub>0_def ket_vec_def unit_vec_def by auto
+
 
 lemma tensor_n_zero_is_\<psi>\<^sub>0\<^sub>0:
   assumes "n\<ge>1"
   shows " |zero\<rangle> ^\<^sub>\<oplus> n = \<psi>\<^sub>0\<^sub>0 n"
-  sorry
+proof
+  show "dim_row ( |zero\<rangle> ^\<^sub>\<oplus> n) =dim_row (\<psi>\<^sub>0\<^sub>0 n)" 
+    using pow_tensor_dim_row assms \<psi>\<^sub>0\<^sub>0_def dim_row_mat(1) power_one_right \<psi>\<^sub>0\<^sub>0_is_unit 
+    by metis
+next 
+  show "dim_col ( |zero\<rangle> ^\<^sub>\<oplus> n) = dim_col (\<psi>\<^sub>0\<^sub>0 n)" 
+    using pow_tensor_dim_col assms \<psi>\<^sub>0\<^sub>0_def dim_col_mat(1) power_one_right \<psi>\<^sub>0\<^sub>0_is_unit 
+    by (metis power_one)
+next
+  fix i j::nat
+  assume "i < dim_row (\<psi>\<^sub>0\<^sub>0 n)" and "j < dim_col (\<psi>\<^sub>0\<^sub>0 n)"
+  then have "i < 2^n \<and> j = 0" using \<psi>\<^sub>0\<^sub>0_def by auto
+  then show "( |zero\<rangle> ^\<^sub>\<oplus> n) $$ (i, j) = \<psi>\<^sub>0\<^sub>0 n $$ (i, j)" 
+  proof (induction n rule: ind_from_1)
+    show "n\<ge>1" using assms by simp
+  next
+    show "( |zero\<rangle> ^\<^sub>\<oplus> 1) $$ (i, j) = \<psi>\<^sub>0\<^sub>0 1 $$ (i, j)" 
+      by (simp add: \<psi>\<^sub>0\<^sub>0_is_unit)
+  next
+    fix n 
+    assume "(i < 2 ^ n \<and> j = 0) \<longrightarrow> ( |zero\<rangle> ^\<^sub>\<oplus> n) $$ (i, j) = \<psi>\<^sub>0\<^sub>0 n $$ (i, j)" 
+    assume "i < 2 ^ Suc n \<and> j = 0"
+    then show "( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) $$ (i, j) = \<psi>\<^sub>0\<^sub>0 (Suc n) $$ (i, j)" sorry
+  qed
+qed
+
+
 
 definition \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where 
 "\<psi>\<^sub>0\<^sub>1 \<equiv> |one\<rangle>"
