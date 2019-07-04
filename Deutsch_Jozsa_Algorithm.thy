@@ -38,6 +38,7 @@ lemma is_balanced_union:
 and "card B = (2^(n-1))" and "A \<inter> B = {}"
   shows "A \<union> B = {i::nat. i < 2^n}" sorry
 
+
 lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 
 lemma f_dom_not_zero: 
