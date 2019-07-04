@@ -7,13 +7,13 @@ begin
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
 
-locale deutsch_jozsa =
+locale jozsa =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
   assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
   assumes dim: "n \<ge> 1"
 
 
-context deutsch_jozsa
+context jozsa
 begin
 
 definition const:: "nat \<Rightarrow> bool" where 
@@ -41,10 +41,10 @@ lemma f_dom_not_zero:
   shows "f \<in> ({(i::nat). n \<ge> 1 \<and>  i < 2^n} \<rightarrow>\<^sub>E {0,1})" 
   using dim dom by simp
 
-end (* context deutsch_jozsa *)
+end (* context jozsa *)
 
 
-definition (in deutsch_jozsa) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
+definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
@@ -62,25 +62,25 @@ lemma set_four [simp]:
   shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
   by (auto simp add: assms)
 
-lemma (in deutsch_jozsa) deutsch_transform_dim [simp]: 
+lemma (in jozsa) jozsa_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
-  by (auto simp add: deutsch_transform_def mat_of_cols_list_def)
+  by (auto simp add: jozsa_transform_def mat_of_cols_list_def)
 
-lemma (in deutsch_jozsa) deutsch_transform_coeff_is_zero [simp]: 
+lemma (in jozsa) jozsa_transform_coeff_is_zero [simp]: 
   shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
     and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
     and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
     and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
-  using deutsch_transform_def by auto
+  using jozsa_transform_def by auto
 
-lemma (in deutsch_jozsa) deutsch_transform_coeff [simp]: 
+lemma (in jozsa) jozsa_transform_coeff [simp]: 
   shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
     and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
     and "U\<^sub>f $$ (0,0) = 1 - f(0)" and "U\<^sub>f $$(1,1) = 1 - f(0)"
     and "U\<^sub>f $$ (2,2) = 1 - f(1)" and "U\<^sub>f $$ (3,3) = 1 - f(1)"
-  using deutsch_transform_def by auto
+  using jozsa_transform_def by auto
 
-abbreviation (in deutsch_jozsa) V\<^sub>f:: "complex Matrix.mat" where
+abbreviation (in jozsa) V\<^sub>f:: "complex Matrix.mat" where
 "V\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
                 if i=0 \<and> j=0 then 1 - f(0) else
                   (if i=0 \<and> j=1 then f(0) else
@@ -91,21 +91,21 @@ abbreviation (in deutsch_jozsa) V\<^sub>f:: "complex Matrix.mat" where
                             (if i=3 \<and> j=2 then f(1) else
                               (if i=3 \<and> j=3 then 1 - f(1) else 0))))))))"
 
-lemma (in deutsch_jozsa) deutsch_transform_alt_rep_coeff_is_zero [simp]:
+lemma (in jozsa) jozsa_transform_alt_rep_coeff_is_zero [simp]:
   shows "V\<^sub>f $$ (0,2) = 0" and "V\<^sub>f $$ (0,3) = 0"
     and "V\<^sub>f $$ (1,2) = 0" and "V\<^sub>f $$(1,3) = 0"
     and "V\<^sub>f $$ (2,0) = 0" and "V\<^sub>f $$(2,1) = 0"
     and "V\<^sub>f $$ (3,0) = 0" and "V\<^sub>f $$ (3,1) = 0"
   by auto
 
-lemma (in deutsch_jozsa) deutsch_transform_alt_rep_coeff [simp]:
+lemma (in jozsa) jozsa_transform_alt_rep_coeff [simp]:
   shows "V\<^sub>f $$ (0,1) = f(0)" and "V\<^sub>f $$ (1,0) = f(0)"
     and "V\<^sub>f $$(2,3) = f(1)" and "V\<^sub>f $$ (3,2) = f(1)"
     and "V\<^sub>f $$ (0,0) = 1 - f(0)" and "V\<^sub>f $$(1,1) = 1 - f(0)"
     and "V\<^sub>f $$ (2,2) = 1 - f(1)" and "V\<^sub>f $$ (3,3) = 1 - f(1)"
   by auto
 
-lemma (in deutsch_jozsa) deutsch_transform_alt_rep:
+lemma (in jozsa) jozsa_transform_alt_rep:
   shows "U\<^sub>f = V\<^sub>f"
 proof
   show c0:"dim_row U\<^sub>f = dim_row V\<^sub>f" by simp
@@ -114,23 +114,23 @@ proof
   assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
   then have "i < 4" and "j < 4" by auto
   thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
-    by (smt deutsch_transform_alt_rep_coeff deutsch_transform_alt_rep_coeff_is_zero deutsch_transform_coeff
- deutsch_transform_coeff_is_zero set_four)
+    by (smt jozsa_transform_alt_rep_coeff jozsa_transform_alt_rep_coeff_is_zero jozsa_transform_coeff
+ jozsa_transform_coeff_is_zero set_four)
 qed
 
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
 
 
-lemma (in deutsch_jozsa) transpose_of_deutsch_transform:
+lemma (in jozsa) transpose_of_jozsa_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
   sorry
 
-lemma (in deutsch_jozsa) adjoint_of_deutsch_transform: 
+lemma (in jozsa) adjoint_of_jozsa_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
   sorry 
 
-lemma (in deutsch_jozsa) deutsch_transform_is_gate:
+lemma (in jozsa) jozsa_transform_is_gate:
   shows "gate 2 U\<^sub>f"
   sorry
    
@@ -286,11 +286,11 @@ lemma \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1:
 (*------------------------------------------------------------------------------------------------*)
 
 
-definition (in deutsch_jozsa) \<psi>\<^sub>2:: "nat \<Rightarrow> complex Matrix.mat" where 
+definition (in jozsa) \<psi>\<^sub>2:: "nat \<Rightarrow> complex Matrix.mat" where 
 "\<psi>\<^sub>2 k \<equiv> 1/sqrt(2)^k \<cdot>\<^sub>m  Matrix.mat (2^(k+1)) 1 (\<lambda>(i,j). if (even i) then (-1)^(f(i/2))
                                                        else (-1)^(f((i-1)/2)+1))"
 
-lemma (in deutsch_jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2: 
+lemma (in jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2: 
   assumes "n\<ge>1"
   shows "(U\<^sub>f ^\<^sub>\<oplus> n)* (\<psi>\<^sub>1 n) = (\<psi>\<^sub>2 n)" (*Might need to add something to Uf to multiply minus to each second entry, look at it again*)
   sorry
@@ -299,7 +299,7 @@ lemma (in deutsch_jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2:
 
 (*------------------------------------------------------------------------------------------------*)
 
-lemma (in deutsch_jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2: 
+lemma (in jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2: 
   assumes "n\<ge>1"
   shows "((H ^\<^sub>\<oplus> n) \<Otimes> Id 1 )* (\<psi>\<^sub>2 n) = (\<psi>\<^sub>3 n)"
   sorry
@@ -346,7 +346,7 @@ next
 qed*)
 
 (*
-lemma (in deutsch_jozsa)
+lemma (in jozsa)
   shows " |zero\<rangle> ^\<^sub>\<oplus> n  = |unit_vec (2^(n+1)) 0\<rangle>"
 proof (induction n)
   show "|zero\<rangle> ^\<^sub>\<oplus> 0  = |unit_vec (2^(0+1)) 0\<rangle>" using ket_vec_def by auto
@@ -398,7 +398,7 @@ qed
 definition \<psi>\<^sub>1\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where 
 "\<psi>\<^sub>1\<^sub>0 n \<equiv> mat_of_cols_list (2^(n+1)) [[1/(sqrt(2)^(n+1)). i<- [0..(2^(n+1)-1)]]]"
 
-lemma (in deutsch_jozsa)
+lemma (in jozsa)
   shows "(H ^\<^sub>\<oplus> n) * (\<psi>\<^sub>0\<^sub>0 n)  = (\<psi>\<^sub>1\<^sub>0 n)"
 proof (induction n)
   show "(H ^\<^sub>\<oplus> 0) * (\<psi>\<^sub>0\<^sub>0 0)  = (\<psi>\<^sub>1\<^sub>0 0)" (*Base case*)
