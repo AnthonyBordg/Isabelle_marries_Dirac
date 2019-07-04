@@ -3,8 +3,8 @@ Authors:
 
 \begin{itemize}
 
-\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
 \item Hanna Lachnitt, TU Wien, \href{mailto:lachnitt@student.tuwien.ac.at}{lachnitt@student.tuwien.ac.at}
+\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
 
 \end{itemize}
 \<close>
