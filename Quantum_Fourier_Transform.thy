@@ -207,11 +207,25 @@ definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Ma
 
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
-  assumes "v = unit_vec (2^n) i" and "i < 2^n"
-  shows "qft_no_swap n n v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<n. if select_index n j i then 
-         (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1)/(sqrt(2)^n))"
-proof-
-  show ?thesis
+  assumes "v = unit_vec (2^n) i" and "i < 2^n" and "m \<le> n"
+  shows "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<m. if select_index n j i then 
+         (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
+         (\<Prod>j<n-m. if select_index n (j+m) i then 1 else 0) / (sqrt(2)^m))"
+proof (induction m)
+  case 0
+  show "qft_no_swap n 0 v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<0. if select_index n j i then 
+        (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
+        (\<Prod>j<n-0. if select_index n (j+0) i then 1 else 0) / (sqrt(2)^0))"
+    sorry
+next
+  case (Suc m)
+  then have "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<m. if select_index n j i then 
+             (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
+             (\<Prod>j<n-m. if select_index n (j+m) i then 1 else 0) / (sqrt(2)^m))"
+    by simp
+  show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<(Suc m). if select_index n j i then 
+        (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
+        (\<Prod>j<n-(Suc m). if select_index n (j+(Suc m)) i then 1 else 0) / (sqrt(2)^(Suc m)))"
     sorry
 qed
 
@@ -228,8 +242,6 @@ proof
     then have "i \<in> {0..<2^n}"
       by (simp add: fourier_def)
     show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
-      apply (auto simp add: qft_def fourier_def SWAP_def qft_no_swap_def qft_single_qbit_def assms(1) 
-unit_vec_def times_mat_def scalar_prod_def ket_vec_def)
       sorry
   qed
 qed
