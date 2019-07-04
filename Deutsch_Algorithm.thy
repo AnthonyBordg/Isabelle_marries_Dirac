@@ -3,42 +3,42 @@ imports
   MoreTensor
 begin
 
-(*Important: isabelle build will require package amsmath in root*)
+(*Important: Isabelle build will require the package amsmath in root*)
 
 section \<open>Deutsch's algorithm\<close>
- 
+
 text \<open>
-The problem Deutsch's algorithm seeks to solve is to determine for a given function $f:{0,1}\mapsto {0,1}$ 
-if f is constant or is_balanced. It makes use of quantum parallelism and quantum interference.
+Given a function $f:{0,1}\mapsto {0,1}$, Deutsch's algorithm decides if this function is constant
+or balanced with a single $f(x)$ circuit to evaluate the function for multiple values of $x$ 
+simultaneously. The algorithm makes use of quantum parallelism and quantum interference.
 \<close>
 
-subsection \<open>Input function\<close>
+subsection \<open>The Input Function\<close>
                                    
 text \<open>
 A constant function with values in {0,1} returns either always 0 or always 1. 
-A is_balanced function is 0 for half of the inputs and 1 for the other half. 
+A balanced function is 0 for half of the inputs and 1 for the other half. 
 \<close>
 
 locale deutsch =
   fixes f:: "nat \<Rightarrow> nat" 
   assumes dom: "f \<in> ({0,1} \<rightarrow>\<^sub>E {0,1})"
 
-definition (in deutsch) is_swap:: bool where
+context deutsch
+begin
+
+definition is_swap:: bool where
 "is_swap = (\<forall>x \<in> {0,1}. f x = 1 - x)"
 
-lemma (in deutsch) is_swap_values:
+lemma is_swap_values:
   assumes "is_swap"
   shows "f 0 = 1" and "f 1 = 0" 
   using assms is_swap_def by auto
 
-lemma (in deutsch) is_swap_sum_mod_2:
+lemma is_swap_sum_mod_2:
   assumes "is_swap"
   shows "(f 0 + f 1) mod 2 = 1"
   using assms is_swap_def by simp
-
-  
-context deutsch
-begin
 
 definition const:: "nat \<Rightarrow> bool" where 
 "const n = (\<forall>x \<in> {0,1}.(f x = n))"
@@ -49,11 +49,12 @@ definition is_const:: "bool" where
 definition is_balanced:: "bool" where
 "is_balanced \<equiv> (\<forall>x \<in> {0,1}.(f x = x)) \<or> is_swap"
 
-lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" using dom by auto
+lemma f_values: "(f 0 = 0 \<or> f 0 = 1) \<and> (f 1 = 0 \<or> f 1 = 1)" 
+  using dom by auto
  
 lemma f_cases:
   shows "is_const \<or> is_balanced"   
-  using dom is_balanced_def const_def is_const_def is_swap_def f_values by auto 
+  using dom is_balanced_def const_def is_const_def is_swap_def f_values by auto
 
 lemma const_0_sum_mod_2:
   assumes "const 0"
@@ -84,20 +85,13 @@ lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 
 end (* context deutsch *)
 
-text \<open>Transform @{text U\<^sub>f}. \<close>
+text \<open>The Deutsch's Transform @{text U\<^sub>f}.\<close>
 
 definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
-
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
                           [0, 0, f(1), 1 - f(1)]]"
-
-lemma set_two [simp]:
-  fixes i:: nat
-  assumes "i < 2"
-  shows "i = 0 \<or> i = Suc 0"
-  using assms by auto
 
 lemma set_four [simp]: 
   fixes i:: nat
@@ -214,7 +208,10 @@ next
   qed
 qed
 
-text \<open>Two qubits are prepared. The first one is state $|0\rangle$, the second one in state $|1\rangle$.\<close>
+text \<open>
+Two qubits are prepared. 
+The first one in the state $|0\rangle$, the second one in the state $|1\rangle$.
+\<close>
 
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1" 
@@ -234,15 +231,8 @@ lemma ket_one_to_mat_of_cols_list [simp]: "|one\<rangle> = mat_of_cols_list 2 [[
   apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
   using less_2_cases by fastforce
 
-(*Note: The description follows the algorithm as it is described in the literature and will not 
-always be in one-to-one correspondence to the matrices used but rather capture their meaning on 
-a higher level. This is also due to the fact that it won't be possible to express the states 
-occurring later in a simple way. Consequently, instead of using @{term "|zero\<rangle>"} |0\<rangle> will be used.
-To keep the connection between both I sticked with @{term "\<psi>\<^sub>0\<^sub>0"} but there are also arguments to 
-change it to $\psi_{00}$ *)
-
-text\<open>
-Applying the Hadamard gate to state $|0\rangle$ results in the new state 
+text \<open>
+Applying the Hadamard gate to the state $|0\rangle$ results in the new state 
 @{term "\<psi>\<^sub>0\<^sub>0"} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2 }$
 \<close>
 
@@ -254,7 +244,7 @@ lemma H_on_ket_zero:
 proof 
   fix i j:: nat
   assume "i < dim_row \<psi>\<^sub>0\<^sub>0" and "j < dim_col \<psi>\<^sub>0\<^sub>0"
-  then have "i \<in> {0,1} \<and> j = 0" by (simp add: mat_of_cols_list_def)
+  then have "i \<in> {0,1} \<and> j = 0" by (simp add: mat_of_cols_list_def less_2_cases)
   then show "(H * |zero\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>0 $$ (i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def)
 next
@@ -273,8 +263,8 @@ next
     using ket_zero_is_state by simp
 qed
 
-text\<open>
-Applying the Hadamard gate to state $|0\rangle$ results in the new state 
+text \<open>
+Applying the Hadamard gate to the state $|0\rangle$ results in the new state 
 @{text \<psi>\<^sub>0\<^sub>1} = $\dfrac {(|0\rangle - |1\rangle)} {\sqrt 2}$.
 \<close>
 
@@ -286,7 +276,7 @@ lemma H_on_ket_one:
 proof 
   fix i j:: nat
   assume "i < dim_row \<psi>\<^sub>0\<^sub>1" and "j < dim_col \<psi>\<^sub>0\<^sub>1"
-  then have "i \<in> {0,1} \<and> j = 0" by (simp add: mat_of_cols_list_def)
+  then have "i \<in> {0,1} \<and> j = 0" by (simp add: mat_of_cols_list_def less_2_cases)
   then show "(H * |one\<rangle>) $$ (i,j) = \<psi>\<^sub>0\<^sub>1 $$ (i,j)"
     by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def ket_vec_def)
 next
@@ -300,8 +290,8 @@ lemma H_on_ket_one_is_state:
   using H_is_gate ket_one_is_state by simp
 
 text\<open>
-Then, state @{text \<psi>\<^sub>1} = $\dfrac {(|00\rangle - |01\rangle + |10\rangle - |11\rangle)} {2} $
-is obtained by taking the tensor product of state 
+Then, the state @{text \<psi>\<^sub>1} = $\dfrac {(|00\rangle - |01\rangle + |10\rangle - |11\rangle)} {2} $
+is obtained by taking the tensor product of the states 
 @{text \<psi>\<^sub>0\<^sub>0} = $\dfrac {(|0\rangle + |1\rangle)} {\sqrt 2} $  and  
 @{text \<psi>\<^sub>0\<^sub>1} = $\dfrac {(|0\rangle - |1\rangle)} {\sqrt 2} $.
 \<close>
@@ -338,11 +328,13 @@ next
     H_on_ket_one H_on_ket_zero by force
 qed
 
-text \<open>Next, the gate @{text U\<^sub>f} is applied to state 
+text \<open>
+Next, the gate @{text U\<^sub>f} is applied to the state 
 @{text \<psi>\<^sub>1} = $\dfrac {(|00\rangle - |01\rangle + |10\rangle - |11\rangle)} {2}$ and 
 @{text \<psi>\<^sub>2}= $\dfrac {(|0f(0)\oplus 0\rangle - |0 f(0) \oplus 1\rangle + |1 f(1)\oplus 0\rangle - |1f(1)\oplus 1\rangle)} {2}$ 
 is obtained. This simplifies to 
-@{text \<psi>\<^sub>2}= $\dfrac {(|0f(0)\rangle - |0 \overline{f(0)} \rangle + |1 f(1)\rangle - |1\overline{f(1)}\rangle)} {2}$ \<close>
+@{text \<psi>\<^sub>2}= $\dfrac {(|0f(0)\rangle - |0 \overline{f(0)} \rangle + |1 f(1)\rangle - |1\overline{f(1)}\rangle)} {2}$ 
+\<close>
 
 abbreviation (in deutsch) \<psi>\<^sub>2:: "complex Matrix.mat" where
 "\<psi>\<^sub>2 \<equiv>  mat_of_cols_list 4 [[(1 - f(0))/2 - f(0)/2,
@@ -460,7 +452,8 @@ qed
 text \<open>
 Finally, all steps are put together. The result depends on the function f. If f is constant
 the first qubit of $\pm |f(0)\oplus f(1)\rangle \left[ \dfrac {(|0\rangle - |1\rangle)} {\sqrt 2}\right]$
-is 0, if it is is_balanced it is 1. The algorithm only uses one evaluation of f(x) and will always succeed. 
+is 0, if it is is_balanced it is 1. 
+The algorithm only uses one evaluation of f(x) and will always succeed. 
 \<close>
 
 definition (in deutsch) deutsch_algo:: "complex Matrix.mat" where 
@@ -476,8 +469,8 @@ lemma (in deutsch) deutsch_algo_result_is_state:
 
 
 text \<open>
-If the function is constant measurement of the first qubit should result in state 0 with 
-probability 1. 
+If the function is constant then the measurement of the first qubit should result in the state 
+$|0\<rangle>$ with probability 1. 
 \<close>
 
 lemma [simp]:
@@ -503,8 +496,8 @@ lemma (in deutsch) prob1_deutsch_algo_const:
 deutsch_algo_result_is_state by simp
 
 text \<open>
-If the function is is_balanced measurement of the first qubit should result in state 1 with 
-probability 1. 
+If the function is balanced the measurement of the first qubit should result in the state $|1\<rangle>$ 
+with probability 1. 
 \<close>
 
 lemma (in deutsch) prob0_deutsch_algo_balanced:  
@@ -525,16 +518,10 @@ lemma (in deutsch) prob1_deutsch_algo_balanced:
 using assms prob0_deutsch_algo_balanced prob_sum_is_one[of "2" "deutsch_algo" "0"] 
 deutsch_algo_result_is_state by simp
  
-text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$ \<close>
+text \<open>Eventually, the measurement of the first qubit results in $f(0)\oplus f(1)$. \<close>
 
 definition (in deutsch) deutsch_algo_eval:: "real" where 
 "deutsch_algo_eval \<equiv> prob1 2 deutsch_algo 0"
-
-text \<open>
-Now, it can be verified that the algorithm returns one if the input function is constant and
-zero if it is is_balanced.
-\<close>
-
 
 lemma (in deutsch) sum_mod_2_cases:
   shows "(f 0 + f 1) mod 2 = 0 \<longrightarrow> is_const" 
@@ -545,6 +532,11 @@ lemma (in deutsch) deutsch_algo_eval_is_sum_mod_2:
   shows "deutsch_algo_eval = (f(0) + f(1)) mod 2"
   using deutsch_algo_eval_def f_cases is_const_sum_mod_2 is_balanced_sum_mod_2 
 prob1_deutsch_algo_const prob1_deutsch_algo_balanced by auto
+
+text \<open>
+If the algorithm returns 0 then one concludes that the input function is constant and
+if it returns 1 then the function is balanced.
+\<close>
 
 theorem (in deutsch) deutsch_algo_is_correct:
   shows "deutsch_algo_eval = 0 \<longrightarrow> is_const" and "deutsch_algo_eval = 1 \<longrightarrow> is_balanced"
