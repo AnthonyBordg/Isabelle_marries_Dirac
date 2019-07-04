@@ -26,7 +26,6 @@ definition is_balanced:: "bool" where
 "is_balanced \<equiv> \<exists>A B. A \<subseteq> {(i::nat). i < 2^n} \<and> B \<subseteq> {(i::nat). i < 2^n}
                    \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
                    \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
-(*TODO: in third row take either last two out or first one, is there a better way to define it?*)
 
 lemma is_balanced_inter:
   assumes "is_balanced"
@@ -260,11 +259,13 @@ next
   show "(H ^\<^sub>\<oplus> 1) * ( |zero\<rangle> ^\<^sub>\<oplus> 1) = (\<psi>\<^sub>1\<^sub>0 1)" sorry
 next
   fix n
-  assume "1 \<le> n" and "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
-  have 
-  show "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"  
+  assume "1 \<le> n" and a1: "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
+  have "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (H * |zero\<rangle>) \<Otimes> ((H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n))" 
+    using pow_mult_distr by auto
+  have "(H * |zero\<rangle>) \<Otimes> ((H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n)) = (H * |zero\<rangle>) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using a1 by auto 
+  then have "(H * |zero\<rangle>) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n) = (\<psi>\<^sub>1\<^sub>0 (Suc n))" sorry
+  then show "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"  sorry
 qed
-   pow_mult_distr
 
 definition \<psi>\<^sub>1\<^sub>1:: "complex Matrix.mat" where 
 "\<psi>\<^sub>1\<^sub>1 \<equiv> Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else -1/sqrt(2))"
