@@ -224,7 +224,7 @@ qed
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n" and "m \<le> n"
-  shows "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+  shows "m>n \<or> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
          (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
          (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
 proof (induction m)
@@ -232,7 +232,7 @@ proof (induction m)
   define w where d0:"w = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<0. if select_index n k j then 
         root (2^(n-k))^(\<Sum>l<k. 2^(k-l) * (if select_index n l j then 1 else 0)) else 1) *
         (\<Prod>k<n-0. if select_index n (k+0) i = select_index n (k+0) j then 1 else 0) / (sqrt(2)^0))"
-  show "qft_no_swap n 0 v = w"
+  have "qft_no_swap n 0 v = w"
   proof
     show "dim_vec (qft_no_swap n 0 v) = dim_vec w"
       by (auto simp add: assms(1) d0)
@@ -243,13 +243,15 @@ proof (induction m)
         by (simp add: assms(1,2) d0 uniq_select_index)
     qed
   qed
+  then show "0>n \<or> qft_no_swap n 0 v = w"
+    by simp
 next
   case (Suc m)
-  then have  "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
-              (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
-              (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
+  then have "m>n \<or> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+             (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+             (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
     by simp
-  show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
+  show "(Suc m)>n \<or> qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
         (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
         (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
     sorry
