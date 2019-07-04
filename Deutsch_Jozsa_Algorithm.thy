@@ -27,14 +27,17 @@ definition is_balanced:: "bool" where
                    \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
                    \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
 
-(*Todo: This cannot work like this (A and B are existentially bounded)*)
-lemma is_balanced_inter:
-  assumes "is_balanced"
-  shows "A \<inter> B = {}" oops
+lemma is_balanced_inter: 
+  fixes A B:: "nat set"
+  assumes "\<forall>x \<in> A. f(x) = 0" and "\<forall>x \<in> B. f(x) = 1" 
+  shows "A \<inter> B = {}" sorry
 
 lemma is_balanced_union:
-  assumes "is_balanced"
-  shows "A \<union> B = {i::nat. i < 2^n}" oops
+  fixes A B:: "nat set"
+  assumes "A \<subseteq> {(i::nat). i < 2^n}" and "B \<subseteq> {(i::nat). i < 2^n}" and "card A = (2^(n-1))"
+and "card B = (2^(n-1))" and "A \<inter> B = {}"
+  shows "A \<union> B = {i::nat. i < 2^n}" sorry
+
 
 lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 
