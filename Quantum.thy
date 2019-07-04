@@ -1836,15 +1836,11 @@ next
 qed
 
 
-text \<open>
+(*
 Biblio:
 
-\begin{itemize}
-
-\item Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang,
+- Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang,
 10th Anniversary Edition, Cambridge University Press, 2010.
-
-\end{itemize}
-\<close>
+*)
 
 end
