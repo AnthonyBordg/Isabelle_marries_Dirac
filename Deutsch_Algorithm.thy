@@ -1,4 +1,15 @@
-theory Deutsch_Algorithm 
+text \<open>
+Authors: 
+
+\begin{itemize}
+
+\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
+\item Hanna Lachnitt, TU Wien, \href{mailto:lachnitt@student.tuwien.ac.at}{lachnitt@student.tuwien.ac.at}
+
+\end{itemize}
+\<close>
+
+theory Deutsch_Algorithm
 imports
   MoreTensor
 begin

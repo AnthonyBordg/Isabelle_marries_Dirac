@@ -46,7 +46,6 @@ end (* context deutsch_jozsa *)
 
 
 definition (in deutsch_jozsa) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
-
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
@@ -142,7 +141,7 @@ abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1"
 
 fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
-  "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 but might avoid stress if we fix the number to be the number of \<oplus>?*)
+  "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 (also like this in literature) but might avoid stress if we fix the number to be the number of \<oplus>?*)
 | "A ^\<^sub>\<oplus> (Suc k) =  A \<Otimes> (A ^\<^sub>\<oplus> k)"
 
 lemma pow_tensor_1_is_id[simp]:
@@ -150,6 +149,82 @@ lemma pow_tensor_1_is_id[simp]:
   shows "A ^\<^sub>\<oplus> 1 = A"
   using one_mat_def by auto
 
+
+(*As n has to be at least one 1 we have to adapt the induction rule *)
+lemma ind_from_1[case_names ge 1 step]:
+  assumes "n\<ge>1"
+  assumes "P(1)" 
+  assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
+  shows " P n"
+  using nat_induct_at_least assms by auto
+
+
+
+
+lemma pow_tensor_dim_row[simp]:
+  fixes A n
+  assumes "n\<ge>1"
+  shows "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto 
+next
+  show "dim_row(A ^\<^sub>\<oplus> 1) = (dim_row A)^1" by simp
+next
+  fix n
+  assume "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
+  then show "dim_row(A ^\<^sub>\<oplus> (Suc n)) = (dim_row A)^(Suc n)" 
+    by (metis One_nat_def Suc_inject Zero_not_Suc dim_row_tensor_mat pow_tensor.elims power_Suc power_one_right)
+qed
+
+lemma pow_tensor_dim_col[simp]:
+  fixes A n
+  assumes "n\<ge>1"
+  shows "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto 
+next
+  show "dim_col(A ^\<^sub>\<oplus> 1) = (dim_col A)^1" by simp
+next
+  fix n
+  assume "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
+  then show "dim_col(A ^\<^sub>\<oplus> (Suc n)) = (dim_col A)^(Suc n)" 
+    by (metis dim_col_tensor_mat One_nat_def Suc_inject Zero_not_Suc pow_tensor.elims power_Suc power_one_right )
+qed
+
+lemma pow_tensor_values:
+  fixes A n i j
+  assumes "n\<ge>1"
+  assumes "i<dim_row ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
+  and "j < dim_col ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
+  shows "( A ^\<^sub>\<oplus> (Suc n)) $$ (i, j) = ( A \<Otimes> ( A ^\<^sub>\<oplus> n)) $$ (i, j)"
+  using assms
+  by (metis One_nat_def le_0_eq not0_implies_Suc pow_tensor.simps(2))
+
+lemma pow_mult_distr:
+  shows "(A ^\<^sub>\<oplus> (Suc n))*(B ^\<^sub>\<oplus> (Suc n)) = (A * B) \<Otimes> ((A ^\<^sub>\<oplus> n)*(B ^\<^sub>\<oplus> n))" 
+  sorry
+
+
+
+
+lemma h2:
+  fixes A i j
+  assumes "i<dim_row ( A ^\<^sub>\<oplus> (Suc n))"
+  and "dim_row A = 2"
+  and "dim_col A = 1"
+  and "n\<ge>1"
+  shows "i \<le> dim_row ( A ^\<^sub>\<oplus> n ) \<longrightarrow>
+        (A \<Otimes> ( A ^\<^sub>\<oplus> n)) $$ (i, 0) = (A  $$ (0, 0)) * ((A ^\<^sub>\<oplus> n) $$ (i,0))"
+    (*and "i > dim_row ( A ^\<^sub>\<oplus> n ) \<longrightarrow>
+        (A \<Otimes> ( A ^\<^sub>\<oplus> n)) $$ (i, 0) = (A  $$ (1, 0)) * ((A ^\<^sub>\<oplus> n) $$ (dim_row ( A ^\<^sub>\<oplus> n ) + i,0))"*)
+  sorry 
+
+lemma h3:
+  fixes i j
+  assumes "i< dim_row A"
+  and "j< dim_col A"
+shows "A=B \<longrightarrow> A $$ (i,j) = B $$ (i,j)"
+  sorry
 (*TODO: Use mat_of_cols_lists or Matrix.mat??? For Deutsch mat_of_cols_lists was better but
 it seems as if Isabelle is not good with list comprehension and also Matrix.mat gives more natural
 definition*)
@@ -160,18 +235,12 @@ If not define induction rule*)
 
 (*Proof outline*)
 
-
-definition \<psi>\<^sub>0\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where 
+abbreviation \<psi>\<^sub>0\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where (*Probably not needed anymore*)
 "\<psi>\<^sub>0\<^sub>0 k \<equiv> Matrix.mat (2^k) 1 (\<lambda>(i,j). if i=0 then 1 else 0)"
 
-lemma \<psi>\<^sub>0\<^sub>0_is_unit:
-  shows "\<psi>\<^sub>0\<^sub>0 n = |unit_vec (2^n) 0\<rangle>"
-sorry 
-
-lemma tensor_n_zero_is_\<psi>\<^sub>0\<^sub>0:
-  assumes "n\<ge>1"
-  shows " |zero\<rangle> ^\<^sub>\<oplus> n = \<psi>\<^sub>0\<^sub>0 n"
-  sorry
+lemma \<psi>\<^sub>0\<^sub>0_is_unit: (*Probably not needed anymore*)
+  shows "\<psi>\<^sub>0\<^sub>0 n = |unit_vec (2^n) 0\<rangle>" 
+  using ket_vec_def unit_vec_def by auto
 
 definition \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where 
 "\<psi>\<^sub>0\<^sub>1 \<equiv> |one\<rangle>"
@@ -179,13 +248,23 @@ definition \<psi>\<^sub>0\<^sub>1:: "complex Matrix.mat" where
 
 (*------------------------------------------------------------------------------------------------*)
 
-definition \<psi>\<^sub>1\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where 
+abbreviation \<psi>\<^sub>1\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where 
 "\<psi>\<^sub>1\<^sub>0 n \<equiv> Matrix.mat (2^n) 1 (\<lambda>(i,j). 1/sqrt(2)^n)"
 
-lemma "\<psi>\<^sub>0\<^sub>0_to_\<psi>\<^sub>1\<^sub>0":
+lemma "\<psi>\<^sub>0\<^sub>0_to_\<psi>\<^sub>1\<^sub>0": 
   assumes "n\<ge>1"
-  shows "(H ^\<^sub>\<oplus> n) * (\<psi>\<^sub>0\<^sub>0 n) = (\<psi>\<^sub>1\<^sub>0 n)"  
-  sorry
+  shows "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "(H ^\<^sub>\<oplus> 1) * ( |zero\<rangle> ^\<^sub>\<oplus> 1) = (\<psi>\<^sub>1\<^sub>0 1)" sorry
+next
+  fix n
+  assume "1 \<le> n" and "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
+  have 
+  show "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"  
+qed
+   pow_mult_distr
 
 definition \<psi>\<^sub>1\<^sub>1:: "complex Matrix.mat" where 
 "\<psi>\<^sub>1\<^sub>1 \<equiv> Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else -1/sqrt(2))"
@@ -212,7 +291,7 @@ definition (in deutsch_jozsa) \<psi>\<^sub>2:: "nat \<Rightarrow> complex Matrix
 
 lemma (in deutsch_jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2: 
   assumes "n\<ge>1"
-  shows "(U\<^sub>f ^\<^sub>\<oplus> n)* (\<psi>\<^sub>1 n) = (\<psi>\<^sub>2 n)"
+  shows "(U\<^sub>f ^\<^sub>\<oplus> n)* (\<psi>\<^sub>1 n) = (\<psi>\<^sub>2 n)" (*Might need to add something to Uf to multiply minus to each second entry, look at it again*)
   sorry
 
 
@@ -224,6 +303,46 @@ lemma (in deutsch_jozsa) \<psi>\<^sub>1_tensor_\<psi>\<^sub>2:
   shows "((H ^\<^sub>\<oplus> n) \<Otimes> Id 1 )* (\<psi>\<^sub>2 n) = (\<psi>\<^sub>3 n)"
   sorry
 
+
+
+(*lemma tensor_n_zero_is_\<psi>\<^sub>0\<^sub>0:
+  assumes "n\<ge>1"
+  shows " |zero\<rangle> ^\<^sub>\<oplus> n = \<psi>\<^sub>0\<^sub>0 n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "|zero\<rangle> ^\<^sub>\<oplus> 1 = \<psi>\<^sub>0\<^sub>0 1" using ket_vec_def by auto
+next
+  fix n
+  assume a0: " n\<ge>1" and a1: " |zero\<rangle> ^\<^sub>\<oplus> n = \<psi>\<^sub>0\<^sub>0 n"
+  show " |zero\<rangle> ^\<^sub>\<oplus> Suc n = \<psi>\<^sub>0\<^sub>0 (Suc n) "
+  proof
+    show "dim_row ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) =dim_row (\<psi>\<^sub>0\<^sub>0 (Suc n))"
+      by (metis \<psi>\<^sub>0\<^sub>0_is_unit a0 dim_row_mat(1) le_SucI pow_tensor_dim_row power_one_right)
+  next 
+    show "dim_col ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = dim_col (\<psi>\<^sub>0\<^sub>0 (Suc n))" 
+      by (metis \<psi>\<^sub>0\<^sub>0_is_unit a0 dim_col_mat(1) le_SucI pow_tensor_dim_col power_one power_one_right)
+  next
+  fix i j::nat
+  assume a2: "i < dim_row (\<psi>\<^sub>0\<^sub>0 (Suc n))" and a3: "j < dim_col (\<psi>\<^sub>0\<^sub>0 (Suc n))"
+  then have f0: "i < 2^(Suc n)" and f1: "j = 0" by auto
+  then have f2: "( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) $$ (i, j) = ( |zero\<rangle> \<Otimes> ( |zero\<rangle> ^\<^sub>\<oplus> n)) $$ (i, j)" 
+    using pow_tensor_values a0 
+    by (metis One_nat_def Suc_le_D pow_tensor.simps(2))
+  have "i < dim_row ( |zero\<rangle> ^\<^sub>\<oplus>(Suc n ))" sorry 
+  moreover have "j=0" using f1 by auto
+  ultimately have "i \<le> dim_row ( |zero\<rangle> ^\<^sub>\<oplus> n ) \<longrightarrow> 
+            ( |zero\<rangle> \<Otimes> ( |zero\<rangle> ^\<^sub>\<oplus> n)) $$ (i, j) = ( |zero\<rangle> $$(0,j)) * (( |zero\<rangle> ^\<^sub>\<oplus> n) $$ (i,j)) " 
+    using a0 h2 assms ket_vec_def f1 by auto
+  then have "i \<le> dim_row ( |zero\<rangle> ^\<^sub>\<oplus> n ) \<longrightarrow> 
+            ( |zero\<rangle> \<Otimes> ( |zero\<rangle> ^\<^sub>\<oplus> n)) $$ (i, j) =  1 * (( |zero\<rangle> ^\<^sub>\<oplus> n) $$ (i,j))" 
+    by (metis f1 index_unit_vec(2) index_unit_vec(3) ket_vec_index pos2)
+  then have "i \<le> dim_row ( |zero\<rangle> ^\<^sub>\<oplus> n ) \<longrightarrow> (( |zero\<rangle> ^\<^sub>\<oplus> n) $$ (i,j)) =  \<psi>\<^sub>0\<^sub>0 n $$ (i, j)" 
+    using ket_vec_def a1 by simp 
+  then have "i \<le> dim_row ( \<psi>\<^sub>0\<^sub>0 (Suc n) ) \<longrightarrow>  \<psi>\<^sub>0\<^sub>0 (Suc n) $$ (i, j) = \<psi>\<^sub>0\<^sub>0 n $$ (i, j)" sledgehammer
+  then have "(( |zero\<rangle> ^\<^sub>\<oplus> n) $$ (i,j)) =  \<psi>\<^sub>0\<^sub>0 (Suc n) $$ (i, j)" sorry
+  then show "( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) $$ (i, j) = \<psi>\<^sub>0\<^sub>0 (Suc n) $$ (i, j)" using a1 ket_vec_def h2 f2 sorry
+qed*)
 
 (*
 lemma (in deutsch_jozsa)
