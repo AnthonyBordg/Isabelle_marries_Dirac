@@ -205,27 +205,51 @@ primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \
 definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
 "qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
+lemma prod_of_select_index: 
+  fixes i j::"nat"
+  assumes "i < n" and "j < n"
+  shows "(if j = i then 1 else 0) = (\<Prod>k<n. if (select_index n k i = select_index n k j) then 1 else 0)"
+proof-
+  show ?thesis
+    sorry
+qed
+
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n" and "m \<le> n"
-  shows "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<m. if select_index n j i then 
-         (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
-         (\<Prod>j<n-m. if select_index n (j+m) i then 1 else 0) / (sqrt(2)^m))"
+  shows "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+         (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+         (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
 proof (induction m)
   case 0
-  show "qft_no_swap n 0 v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<0. if select_index n j i then 
-        (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
-        (\<Prod>j<n-0. if select_index n (j+0) i then 1 else 0) / (sqrt(2)^0))"
-    sorry
+  show "qft_no_swap n 0 v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<0. if select_index n k j then 
+         (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+         (\<Prod>k<n-0. if (select_index n (k+0) i = select_index n (k+0) j) then 1 else 0) / (sqrt(2)^0))"
+  proof
+    define w where d0:"w = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<0. if select_index n k j then 
+          root (2^(n-k))^(\<Sum>l<k. 2^(k-l) * (if select_index n l j then 1 else 0)) else 1) *
+          (\<Prod>k<n-0. if select_index n (k+0) i = select_index n (k+0) j then 1 else 0) /
+          complex_of_real (sqrt 2 ^ 0))"
+    then show "dim_vec (qft_no_swap n 0 v) = dim_vec w"
+      by (auto simp add: assms(1))
+    show " \<And>j. j < dim_vec w \<Longrightarrow> (qft_no_swap n 0 v) $ j = w $ j"
+    proof-
+      fix j assume "j < dim_vec w"
+      then show "(qft_no_swap n 0 v) $ j = w $ j"
+      using prod_of_select_index
+      apply (auto simp add: assms(1,2) unit_vec_def d0)
+      sorry
+    qed
+  qed
 next
   case (Suc m)
-  then have "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<m. if select_index n j i then 
-             (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
-             (\<Prod>j<n-m. if select_index n (j+m) i then 1 else 0) / (sqrt(2)^m))"
+  then have  "qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+              (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+              (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
     by simp
-  show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>i. (\<Prod>j<(Suc m). if select_index n j i then 
-        (root (2^(n-j)))^(\<Sum>k<j. (2^(j-k)) * (if select_index n k i then 1 else 0)) else 1) * 
-        (\<Prod>j<n-(Suc m). if select_index n (j+(Suc m)) i then 1 else 0) / (sqrt(2)^(Suc m)))"
+  show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
+        (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+        (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
     sorry
 qed
 
