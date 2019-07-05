@@ -9,7 +9,7 @@ Authors:
 \end{itemize}
 \<close>
 
-theory Deutsch_Algorithm
+theory Deutsch
 imports
   MoreTensor
 begin
