@@ -242,43 +242,38 @@ definition*)
 (*------------------------------------------------------------------------------------------------*)
 
 
-
-(*First try, define intermediate results as matrices*)
-abbreviation \<psi>\<^sub>1\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where 
-"\<psi>\<^sub>1\<^sub>0 n \<equiv> Matrix.mat (2^n) 1 (\<lambda>(i,j). 1/sqrt(2)^n)" (*start with 0 rather than 1? but then until 2^n-1*)
-
-lemma H_on_ket_zero: 
-  shows "(H * |zero\<rangle>) = (\<psi>\<^sub>1\<^sub>0 1)"
-proof 
-  fix i j:: nat
-  assume a0: "i < dim_row (\<psi>\<^sub>1\<^sub>0 1)" and a1: "j < dim_col (\<psi>\<^sub>1\<^sub>0 1)"
-  then have f1: "i \<in> {0,1} \<and> j = 0" by auto
-  then have h: "(\<psi>\<^sub>1\<^sub>0 1) = Matrix.mat 2 1 (\<lambda>(i,j). 1/sqrt(2))" by auto
-  then have g:"Matrix.row H i $ 0 = 1 / complex_of_real (sqrt 2)" sorry
-  then have  "i < dim_row H" and a1: "j < dim_col |zero\<rangle>" sorry
-  then have "(H * |zero\<rangle>) $$ (i,j) = (\<Sum> k \<in> {0 ..< dim_vec (Matrix.col |zero\<rangle> j)}. (Matrix.row H i) $ k * (Matrix.col |zero\<rangle> j) $ k)"
-    by (simp add: scalar_prod_def)
-  then show "(H * |zero\<rangle>) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 1) $$ (i,j)" 
-    using a0 a1 f1 ket_vec_def scalar_prod_def unit_vec_def H_without_scalar_prod g by auto
-next
-  show "dim_row (H * |zero\<rangle>) = dim_row (\<psi>\<^sub>1\<^sub>0 1)"  by (simp add: H_def mat_of_cols_list_def)
-next 
-  show "dim_col (H * |zero\<rangle>) = dim_col (\<psi>\<^sub>1\<^sub>0 1)" sorry
-qed
-
-
 (*Second try, define intermediate results as matrices*)
-
 
 abbreviation \<psi>\<^sub>1\<^sub>0':: "nat \<Rightarrow> complex Matrix.mat" where
 "\<psi>\<^sub>1\<^sub>0' n \<equiv> mat_of_cols_list (2^n) [[ 1/(sqrt(2)^n) . i \<leftarrow> [1..(2^n)] ]]" (*start with 0 rather than 1? but then until 2^n-1*)
+
+lemma constant_lists_value:
+  fixes x::real
+    and k n::nat
+  assumes "k<n"
+  shows"[x . i<-[1..n]]!k = x"
+  sorry
 
 lemma \<psi>\<^sub>1\<^sub>0'_values [simp]:
   fixes i j n
   assumes "i< dim_row (\<psi>\<^sub>1\<^sub>0' n)"
   and "j < dim_col (\<psi>\<^sub>1\<^sub>0' n)"
+  and "n\<ge>1"
   shows "(\<psi>\<^sub>1\<^sub>0' n)$$(i,j) = 1/(sqrt(2)^n)"
-  using mat_of_cols_list_def sorry 
+proof- 
+  have "i < 2^n" using assms mat_of_cols_list_def by auto
+  then have f1: "[ 1/(sqrt(2)^n) . i \<leftarrow> [1..(2^n)] ] ! i = 1/(sqrt(2)^n)" 
+    using constant_lists_value[of i "(2^n)" "1/(sqrt(2)^n)"] by auto
+  then have f2: "(\<psi>\<^sub>1\<^sub>0' n) $$ (i,j) = (mat_of_cols_list (2^n) [[ 1/(sqrt(2)^n) . i \<leftarrow> [1..(2^n)] ]]) $$ (i,j)" 
+    using mat_of_cols_list_def by auto 
+  then have "j = 0" using assms mat_of_cols_list_def by auto
+  then have "(\<psi>\<^sub>1\<^sub>0' n)$$(i,j) = (mat_of_cols_list (2^n) [[ 1/(sqrt(2)^n) . i \<leftarrow> [1..(2^n)] ]]) $$ (i,0)" 
+    by blast
+  then show "(\<psi>\<^sub>1\<^sub>0' n)$$(i,j) = 1/(sqrt(2)^n)"
+    using assms f1 f2 mat_of_cols_list_def sorry
+qed
+
+
 
 lemma H_on_ket_zero': 
   shows "(H *  |zero\<rangle>) = (\<psi>\<^sub>1\<^sub>0' 1)"
@@ -304,27 +299,29 @@ lemma \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>0_n:
   assumes "n\<ge>1"
   shows "(\<psi>\<^sub>1\<^sub>0' 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0' n) = (\<psi>\<^sub>1\<^sub>0' (Suc n))"
 proof
-  have f0: "(\<psi>\<^sub>1\<^sub>0' 1) = mat_of_cols_list 2 [[ 1/sqrt(2) , 1/sqrt(2)]]" 
+  have "(\<psi>\<^sub>1\<^sub>0' 1) = mat_of_cols_list 2 [[ 1/sqrt(2) , 1/sqrt(2)]]" 
     by (simp add: upto.simps)
   fix i j::nat
   assume a0: "i < dim_row (\<psi>\<^sub>1\<^sub>0' (Suc n))" and a1: "j < dim_col (\<psi>\<^sub>1\<^sub>0' (Suc n))"
-  then have f0: "i < 2^(Suc n)" and f1:" j = 0" using mat_of_cols_list_def by auto
-  have f2: "dim_row (\<psi>\<^sub>1\<^sub>0' 1) = 2" and f3: "dim_col (\<psi>\<^sub>1\<^sub>0' 1) = 1" using mat_of_cols_list_def by auto
-  have f4: "(\<psi>\<^sub>1\<^sub>0' (Suc n)) $$ (i,j) = 1/(sqrt(2)^(Suc n))" 
+  then have f0: " j = 0" using mat_of_cols_list_def by auto
+  then have f1: "(\<psi>\<^sub>1\<^sub>0' (Suc n)) $$ (i,j) = 1/(sqrt(2)^(Suc n))" 
     using  \<psi>\<^sub>1\<^sub>0'_values[of i "(Suc n)" j] a0 a1 by auto
+  have f2: "dim_row (\<psi>\<^sub>1\<^sub>0' 1) = 2" and f3: "dim_col (\<psi>\<^sub>1\<^sub>0' 1) = 1" using mat_of_cols_list_def by auto
   show "((\<psi>\<^sub>1\<^sub>0' 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0' n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0' (Suc n)) $$ (i,j)"
   proof (rule disjE)
     show "i < dim_row (\<psi>\<^sub>1\<^sub>0' n) \<or> i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0' n)" by linarith
   next
-    assume "i < dim_row (\<psi>\<^sub>1\<^sub>0' n)"
-    then have f5:"((\<psi>\<^sub>1\<^sub>0' 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0' n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0' 1) $$ (0,0) * (\<psi>\<^sub>1\<^sub>0' n) $$ (i,0)"
-      using h2_part1[of i "(\<psi>\<^sub>1\<^sub>0' 1)" "(\<psi>\<^sub>1\<^sub>0' n)" ] f1 assms
+    assume i9: "i < dim_row (\<psi>\<^sub>1\<^sub>0' n)"
+    then have "((\<psi>\<^sub>1\<^sub>0' 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0' n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0' 1) $$ (0,0) * (\<psi>\<^sub>1\<^sub>0' n) $$ (i,0)"
+      using h2_part1[of i "(\<psi>\<^sub>1\<^sub>0' 1)" "(\<psi>\<^sub>1\<^sub>0' n)" ] f0 assms
       by (simp add: mat_of_cols_list_def)
-    then have f6: "(\<psi>\<^sub>1\<^sub>0' 1) $$ (0,0) * (\<psi>\<^sub>1\<^sub>0' n) $$ (i,0) = 1/sqrt(2) * 1/(sqrt(2)^n)"
-    using mat_of_cols_list_def \<psi>\<^sub>1\<^sub>0'_values f0 sorry
-    then have "((\<psi>\<^sub>1\<^sub>0' 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0' n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0' (Suc n)) $$ (i,j)"
-    using f2 f3 f4 
-    by (smt f5 divide_divide_eq_left power_Suc)
+    also have "... = 1/sqrt(2) * (\<psi>\<^sub>1\<^sub>0' n) $$ (i,0)"
+    using \<psi>\<^sub>1\<^sub>0'_values[of 0 1 0] by auto
+    also have "... = 1/sqrt(2) * 1/(sqrt(2)^n)"
+    using \<psi>\<^sub>1\<^sub>0'_values[of i n 0] i9 mat_of_cols_list_def assms by auto
+    finally have "((\<psi>\<^sub>1\<^sub>0' 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0' n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0' (Suc n)) $$ (i,j)" 
+    using f1 f2 f3  
+    by (smt divide_divide_eq_left power_Suc)
   next 
    assume "i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0' n)"
    show ?thesis sorry
