@@ -6,7 +6,8 @@ begin
 
 declare [[ show_abbrevs=true]]
 declare [[ names_short=true]]
-
+(*There will probably be some lemmas going into Basic (maybe even Tensor) in here, 
+I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
 
@@ -32,13 +33,21 @@ definition is_balanced:: "bool" where
 lemma is_balanced_inter: 
   fixes A B:: "nat set"
   assumes "\<forall>x \<in> A. f(x) = 0" and "\<forall>x \<in> B. f(x) = 1" 
-  shows "A \<inter> B = {}" sorry
+  shows "A \<inter> B = {}" 
+  using assms by auto
 
 lemma is_balanced_union:
   fixes A B:: "nat set"
-  assumes "A \<subseteq> {(i::nat). i < 2^n}" and "B \<subseteq> {(i::nat). i < 2^n}" and "card A = (2^(n-1))"
-and "card B = (2^(n-1))" and "A \<inter> B = {}"
-  shows "A \<union> B = {i::nat. i < 2^n}" sorry
+  assumes "A \<subseteq> {(i::nat). i < 2^n}" and "B \<subseteq> {(i::nat). i < 2^n}" 
+      and "card A = (2^(n-1))"      and "card B = (2^(n-1))" 
+      and "A \<inter> B = {}"
+    shows "A \<union> B = {i::nat. i < 2^n}" 
+proof
+  show "A \<union> B \<subseteq> {i. i < 2 ^ n}"
+    using assms by auto 
+  show "{i. i < 2 ^ n} \<subseteq> A \<union> B"
+  sorry   (*TODO: Do this later not important right now*)
+qed
 
 
 lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
@@ -142,6 +151,19 @@ lemma (in deutsch_jozsa) deutsch_transform_is_gate:
    
 
 
+(*As n has to be at least 1 we have to adapt the induction rule *)
+lemma ind_from_1[case_names ge 1 step]:
+  assumes "n\<ge>1"
+  assumes "P(1)" 
+  assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
+  shows " P n"
+  using nat_induct_at_least assms by auto
+
+(*TODO: Better way then always assuming n\<ge>1?, for now just keep it a moment to try out what works*)
+
+
+
+
 fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
   "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 (also like this in literature) but might avoid stress if we fix the number to be the number of \<oplus>?*)
 | "A ^\<^sub>\<oplus> (Suc k) =  A \<Otimes> (A ^\<^sub>\<oplus> k)"
@@ -151,14 +173,11 @@ lemma pow_tensor_1_is_id[simp]:
   shows "A ^\<^sub>\<oplus> 1 = A"
   using one_mat_def by auto
 
-
-(*As n has to be at least 1 we have to adapt the induction rule *)
-lemma ind_from_1[case_names ge 1 step]:
-  assumes "n\<ge>1"
-  assumes "P(1)" 
-  assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
-  shows " P n"
-  using nat_induct_at_least assms by auto
+lemma pow_tensor_n: 
+  fixes n
+  assumes "n \<ge> 1"
+  shows " A ^\<^sub>\<oplus> (Suc n) = A  \<Otimes>  ( A ^\<^sub>\<oplus> n)" using assms 
+  by (metis Deutsch_Jozsa_Algorithm.pow_tensor.simps(2) One_nat_def Suc_le_D)
 
 lemma pow_tensor_dim_row[simp]:
   fixes A n
@@ -247,7 +266,7 @@ qed
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1"
 
-(*Long-term TODO: Since mat_of_cols_list is not used anymore these two should either be avoided or 
+(*Much-later- TODO: Since mat_of_cols_list is not used anymore these two should either be avoided or 
 at least be made part of the proofs that use them*)
 lemma ket_zero_to_mat_of_cols_list: "|zero\<rangle> = mat_of_cols_list 2 [[1, 0]]"  
   by (auto simp add: ket_vec_def mat_of_cols_list_def)
@@ -255,6 +274,15 @@ lemma ket_zero_to_mat_of_cols_list: "|zero\<rangle> = mat_of_cols_list 2 [[1, 0]
 lemma ket_one_to_mat_of_cols_list: "|one\<rangle> = mat_of_cols_list 2 [[0, 1]]"
   apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
   using less_2_cases by fastforce
+
+lemma ket_zero_is_state: 
+  shows "state 1 |zero\<rangle>"
+  by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
+
+lemma ket_one_is_state:
+  shows "state 1 |one\<rangle>" 
+  by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
+
 
 abbreviation \<psi>\<^sub>1\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" where
 "\<psi>\<^sub>1\<^sub>0 n \<equiv> Matrix.mat (2^n) 1 (\<lambda>(i,j). 1/(sqrt(2))^n)" (*start with 0 rather than 1? but then until 2^n-1*)
@@ -283,7 +311,17 @@ next
     by (simp add: ket_vec_def)
 qed
 
-lemma \<psi>\<^sub>1\<^sub>0_tensor_n: (*Restructure, too many names too confuse*)
+lemma H_on_ket_zero_is_state: 
+  shows "state 1 (H * |zero\<rangle>)"
+proof
+  show "gate 1 H" 
+    using H_is_gate by simp
+next
+  show "state 1 |zero\<rangle>" 
+    using ket_zero_is_state by simp
+qed
+
+lemma \<psi>\<^sub>1\<^sub>0_tensor_n: (*Restructure, too many names too confusing*)
   assumes "n\<ge>1"
   shows "(\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"
 proof
@@ -324,6 +362,40 @@ next
   then show "dim_col ((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) = dim_col (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
 qed
 
+lemma \<psi>\<^sub>1\<^sub>0_tensor_n_is_state:
+  assumes "n \<ge> 1"
+  shows "state n ( |zero\<rangle> ^\<^sub>\<oplus> n)"
+proof (induction n rule: ind_from_1)
+  show "n \<ge> 1" using assms by auto
+next
+  show "state 1 ( |zero\<rangle> ^\<^sub>\<oplus> 1)" using ket_zero_is_state by auto
+next
+  fix n
+  assume a0: "state n ( |zero\<rangle> ^\<^sub>\<oplus> n)" and "n\<ge>1"
+  then have "( |zero\<rangle>) ^\<^sub>\<oplus> (Suc n) = ( |zero\<rangle>)  \<Otimes>  ( |zero\<rangle> ^\<^sub>\<oplus> n)" 
+    using assms pow_tensor_n[of n "|zero\<rangle>" ] by auto
+  then show "state (Suc n) ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n))" 
+    using assms tensor_state a0 ket_zero_is_state by fastforce
+qed
+
+
+lemma H_tensor_n_is_gate:
+  assumes "n \<ge> 1"
+  shows "gate n (H ^\<^sub>\<oplus> n)" 
+proof(induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "gate 1 (H ^\<^sub>\<oplus> 1)" 
+    using H_is_gate by auto
+next
+  fix n 
+  assume a0: "gate n (H ^\<^sub>\<oplus> n)" and "n \<ge> 1"
+  then have "(H ^\<^sub>\<oplus> (Suc n)) = H \<Otimes> (H ^\<^sub>\<oplus> n)" using pow_tensor_n[of n H] by auto
+  then show "gate (Suc n) (H ^\<^sub>\<oplus> (Suc n))" 
+    using assms a0 tensor_gate H_is_gate by fastforce
+qed
+
+
 
 lemma "H_tensor_n_on_zero_tensor_n": 
   assumes "n\<ge>1"
@@ -347,8 +419,16 @@ qed
 
 
 
-
-
+lemma 
+  assumes "n\<ge>1"
+  shows "state n (\<psi>\<^sub>1\<^sub>0 n)"
+proof- (*Would also be possible as one line proof without first step which one is nicer?*)
+  have "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
+    using H_tensor_n_on_zero_tensor_n assms by auto 
+  then show "state n (\<psi>\<^sub>1\<^sub>0 n)" 
+    using H_tensor_n_is_gate \<psi>\<^sub>1\<^sub>0_tensor_n_is_state assms gate_on_state_is_state H_tensor_n_on_zero_tensor_n assms
+    by metis
+qed
 
 
 
