@@ -212,9 +212,62 @@ lemma uniq_select_index:
 proof-
   have "(\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)) \<Longrightarrow> i = j"
   proof-
-    assume "(\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j))"
-    show "i = j"
-      sorry
+    assume a0:"\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)"
+    have "\<And>a. (a\<in>{..<n+1} \<Longrightarrow> i mod (2^a) = j mod (2^a))"
+    proof-
+      fix a
+      show "(a\<in>{..<n+1} \<Longrightarrow> i mod (2^a) = j mod (2^a))"
+      proof (induction a)
+        case 0
+        then show ?case by simp
+      next
+        case c1:(Suc a)
+        have "n - (Suc a) < n" using c1 by simp
+        moreover have "select_index n (n - (Suc a)) i = (2^a \<le> i mod 2^(Suc a))"
+          using select_index_def assms(1) c1 by auto
+        moreover have "select_index n (n - (Suc a)) j = (2^a \<le> j mod 2^(Suc a))"
+          using select_index_def assms(2) c1 by auto
+        ultimately have "(2^a \<le> i mod 2^(Suc a)) = (2^a \<le> j mod 2^(Suc a))"
+          using a0 by simp
+        then have f0:"(2^a \<le> i mod 2^(Suc a) \<and> 2^a \<le> j mod 2^(Suc a)) \<or> 
+                      (2^a > i mod 2^(Suc a) \<and> 2^a > j mod 2^(Suc a))"
+          by auto
+        have "i mod (2*(2^a)) < (2*(2^a))" by simp
+        then have f1:"(i mod (2*(2^a))) mod 2^a = i mod (2*(2^a)) \<or>
+                      (i mod (2*(2^a))) mod 2^a = i mod (2*(2^a)) - 2^a"
+          by (metis Suc_1 f0 divmod_digit_1(2) mod_by_Suc_0 mod_less mod_less_eq_dividend 
+              nat_zero_less_power_iff semiring_normalization_rules(27) zero_less_Suc)
+        have "i mod (2*(2^a)) + i div (2*(2^a)) * 2*(2^a) = i"
+          using div_mult_mod_eq[of "i" "2*(2^a)"] by simp
+        then have "(i mod (2*(2^a))) mod 2^a = i mod 2^a"
+          by (metis mod_mult_self1)
+        then have f5:"i mod (2*(2^a)) = i mod 2^a \<or>
+                      i mod (2*(2^a)) = i mod 2^a + 2^a"
+          using f1 by auto
+        have f2:"i mod 2^a < 2^a \<and> i mod 2^a + 2^a \<ge> 2^a" by simp
+        have "j mod (2*(2^a)) < (2*(2^a))" by simp
+        then have f3:"(j mod (2*(2^a))) mod 2^a = j mod (2*(2^a)) \<or>
+                   (j mod (2*(2^a))) mod 2^a = j mod (2*(2^a)) - 2^a"
+          by (metis Suc_1 f0 divmod_digit_1(2) mod_by_Suc_0 mod_less mod_less_eq_dividend 
+              nat_zero_less_power_iff semiring_normalization_rules(27) zero_less_Suc)
+        have "j mod (2*(2^a)) + j div (2*(2^a)) * 2*(2^a) = j"
+          using div_mult_mod_eq[of "j" "2*(2^a)"] by simp
+        then have "(j mod (2*(2^a))) mod 2^a = j mod 2^a"
+          by (metis mod_mult_self1)
+        then have f6:"j mod (2*(2^a)) = j mod 2^a \<or>
+                      j mod (2*(2^a)) = j mod 2^a + 2^a"
+          using f3 by auto
+        moreover have f4:"j mod 2^a < 2^a \<and> j mod 2^a + 2^a \<ge> 2^a" by simp
+        have f7:"(i mod 2^(Suc a) = i mod 2^a \<and> j mod 2^(Suc a) = j mod 2^a) \<or> 
+                 (i mod 2^(Suc a) = i mod 2^a + 2^a \<and> j mod 2^(Suc a) = j mod 2^a + 2^a)"
+          using f0
+          by (metis f2 f4 f5 f6 le_imp_less_Suc not_less_eq semiring_normalization_rules(27))
+        moreover have "i mod 2^a = j mod 2^a" using c1 by simp
+        ultimately show "i mod 2^(Suc a) = j mod 2^(Suc a)" by auto
+      qed
+    qed
+    then have "i mod 2^n = j mod 2^n" by simp
+    then show "i = j" using assms(1,2) by simp
   qed
   then show ?thesis
     using assms(3)
@@ -243,8 +296,7 @@ proof (induction m)
         by (simp add: assms(1,2) d0 uniq_select_index)
     qed
   qed
-  then show "0>n \<or> qft_no_swap n 0 v = w"
-    by simp
+  then show "0>n \<or> qft_no_swap n 0 v = w" by simp
 next
   case (Suc m)
   then have "m>n \<or> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
