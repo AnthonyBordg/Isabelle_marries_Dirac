@@ -3,8 +3,8 @@ Authors:
 
 \begin{itemize}
 
-\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
 \item Hanna Lachnitt, TU Wien, \href{mailto:lachnitt@student.tuwien.ac.at}{lachnitt@student.tuwien.ac.at}
+\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
 
 \end{itemize}
 \<close>
@@ -103,12 +103,6 @@ definition (in deutsch) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") w
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
                           [0, 0, f(1), 1 - f(1)]]"
-
-lemma set_four [simp]: 
-  fixes i:: nat
-  assumes "i < 4"
-  shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
-  by (auto simp add: assms)
 
 lemma (in deutsch) deutsch_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
@@ -483,10 +477,6 @@ text \<open>
 If the function is constant then the measurement of the first qubit should result in the state 
 $|0\<rangle>$ with probability 1. 
 \<close>
-
-lemma [simp]:
-  shows "2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" 
-  using cmod_def by (simp add: power_divide)
 
 lemma (in deutsch) prob0_deutsch_algo_const:
   assumes "is_const" 

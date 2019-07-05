@@ -10,9 +10,10 @@ Authors:
 \<close>
 
 theory Quantum
-imports 
+imports
   Jordan_Normal_Form.Matrix
   "HOL-Library.Nonpos_Ints"
+  Basics
 begin
 
 section \<open>Qubits and Quantum Gates\<close>
@@ -747,8 +748,6 @@ definition real_to_cpx_mat:: "real mat \<Rightarrow> complex mat" where
 
 text \<open>Our first quantum gate: the identity matrix! Arguably, not a very interesting one though!\<close>
 
-lemma set_2 [simp]: "{0..<2::nat} = {0,1}" by auto
-
 definition Id :: "nat \<Rightarrow> complex mat" where
 "Id n \<equiv> 1\<^sub>m (2^n)"
 
@@ -854,8 +853,6 @@ lemma H_is_gate [simp]:
   apply(simp add: gate_def unitary_def)
   apply(simp add: H_def)
   done
- 
-lemma set_4 [simp]:"{0..<4::nat} = {0,1,2,3}" by auto
 
 text \<open>The controlled-NOT gate\<close>
 

@@ -8,6 +8,7 @@ imports
   Quantum
   Tensor
   Jordan_Normal_Form.Matrix
+  Basics
 begin
 
 lemma tensor_prod_2 [simp]: 
@@ -48,8 +49,6 @@ lemma vec_dim_of_vec_of_list [simp]:
   assumes "length l = n"
   shows "dim_vec (vec_of_list l) = n"
   using assms vec_of_list_def by simp
-
-lemma index_is_2 [simp]: "\<forall>i::nat. i \<noteq> Suc 0 \<longrightarrow> i \<noteq> 3 \<longrightarrow> 0 < i \<longrightarrow> i < 4 \<longrightarrow> i = 2" by simp
 
 lemma vec_tensor_prod_2_bis [simp]:
   assumes "v \<in> state_qbit 1" and "w \<in> state_qbit 1"
@@ -124,8 +123,6 @@ proof
   show "\<And>i j. i < dim_row u \<Longrightarrow> j < dim_col u \<Longrightarrow>  (v \<Otimes> w) $$ (i, j) = u $$ (i, j)"
       using u_def tensor_mat_def assms state_def by simp
 qed
-
-lemma index_sl_four [simp]: "\<forall>i::nat. i < 4 \<longrightarrow> i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" by auto
 
 lemma mat_tensor_prod_2_col [simp]:
   assumes "state 1 v" and "state 1 w"
@@ -244,11 +241,6 @@ qed
 
 text \<open>The property of being a state (resp. a gate) is preserved by tensor product.\<close>
 
-lemma sum_insert [simp]:
-  assumes "x \<notin> F" and "finite F"
-  shows "(\<Sum>y\<in>insert x F. P y) = (\<Sum>y\<in>F. P y) + P x"
-  using assms insert_def by(simp add: add.commute) 
-
 lemma tensor_state2 [simp]:
   assumes "state 1 u" and "state 1 v"
   shows "state 2 (u \<Otimes> v)"
@@ -313,35 +305,6 @@ sqrt ((cmod (u $$ (0,0)))\<^sup>2 * (cmod (v $$ (0,0)))\<^sup>2 + (cmod(u $$ (0,
   qed
 qed
 
-lemma sum_diff [simp]:
-  fixes f::"nat \<Rightarrow> complex"
-  shows "(\<Sum>i\<in>{a..<a+b}. f(i-a)) = (\<Sum>i\<in>{..<b}. f(i))"
-proof (induction b)
-  case 0
-  then show ?case by simp
-next
-  case (Suc b)
-  then show ?case by simp
-qed
-
-lemma index_div_eq [simp]:
-  fixes i::nat
-  shows "i\<in>{a*b..<(a+1)*b} \<Longrightarrow> i div b = a"
-proof-
-  fix i::nat 
-  assume a:"i\<in>{a*b..<(a+1)*b}"
-  then have "i div b \<ge> a"
-    by (metis Suc_eq_plus1 atLeastLessThan_iff le_refl semiring_normalization_rules(7) split_div')
-  moreover have "i div b < a+1"
-    using a by (simp add: less_mult_imp_div_less)
-  ultimately show "i div b = a" by simp
-qed
-
-lemma index_mod_eq [simp]:
-  fixes i::nat
-  shows "i\<in>{a*b..<(a+1)*b} \<Longrightarrow> i mod b = i-a*b"
-  by (simp add: modulo_nat_def)
-
 lemma sum_prod:
   fixes f::"nat \<Rightarrow> complex" and g::"nat \<Rightarrow> complex"
   shows "(\<Sum>i<a*b. f(i div b) * g(i mod b)) = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j))"
@@ -363,10 +326,6 @@ next
     using sum_diff[of "g" "(a*b)" "b"] by (simp add: algebra_simps)
   ultimately show ?case  by (simp add: semiring_normalization_rules(1))
 qed
-
-lemma sqr_of_cmod_of_prod:
-  shows "(cmod (z1 * z2))\<^sup>2 = (cmod z1)\<^sup>2 * (cmod z2)\<^sup>2"
-  by (simp add: norm_mult power_mult_distrib)
 
 lemma tensor_state [simp]:
   assumes "state m u" and "state n v"
@@ -399,45 +358,6 @@ proof
   qed
   ultimately show "\<parallel>Matrix.col (u \<Otimes> v) 0\<parallel> = 1"
     using c1 c2 assms state_def by (auto simp add: cpx_vec_length_def)
-qed
-
-lemma index_matrix_prod [simp]:
-  assumes "i < dim_row A" and "j < dim_col B" and "dim_col A = dim_row B"
-  shows "(A * B) $$ (i,j) = (\<Sum>k<dim_row B. (A $$ (i,k)) * (B $$ (k,j)))"
-  using assms apply(simp add: scalar_prod_def atLeast0LessThan).
-
-lemma less_power_add_imp_div_less [simp]:
-  fixes i m n:: nat
-  assumes "i < 2^(m+n)"
-  shows "i div 2^n < 2^m"
-  using assms by (simp add: less_mult_imp_div_less power_add)
-
-lemma div_mult_mod_eq_minus:
-  fixes i j:: nat
-  shows "(i div 2^n) * 2^n + i mod 2^n - (j div 2^n) * 2^n - j mod 2^n = i - j"
-  by (simp add: div_mult_mod_eq algebra_simps)
-
-lemma neq_imp_neq_div_or_mod:
-  fixes i j:: nat
-  assumes "i \<noteq> j"
-  shows "i div 2^n \<noteq> j div 2^n \<or> i mod 2^n \<noteq> j mod 2^n"
-  using assms div_mult_mod_eq_minus
-  by (metis add.right_neutral cancel_div_mod_rules(2))
-  
-lemma index_one_mat_div_mod:
-  assumes "i < 2^(m+n)" and "j < 2^(m+n)"
-  shows "((1\<^sub>m(2^m) $$ (i div 2^n, j div 2^n))::complex) * 1\<^sub>m(2^n) $$ (i mod 2^n, j mod 2^n) = 1\<^sub>m(2^(m+n)) $$ (i, j)"
-proof (cases "i = j")
-  case True
-  then show ?thesis by(simp add: assms)
-next
-  case c1:False
-  have "i div 2^n \<noteq> j div 2^n \<or> i mod 2^n \<noteq> j mod 2^n"
-    using c1 neq_imp_neq_div_or_mod by simp 
-  then have "1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) = 0 \<or> 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n) = 0"
-    using assms by simp
-  then show ?thesis
-    using assms by (simp add: c1)
 qed
 
 lemma dim_row_of_tensor_gate:
