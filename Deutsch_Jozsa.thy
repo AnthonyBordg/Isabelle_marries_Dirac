@@ -1,11 +1,11 @@
-theory Deutsch_Jozsa_Algorithm 
+theory Deutsch_Jozsa
 imports
   MoreTensor
   Quantum 
 begin
 
-declare [[ show_abbrevs=true]]
-declare [[ names_short=true]]
+declare [[show_abbrevs=true]]
+declare [[names_short=true]]
 (*There will probably be some lemmas going into Basic (maybe even Tensor) in here, 
 I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
@@ -26,7 +26,7 @@ definition is_const:: "bool" where
 "is_const \<equiv> const 0 \<or> const 1"
 
 definition is_balanced:: "bool" where
-"is_balanced \<equiv> \<exists>A B. A \<subseteq> {(i::nat). i < 2^n} \<and> B \<subseteq> {(i::nat). i < 2^n}
+"is_balanced \<equiv> \<exists>A B. A \<subseteq> {i::nat. i < 2^n} \<and> B \<subseteq> {i::nat. i < 2^n}
                    \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
                    \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
 
@@ -38,17 +38,25 @@ lemma is_balanced_inter:
 
 lemma is_balanced_union:
   fixes A B:: "nat set"
-  assumes "A \<subseteq> {(i::nat). i < 2^n}" and "B \<subseteq> {(i::nat). i < 2^n}" 
-      and "card A = (2^(n-1))"      and "card B = (2^(n-1))" 
+  assumes "A \<subseteq> {i::nat. i < 2^n}" and "B \<subseteq> {i::nat. i < 2^n}" 
+      and "card A = (2^(n-1))" and "card B = (2^(n-1))" 
       and "A \<inter> B = {}"
-    shows "A \<union> B = {i::nat. i < 2^n}" 
-proof
-  show "A \<union> B \<subseteq> {i. i < 2 ^ n}"
-    using assms by auto 
-  show "{i. i < 2 ^ n} \<subseteq> A \<union> B"
-  sorry   (*TODO: Do this later not important right now*)
+  shows "A \<union> B = {i::nat. i < 2^n}"
+proof-
+  have "finite A" and "finite B" 
+     apply (simp add: assms(3) card_ge_0_finite)
+    apply (simp add: assms(4) card_ge_0_finite).
+  then have "card(A \<union> B) = 2 * 2^(n-1)" 
+    using assms(3-5) by (simp add: card_Un_disjoint)
+  then have "card(A \<union> B) = 2^n"
+    by (metis Nat.nat.simps(3) One_nat_def dim le_0_eq power_eq_if)
+  moreover have "\<dots> = card({i::nat. i < 2^n})" by simp
+  moreover have "A \<union> B \<subseteq> {i::nat. i < 2^n}" 
+    using assms(1,2) by simp
+  moreover have "finite ({i::nat. i < 2^n})" by simp
+  ultimately show ?thesis 
+    using card_subset_eq[of "{i::nat. i < 2^n}" "A \<union> B"] by simp
 qed
-
 
 lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 
