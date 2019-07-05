@@ -61,13 +61,13 @@ qed
 lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
 
 lemma f_dom_not_zero: 
-  shows "f \<in> ({(i::nat). n \<ge> 1 \<and>  i < 2^n} \<rightarrow>\<^sub>E {0,1})" 
+  shows "f \<in> ({i::nat. n \<ge> 1 \<and> i < 2^n} \<rightarrow>\<^sub>E {0,1})" 
   using dim dom by simp
 
 end (* context deutsch_jozsa *)
 
 
-definition (in deutsch_jozsa) deutsch_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
+definition (in deutsch_jozsa) deutsch_jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
@@ -85,23 +85,23 @@ lemma set_four [simp]:
   shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
   by (auto simp add: assms)
 
-lemma (in deutsch_jozsa) deutsch_transform_dim [simp]: 
+lemma (in deutsch_jozsa) deutsch_jozsa_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
-  by (auto simp add: deutsch_transform_def mat_of_cols_list_def)
+  by (auto simp add: deutsch_jozsa_transform_def mat_of_cols_list_def)
 
-lemma (in deutsch_jozsa) deutsch_transform_coeff_is_zero [simp]: 
+lemma (in deutsch_jozsa) deutsch_jozsa_transform_coeff_is_zero [simp]: 
   shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
     and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
     and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
     and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
-  using deutsch_transform_def by auto
+  using deutsch_jozsa_transform_def by auto
 
-lemma (in deutsch_jozsa) deutsch_transform_coeff [simp]: 
+lemma (in deutsch_jozsa) deutsch_jozsa_transform_coeff [simp]: 
   shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
     and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
     and "U\<^sub>f $$ (0,0) = 1 - f(0)" and "U\<^sub>f $$(1,1) = 1 - f(0)"
     and "U\<^sub>f $$ (2,2) = 1 - f(1)" and "U\<^sub>f $$ (3,3) = 1 - f(1)"
-  using deutsch_transform_def by auto
+  using deutsch_jozsa_transform_def by auto
 
 abbreviation (in deutsch_jozsa) V\<^sub>f:: "complex Matrix.mat" where
 "V\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
@@ -114,21 +114,21 @@ abbreviation (in deutsch_jozsa) V\<^sub>f:: "complex Matrix.mat" where
                             (if i=3 \<and> j=2 then f(1) else
                               (if i=3 \<and> j=3 then 1 - f(1) else 0))))))))"
 
-lemma (in deutsch_jozsa) deutsch_transform_alt_rep_coeff_is_zero [simp]:
+lemma (in deutsch_jozsa)deutsch_jozsa_transform_alt_rep_coeff_is_zero [simp]:
   shows "V\<^sub>f $$ (0,2) = 0" and "V\<^sub>f $$ (0,3) = 0"
     and "V\<^sub>f $$ (1,2) = 0" and "V\<^sub>f $$(1,3) = 0"
     and "V\<^sub>f $$ (2,0) = 0" and "V\<^sub>f $$(2,1) = 0"
     and "V\<^sub>f $$ (3,0) = 0" and "V\<^sub>f $$ (3,1) = 0"
   by auto
 
-lemma (in deutsch_jozsa) deutsch_transform_alt_rep_coeff [simp]:
+lemma (in deutsch_jozsa) deutsch_jozsa_transform_alt_rep_coeff [simp]:
   shows "V\<^sub>f $$ (0,1) = f(0)" and "V\<^sub>f $$ (1,0) = f(0)"
     and "V\<^sub>f $$(2,3) = f(1)" and "V\<^sub>f $$ (3,2) = f(1)"
     and "V\<^sub>f $$ (0,0) = 1 - f(0)" and "V\<^sub>f $$(1,1) = 1 - f(0)"
     and "V\<^sub>f $$ (2,2) = 1 - f(1)" and "V\<^sub>f $$ (3,3) = 1 - f(1)"
   by auto
 
-lemma (in deutsch_jozsa) deutsch_transform_alt_rep:
+lemma (in deutsch_jozsa) deutsch_jozsa_transform_alt_rep:
   shows "U\<^sub>f = V\<^sub>f"
 proof
   show c0:"dim_row U\<^sub>f = dim_row V\<^sub>f" by simp
@@ -137,23 +137,23 @@ proof
   assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
   then have "i < 4" and "j < 4" by auto
   thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
-    by (smt deutsch_transform_alt_rep_coeff deutsch_transform_alt_rep_coeff_is_zero deutsch_transform_coeff
- deutsch_transform_coeff_is_zero set_four)
+    by (smt deutsch_jozsa_transform_alt_rep_coeff deutsch_jozsa_transform_alt_rep_coeff_is_zero deutsch_jozsa_transform_coeff
+ deutsch_jozsa_transform_coeff_is_zero set_four)
 qed
 
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
 
 (*Keep this until its known if Uf is useful*)
-lemma (in deutsch_jozsa) transpose_of_deutsch_transform:
+lemma (in deutsch_jozsa) transpose_of_deutsch_jozsa_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
   sorry
 
-lemma (in deutsch_jozsa) adjoint_of_deutsch_transform: 
+lemma (in deutsch_jozsa) adjoint_of_deutsch_jozsa_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
   sorry 
 
-lemma (in deutsch_jozsa) deutsch_transform_is_gate:
+lemma (in deutsch_jozsa) deutsch_jozsa_transform_is_gate:
   shows "gate 2 U\<^sub>f"
   sorry
    
@@ -161,7 +161,7 @@ lemma (in deutsch_jozsa) deutsch_transform_is_gate:
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
 lemma ind_from_1[case_names ge 1 step]:
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   assumes "P(1)" 
   assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
   shows " P n"
@@ -185,11 +185,11 @@ lemma pow_tensor_n:
   fixes n
   assumes "n \<ge> 1"
   shows " A ^\<^sub>\<oplus> (Suc n) = A  \<Otimes>  ( A ^\<^sub>\<oplus> n)" using assms 
-  by (metis Deutsch_Jozsa_Algorithm.pow_tensor.simps(2) One_nat_def Suc_le_D)
+  by (metis Deutsch_Jozsa.pow_tensor.simps(2) One_nat_def Suc_le_D)
 
 lemma pow_tensor_dim_row[simp]:
   fixes A n
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   shows "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto 
@@ -204,7 +204,7 @@ qed
 
 lemma pow_tensor_dim_col[simp]:
   fixes A n
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   shows "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto 
@@ -219,8 +219,8 @@ qed
 
 lemma pow_tensor_values:
   fixes A n i j
-  assumes "n\<ge>1"
-  assumes "i<dim_row ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
+  assumes "n \<ge> 1"
+  assumes "i < dim_row ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
   and "j < dim_col ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
   shows "( A ^\<^sub>\<oplus> (Suc n)) $$ (i, j) = ( A \<Otimes> ( A ^\<^sub>\<oplus> n)) $$ (i, j)"
   using assms
@@ -239,8 +239,7 @@ proof -
 qed
 
 lemma index_tensor_mat_vec2_i_smaller_row_B: 
-  fixes A B::"complex Matrix.mat" 
-  and     i::"nat" 
+  fixes A B:: "complex Matrix.mat" and i:: "nat" 
 assumes "i < dim_row B" 
     and "dim_row A = 2"
     and "dim_col A = 1"
@@ -249,8 +248,8 @@ assumes "i < dim_row B"
 using index_tensor_mat assms by auto
 
 lemma index_tensor_mat_vec2_i_greater_row_B:
-  fixes A B::"complex Matrix.mat" 
-  and     i::"nat" 
+  fixes A B:: "complex Matrix.mat" 
+  and     i:: "nat" 
   assumes "i < (dim_row A) * (dim_row B)" 
       and "0 < (dim_col A) * (dim_col B)" 
       and "i \<ge> dim_row B"
@@ -297,10 +296,10 @@ abbreviation \<psi>\<^sub>1\<^sub>0:: "nat \<Rightarrow> complex Matrix.mat" whe
 
 lemma \<psi>\<^sub>1\<^sub>0_values:
   fixes i j n
-  assumes "i< dim_row (\<psi>\<^sub>1\<^sub>0 n)"
+  assumes "i < dim_row (\<psi>\<^sub>1\<^sub>0 n)"
   and "j < dim_col (\<psi>\<^sub>1\<^sub>0 n)"
-  and "n\<ge>1"
-  shows "(\<psi>\<^sub>1\<^sub>0 n)$$(i,j) = 1/(sqrt(2)^n)" 
+  and "n \<ge> 1"
+  shows "(\<psi>\<^sub>1\<^sub>0 n) $$ (i,j) = 1/(sqrt(2)^n)" 
   using assms(1) assms(2) case_prod_conv by auto
 
 lemma H_on_ket_zero: 
@@ -330,12 +329,12 @@ next
 qed
 
 lemma \<psi>\<^sub>1\<^sub>0_tensor_n: (*Restructure, too many names too confusing*)
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   shows "(\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"
 proof
-  fix i j::nat
+  fix i j:: nat
   assume a0: "i < dim_row (\<psi>\<^sub>1\<^sub>0 (Suc n))" and a1: "j < dim_col (\<psi>\<^sub>1\<^sub>0 (Suc n))"
-  then have f0: " j = 0" and k1: "i< 2^(Suc n)" using mat_of_cols_list_def by auto
+  then have f0: "j = 0" and k1: "i< 2^(Suc n)" using mat_of_cols_list_def by auto
   then have f1: "(\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j) = 1/(sqrt(2)^(Suc n))" 
     using  \<psi>\<^sub>1\<^sub>0_values[of i "(Suc n)" j] a0 a1 by auto
   show "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
@@ -391,7 +390,7 @@ lemma H_tensor_n_is_gate:
   assumes "n \<ge> 1"
   shows "gate n (H ^\<^sub>\<oplus> n)" 
 proof(induction n rule: ind_from_1)
-  show "n\<ge>1" using assms by auto
+  show "n \<ge> 1" using assms by auto
 next
   show "gate 1 (H ^\<^sub>\<oplus> 1)" 
     using H_is_gate by auto
@@ -406,7 +405,7 @@ qed
 
 
 lemma "H_tensor_n_on_zero_tensor_n": 
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   shows "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
@@ -428,7 +427,7 @@ qed
 
 
 lemma 
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   shows "state n (\<psi>\<^sub>1\<^sub>0 n)"
 proof- (*Would also be possible as one line proof without first step which one is nicer?*)
   have "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
