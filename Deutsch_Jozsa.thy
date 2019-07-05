@@ -11,12 +11,12 @@ I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
 
-locale deutsch_jozsa =
+locale jozsa =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
   assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
   assumes dim: "n \<ge> 1"
 
-context deutsch_jozsa
+context jozsa
 begin
 
 definition const:: "nat \<Rightarrow> bool" where 
@@ -58,16 +58,16 @@ proof-
     using card_subset_eq[of "{i::nat. i < 2^n}" "A \<union> B"] by simp
 qed
 
-lemma f_ge_0: "\<forall> x. (f x \<ge> 0)" by simp
+lemma f_ge_0: "\<forall>x. (f x \<ge> 0)" by simp
 
 lemma f_dom_not_zero: 
   shows "f \<in> ({i::nat. n \<ge> 1 \<and> i < 2^n} \<rightarrow>\<^sub>E {0,1})" 
   using dim dom by simp
 
-end (* context deutsch_jozsa *)
+end (* context jozsa *)
 
 
-definition (in deutsch_jozsa) deutsch_jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
+definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 "U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
@@ -85,25 +85,25 @@ lemma set_four [simp]:
   shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
   by (auto simp add: assms)
 
-lemma (in deutsch_jozsa) deutsch_jozsa_transform_dim [simp]: 
+lemma (in jozsa) jozsa_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
-  by (auto simp add: deutsch_jozsa_transform_def mat_of_cols_list_def)
+  by (auto simp add: jozsa_transform_def mat_of_cols_list_def)
 
-lemma (in deutsch_jozsa) deutsch_jozsa_transform_coeff_is_zero [simp]: 
+lemma (in jozsa) jozsa_transform_coeff_is_zero [simp]: 
   shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
     and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
     and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
     and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
-  using deutsch_jozsa_transform_def by auto
+  using jozsa_transform_def by auto
 
-lemma (in deutsch_jozsa) deutsch_jozsa_transform_coeff [simp]: 
+lemma (in jozsa) jozsa_transform_coeff [simp]: 
   shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
     and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
     and "U\<^sub>f $$ (0,0) = 1 - f(0)" and "U\<^sub>f $$(1,1) = 1 - f(0)"
     and "U\<^sub>f $$ (2,2) = 1 - f(1)" and "U\<^sub>f $$ (3,3) = 1 - f(1)"
-  using deutsch_jozsa_transform_def by auto
+  using jozsa_transform_def by auto
 
-abbreviation (in deutsch_jozsa) V\<^sub>f:: "complex Matrix.mat" where
+abbreviation (in jozsa) V\<^sub>f:: "complex Matrix.mat" where
 "V\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
                 if i=0 \<and> j=0 then 1 - f(0) else
                   (if i=0 \<and> j=1 then f(0) else
@@ -114,21 +114,21 @@ abbreviation (in deutsch_jozsa) V\<^sub>f:: "complex Matrix.mat" where
                             (if i=3 \<and> j=2 then f(1) else
                               (if i=3 \<and> j=3 then 1 - f(1) else 0))))))))"
 
-lemma (in deutsch_jozsa)deutsch_jozsa_transform_alt_rep_coeff_is_zero [simp]:
+lemma (in jozsa) jozsa_transform_alt_rep_coeff_is_zero [simp]:
   shows "V\<^sub>f $$ (0,2) = 0" and "V\<^sub>f $$ (0,3) = 0"
     and "V\<^sub>f $$ (1,2) = 0" and "V\<^sub>f $$(1,3) = 0"
     and "V\<^sub>f $$ (2,0) = 0" and "V\<^sub>f $$(2,1) = 0"
     and "V\<^sub>f $$ (3,0) = 0" and "V\<^sub>f $$ (3,1) = 0"
   by auto
 
-lemma (in deutsch_jozsa) deutsch_jozsa_transform_alt_rep_coeff [simp]:
+lemma (in jozsa) jozsa_transform_alt_rep_coeff [simp]:
   shows "V\<^sub>f $$ (0,1) = f(0)" and "V\<^sub>f $$ (1,0) = f(0)"
     and "V\<^sub>f $$(2,3) = f(1)" and "V\<^sub>f $$ (3,2) = f(1)"
     and "V\<^sub>f $$ (0,0) = 1 - f(0)" and "V\<^sub>f $$(1,1) = 1 - f(0)"
     and "V\<^sub>f $$ (2,2) = 1 - f(1)" and "V\<^sub>f $$ (3,3) = 1 - f(1)"
   by auto
 
-lemma (in deutsch_jozsa) deutsch_jozsa_transform_alt_rep:
+lemma (in jozsa) jozsa_transform_alt_rep:
   shows "U\<^sub>f = V\<^sub>f"
 proof
   show c0:"dim_row U\<^sub>f = dim_row V\<^sub>f" by simp
@@ -137,30 +137,30 @@ proof
   assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
   then have "i < 4" and "j < 4" by auto
   thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
-    by (smt deutsch_jozsa_transform_alt_rep_coeff deutsch_jozsa_transform_alt_rep_coeff_is_zero deutsch_jozsa_transform_coeff
- deutsch_jozsa_transform_coeff_is_zero set_four)
+    by (smt jozsa_transform_alt_rep_coeff jozsa_transform_alt_rep_coeff_is_zero jozsa_transform_coeff
+ jozsa_transform_coeff_is_zero set_four)
 qed
 
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
 
 (*Keep this until its known if Uf is useful*)
-lemma (in deutsch_jozsa) transpose_of_deutsch_jozsa_transform:
+lemma (in jozsa) transpose_of_jozsa_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
   sorry
 
-lemma (in deutsch_jozsa) adjoint_of_deutsch_jozsa_transform: 
+lemma (in jozsa) adjoint_of_jozsa_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
   sorry 
 
-lemma (in deutsch_jozsa) deutsch_jozsa_transform_is_gate:
+lemma (in jozsa) jozsa_transform_is_gate:
   shows "gate 2 U\<^sub>f"
   sorry
    
 
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
-lemma ind_from_1[case_names ge 1 step]:
+lemma ind_from_1 [case_names ge 1 step]:
   assumes "n \<ge> 1"
   assumes "P(1)" 
   assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
@@ -172,11 +172,11 @@ lemma ind_from_1[case_names ge 1 step]:
 
 
 
-fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
+fun pow_tensor:: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
   "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 (also like this in literature) but might avoid stress if we fix the number to be the number of \<oplus>?*)
 | "A ^\<^sub>\<oplus> (Suc k) =  A \<Otimes> (A ^\<^sub>\<oplus> k)"
 
-lemma pow_tensor_1_is_id[simp]:
+lemma pow_tensor_1_is_id [simp]:
   fixes A
   shows "A ^\<^sub>\<oplus> 1 = A"
   using one_mat_def by auto
@@ -187,7 +187,7 @@ lemma pow_tensor_n:
   shows " A ^\<^sub>\<oplus> (Suc n) = A  \<Otimes>  ( A ^\<^sub>\<oplus> n)" using assms 
   by (metis Deutsch_Jozsa.pow_tensor.simps(2) One_nat_def Suc_le_D)
 
-lemma pow_tensor_dim_row[simp]:
+lemma pow_tensor_dim_row [simp]:
   fixes A n
   assumes "n \<ge> 1"
   shows "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
@@ -202,7 +202,7 @@ next
     by (metis One_nat_def Suc_inject Zero_not_Suc dim_row_tensor_mat pow_tensor.elims power_Suc power_one_right)
 qed
 
-lemma pow_tensor_dim_col[simp]:
+lemma pow_tensor_dim_col [simp]:
   fixes A n
   assumes "n \<ge> 1"
   shows "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
@@ -404,7 +404,7 @@ qed
 
 
 
-lemma "H_tensor_n_on_zero_tensor_n": 
+lemma H_tensor_n_on_zero_tensor_n: 
   assumes "n \<ge> 1"
   shows "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
 proof (induction n rule: ind_from_1)
