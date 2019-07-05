@@ -18,7 +18,7 @@ locale deutsch_jozsa =
 
 context deutsch_jozsa
 begin
-
+ 
 definition const:: "nat \<Rightarrow> bool" where 
 "const c = (\<forall>x\<in>{i::nat. i < 2^n}. f x = c)"
 
@@ -72,18 +72,6 @@ definition (in deutsch_jozsa) deutsch_jozsa_transform:: "complex Matrix.mat" ("U
                           [f(0), 1 - f(0), 0, 0],
                           [0, 0, 1 - f(1), f(1)],
                           [0, 0, f(1), 1 - f(1)]]"
-
-lemma set_two [simp]:
-  fixes i:: nat
-  assumes "i < 2"
-  shows "i = 0 \<or> i = Suc 0"
-  using assms by auto
-
-lemma set_four [simp]: 
-  fixes i:: nat
-  assumes "i < 4"
-  shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3"
-  by (auto simp add: assms)
 
 lemma (in deutsch_jozsa) deutsch_jozsa_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
@@ -160,7 +148,7 @@ lemma (in deutsch_jozsa) deutsch_jozsa_transform_is_gate:
 
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
-lemma ind_from_1[case_names ge 1 step]:
+lemma ind_from_1 [case_names ge 1 step]:
   assumes "n \<ge> 1"
   assumes "P(1)" 
   assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
@@ -173,7 +161,7 @@ lemma ind_from_1[case_names ge 1 step]:
 
 
 fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
-  "A ^\<^sub>\<oplus> (Suc 0) = A"  (*Seems more natural with 1 (also like this in literature) but might avoid stress if we fix the number to be the number of \<oplus>?*)
+  "A ^\<^sub>\<oplus> (Suc 0) = A"  
 | "A ^\<^sub>\<oplus> (Suc k) =  A \<Otimes> (A ^\<^sub>\<oplus> k)"
 
 lemma pow_tensor_1_is_id[simp]:
@@ -238,7 +226,7 @@ proof -
     by auto
 qed
 
-lemma index_tensor_mat_vec2_i_smaller_row_B: 
+lemma index_tensor_mat_vec2_i_smaller_row_B: (*Better name would be welcome. index_tensor_mat_vec2_1? *)
   fixes A B:: "complex Matrix.mat" and i:: "nat" 
 assumes "i < dim_row B" 
     and "dim_row A = 2"
@@ -273,14 +261,13 @@ qed
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1"
 
-(*Much-later- TODO: Since mat_of_cols_list is not used anymore these two should either be avoided or 
-at least be made part of the proofs that use them*)
+(*Should not be used in final version but are useful for finding proofs:
 lemma ket_zero_to_mat_of_cols_list: "|zero\<rangle> = mat_of_cols_list 2 [[1, 0]]"  
   by (auto simp add: ket_vec_def mat_of_cols_list_def)
 
 lemma ket_one_to_mat_of_cols_list: "|one\<rangle> = mat_of_cols_list 2 [[0, 1]]"
   apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
-  using less_2_cases by fastforce
+  using less_2_cases by fastforce*)
 
 lemma ket_zero_is_state: 
   shows "state 1 |zero\<rangle>"
@@ -308,13 +295,13 @@ proof
   fix i j:: nat
   assume a0: "i < dim_row (\<psi>\<^sub>1\<^sub>0 1)" 
      and a1: "j < dim_col (\<psi>\<^sub>1\<^sub>0 1)"
-  then have f1: "i \<in> {0,1} \<and> j = 0" by (simp add: mat_of_cols_list_def less_2_cases)
+  then have f1: "i \<in> {0,1} \<and> j = 0" by (simp add: less_2_cases)
   then show "(H * |zero\<rangle>) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 1) $$ (i,j)"
-    by (auto simp add: mat_of_cols_list_def times_mat_def scalar_prod_def H_def ket_vec_def)
+    by (auto simp add: times_mat_def scalar_prod_def H_def ket_vec_def)
 next
-  show "dim_row (H * |zero\<rangle>) = dim_row (\<psi>\<^sub>1\<^sub>0 1)"  by (simp add: H_def mat_of_cols_list_def)
+  show "dim_row (H * |zero\<rangle>) = dim_row (\<psi>\<^sub>1\<^sub>0 1)"  by (simp add: H_def)
 next 
-  show "dim_col (H * |zero\<rangle>) = dim_col (\<psi>\<^sub>1\<^sub>0 1)" using H_def mat_of_cols_list_def 
+  show "dim_col (H * |zero\<rangle>) = dim_col (\<psi>\<^sub>1\<^sub>0 1)" using H_def  
     by (simp add: ket_vec_def)
 qed
 
@@ -332,41 +319,40 @@ lemma \<psi>\<^sub>1\<^sub>0_tensor_n: (*Restructure, too many names too confusi
   assumes "n \<ge> 1"
   shows "(\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"
 proof
-  fix i j:: nat
-  assume a0: "i < dim_row (\<psi>\<^sub>1\<^sub>0 (Suc n))" and a1: "j < dim_col (\<psi>\<^sub>1\<^sub>0 (Suc n))"
-  then have f0: "j = 0" and k1: "i< 2^(Suc n)" using mat_of_cols_list_def by auto
-  then have f1: "(\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j) = 1/(sqrt(2)^(Suc n))" 
-    using  \<psi>\<^sub>1\<^sub>0_values[of i "(Suc n)" j] a0 a1 by auto
-  show "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
-  proof (rule disjE) (*case distinction*)
-    show "i < dim_row (\<psi>\<^sub>1\<^sub>0 n) \<or> i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n)" by linarith
-  next (* case i < dim_row (\<psi>\<^sub>1\<^sub>0 n) *)
-    assume i9: "i < dim_row (\<psi>\<^sub>1\<^sub>0 n)"
-    then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 1) $$ (0,0) * (\<psi>\<^sub>1\<^sub>0 n) $$ (i,0)"
-      using index_tensor_mat f0 assms
-      by (simp add: mat_of_cols_list_def)
-    also have "... = 1/sqrt(2) * 1/(sqrt(2)^n)"
-      using \<psi>\<^sub>1\<^sub>0_values i9 mat_of_cols_list_def assms by auto
-    finally show  "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
-      using f1 mat_of_cols_list_def 
-      by (smt divide_divide_eq_left power_Suc)
-  next (* case i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n) *)
-    assume i10: "i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n)"
-    then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,0) = ((\<psi>\<^sub>1\<^sub>0 1)  $$ (1, 0)) * ((\<psi>\<^sub>1\<^sub>0 n) $$ ( i -dim_row (\<psi>\<^sub>1\<^sub>0 n),0))"
-      using index_tensor_mat_vec2_i_greater_row_B[of i "(\<psi>\<^sub>1\<^sub>0 1)" "(\<psi>\<^sub>1\<^sub>0 n)" ] a0 a1 f0 k1 
-      by auto
-    then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,0) = 1/sqrt(2) * 1/(sqrt(2)^n)"
-      using \<psi>\<^sub>1\<^sub>0_values[of "i -dim_row (\<psi>\<^sub>1\<^sub>0 n)" n j] a0 a1 by auto
-    then show  "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
-      using f1 mat_of_cols_list_def divide_divide_eq_left power_Suc f0 
-      by auto
-  qed
-next
   have "dim_row (\<psi>\<^sub>1\<^sub>0 1) * dim_row (\<psi>\<^sub>1\<^sub>0 n)  =  2^(Suc n)" by simp 
   then show "dim_row ((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) = dim_row (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
 next
   have "dim_col (\<psi>\<^sub>1\<^sub>0 1) * dim_col (\<psi>\<^sub>1\<^sub>0 n)  =  1" by simp
   then show "dim_col ((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) = dim_col (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
+next
+  fix i j:: nat
+  assume a0: "i < dim_row (\<psi>\<^sub>1\<^sub>0 (Suc n))" and a1: "j < dim_col (\<psi>\<^sub>1\<^sub>0 (Suc n))"
+  then have f0: "j = 0" and f1: "i< 2^(Suc n)" by auto
+  then have f2: "(\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j) = 1/(sqrt(2)^(Suc n))" 
+    using  \<psi>\<^sub>1\<^sub>0_values[of i "(Suc n)" j] a0 a1 by auto
+  show "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
+  proof (rule disjE) (*case distinction*)
+    show "i < dim_row (\<psi>\<^sub>1\<^sub>0 n) \<or> i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n)" by linarith
+  next (* case i < dim_row (\<psi>\<^sub>1\<^sub>0 n) *)
+    assume a2: "i < dim_row (\<psi>\<^sub>1\<^sub>0 n)"
+    then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 1) $$ (0,0) * (\<psi>\<^sub>1\<^sub>0 n) $$ (i,0)"
+      using index_tensor_mat f0 assms by simp
+    also have "... = 1/sqrt(2) * 1/(sqrt(2)^n)"
+      using \<psi>\<^sub>1\<^sub>0_values a2 assms by auto
+    finally show  "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
+      using f2  
+      by (smt divide_divide_eq_left power_Suc)
+  next (* case i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n) *)
+    assume "i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n)"
+    then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,0) = ((\<psi>\<^sub>1\<^sub>0 1)  $$ (1, 0)) * ((\<psi>\<^sub>1\<^sub>0 n) $$ ( i -dim_row (\<psi>\<^sub>1\<^sub>0 n),0))"
+      using index_tensor_mat_vec2_i_greater_row_B[of i "(\<psi>\<^sub>1\<^sub>0 1)" "(\<psi>\<^sub>1\<^sub>0 n)" ] a0 a1 f0  
+      by auto
+    then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,0) = 1/sqrt(2) * 1/(sqrt(2)^n)"
+      using \<psi>\<^sub>1\<^sub>0_values[of "i -dim_row (\<psi>\<^sub>1\<^sub>0 n)" n j] a0 a1 by auto
+    then show  "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
+      using f0 f1 divide_divide_eq_left power_Suc 
+      by auto
+  qed
 qed
 
 lemma \<psi>\<^sub>1\<^sub>0_tensor_n_is_state:
@@ -397,7 +383,8 @@ next
 next
   fix n 
   assume a0: "gate n (H ^\<^sub>\<oplus> n)" and "n \<ge> 1"
-  then have "(H ^\<^sub>\<oplus> (Suc n)) = H \<Otimes> (H ^\<^sub>\<oplus> n)" using pow_tensor_n[of n H] by auto
+  then have "(H ^\<^sub>\<oplus> (Suc n)) = H \<Otimes> (H ^\<^sub>\<oplus> n)" 
+    using pow_tensor_n[of n H] by auto
   then show "gate (Suc n) (H ^\<^sub>\<oplus> (Suc n))" 
     using assms a0 tensor_gate H_is_gate by fastforce
 qed
@@ -416,7 +403,7 @@ next
   fix n
   assume a0: "1 \<le> n" and a1: "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
   then have "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (H * |zero\<rangle>) \<Otimes> ((H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n))" 
-    using pow_tensor_mult_distr[of n "H" "|zero\<rangle>"] a0 ket_zero_to_mat_of_cols_list mat_of_cols_list_def H_def
+    using pow_tensor_mult_distr[of n "H" "|zero\<rangle>"] a0 ket_vec_def H_def
     by (simp add: H_def)
   also have  "... = (H * |zero\<rangle>) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using a1 by auto 
   also have "... = (\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using H_on_ket_zero by auto
