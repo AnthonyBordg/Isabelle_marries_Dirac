@@ -1,13 +1,9 @@
-text \<open>
+(*
 Authors: 
 
-\begin{itemize}
-
-\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
-\item Yijun He, University of Cambridge, \href{mailto:yh403@cam.ac.uk}{yh403@cam.ac.uk}
-
-\end{itemize}
-\<close>
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
+  Yijun He, University of Cambridge, yh403@cam.ac.uk
+*)
 
 theory Quantum
 imports
@@ -1836,8 +1832,12 @@ qed
 (*
 Biblio:
 
-- Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang,
-10th Anniversary Edition, Cambridge University Press, 2010.
+@book{MikeandIke,
+  author = {Nielsen, Michael A. and Chuang, Isaac L.},
+  publisher = {Cambridge University Press},
+  title = {Quantum Computation and Quantum Information},
+  year = 2010
+}
 *)
 
 end
