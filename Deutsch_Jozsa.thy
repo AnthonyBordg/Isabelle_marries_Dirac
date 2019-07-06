@@ -148,7 +148,7 @@ lemma (in jozsa) jozsa_transform_is_gate:
 
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
-lemma ind_from_1 [case_names ge 1 step]:
+lemma ind_from_1 [case_names n_ge_1 1 step]:
   assumes "n \<ge> 1"
   assumes "P(1)" 
   assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
@@ -414,7 +414,7 @@ qed
 
 
 
-lemma 
+lemma \<psi>\<^sub>1\<^sub>0_is_state:
   assumes "n \<ge> 1"
   shows "state n (\<psi>\<^sub>1\<^sub>0 n)"
 proof- (*Would also be possible as one line proof without first step which one is nicer?*)
@@ -429,11 +429,90 @@ qed
 
 
 
+abbreviation \<psi>\<^sub>1\<^sub>1:: "complex Matrix.mat" where
+"\<psi>\<^sub>1\<^sub>1 \<equiv> Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else -1/sqrt(2))"
+
+
+lemma H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1: 
+  shows "(H * |one\<rangle>) = \<psi>\<^sub>1\<^sub>1"
+proof 
+  fix i j:: nat
+  assume "i < dim_row \<psi>\<^sub>1\<^sub>1" and "j < dim_col \<psi>\<^sub>1\<^sub>1"
+  then have "i \<in> {0,1} \<and> j = 0" by (simp add: less_2_cases)
+  then show "(H * |one\<rangle>) $$ (i,j) = \<psi>\<^sub>1\<^sub>1 $$ (i,j)"
+    by (auto simp add: times_mat_def scalar_prod_def H_def ket_vec_def)
+next
+  show "dim_row (H * |one\<rangle>) = dim_row \<psi>\<^sub>1\<^sub>1" by (simp add: H_def)
+next 
+  show "dim_col (H * |one\<rangle>) = dim_col \<psi>\<^sub>1\<^sub>1" by (simp add: H_def ket_vec_def)
+qed
+
+lemma \<psi>\<^sub>1\<^sub>1_is_state: 
+  shows "state 1 (H * |one\<rangle>)"
+  using H_is_gate ket_one_is_state by simp
 
 
 
+abbreviation \<psi>\<^sub>1:: "nat \<Rightarrow> complex Matrix.mat" where
+"\<psi>\<^sub>1 n \<equiv> Matrix.mat (2^(n+1))  1 (\<lambda>(i,j). if (even i) then 1/(sqrt(2)^(n+1)) else -1/(sqrt(2)^(n+1)))"
+
+lemma \<psi>\<^sub>1_values_even[simp]:
+  fixes i j n
+  assumes "i < dim_row (\<psi>\<^sub>1 n)"
+  and "j < dim_col (\<psi>\<^sub>1 n)"
+  and "n \<ge> 1"
+  and "even i"
+  shows "(\<psi>\<^sub>1 n) $$ (i,j) = 1/(sqrt(2)^(n+1))" 
+  using assms case_prod_conv by auto
+
+lemma \<psi>\<^sub>1_values_odd [simp]:
+  fixes i j n
+  assumes "i < dim_row (\<psi>\<^sub>1 n)"
+  and "j < dim_col (\<psi>\<^sub>1 n)"
+  and "n \<ge> 1"
+  and "odd i"
+  shows "(\<psi>\<^sub>1 n) $$ (i,j) = -1/(sqrt(2)^(n+1))" 
+  using assms case_prod_conv by auto
 
 
+lemma "\<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1":
+  assumes "n \<ge> 1"
+  shows "(\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1 = (\<psi>\<^sub>1 n)" 
+proof 
+ show "dim_col ((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) = dim_col (\<psi>\<^sub>1 n)" by auto
+next
+  show "dim_row ((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) = dim_row (\<psi>\<^sub>1 n)" by auto
+next
+  fix i j::nat
+  assume a0: "i < dim_row (\<psi>\<^sub>1 n)" and a1: "j < dim_col (\<psi>\<^sub>1 n)"
+  then have "i < 2^(n+1)" and "j = 0" by auto 
+  then have f0: "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = 1/(sqrt(2)^n) * \<psi>\<^sub>1\<^sub>1 $$ (i mod 2, j)" 
+    using \<psi>\<^sub>1\<^sub>0_values[of "i div 2" n "j div 1"] a0 a1 by auto
+  show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" 
+  proof (rule disjE)
+    show "even n \<or> odd n" by auto
+  next
+    assume "even n"
+    then show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" 
+      using f0 \<psi>\<^sub>1_values_even a0 a1 by auto
+  next
+    assume "odd n"
+    then show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" 
+      using f0 \<psi>\<^sub>1_values_odd a0 a1 by auto
+  qed
+qed
+
+
+
+lemma \<psi>\<^sub>1_is_state:
+  assumes "n \<ge> 1"
+  shows "state (n+1) (\<psi>\<^sub>1 n)" 
+proof-
+  have "(\<psi>\<^sub>1 n) = (\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1" using \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1 by auto
+  moreover have "state n (\<psi>\<^sub>1\<^sub>0 n)" using \<psi>\<^sub>1\<^sub>0_is_state assms by auto 
+  moreover have "state 1 \<psi>\<^sub>1\<^sub>1" using \<psi>\<^sub>1\<^sub>1_is_state assms H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 by auto
+  ultimately show "state (n+1) (\<psi>\<^sub>1 n)" using tensor_state by metis
+qed
 
 
 
