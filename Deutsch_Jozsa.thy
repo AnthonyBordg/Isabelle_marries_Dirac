@@ -11,24 +11,27 @@ I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
 
+(*Just temporary*)
+ 
+definition const:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where 
+"const f n c = (\<forall>x\<in>{i::nat. i < 2^n}. f x = c)"
+
+definition is_const:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow>bool" where 
+"is_const f n \<equiv> const f n 0 \<or> const f n 1"
+
+definition is_balanced:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow>bool" where
+"is_balanced f n \<equiv> \<exists>A B. A \<subseteq> {i::nat. i < 2^n} \<and> B \<subseteq> {i::nat. i < 2^n}
+                   \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
+                   \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
+
+
 locale jozsa =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
   assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
   assumes dim: "n \<ge> 1"
-
+  assumes const_or_balanced:  "is_const f n  \<or> is_balanced f n"
 context jozsa
 begin
- 
-definition const:: "nat \<Rightarrow> bool" where 
-"const c = (\<forall>x\<in>{i::nat. i < 2^n}. f x = c)"
-
-definition is_const:: "bool" where 
-"is_const \<equiv> const 0 \<or> const 1"
-
-definition is_balanced:: "bool" where
-"is_balanced \<equiv> \<exists>A B. A \<subseteq> {i::nat. i < 2^n} \<and> B \<subseteq> {i::nat. i < 2^n}
-                   \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
-                   \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
 
 lemma is_balanced_inter: 
   fixes A B:: "nat set"
@@ -64,6 +67,11 @@ lemma f_dom_not_zero:
   shows "f \<in> ({i::nat. n \<ge> 1 \<and> i < 2^n} \<rightarrow>\<^sub>E {0,1})" 
   using dim dom by simp
 
+
+lemma f_values: "\<forall>x \<in> {(i::nat). i < 2^n} .(f x = 0 \<or> f x = 1)" 
+  using dom by auto
+
+lemma t1 [simp]: "(1 - f (1)) * (1 - f (1)) + (f (1)) * (f (1)) = 1" sorry
 end (* context jozsa *)
 
 
@@ -135,16 +143,59 @@ text \<open>@{text U\<^sub>f} is a gate.\<close>
 (*Keep this until its known if Uf is useful*)
 lemma (in jozsa) transpose_of_jozsa_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
-  sorry
+proof
+  show "dim_row (U\<^sub>f\<^sup>t) = dim_row U\<^sub>f" by simp
+next
+  show "dim_col (U\<^sub>f\<^sup>t) = dim_col U\<^sub>f" by simp
+next
+  fix i j:: nat
+  assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+  thus "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+    apply (auto simp add: transpose_mat_def)
+    by (metis jozsa_transform_coeff(1-4) jozsa_transform_coeff_is_zero set_four)
+qed
+
 
 lemma (in jozsa) adjoint_of_jozsa_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
-  sorry 
+proof
+  show "dim_row (U\<^sub>f\<^sup>\<dagger>) = dim_row U\<^sub>f" by simp
+next
+  show "dim_col (U\<^sub>f\<^sup>\<dagger>) = dim_col U\<^sub>f" by simp
+next
+  fix i j:: nat
+  assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+  thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
+    apply (auto simp add: hermite_cnj_def)
+    by (metis complex_cnj_of_nat complex_cnj_zero jozsa_transform_coeff jozsa_transform_coeff_is_zero set_four)
+qed
+
 
 lemma (in jozsa) jozsa_transform_is_gate:
   shows "gate 2 U\<^sub>f"
-  sorry
-   
+proof
+  show "dim_row U\<^sub>f = 2\<^sup>2" by simp
+next
+  show "square_mat U\<^sub>f" by simp
+next
+  show "unitary U\<^sub>f"
+  proof-
+    have "U\<^sub>f * U\<^sub>f = 1\<^sub>m (dim_col U\<^sub>f)"
+    proof
+      show "dim_row (U\<^sub>f * U\<^sub>f) = dim_row (1\<^sub>m (dim_col U\<^sub>f))" by simp
+    next
+      show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
+    next
+      fix i j:: nat
+      assume "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
+      then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+        apply (auto simp add: jozsa_transform_alt_rep one_mat_def times_mat_def)
+         apply (auto simp: scalar_prod_def) 
+        using f_values t1 apply auto sorry
+    qed
+    thus ?thesis by (simp add: adjoint_of_jozsa_transform unitary_def)
+  qed
+qed   
 
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
@@ -417,16 +468,8 @@ qed
 lemma \<psi>\<^sub>1\<^sub>0_is_state:
   assumes "n \<ge> 1"
   shows "state n (\<psi>\<^sub>1\<^sub>0 n)"
-proof- (*Would also be possible as one line proof without first step which one is nicer?*)
-  have "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
-    using H_tensor_n_on_zero_tensor_n assms by auto 
-  then show "state n (\<psi>\<^sub>1\<^sub>0 n)" 
-    using H_tensor_n_is_gate \<psi>\<^sub>1\<^sub>0_tensor_n_is_state assms gate_on_state_is_state H_tensor_n_on_zero_tensor_n assms
-    by metis
-qed
-
-
-
+  using H_tensor_n_is_gate \<psi>\<^sub>1\<^sub>0_tensor_n_is_state assms gate_on_state_is_state H_tensor_n_on_zero_tensor_n assms
+  by metis
 
 
 abbreviation \<psi>\<^sub>1\<^sub>1:: "complex Matrix.mat" where
@@ -488,31 +531,15 @@ next
   then have "i < 2^(n+1)" and "j = 0" by auto 
   then have f0: "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = 1/(sqrt(2)^n) * \<psi>\<^sub>1\<^sub>1 $$ (i mod 2, j)" 
     using \<psi>\<^sub>1\<^sub>0_values[of "i div 2" n "j div 1"] a0 a1 by auto
-  show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" 
-  proof (rule disjE)
-    show "even n \<or> odd n" by auto
-  next
-    assume "even n"
-    then show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" 
-      using f0 \<psi>\<^sub>1_values_even a0 a1 by auto
-  next
-    assume "odd n"
-    then show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" 
-      using f0 \<psi>\<^sub>1_values_odd a0 a1 by auto
-  qed
+  show "((\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1) $$ (i,j) = (\<psi>\<^sub>1 n) $$ (i,j)" using f0 \<psi>\<^sub>1_values_even \<psi>\<^sub>1_values_odd a0 a1 by auto 
+(*I have a longer proof with case distinction even i \<or> odd i for this which one is nicer?*)
 qed
-
-
 
 lemma \<psi>\<^sub>1_is_state:
   assumes "n \<ge> 1"
   shows "state (n+1) (\<psi>\<^sub>1 n)" 
-proof-
-  have "(\<psi>\<^sub>1 n) = (\<psi>\<^sub>1\<^sub>0 n) \<Otimes> \<psi>\<^sub>1\<^sub>1" using \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1 by auto
-  moreover have "state n (\<psi>\<^sub>1\<^sub>0 n)" using \<psi>\<^sub>1\<^sub>0_is_state assms by auto 
-  moreover have "state 1 \<psi>\<^sub>1\<^sub>1" using \<psi>\<^sub>1\<^sub>1_is_state assms H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 by auto
-  ultimately show "state (n+1) (\<psi>\<^sub>1 n)" using tensor_state by metis
-qed
+  using \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1  \<psi>\<^sub>1\<^sub>0_is_state assms  \<psi>\<^sub>1\<^sub>1_is_state assms H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 tensor_state by metis
+
 
 
 
