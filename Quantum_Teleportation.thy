@@ -1,7 +1,9 @@
 (* 
-Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk;
-         Yijun He, University of Cambridge, yh403@cam.ac.uk
- *)
+Authors: 
+
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk;
+  Yijun He, University of Cambridge, yh403@cam.ac.uk
+*)
 
 theory Quantum_Teleportation
 imports 
@@ -627,12 +629,14 @@ mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>"
 qed
 
 (* 
-Bibliography:
+Biblio:
 
-- Jaap Boender, Florian Kammüller, Rajagopal Nagarajan, Formalization of Quantum Protocols Using Coq, 
-Proceedings QPL 2015, arXiv:1511.01181
-- Quantum Computation and Quantum Information, 10th Anniversary Edition, Michael A. Nielsen and Isaac
-L. Chuang, 1.3.7 
+@inproceedings{Boender2015FormalizationOQ,
+  title={Formalization of Quantum Protocols using Coq},
+  author={Jaap Boender and Florian Kamm{\"u}ller and Rajagopal Nagarajan},
+  booktitle={QPL},
+  year={2015}
+}
 *)
 
 

@@ -1,6 +1,8 @@
 (* 
-Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk;
-         Yijun He, University of Cambridge, yh403@cam.ac.uk 
+Authors: 
+
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk;
+  Yijun He, University of Cambridge, yh403@cam.ac.uk 
 *)
 
 theory MoreTensor

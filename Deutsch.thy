@@ -1,15 +1,11 @@
-text \<open>
+(*
 Authors: 
 
-\begin{itemize}
+  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
+*)
 
-\item Hanna Lachnitt, TU Wien, \href{mailto:lachnitt@student.tuwien.ac.at}{lachnitt@student.tuwien.ac.at}
-\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
-
-\end{itemize}
-\<close>
-
-theory Deutsch_Algorithm
+theory Deutsch
 imports
   MoreTensor
 begin
