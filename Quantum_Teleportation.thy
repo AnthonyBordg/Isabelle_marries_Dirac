@@ -1,18 +1,19 @@
 (* 
-Authors: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk;
-         Yijun He, University of Cambridge, yh403@cam.ac.uk
- *)
+Authors: 
+
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk;
+  Yijun He, University of Cambridge, yh403@cam.ac.uk
+*)
 
 theory Quantum_Teleportation
 imports 
   MoreTensor
+  Basics
 begin
 
 
 definition alice:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat" where
 "alice \<phi> \<equiv> (H \<Otimes> Id 2) * ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>))"
-
-lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
 
 abbreviation M1:: "complex Matrix.mat" where
 "M1 \<equiv> mat_of_cols_list 8 [[1, 0, 0, 0, 0, 0, 0, 0],
@@ -85,12 +86,6 @@ proof-
   then show ?thesis 
     using assms alice_step_2_state by(simp add: alice_def)
 qed
-
-lemma sqr_of_sqrt_2 [simp]:
-  fixes z:: "complex"
-  shows "z * 2 / (complex_of_real (sqrt 2) * complex_of_real (sqrt 2)) = z"
-  by(metis nonzero_mult_div_cancel_right norm_numeral of_real_numeral of_real_power power2_eq_square 
-real_norm_def real_sqrt_abs real_sqrt_power zero_neq_numeral)
 
 lemma alice_step_1:
   assumes "state 1 \<phi>" and "\<alpha> = \<phi> $$ (0,0)" and "\<beta> = \<phi> $$ (1,0)"
@@ -179,11 +174,6 @@ definition alice_pos:: "complex Matrix.mat \<Rightarrow> complex Matrix.mat \<Ri
                   q = mat_of_cols_list 8 [[0, 0, \<phi> $$ (1,0), \<phi> $$ (0,0), 0, 0, 0, 0]] \<or>
                   q = mat_of_cols_list 8 [[0, 0, 0, 0, \<phi> $$ (0,0), - \<phi> $$ (1,0), 0, 0]] \<or>
                   q = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, - \<phi> $$ (1,0), \<phi> $$ (0,0)]]"
-
-lemma two_div_sqrt_two [simp]:
-  shows "2 * complex_of_real (sqrt (1/2)) = complex_of_real (sqrt 2)"
-  apply(auto simp add: real_sqrt_divide algebra_simps)
-  by (metis divide_eq_0_iff nonzero_mult_div_cancel_left sqr_of_sqrt_2)
 
 lemma phi_vec_length:
   assumes "state 1 \<phi>"
@@ -639,12 +629,14 @@ mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>"
 qed
 
 (* 
-Bibliography:
+Biblio:
 
-- Jaap Boender, Florian Kammüller, Rajagopal Nagarajan, Formalization of Quantum Protocols Using Coq, 
-Proceedings QPL 2015, arXiv:1511.01181
-- Quantum Computation and Quantum Information, 10th Anniversary Edition, Michael A. Nielsen and Isaac
-L. Chuang, 1.3.7 
+@inproceedings{Boender2015FormalizationOQ,
+  title={Formalization of Quantum Protocols using Coq},
+  author={Jaap Boender and Florian Kamm{\"u}ller and Rajagopal Nagarajan},
+  booktitle={QPL},
+  year={2015}
+}
 *)
 
 
