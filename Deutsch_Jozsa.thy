@@ -11,7 +11,9 @@ I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
 
-(*Just temporary*)
+(*This has to be defined before the locale jozsa since assumptions cannot be added to a locale after
+its specification. However, there is the possibility to define a locale holding these definitions and 
+making jozsa a sublocale.*)
  
 definition const:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where 
 "const f n c = (\<forall>x\<in>{i::nat. i < 2^n}. f x = c)"
@@ -70,18 +72,16 @@ lemma f_dom_not_zero:
 
 lemma f_values: "\<forall>x \<in> {(i::nat). i < 2^n} .(f x = 0 \<or> f x = 1)" 
   using dom by auto
-
-lemma t1 [simp]: "(1 - f (1)) * (1 - f (1)) + (f (1)) * (f (1)) = 1" sorry
 end (* context jozsa *)
 
 
 definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
-"U\<^sub>f \<equiv> mat_of_cols_list 4 [[1 - f(0), f(0), 0, 0],
-                          [f(0), 1 - f(0), 0, 0],
-                          [0, 0, 1 - f(1), f(1)],
-                          [0, 0, f(1), 1 - f(1)]]"
+"U\<^sub>f \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if i = j then (1-f(i div 2)) else 
+                                          if i = j + 1 \<and> even i then f(i) else
+                                             if i = j-1 \<and> odd i then f(i-1) else 0)"
+(*Rather write split up first line into two, where one is even i and the other odd i or just make lemma*)
 
-lemma (in jozsa) jozsa_transform_dim [simp]: 
+(*lemma (in jozsa) jozsa_transform_dim [simp]: 
   shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
   by (auto simp add: jozsa_transform_def mat_of_cols_list_def)
 
@@ -170,6 +170,11 @@ next
     by (metis complex_cnj_of_nat complex_cnj_zero jozsa_transform_coeff jozsa_transform_coeff_is_zero set_four)
 qed
 
+(*First see if Uf is useful in this form*)
+lemma (in jozsa) t1 [simp]: "of_nat (Suc 0 - f (Suc 0)) * of_nat (Suc 0 - f (Suc 0)) + of_nat (f (Suc 0)) * of_nat (f (Suc 0)) = 1" sorry
+lemma (in jozsa) t2 [simp]: "of_nat (f 0) * of_nat (f 0) + of_nat (Suc 0 - f 0) * of_nat (Suc 0 - f 0) = 1" sorry
+lemma (in jozsa) t3 [simp]: "of_nat (Suc 0 - f 0) * of_nat (Suc 0 - f 0) + of_nat (f 0) * of_nat (f 0) = 1" sorry
+lemma (in jozsa) t4 [simp]: " of_nat (f (Suc 0)) * of_nat (f (Suc 0)) + of_nat (Suc 0 - f (Suc 0)) * of_nat (Suc 0 - f (Suc 0)) = 1" sorry
 
 lemma (in jozsa) jozsa_transform_is_gate:
   shows "gate 2 U\<^sub>f"
@@ -190,13 +195,12 @@ next
       assume "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
       then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
         apply (auto simp add: jozsa_transform_alt_rep one_mat_def times_mat_def)
-         apply (auto simp: scalar_prod_def) 
-        using f_values t1 apply auto sorry
+         apply (auto simp: scalar_prod_def).
     qed
     thus ?thesis by (simp add: adjoint_of_jozsa_transform unitary_def)
   qed
 qed   
-
+*)
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
 lemma ind_from_1 [case_names n_ge_1 1 step]:
