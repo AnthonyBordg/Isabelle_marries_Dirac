@@ -205,73 +205,66 @@ primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \
 definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
 "qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
+lemma mod_pow_2_eq:
+  fixes i k:: nat
+  shows "i mod (2^(k+1)) = i mod 2^k \<or> i mod (2^(k+1)) = i mod 2^k + 2^k"
+proof-
+  have "(i mod 2^(k+1) < 2^k) \<or> (i mod 2^(k+1) \<ge> 2^k)" by auto
+  moreover have "(i mod 2^(k+1)) mod 2^k = i mod 2^(k+1) \<or>
+             (i mod 2^(k+1)) mod 2^k = i mod 2^(k+1) - 2^k"
+    by (metis (no_types, lifting) add.commute divmod_digit_1(2) less_nat_zero_code mod_less mod_mod_trivial 
+not_less plus_1_eq_Suc pos2 semiring_normalization_rules(27) zero_less_power)
+  moreover have "i mod 2^(k+1) + i div 2^(k+1) * 2*(2^k) = i"
+    using div_mult_mod_eq[of "i" "2^(k+1)"] by simp
+  then have "(i mod 2^(k+1)) mod 2^k = i mod 2^k" by (metis mod_mult_self1)
+  ultimately show ?thesis by (metis le_add_diff_inverse2 mod_less)
+qed
+
+lemma select_index_eq_to_mod_eq:
+  fixes n i j k:: nat
+  assumes "i < 2^n" and "j < 2^n" and "\<And>k. (k\<in>{..<n} \<Longrightarrow> select_index n k i = select_index n k j)"
+  shows "k\<in>{..<n+1} \<Longrightarrow> i mod (2^k) = j mod (2^k)"
+proof (induction k)
+  case 0
+  then show ?case by simp
+next
+  case c1:(Suc k)
+  then have "(i mod 2^(k+1) = i mod 2^k \<and> j mod 2^(k+1) = j mod 2^k) \<or> 
+             (i mod 2^(k+1) = i mod 2^k + 2^k \<and> j mod 2^(k+1) = j mod 2^k + 2^k)"
+  proof-
+    have "n - (k+1) < n" using c1 by simp
+    moreover have "select_index n (n - (k+1)) i = (2^k \<le> i mod 2^(k+1))"
+      using select_index_def assms(1) c1 by auto
+    moreover have "select_index n (n - (k+1)) j = (2^k \<le> j mod 2^(k+1))"
+      using select_index_def assms(2) c1 by auto
+    ultimately have "(2^k \<le> i mod 2^(k+1)) = (2^k \<le> j mod 2^(k+1))"
+      using assms(3) by simp
+    moreover have "i mod (2^(k+1)) = i mod 2^k \<or> i mod (2^(k+1)) = i mod 2^k + 2^k"
+      using mod_pow_2_eq by simp
+    moreover have "j mod (2^(k+1)) = j mod 2^k \<or> j mod (2^(k+1)) = j mod 2^k + 2^k"
+      using mod_pow_2_eq by simp
+    moreover have "\<forall>l::nat. ((l mod 2^k < 2^k) \<and> (l mod 2^k + 2^k \<ge> 2^k))" 
+      using mod_less_divisor[of "2^k"] zero_less_power[of "2" "k"] by simp 
+    ultimately show ?thesis by (metis linorder_not_less)
+  qed
+  then show "i mod 2^(Suc k) = j mod 2^(Suc k)" using c1 by auto
+qed
+
 lemma uniq_select_index: 
-  fixes i j::"nat"
+  fixes i j:: "nat"
   assumes "i < 2^n" and "j < 2^n" and "i \<noteq> j"
   shows " \<exists>a\<in>{..<n}. select_index n a i = (\<not> select_index n a j)"
 proof-
   have "(\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)) \<Longrightarrow> i = j"
   proof-
-    assume a0:"\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)"
-    have "\<And>a. (a\<in>{..<n+1} \<Longrightarrow> i mod (2^a) = j mod (2^a))"
-    proof-
-      fix a
-      show "(a\<in>{..<n+1} \<Longrightarrow> i mod (2^a) = j mod (2^a))"
-      proof (induction a)
-        case 0
-        then show ?case by simp
-      next
-        case c1:(Suc a)
-        have "n - (Suc a) < n" using c1 by simp
-        moreover have "select_index n (n - (Suc a)) i = (2^a \<le> i mod 2^(Suc a))"
-          using select_index_def assms(1) c1 by auto
-        moreover have "select_index n (n - (Suc a)) j = (2^a \<le> j mod 2^(Suc a))"
-          using select_index_def assms(2) c1 by auto
-        ultimately have "(2^a \<le> i mod 2^(Suc a)) = (2^a \<le> j mod 2^(Suc a))"
-          using a0 by simp
-        then have f0:"(2^a \<le> i mod 2^(Suc a) \<and> 2^a \<le> j mod 2^(Suc a)) \<or> 
-                      (2^a > i mod 2^(Suc a) \<and> 2^a > j mod 2^(Suc a))"
-          by auto
-        have "i mod (2*(2^a)) < (2*(2^a))" by simp
-        then have f1:"(i mod (2*(2^a))) mod 2^a = i mod (2*(2^a)) \<or>
-                      (i mod (2*(2^a))) mod 2^a = i mod (2*(2^a)) - 2^a"
-          by (metis Suc_1 f0 divmod_digit_1(2) mod_by_Suc_0 mod_less mod_less_eq_dividend 
-              nat_zero_less_power_iff semiring_normalization_rules(27) zero_less_Suc)
-        have "i mod (2*(2^a)) + i div (2*(2^a)) * 2*(2^a) = i"
-          using div_mult_mod_eq[of "i" "2*(2^a)"] by simp
-        then have "(i mod (2*(2^a))) mod 2^a = i mod 2^a"
-          by (metis mod_mult_self1)
-        then have f5:"i mod (2*(2^a)) = i mod 2^a \<or>
-                      i mod (2*(2^a)) = i mod 2^a + 2^a"
-          using f1 by auto
-        have f2:"i mod 2^a < 2^a \<and> i mod 2^a + 2^a \<ge> 2^a" by simp
-        have "j mod (2*(2^a)) < (2*(2^a))" by simp
-        then have f3:"(j mod (2*(2^a))) mod 2^a = j mod (2*(2^a)) \<or>
-                   (j mod (2*(2^a))) mod 2^a = j mod (2*(2^a)) - 2^a"
-          by (metis Suc_1 f0 divmod_digit_1(2) mod_by_Suc_0 mod_less mod_less_eq_dividend 
-              nat_zero_less_power_iff semiring_normalization_rules(27) zero_less_Suc)
-        have "j mod (2*(2^a)) + j div (2*(2^a)) * 2*(2^a) = j"
-          using div_mult_mod_eq[of "j" "2*(2^a)"] by simp
-        then have "(j mod (2*(2^a))) mod 2^a = j mod 2^a"
-          by (metis mod_mult_self1)
-        then have f6:"j mod (2*(2^a)) = j mod 2^a \<or>
-                      j mod (2*(2^a)) = j mod 2^a + 2^a"
-          using f3 by auto
-        moreover have f4:"j mod 2^a < 2^a \<and> j mod 2^a + 2^a \<ge> 2^a" by simp
-        have f7:"(i mod 2^(Suc a) = i mod 2^a \<and> j mod 2^(Suc a) = j mod 2^a) \<or> 
-                 (i mod 2^(Suc a) = i mod 2^a + 2^a \<and> j mod 2^(Suc a) = j mod 2^a + 2^a)"
-          using f0
-          by (metis f2 f4 f5 f6 le_imp_less_Suc not_less_eq semiring_normalization_rules(27))
-        moreover have "i mod 2^a = j mod 2^a" using c1 by simp
-        ultimately show "i mod 2^(Suc a) = j mod 2^(Suc a)" by auto
-      qed
-    qed
-    then have "i mod 2^n = j mod 2^n" by simp
-    then show "i = j" using assms(1,2) by simp
+    assume "\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)"
+    then have "i mod 2^n = j mod 2^n" 
+      using assms(1,2) select_index_eq_to_mod_eq by (meson lessThan_iff less_add_one)
+    then show "i = j" 
+      using assms(1,2) by simp
   qed
   then show ?thesis
-    using assms(3)
-    by blast
+    using assms(3) by blast
 qed
 
 lemma adding_term_to_prod:
