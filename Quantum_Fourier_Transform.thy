@@ -274,6 +274,11 @@ proof-
     by blast
 qed
 
+lemma adding_term_to_prod:
+  fixes f::"nat \<Rightarrow> complex" and m::"nat"
+  shows "(\<Prod>k<m. f(k)) * f(m) = (\<Prod>k<(Suc m). f(k))"
+  by auto
+
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
@@ -306,13 +311,13 @@ next
   have "\<And>t. t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = Matrix.vec (2^n) (\<lambda>j. 
         (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
         (if select_index n m j then (root (2^(n-k)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
-        (\<Prod>k<n-(Suc m). if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
+        (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
   proof-
     fix t
     show "t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = Matrix.vec (2^n) (\<lambda>j. 
           (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
           (if select_index n m j then (root (2^(n-k)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
-          (\<Prod>k<n-(Suc m). if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
+          (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
     proof (induction t)
       case 0
       then show ?case
@@ -331,12 +336,14 @@ next
   ultimately have "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. 
              (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
              (if select_index n m j then (root (2^(n-k)))^(\<Sum>l<n-m. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
-             (\<Prod>k<n-(Suc m). if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
+             (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
     using qft_no_swap_def
     by auto
-  show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
+  then show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
         root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
         (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
+    using adding_term_to_prod[of "\<lambda>k. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1" "m"]
+    apply auto (* I don't know why auto can't automatically prove this; the goal is already reduced to a proposition of form X = X. *)
     sorry
 qed
 
