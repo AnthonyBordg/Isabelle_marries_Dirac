@@ -26,6 +26,7 @@ definition is_balanced:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow
                    \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
                    \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
 
+(*TODO: solve problem with induction and locales. Put everything back into locale.*)
 
 locale jozsa =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
@@ -76,71 +77,55 @@ end (* context jozsa *)
 
 
 definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
-"U\<^sub>f \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if i = j then (1-f(i div 2)) else 
-                                          if i = j + 1 \<and> even i then f(i) else
-                                             if i = j-1 \<and> odd i then f(i-1) else 0)"
-(*Rather write split up first line into two, where one is even i and the other odd i or just make lemma*)
+"U\<^sub>f \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j). if i = j then (1-f(i div 2)) else 
+                                          if i = j + 1 \<and> odd i then f(i div 2) else
+                                             if i = j-1 \<and> even i \<and> j\<ge>1 then f(i div 2) else 0)"
 
-(*lemma (in jozsa) jozsa_transform_dim [simp]: 
-  shows "dim_row U\<^sub>f = 4" and "dim_col U\<^sub>f = 4" 
-  by (auto simp add: jozsa_transform_def mat_of_cols_list_def)
+lemma (in jozsa) jozsa_transform_dim [simp]: 
+  shows "dim_row U\<^sub>f = 2^(n+1)" and "dim_col U\<^sub>f = (2^(n+1))" 
+  by (auto simp add: jozsa_transform_def)
 
-lemma (in jozsa) jozsa_transform_coeff_is_zero [simp]: 
-  shows "U\<^sub>f $$ (0,2) = 0" and "U\<^sub>f $$ (0,3) = 0"
-    and "U\<^sub>f $$ (1,2) = 0" and "U\<^sub>f $$(1,3) = 0"
-    and "U\<^sub>f $$ (2,0) = 0" and "U\<^sub>f $$(2,1) = 0"
-    and "U\<^sub>f $$ (3,0) = 0" and "U\<^sub>f $$ (3,1) = 0"
-  using jozsa_transform_def by auto
+lemma (in jozsa) jozsa_transform_coeff_is_zero [simp]:
+  assumes "i < dim_row U\<^sub>f \<and> j < dim_col U\<^sub>f"
+  shows "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1)) \<longrightarrow> U\<^sub>f $$ (i,j) = 0"
+  (*and "i \<noteq> j \<and> i\<noteq> j + 1 \<and> i \<noteq> j - 1 \<longrightarrow> U\<^sub>f $$ (i,j) = 0"  
+  and "i = j + 1 \<and> even i \<longrightarrow> U\<^sub>f $$ (i,j) = 0" 
+  and "j\<ge>1 \<and> i = j - 1 \<and> odd i \<longrightarrow> U\<^sub>f $$ (i,j) = 0" *)
+  using jozsa_transform_def assms by auto
 
 lemma (in jozsa) jozsa_transform_coeff [simp]: 
-  shows "U\<^sub>f $$ (0,1) = f(0)" and "U\<^sub>f $$ (1,0) = f(0)"
-    and "U\<^sub>f $$(2,3) = f(1)" and "U\<^sub>f $$ (3,2) = f(1)"
-    and "U\<^sub>f $$ (0,0) = 1 - f(0)" and "U\<^sub>f $$(1,1) = 1 - f(0)"
-    and "U\<^sub>f $$ (2,2) = 1 - f(1)" and "U\<^sub>f $$ (3,3) = 1 - f(1)"
-  using jozsa_transform_def by auto
+  assumes "i < dim_row U\<^sub>f \<and> j < dim_col U\<^sub>f"
+  shows "i = j \<longrightarrow> U\<^sub>f $$ (i,j) = 1 - f (i div 2)"
+  and "i = j + 1 \<and> odd i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)"
+  and "j\<ge>1 \<and> i = j - 1 \<and> even i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)" 
+  using jozsa_transform_def assms by auto
 
-abbreviation (in jozsa) V\<^sub>f:: "complex Matrix.mat" where
-"V\<^sub>f \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). 
-                if i=0 \<and> j=0 then 1 - f(0) else
-                  (if i=0 \<and> j=1 then f(0) else
-                    (if i=1 \<and> j=0 then f(0) else
-                      (if i=1 \<and> j=1 then 1 - f(0) else
-                        (if i=2 \<and> j=2 then 1 - f(1) else
-                          (if i=2 \<and> j=3 then f(1) else
-                            (if i=3 \<and> j=2 then f(1) else
-                              (if i=3 \<and> j=3 then 1 - f(1) else 0))))))))"
+(*This would help at several steps. Maybe rephrase it with (U\<^sub>f * U\<^sub>f) $$ (i,j)  is it true?*)
+lemma (in jozsa) U\<^sub>f_mult_without_empty_summands: 
+  fixes i j A
+  assumes "i < dim_row U\<^sub>f \<and> j < dim_col U\<^sub>f"
+  shows "even i \<longrightarrow> (\<Sum>k\<in>{0.. dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+    and "odd i \<longrightarrow> (\<Sum>k\<in>{0.. dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i-1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+  sorry
 
-lemma (in jozsa) jozsa_transform_alt_rep_coeff_is_zero [simp]:
-  shows "V\<^sub>f $$ (0,2) = 0" and "V\<^sub>f $$ (0,3) = 0"
-    and "V\<^sub>f $$ (1,2) = 0" and "V\<^sub>f $$(1,3) = 0"
-    and "V\<^sub>f $$ (2,0) = 0" and "V\<^sub>f $$(2,1) = 0"
-    and "V\<^sub>f $$ (3,0) = 0" and "V\<^sub>f $$ (3,1) = 0"
-  by auto
 
-lemma (in jozsa) jozsa_transform_alt_rep_coeff [simp]:
-  shows "V\<^sub>f $$ (0,1) = f(0)" and "V\<^sub>f $$ (1,0) = f(0)"
-    and "V\<^sub>f $$(2,3) = f(1)" and "V\<^sub>f $$ (3,2) = f(1)"
-    and "V\<^sub>f $$ (0,0) = 1 - f(0)" and "V\<^sub>f $$(1,1) = 1 - f(0)"
-    and "V\<^sub>f $$ (2,2) = 1 - f(1)" and "V\<^sub>f $$ (3,3) = 1 - f(1)"
-  by auto
 
-lemma (in jozsa) jozsa_transform_alt_rep:
-  shows "U\<^sub>f = V\<^sub>f"
-proof
-  show c0:"dim_row U\<^sub>f = dim_row V\<^sub>f" by simp
-  show c1:"dim_col U\<^sub>f = dim_col V\<^sub>f" by simp
-  fix i j:: nat
-  assume "i < dim_row V\<^sub>f" and "j < dim_col V\<^sub>f"
-  then have "i < 4" and "j < 4" by auto
-  thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
-    by (smt jozsa_transform_alt_rep_coeff jozsa_transform_alt_rep_coeff_is_zero jozsa_transform_coeff
- jozsa_transform_coeff_is_zero set_four)
+
+
+lemma disj_four_cases:
+  assumes "A \<or> B \<or> C \<or> D"
+  and "A \<Longrightarrow> P"
+  and "B \<Longrightarrow> P"
+  and "C \<Longrightarrow> P"
+  and "D \<Longrightarrow> P"
+  shows "P"
+proof -
+  from assms show ?thesis by blast
 qed
-
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
 
-(*Keep this until its known if Uf is useful*)
+(*TODO: clean up,delete unused facts*)
 lemma (in jozsa) transpose_of_jozsa_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
 proof
@@ -149,13 +134,50 @@ next
   show "dim_col (U\<^sub>f\<^sup>t) = dim_col U\<^sub>f" by simp
 next
   fix i j:: nat
-  assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+  assume a0: "i < dim_row U\<^sub>f" and a1: "j < dim_col U\<^sub>f"
   thus "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
-    apply (auto simp add: transpose_mat_def)
-    by (metis jozsa_transform_coeff(1-4) jozsa_transform_coeff_is_zero set_four)
+  proof (induct rule: disj_four_cases )
+    show "i=j \<or> (i=j+1 \<and> odd i) \<or> (i=j-1 \<and> even i \<and> j\<ge>1) \<or> (i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
+      by linarith
+  next
+    assume "i=j"
+    then show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)" 
+      using a0 by auto
+  next
+    assume a2: "(i=j+1 \<and> odd i)"
+    then have "i\<ge>1" by simp
+    then have "U\<^sub>f $$ (j, i) = f (i div 2)" 
+      using a0 a2 jozsa_transform_coeff by auto
+    moreover have "U\<^sub>f $$ (i, j) = f (i div 2)" 
+      using a0 a1 a2 jozsa_transform_coeff by blast
+    ultimately show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+      using transpose_mat_def a0 a1 by auto
+  next
+    assume a2:"(i=j-1 \<and> even i \<and> j\<ge>1)"
+    then have "U\<^sub>f $$ (i, j) = f (i div 2)" 
+      using a0 a1 a2 jozsa_transform_coeff by blast
+    moreover have "U\<^sub>f $$ (j, i) = f (i div 2)" 
+      using a0 a1 a2 jozsa_transform_coeff 
+      by (metis add_diff_assoc2 diff_add_inverse2 even_plus_one_iff even_succ_div_two jozsa_transform_dim(1) jozsa_transform_dim(2))
+    ultimately show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+      using transpose_mat_def a0 a1 by auto
+  next 
+    assume a2: "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
+    then have "(i\<noteq>j \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))" 
+      by (metis Groups.ab_semigroup_add_class.add.commute 
+          Groups.ordered_cancel_comm_monoid_diff_class.add_diff_inverse 
+          Groups.ordered_cancel_comm_monoid_diff_class.le_imp_diff_is_add 
+          a2 diff_add_inverse even_plus_one_iff le_add1)
+    then have "U\<^sub>f $$ (j, i) = 0" 
+      using jozsa_transform_coeff_is_zero a0 a1 by auto
+    moreover have "U\<^sub>f $$ (i, j) = 0" 
+      using jozsa_transform_coeff_is_zero a0 a1 a2 by auto
+    ultimately show "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
+      using transpose_mat_def a0 a1 by auto
+  qed 
 qed
 
-
+(*TODO: clean up,delete unused facts*)
 lemma (in jozsa) adjoint_of_jozsa_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
 proof
@@ -164,22 +186,51 @@ next
   show "dim_col (U\<^sub>f\<^sup>\<dagger>) = dim_col U\<^sub>f" by simp
 next
   fix i j:: nat
-  assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+  assume a0: "i < dim_row U\<^sub>f" and a1: "j < dim_col U\<^sub>f"
   thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
-    apply (auto simp add: hermite_cnj_def)
-    by (metis complex_cnj_of_nat complex_cnj_zero jozsa_transform_coeff jozsa_transform_coeff_is_zero set_four)
+  proof (induct rule: disj_four_cases )
+ show "i=j \<or> (i=j+1 \<and> odd i) \<or> (i=j-1 \<and> even i \<and> j\<ge>1) \<or> (i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
+      by linarith
+  next
+    assume "i=j"
+    then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)" 
+      using a0 hermite_cnj_def by auto
+  next
+    assume a2: "(i=j+1 \<and> odd i)"
+    then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)" 
+      using a0 hermite_cnj_def by auto
+  next
+    assume a2:"(i=j-1 \<and> even i \<and> j\<ge>1)"
+    then have "U\<^sub>f $$ (i, j) = f (i div 2)" 
+      using a0 a1 a2 jozsa_transform_coeff by auto
+    moreover have "U\<^sub>f\<^sup>\<dagger>  $$ (j, i) = f (i div 2)" 
+      using a0 a1 a2 jozsa_transform_coeff hermite_cnj_def 
+      by auto 
+    ultimately show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)" 
+      using a0 a1 a2 hermite_cnj_def 
+      by (metis cnj_transpose hermite_cnj_dim_row index_transpose_mat transpose_hermite_cnj transpose_of_jozsa_transform)
+  next 
+    assume a2: "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
+    then have f0:"(i\<noteq>j \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))" 
+      by (metis Groups.ab_semigroup_add_class.add.commute 
+          Groups.ordered_cancel_comm_monoid_diff_class.add_diff_inverse 
+          Groups.ordered_cancel_comm_monoid_diff_class.le_imp_diff_is_add 
+          a2 diff_add_inverse even_plus_one_iff le_add1)
+    then have "U\<^sub>f $$ (j,i) = 0" and "cnj 0 = 0"
+      using jozsa_transform_coeff_is_zero a0 a1 a2 by auto
+    then have "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = 0" 
+      using hermite_cnj_def f0 a0 a1 a2  
+      by (smt Product_Type.prod.simps(2) index_mat(1) jozsa_transform_dim(1) jozsa_transform_dim(2))
+    then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)" 
+      using a0 a1 a2 hermite_cnj_def jozsa_transform_coeff_is_zero jozsa_transform_dim 
+      by auto
+  qed 
 qed
 
-(*First see if Uf is useful in this form*)
-lemma (in jozsa) t1 [simp]: "of_nat (Suc 0 - f (Suc 0)) * of_nat (Suc 0 - f (Suc 0)) + of_nat (f (Suc 0)) * of_nat (f (Suc 0)) = 1" sorry
-lemma (in jozsa) t2 [simp]: "of_nat (f 0) * of_nat (f 0) + of_nat (Suc 0 - f 0) * of_nat (Suc 0 - f 0) = 1" sorry
-lemma (in jozsa) t3 [simp]: "of_nat (Suc 0 - f 0) * of_nat (Suc 0 - f 0) + of_nat (f 0) * of_nat (f 0) = 1" sorry
-lemma (in jozsa) t4 [simp]: " of_nat (f (Suc 0)) * of_nat (f (Suc 0)) + of_nat (Suc 0 - f (Suc 0)) * of_nat (Suc 0 - f (Suc 0)) = 1" sorry
-
 lemma (in jozsa) jozsa_transform_is_gate:
-  shows "gate 2 U\<^sub>f"
+  shows "gate (n+1) U\<^sub>f"
 proof
-  show "dim_row U\<^sub>f = 2\<^sup>2" by simp
+  show "dim_row U\<^sub>f = 2^(n+1)" by simp
 next
   show "square_mat U\<^sub>f" by simp
 next
@@ -192,15 +243,28 @@ next
       show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
     next
       fix i j:: nat
-      assume "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
-      then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
-        apply (auto simp add: jozsa_transform_alt_rep one_mat_def times_mat_def)
-         apply (auto simp: scalar_prod_def).
-    qed
-    thus ?thesis by (simp add: adjoint_of_jozsa_transform unitary_def)
-  qed
-qed   
-*)
+      assume a0:"i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and a1:"j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
+      then have a2: "i< 2^(n+1)" and a3: "j< 2^(n+1)"
+        using one_mat_def jozsa_transform_def by auto
+      then have a4: "i < dim_row U\<^sub>f" and a5:"j < dim_col U\<^sub>f" by auto
+      then have f6: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k< 2^(n+1). U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j))"
+        using index_matrix_prod a4 a5 by auto
+      then have f7: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k\<in> {0.. 2^(n+1)}. U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j))"
+          using index_matrix_prod a4 a5 sorry
+      show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+      proof(rule disjE)(*instead proof with four cases?*)
+        show "even i \<or> odd i" by auto
+      next 
+        assume "even i"
+        then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) =  of_nat (Suc 0 - f (i div 2)) * U\<^sub>f $$ (i, j) + U\<^sub>f $$ (i, Suc i) * U\<^sub>f $$ (Suc i, j)" 
+          using U\<^sub>f_mult_without_empty_summands(1) a4 a5 f7 by auto
+        then have " of_nat (Suc 0 - f (i div 2)) * U\<^sub>f $$ (i, j) + U\<^sub>f $$ (i, Suc i) * U\<^sub>f $$ (Suc i, j) =  1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+          sorry (*proof mit four cases*)
+        then show ?thesis sorry
+      next 
+         show ?thesis sorry
+       qed
+     qed
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
 lemma ind_from_1 [case_names n_ge_1 1 step]:
@@ -545,7 +609,61 @@ lemma \<psi>\<^sub>1_is_state:
   using \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1  \<psi>\<^sub>1\<^sub>0_is_state assms  \<psi>\<^sub>1\<^sub>1_is_state assms H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 tensor_state by metis
 
 
+abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
+"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (-1)^(f(i div 2))/(sqrt(2)^(n+1)) 
+                                      else (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1)))"
 
+(*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))
+Is also correct saves a lot of work and we don't have to stick to the paper proof in all points*)
 
+lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
+  fixes i j 
+  assumes "i < dim_row \<psi>\<^sub>2 "
+  and "j < dim_col \<psi>\<^sub>2 "
+  and "even i"
+  shows "\<psi>\<^sub>2  $$ (i,j) = (-1)^(f(i div 2))/(sqrt(2)^(n+1))" 
+  using assms case_prod_conv by simp
+
+lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
+  fixes i j 
+  assumes "i < dim_row \<psi>\<^sub>2 "
+  and "j < dim_col \<psi>\<^sub>2 "
+  and "odd i"
+  shows "\<psi>\<^sub>2  $$ (i,j) = (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1))" 
+  using assms case_prod_conv by simp
+
+lemma (in jozsa) "U\<^sub>f_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2":
+  assumes "n \<ge> 1"
+  shows "U\<^sub>f * (\<psi>\<^sub>1 n) = \<psi>\<^sub>2 " 
+proof 
+  fix i j ::nat
+  assume a0: "i < dim_row \<psi>\<^sub>2" and a1: "j < dim_col \<psi>\<^sub>2"
+  then have f0:"i \<in> {0..2^(n+1)}" and f1: "j=0" by auto
+  then have f2: "i < dim_row U\<^sub>f " and f3: "j < dim_col U\<^sub>f " and f4: "i < dim_col  \<psi>\<^sub>2 " sorry
+  show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" 
+  proof (rule disjE)
+    show "even i \<or> odd i" by auto
+  next
+    assume a2: "even i"
+    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,0) 
+      =  Matrix.row U\<^sub>f i \<bullet> Matrix.col (\<psi>\<^sub>1 n) 0"
+      using times_mat_def 
+      by (smt f1 a0 dim_col_mat(1) dim_row_mat(1) index_mult_mat(1) jozsa_transform_dim(1) less_numeral_extra(1))
+    then have  "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,0) 
+      =  (\<Sum> k \<in> {0 ..< dim_vec (Matrix.col (\<psi>\<^sub>1 n) 0)}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col (\<psi>\<^sub>1 n) 0) $ k)"
+      using scalar_prod_def a0 a1 f0 f1 f2 f3  
+      by (smt Groups_Big.comm_monoid_add_class.sum.cong) 
+    then have  f5:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,0) 
+      =  (\<Sum> k \<in> {0 ..< 2^(n+1)}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col (\<psi>\<^sub>1 n) 0) $ k)"
+      by (metis dim_col dim_row_mat(1)) 
+    have f6:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
+      using U\<^sub>f_mult_without_empty_summands sorry
+    moreover have "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1))" 
+      using jozsa_transform_coeff(1) f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
+    moreover have "U\<^sub>f $$ (i, i+1) * (\<psi>\<^sub>1 n)$$ (i+1, j) = (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
+      using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
+    ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))" by auto
+
+(*TODO: show that \<psi>\<^sub>2 has the same value *)
 
 end
