@@ -15,11 +15,6 @@ text\<open>
 This is the phase shift gate $R_\<phi>$ on Wikipedia, but in the book it is denoted as $R_k$, with 
 $\<phi> = 2\pi/(2^k)$. 
 \<close>
-(* 
-AB: Later you should add a bibliography, otherwise the reference to "the book" above is unclear. 
-Moreover, please do not forget the math mode or the appropriate antiquotations (see 4.2 of the isar 
-manual) in your comments. 
-*)
 
 definition phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("R _") where
 "R n \<equiv> Matrix.mat 2 2 (\<lambda>(i,j). if i = j then (if i = 0 then 1 else root (2^n)) else 0)"
@@ -210,6 +205,122 @@ primrec qft_no_swap :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.vec \
 definition qft :: "nat \<Rightarrow> complex Matrix.vec \<Rightarrow> complex Matrix.vec" where
 "qft n v = (SWAP n) * |qft_no_swap n n v\<rangle>"
 
+
+lemma mod_pow_2_eq:
+  fixes i k:: nat
+  shows "i mod (2^(k+1)) = i mod 2^k \<or> i mod (2^(k+1)) = i mod 2^k + 2^k"
+proof-
+  have "(i mod 2^(k+1) < 2^k) \<or> (i mod 2^(k+1) \<ge> 2^k)" by auto
+  moreover have "(i mod 2^(k+1)) mod 2^k = i mod 2^(k+1) \<or>
+             (i mod 2^(k+1)) mod 2^k = i mod 2^(k+1) - 2^k"
+    by (metis (no_types, lifting) add.commute divmod_digit_1(2) less_nat_zero_code mod_less mod_mod_trivial 
+not_less plus_1_eq_Suc pos2 semiring_normalization_rules(27) zero_less_power)
+  moreover have "i mod 2^(k+1) + i div 2^(k+1) * 2*(2^k) = i"
+    using div_mult_mod_eq[of "i" "2^(k+1)"] by simp
+  then have "(i mod 2^(k+1)) mod 2^k = i mod 2^k" by (metis mod_mult_self1)
+  ultimately show ?thesis by (metis le_add_diff_inverse2 mod_less)
+qed
+
+lemma select_index_eq_to_mod_eq:
+  fixes n i j k:: nat
+  assumes "i < 2^n" and "j < 2^n" and "\<And>k. (k\<in>{..<n} \<Longrightarrow> select_index n k i = select_index n k j)"
+  shows "k\<in>{..<n+1} \<Longrightarrow> i mod (2^k) = j mod (2^k)"
+proof (induction k)
+  case 0
+  then show ?case by simp
+next
+  case c1:(Suc k)
+  then have "(i mod 2^(k+1) = i mod 2^k \<and> j mod 2^(k+1) = j mod 2^k) \<or> 
+             (i mod 2^(k+1) = i mod 2^k + 2^k \<and> j mod 2^(k+1) = j mod 2^k + 2^k)"
+  proof-
+    have "n - (k+1) < n" using c1 by simp
+    moreover have "select_index n (n - (k+1)) i = (2^k \<le> i mod 2^(k+1))"
+      using select_index_def assms(1) c1 by auto
+    moreover have "select_index n (n - (k+1)) j = (2^k \<le> j mod 2^(k+1))"
+      using select_index_def assms(2) c1 by auto
+    ultimately have "(2^k \<le> i mod 2^(k+1)) = (2^k \<le> j mod 2^(k+1))"
+      using assms(3) by simp
+    moreover have "i mod (2^(k+1)) = i mod 2^k \<or> i mod (2^(k+1)) = i mod 2^k + 2^k"
+      using mod_pow_2_eq by simp
+    moreover have "j mod (2^(k+1)) = j mod 2^k \<or> j mod (2^(k+1)) = j mod 2^k + 2^k"
+      using mod_pow_2_eq by simp
+    moreover have "\<forall>l::nat. ((l mod 2^k < 2^k) \<and> (l mod 2^k + 2^k \<ge> 2^k))" 
+      using mod_less_divisor[of "2^k"] zero_less_power[of "2" "k"] by simp 
+    ultimately show ?thesis by (metis linorder_not_less)
+  qed
+  then show "i mod 2^(Suc k) = j mod 2^(Suc k)" using c1 by auto
+qed
+
+lemma uniq_select_index: 
+  fixes i j:: "nat"
+  assumes "i < 2^n" and "j < 2^n" and "i \<noteq> j"
+  shows " \<exists>a\<in>{..<n}. select_index n a i = (\<not> select_index n a j)"
+proof-
+  have "(\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)) \<Longrightarrow> i = j"
+  proof-
+    assume "\<And>a. (a\<in>{..<n} \<Longrightarrow> select_index n a i = select_index n a j)"
+    then have "i mod 2^n = j mod 2^n" 
+      using assms(1,2) select_index_eq_to_mod_eq by (meson lessThan_iff less_add_one)
+    then show "i = j" 
+      using assms(1,2) by simp
+  qed
+  then show ?thesis
+    using assms(3) by blast
+qed
+
+lemma qft_no_swap_of_unit_vec:
+  fixes v::"complex Matrix.vec"
+  assumes "v = unit_vec (2^n) i" and "i < 2^n" and "m \<le> n"
+  shows "m>n \<or> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+         (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+         (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
+proof (induction m)
+  case 0
+  define w where d0:"w = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<0. if select_index n k j then 
+        root (2^(n-k))^(\<Sum>l<k. 2^(k-l) * (if select_index n l j then 1 else 0)) else 1) *
+        (\<Prod>k<n-0. if select_index n (k+0) i = select_index n (k+0) j then 1 else 0) / (sqrt(2)^0))"
+  have "qft_no_swap n 0 v = w"
+  proof
+    show "dim_vec (qft_no_swap n 0 v) = dim_vec w"
+      by (auto simp add: assms(1) d0)
+    show " \<And>j. j < dim_vec w \<Longrightarrow> (qft_no_swap n 0 v) $ j = w $ j"
+    proof-
+      fix j assume "j < dim_vec w"
+      then show "(qft_no_swap n 0 v) $ j = w $ j"
+        by (simp add: assms(1,2) d0 uniq_select_index)
+    qed
+  qed
+  then show "0>n \<or> qft_no_swap n 0 v = w" by simp
+next
+  case (Suc m)
+  then have "m>n \<or> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+             (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+             (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
+    by simp
+  show "(Suc m)>n \<or> qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
+        (root (2^(n-k)))^(\<Sum>l<k. (2^(k-l)) * (if select_index n l j then 1 else 0)) else 1) * 
+        (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
+    sorry
+qed
+
+lemma qft_of_unit_vec:
+  fixes v::"complex Matrix.vec"
+  assumes "v = unit_vec (2^n) i" and "i < 2^n"
+  shows "qft n v = fourier n * |v\<rangle>"
+proof
+  show "dim_vec (qft n v) = dim_vec (col_fst (fourier n * |v\<rangle>))"
+    by (simp add: qft_def fourier_def SWAP_def)
+  show "\<And>i. i < dim_vec (col_fst (fourier n * |v\<rangle>)) \<Longrightarrow> qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+  proof-
+    fix i assume "i < dim_vec (col_fst (fourier n * |v\<rangle>))"
+    then have "i \<in> {0..<2^n}"
+      by (simp add: fourier_def)
+    show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+      sorry
+  qed
+qed
+
+
 theorem qft_fourier: 
   fixes v::"complex Matrix.vec"
   assumes "dim_vec v = 2^n"
@@ -218,7 +329,21 @@ proof
   show "dim_vec (qft n v) = dim_vec (col_fst (fourier n * |v\<rangle>))"
     by (simp add: qft_def fourier_def SWAP_def)
   show "\<And>i. i < dim_vec (col_fst (fourier n * |v\<rangle>)) \<Longrightarrow> qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
-    sorry
+  proof-
+    fix i assume "i < dim_vec (col_fst (fourier n * |v\<rangle>))"
+    then have "i \<in> {0..<2^n}"
+      by (simp add: fourier_def)
+    show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+      apply (auto simp add: qft_def fourier_def SWAP_def qft_no_swap_def qft_single_qbit_def)
+      sorry
+  qed
 qed
+
+(*
+Biblio:
+
+- Quantum Computation and Quantum Information, Michael A. Nielsen & Isaac L. Chuang, 
+10th Anniversary Edition, Cambridge University Press, 2010.
+*)
 
 end
