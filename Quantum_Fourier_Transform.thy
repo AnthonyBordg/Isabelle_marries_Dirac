@@ -353,6 +353,11 @@ proof
   qed
 qed
 
+lemma sum_of_unit_vec:
+  fixes v::"complex Matrix.vec"
+  assumes "dim_vec v = n"
+  shows "v = (\<Sum>k<n. unit_vec n k)"
+  sorry
 
 theorem qft_fourier: 
   fixes v::"complex Matrix.vec"
