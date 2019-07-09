@@ -330,6 +330,7 @@ next
   qed 
 qed
 
+(*TODO: add line breaks if possible take out facts*)
 lemma (in jozsa) jozsa_transform_is_unitary_index_even:
   fixes i j::nat
   assumes "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
@@ -383,6 +384,71 @@ proof-
     then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
       using a0 assms
       by (metis Groups.monoid_add_class.add.left_neutral index_one_mat(1) jozsa_transform_dim mult_0_right of_nat_0)
+  qed
+qed
+
+
+lemma (in jozsa) jozsa_transform_is_unitary_index_odd:
+  fixes i j::nat
+  assumes "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
+      and "odd i"
+  shows "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+proof-
+  have f0: "i\<ge>1"  
+    using linorder_not_less assms(3) by auto
+  have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j)) " 
+    using U\<^sub>f_mult_without_empty_summands_odd[of i j U\<^sub>f ] assms by auto
+  moreover have "(\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j)) 
+                 = U\<^sub>f $$ (i, i-1) * U\<^sub>f $$ (i-1, j) +  U\<^sub>f $$ (i, i) * U\<^sub>f $$ (i, j)" 
+    using assms f0 by auto
+  moreover have "U\<^sub>f $$ (i, i) * U\<^sub>f $$ (i, j) = (1-f(i div 2))  * U\<^sub>f $$ (i, j)" 
+    using assms jozsa_transform_coeff by simp
+  moreover have f1: "U\<^sub>f $$ (i, i-1) * U\<^sub>f $$ (i-1, j) = f(i div 2) * U\<^sub>f $$ (i-1, j)" 
+    using assms(1) assms(3) by auto
+  ultimately have f2: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = f(i div 2) * U\<^sub>f $$ (i-1, j) + (1-f(i div 2))  * U\<^sub>f $$ (i, j)" 
+    using assms by auto
+  show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+  proof (induct rule: disj_four_cases)
+    show "j=i \<or> (j=i+1 \<and> odd j) \<or> (j=i-1 \<and> even j \<and> i\<ge>1) \<or> (j\<noteq>i \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))"
+      by linarith
+  next
+    assume a0: "j=i"
+    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = f(i div 2) * f(i div 2) +  (1-f(i div 2)) *  (1-f(i div 2))" 
+      using f2 assms 
+      by (smt diff_less index_transpose_mat(1) jozsa_transform_coeff(1) jozsa_transform_coeff(2) 
+          less_imp_add_positive less_numeral_extra(1) odd_pos odd_two_times_div_two_nat odd_two_times_div_two_succ 
+          of_nat_add of_nat_mult trans_less_add1 transpose_of_jozsa_transform)
+    moreover have "f(i div 2) * f(i div 2) +  (1-f(i div 2)) *  (1-f(i div 2)) = 1" 
+      using f_values assms
+      by (metis (no_types, lifting) Nat.minus_nat.diff_0 diff_add_0 diff_add_inverse jozsa_transform_dim(1) less_power_add_imp_div_less mem_Collect_eq mult_eq_if one_power2 power2_eq_square power_one_right) 
+    ultimately show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
+      by (metis assms(2) a0 index_one_mat(1) of_nat_1)
+  next
+    assume a0: "(j=i+1 \<and> odd j)"
+    then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
+      using assms(3) dvd_diffD1 odd_one even_plus_one_iff by blast
+  next
+    assume a0:"(j=i-1 \<and> even j \<and> i\<ge>1)"
+    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = f(i div 2) * (1-f(i div 2)) +  (1-f(i div 2)) *  f(i div 2)" 
+      using f0 f1 f2 assms
+      by (smt jozsa_transform_coeff(1) Groups.ab_semigroup_mult_class.mult.commute even_succ_div_two f2 
+          jozsa_transform_dim odd_two_times_div_two_nat odd_two_times_div_two_succ of_nat_add of_nat_mult)
+    then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
+      using assms a0 by auto
+  next 
+    assume a0: "(j\<noteq>i \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))"
+    then have "U\<^sub>f $$ (i, j) = 0" 
+      by (metis assms index_transpose_mat(1) jozsa_transform_coeff_is_zero jozsa_transform_dim transpose_of_jozsa_transform)
+    moreover have "U\<^sub>f $$ (i-1, j) = 0" 
+      using assms a0 f0 
+      by (smt Groups.ordered_cancel_comm_monoid_diff_class.add_diff_inverse diff_less even_diff_nat 
+          even_plus_one_iff  jozsa_transform_coeff_is_zero less_imp_add_positive less_numeral_extra(1) trans_less_add1)
+    ultimately have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  *0 +  f(i div 2) *0" 
+      using f2 by simp
+    then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
+      using a0 assms
+      by (metis Groups.monoid_add_class.add.left_neutral index_one_mat(1) jozsa_transform_dim mult_0_right of_nat_0)
+  qed
 qed
 
 (*TODO: clean up,delete unused facts*)
@@ -402,22 +468,16 @@ next
       show "dim_col (U\<^sub>f * U\<^sub>f) = dim_col (1\<^sub>m (dim_col U\<^sub>f))" by simp
     next
       fix i j:: nat
-      assume a0:"i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and a1:"j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
-      then have a2: "i< 2^(n+1)" and a3: "j< 2^(n+1)"
-        using one_mat_def jozsa_transform_def by auto
-      then have a4: "i < dim_row U\<^sub>f" and a5:"j < dim_col U\<^sub>f" by auto
-      have a19: "i < dim_col U\<^sub>f" using a2 by auto
-      have a20:  "dim_col U\<^sub>f = dim_row U\<^sub>f" by simp
-      show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
-      proof(rule disjE)
-        show "even i \<or> odd i" by auto
-      next 
-  
-
-      next
-        assume a6: "odd i"
-        show ?thesis sorry
- qed
+      assume "i < dim_row (1\<^sub>m (dim_col U\<^sub>f))" and "j < dim_col (1\<^sub>m (dim_col U\<^sub>f))"
+      then have "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f" by auto
+      then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
+        using jozsa_transform_is_unitary_index_odd jozsa_transform_is_unitary_index_even 
+        by blast
+    qed
+  then show "unitary U\<^sub>f" 
+    by (simp add: adjoint_of_jozsa_transform unitary_def)
+  qed
+qed
 
 (*As n has to be at least 1 we introduce a modified introduction rule *)
 lemma ind_from_1 [case_names n_ge_1 1 step]:
