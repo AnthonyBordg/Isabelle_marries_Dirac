@@ -271,12 +271,12 @@ lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
   shows "m \<le> n \<Longrightarrow> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
-         root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
+         root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) * 
          (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
 proof (induction m)
   case 0
   define w where d0:"w = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<0. if select_index n k j then 
-        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) *
+        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) *
         (\<Prod>k<n-0. if select_index n (k+0) i = select_index n (k+0) j then 1 else 0) / (sqrt(2)^0))"
   have "qft_no_swap n 0 v = w"
   proof
@@ -293,23 +293,31 @@ proof (induction m)
 next
   case c0:(Suc m)
   then have c1:"qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
-             (root (2^(n-k)))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
+             (root (2^(n-k)))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) * 
              (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
     by simp
   have "\<And>t. t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = Matrix.vec (2^n) (\<lambda>j. 
-        (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-        (if select_index n m j then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
+        (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) * 
+        (if select_index n m j then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) i then 1 else 0)) else 1) *
         (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
   proof-
     fix t
     show "t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = Matrix.vec (2^n) (\<lambda>j. 
-          (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-          (if select_index n m j then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
+          (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) * 
+          (if select_index n m j then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) i then 1 else 0)) else 1) *
           (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
     proof (induction t)
       case 0
+      have "|Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+            root (2^(n-k))^(\<Sum>l<n-k. 2^(n-k-l) * (if select_index n (l+k) i then 1 else 0)) else 1) *
+            (\<Prod>k<n-m. if select_index n (k+m) i = select_index n (k+m) j then 1 else 0) / (sqrt 2)^m)\<rangle> = 
+            |Matrix.vec (2^m) (\<lambda>j. (\<Prod>k<m. if select_index m k j then 
+            root (2^(n-k))^(\<Sum>l<n-k. 2^(n-k-l) * (if select_index n (l+k) i then 1 else 0)) else 1))\<rangle> \<Otimes> 
+            |Matrix.vec 2 (\<lambda>j. (if select_index n m i = select_index 1 0 j then 1 else 0))\<rangle> \<Otimes> 
+            |Matrix.vec (2^(n-m-1)) (\<lambda>j. (\<Prod>k<n-m-1. if select_index n (k+m+1) i = select_index (n-m-1) k j then 1 else 0) / (sqrt 2)^m)\<rangle>"
+        sorry
       then show ?case
-        using c1 qft_single_qbit_def
+        using c1 qft_single_qbit_def mult_distr_tensor
         apply auto
         sorry
     next
@@ -322,7 +330,7 @@ next
   qed
   moreover have "n-(Suc m)+1 = n-m" using c0 by auto
   ultimately show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
-        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
+        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) * 
         (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
     using qft_no_swap_def
     by auto
