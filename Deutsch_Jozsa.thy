@@ -14,27 +14,26 @@ section \<open>The Deutsch-Jozsa Algorithm\<close>
 (*This has to be defined before the locale jozsa since assumptions cannot be added to a locale after
 its specification. However, there is the possibility to define a locale holding these definitions and 
 making jozsa a sublocale.*)
- 
-definition const:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where 
-"const f n c = (\<forall>x\<in>{i::nat. i < 2^n}. f x = c)"
 
-definition is_const:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow>bool" where 
-"is_const f n \<equiv> const f n 0 \<or> const f n 1"
 
-definition is_balanced:: "(nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow>bool" where
-"is_balanced f n \<equiv> \<exists>A B. A \<subseteq> {i::nat. i < 2^n} \<and> B \<subseteq> {i::nat. i < 2^n}
-                   \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
-                   \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
-
-(*TODO: solve problem with induction and locales. Put everything back into locale.*)
-
-locale jozsa =
+locale bob_fun =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
   assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
   assumes dim: "n \<ge> 1"
-  assumes const_or_balanced:  "is_const f n  \<or> is_balanced f n"
-context jozsa
+
+context bob_fun
 begin
+
+definition const:: "nat \<Rightarrow> bool" where 
+"const c = (\<forall>x\<in>{i::nat. i < 2^n}. f x = c)"
+
+definition is_const:: bool where 
+"is_const \<equiv> const 0 \<or> const 1"
+
+definition is_balanced:: bool where
+"is_balanced \<equiv> \<exists>A B. A \<subseteq> {i::nat. i < 2^n} \<and> B \<subseteq> {i::nat. i < 2^n}
+                   \<and> card A = (2^(n-1)) \<and> card B = (2^(n-1))  
+                   \<and> (\<forall>x \<in> A. f(x) = 0)  \<and> (\<forall>x \<in> B. f(x) = 1)"
 
 lemma is_balanced_inter: 
   fixes A B:: "nat set"
@@ -70,18 +69,27 @@ lemma f_dom_not_zero:
   shows "f \<in> ({i::nat. n \<ge> 1 \<and> i < 2^n} \<rightarrow>\<^sub>E {0,1})" 
   using dim dom by simp
 
-
 lemma f_values: "\<forall>x \<in> {(i::nat). i < 2^n} .(f x = 0 \<or> f x = 1)" 
   using dom by auto
-end (* context jozsa *)
 
+
+end (* bob_fun *)
+
+locale jozsa =
+  fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
+  assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
+  assumes dim: "n \<ge> 1"
+  assumes const_or_balanced: "is_const f n  \<or> is_balanced f n"
+
+sublocale jozsa \<subseteq> bob_fun 
+  using jozsa_axioms by (simp add: jozsa_def bob_fun_def)
 
 definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 "U\<^sub>f \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j). if i = j then (1-f(i div 2)) else 
                                           if i = j + 1 \<and> odd i then f(i div 2) else
                                              if i = j-1 \<and> even i \<and> j\<ge>1 then f(i div 2) else 0)"
 
-lemma (in jozsa) jozsa_transform_dim [simp]: 
+lemma (in jozsa) jozsa_transform_dim [simp]:
   shows "dim_row U\<^sub>f = 2^(n+1)" and "dim_col U\<^sub>f = (2^(n+1))" 
   by (auto simp add: jozsa_transform_def)
 
@@ -99,6 +107,7 @@ lemma (in jozsa) jozsa_transform_coeff [simp]:
   and "i = j + 1 \<and> odd i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)"
   and "j\<ge>1 \<and> i = j - 1 \<and> even i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)" 
   using jozsa_transform_def assms by auto
+
 
 lemma
   fixes i n::nat 
@@ -127,6 +136,16 @@ proof-
 
 qed
 
+lemma disj_four_cases:
+  assumes "A \<or> B \<or> C \<or> D"
+  and "A \<Longrightarrow> P"
+  and "B \<Longrightarrow> P"
+  and "C \<Longrightarrow> P"
+  and "D \<Longrightarrow> P"
+  shows "P"
+proof -
+  from assms show ?thesis by blast
+qed
 
 
 
@@ -282,6 +301,7 @@ next
       then have a2: "i< 2^(n+1)" and a3: "j< 2^(n+1)"
         using one_mat_def jozsa_transform_def by auto
       then have a4: "i < dim_row U\<^sub>f" and a5:"j < dim_col U\<^sub>f" by auto
+
       have a19: "i < dim_col U\<^sub>f" sorry
       show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
       proof(rule disjE)(*instead proof with four cases?*)
@@ -646,6 +666,7 @@ lemma \<psi>\<^sub>1_is_state:
 
 
 abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
+
 "\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
                                       else (-1+2*f(i div 2))/(sqrt(2)^(n+1)))"
 
@@ -658,6 +679,7 @@ lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "even i"
+
   shows "\<psi>\<^sub>2  $$ (i,j) = (1-2*f(i div 2))/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
@@ -666,6 +688,7 @@ lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "odd i"
+
   shows "\<psi>\<^sub>2  $$ (i,j) = (-1+2*f(i div 2))/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
@@ -697,6 +720,7 @@ next
       using jozsa_transform_coeff(1) f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
     moreover have "U\<^sub>f $$ (i, i+1) * (\<psi>\<^sub>1 n)$$ (i+1, j) = (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
+
     ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       by auto
     also have "... = ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1))" 
