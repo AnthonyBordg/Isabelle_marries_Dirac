@@ -11,11 +11,6 @@ I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
 
-(*This has to be defined before the locale jozsa since assumptions cannot be added to a locale after
-its specification. However, there is the possibility to define a locale holding these definitions and 
-making jozsa a sublocale.*)
-
-
 locale bob_fun =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
   assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
@@ -75,19 +70,13 @@ lemma f_values: "\<forall>x \<in> {(i::nat). i < 2^n} .(f x = 0 \<or> f x = 1)"
 
 end (* bob_fun *)
 
-locale jozsa =
-  fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
-  assumes dom: "f \<in> ({(i::nat). i < 2^n} \<rightarrow>\<^sub>E {0,1})"
-  assumes dim: "n \<ge> 1"
-  assumes const_or_balanced: "is_const f n  \<or> is_balanced f n"
-
-sublocale jozsa \<subseteq> bob_fun 
-  using jozsa_axioms by (simp add: jozsa_def bob_fun_def)
+locale jozsa = bob_fun +
+  assumes const_or_balanced: "is_const \<or> is_balanced "
 
 definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 "U\<^sub>f \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j). if i = j then (1-f(i div 2)) else 
                                           if i = j + 1 \<and> odd i then f(i div 2) else
-                                             if i = j-1 \<and> even i \<and> j\<ge>1 then f(i div 2) else 0)"
+                                             if i + 1 = j \<and> even i \<and> j\<ge>1 then f(i div 2) else 0)"
 
 lemma (in jozsa) jozsa_transform_dim [simp]:
   shows "dim_row U\<^sub>f = 2^(n+1)" and "dim_col U\<^sub>f = (2^(n+1))" 
@@ -108,32 +97,43 @@ lemma (in jozsa) jozsa_transform_coeff [simp]:
   and "j\<ge>1 \<and> i = j - 1 \<and> even i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)" 
   using jozsa_transform_def assms by auto
 
-
-lemma
-  fixes i n::nat 
-  assumes "i<n" 
-  shows "(\<Sum>k\<in>({0.. (i-1)} \<union> {i.. n}). P k) = (\<Sum>k\<in>{0..(i-1)}.  P k) + (\<Sum>k\<in>{i..n}.  P k) " 
-  using assms sledgehammer 
-
 (*This would help at several steps. Most important lemma of all*)
-lemma (in jozsa) U\<^sub>f_mult_without_empty_summandsh: 
+lemma (in jozsa) U\<^sub>f_mult_without_empty_summands_even: 
   fixes i j A
   assumes "i < dim_row U\<^sub>f"
   and " j < dim_col U\<^sub>f"
   assumes "even i" 
-  shows "(\<Sum>k\<in>{0.. dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+  shows "(\<Sum>k\<in>{0..< dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
 proof-
-  have "dim_row U\<^sub>f = 2 ^ (n+1)" by simp
-  have "{0..  2 ^ (n+1)} = {0..(i-1)} \<union> {i..2 ^ (n+1)}" using assms by auto
-  moreover have f1: "{i..2 ^ (n+1)} = {i,i+1} \<union> {(i+2)..2 ^ (n+1)}" using assms by auto
-  ultimately have  "{0..  2 ^ (n+1)} = {0..(i-1)} \<union> {i,i+1} \<union> {(i+2)..2 ^ (n+1)}" by blast
-  then have "(\<Sum>k\<in>{0..(i-1)} \<union> {i..2 ^ (n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 
-(\<Sum>k\<in>{0..(i-1)}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
-(\<Sum>k\<in>{i..2 ^ (n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) " using assms f1  sorry
+  have "{0..< 2^(n+1)} = {0..<i} \<union> {i..< 2^(n+1)}" using assms by auto
+  moreover have "{i..< 2^(n+1)} = {i,i+1} \<union> {(i+2)..<2^(n+1)}" using assms by auto
+  moreover have "{0..<i} \<inter> {i,i+1} = {} 
+        \<and> {i,i+1} \<inter> {(i+2)..< 2^(n+1)} = {} 
+        \<and> {0..<i} \<inter> {(i+2)..< 2^(n+1)} = {}" using assms by auto
+  ultimately have f0: "(\<Sum>k\<in>{0..< 2 ^ (n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 
+             (\<Sum>k \<in> {0..<i}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
+             (\<Sum>k \<in> {i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
+             (\<Sum>k \<in> {(i+2)..< 2^(n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) " 
+    using assms Groups_Big.comm_monoid_add_class.sum.union_disjoint  
+    by (metis (no_types, lifting) finite_Un finite_atLeastLessThan is_num_normalize(1) ivl_disj_int_two(3))
 
-  have "k\<in>{0.. (i-1)} \<longrightarrow> U\<^sub>f $$ (i, k) =0" for k using jozsa_transform_coeff assms sorry
-  then have "(\<Sum>k\<in>{0.. (i-1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = (\<Sum>k\<in>{0.. (i-1)}. 0 * A $$ (k, j)) " by simp
+  have "k \<in> {0..<i} \<longrightarrow> (i\<noteq>k \<and> \<not>(i=k+1 \<and> odd i) \<and> \<not> (i=k-1 \<and> even i \<and> k\<ge>1))" for k 
+    using assms by auto
+  then have "k \<in> {0..<i} \<longrightarrow> U\<^sub>f $$ (i, k) =0" for k
+    by (metis assms(1) atLeastLessThan_iff jozsa_transform_coeff_is_zero jozsa_transform_dim(1) 
+        jozsa_transform_dim(2) less_imp_add_positive trans_less_add1)
+  then have f1:"(\<Sum>k \<in> {0..<i}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 0 " 
+    by simp
 
+  have "k \<in> {(i+2)..< 2^(n+1)} \<longrightarrow> (i\<noteq>k \<and> \<not>(i=k+1 \<and> odd i) \<and> \<not> (i=k-1 \<and> even i \<and> k\<ge>1))" for k
+    using assms by auto
+  then have "k \<in> {(i+2)..< 2^(n+1)}\<longrightarrow> U\<^sub>f $$ (i, k) = 0" for k
+    using jozsa_transform_coeff_is_zero assms  by auto
+  then have f2: "(\<Sum>k \<in> {(i+2)..< 2^(n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 0 " 
+    by simp
+
+  show "(\<Sum>k\<in>{0..< dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j))"
+    using f0 f1 f2 by simp
 qed
 
 lemma disj_four_cases:
