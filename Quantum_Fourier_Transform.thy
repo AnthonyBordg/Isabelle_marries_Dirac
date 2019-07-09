@@ -356,8 +356,24 @@ qed
 lemma sum_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "dim_vec v = n"
-  shows "v = (\<Sum>k<n. unit_vec n k)"
-  sorry
+  shows "v = finsum_vec TYPE(complex) n (\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k) {0..<n}"
+proof
+  define w where d0:"w = finsum_vec TYPE(complex) n (\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k) {0..<n}"
+  show c0:"dim_vec v = dim_vec w"
+    using finsum_vec_closed[of "(\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k)" "{0..<n}" "n"] carrier_vec_def unit_vec_def assms d0
+    by auto
+  show "\<And>i. i < dim_vec w \<Longrightarrow> v $ i = w $ i"
+  proof-
+    fix i assume "i < dim_vec w"
+    moreover have "(\<Sum>f = 0..<dim_vec v. v $ f * (if i = f then 1 else 0)) = 
+                   (\<Sum>f = 0..<dim_vec v. (if i = f then v $ f else 0))"
+      using sum.cong
+      by (smt mult_cancel_left1 mult_cancel_right1)
+    ultimately show "v $ i = w $ i"
+      using index_finsum_vec[of "{0..<n}" "i" "n" "(\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k)"] d0 c0 assms
+      by simp
+  qed
+qed
 
 theorem qft_fourier: 
   fixes v::"complex Matrix.vec"
