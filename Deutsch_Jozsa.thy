@@ -824,10 +824,14 @@ lemma \<psi>\<^sub>1_is_state:
 
 abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
 
-"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
-                                      else (-1+2*f(i div 2))/(sqrt(2)^(n+1)))"
+"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) 
+                                      else (1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1)))"
 
-(*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))
+(*"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
+                                      else (-1+2*f(i div 2))/(sqrt(2)^(n+1)))"*)
+
+(*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1)) 
+instead of f(i div 2)^n 
 Is also correct saves a lot of work and we don't have to stick to the paper proof in all points
 Edit: changed it*)
 
@@ -864,42 +868,45 @@ next
   fix i j ::nat
   assume a0: "i < dim_row \<psi>\<^sub>2" and a1: "j < dim_col \<psi>\<^sub>2"
   then have f0:"i \<in> {0..2^(n+1)}" and f1: "j=0" by auto
-  then have f2: "i < dim_row U\<^sub>f " and f3: "j < dim_col U\<^sub>f "  sorry
-  then have f4: "i < dim_row (\<psi>\<^sub>1 n)" and f5: "j < dim_col (\<psi>\<^sub>1 n) "  sorry
-  show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" 
+  then have f2: "i < dim_row U\<^sub>f " and f3: "j < dim_col U\<^sub>f " 
+    using a0 by auto
+  then have f4: "i < dim_row (\<psi>\<^sub>1 n)" and f5: "j < dim_col (\<psi>\<^sub>1 n) " 
+    using a0 a1 by auto
+  show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)"
   proof (rule disjE)
     show "even i \<or> odd i" by auto
   next
     assume a2: "even i"
     then have f6:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
-      using f2 f3 U\<^sub>f_mult_without_empty_summands2(1)[of i j "(\<psi>\<^sub>1 n)"] by auto 
+      using f2 f5 U\<^sub>f_mult_without_empty_summands_even[of i j "(\<psi>\<^sub>1 n)"] by auto 
     moreover have "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       using jozsa_transform_coeff(1) f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
     moreover have "U\<^sub>f $$ (i, i+1) * (\<psi>\<^sub>1 n)$$ (i+1, j) = (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
-
     ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       by auto
     also have "... = ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1))" 
       using add_divide_distrib 
       by (metis (no_types, hide_lams) Groups.monoid_mult_class.mult.right_neutral of_int_add of_int_of_nat_eq)
-    also have "... = (1 - 2* f(i div 2)) * 1/(sqrt(2)^(n+1))" using t1[of "f(i div 2)"] sorry (*Problem with int and nat*)
-    finally have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1 - 2* f(i div 2)) * 1/(sqrt(2)^(n+1))" by auto
-    then show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_even a2 a0 a1 by auto
+    also have "... =  \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_even a2 a0 a1 by auto
+    finally show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" by auto
   next 
     assume a3: "odd i"
-    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i-1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
-      using a3 f2 f3  U\<^sub>f_mult_without_empty_summands2(2)[of i j "(\<psi>\<^sub>1 n)"] by auto 
+    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
+      using a3 f2 f3 f5 U\<^sub>f_mult_without_empty_summands_odd[of i j "(\<psi>\<^sub>1 n)"]  
+      by (smt dim_row_mat(1) jozsa_transform_dim(2)) 
+    moreover have "(\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n) $$ (k, j)) 
+                 = U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n) $$ (i-1, j) +  U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n) $$ (i, j)" 
+    using a3 f0 sorry
     moreover have  "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1))" 
       using \<psi>\<^sub>1_values_odd f4 f5 a3 jozsa_transform_coeff(1) f2 f3 by auto
     moreover have "U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n)$$ (i-1, j) = f(i div 2)* 1/(sqrt(2)^(n+1))" 
       using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_odd a3 f0 a0 a1 f1 by auto
     ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1))" 
-      sorry
-    moreover have "(1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1)) = (-1 + 2*(f(i div 2)))* 1/(sqrt(2)^(n+1)) " 
-      sorry
-    ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (-1 + 2*(f(i div 2)))* 1/(sqrt(2)^(n+1))" sorry 
-    then show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_odd a3 a0 a1 by auto
+       by (smt of_real_add)
+     moreover have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (-1 + 2*(f(i div 2)))* 1/(sqrt(2)^(n+1))" 
+       sorry
+    ultimately show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_odd a3 a0 a1 by auto
   qed
 qed
 
