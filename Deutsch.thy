@@ -1,13 +1,9 @@
-text \<open>
+(*
 Authors: 
 
-\begin{itemize}
-
-\item Hanna Lachnitt, TU Wien, \href{mailto:lachnitt@student.tuwien.ac.at}{lachnitt@student.tuwien.ac.at}
-\item Anthony Bordg, University of Cambridge, \href{mailto:apdb3@cam.ac.uk}{apdb3@cam.ac.uk}
-
-\end{itemize}
-\<close>
+  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
+*)
 
 theory Deutsch
 imports

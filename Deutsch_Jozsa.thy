@@ -72,6 +72,7 @@ lemma f_dom_not_zero:
 lemma f_values: "\<forall>x \<in> {(i::nat). i < 2^n} .(f x = 0 \<or> f x = 1)" 
   using dom by auto
 
+
 end (* bob_fun *)
 
 locale jozsa =
@@ -107,13 +108,62 @@ lemma (in jozsa) jozsa_transform_coeff [simp]:
   and "j\<ge>1 \<and> i = j - 1 \<and> even i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)" 
   using jozsa_transform_def assms by auto
 
-(*This would help at several steps. Maybe rephrase it with (U\<^sub>f * U\<^sub>f) $$ (i,j)  is it true?*)
+
+lemma
+  fixes i n::nat 
+  assumes "i<n" 
+  shows "(\<Sum>k\<in>({0.. (i-1)} \<union> {i.. n}). P k) = (\<Sum>k\<in>{0..(i-1)}.  P k) + (\<Sum>k\<in>{i..n}.  P k) " 
+  using assms sledgehammer 
+
+(*This would help at several steps. Most important lemma of all*)
+lemma (in jozsa) U\<^sub>f_mult_without_empty_summandsh: 
+  fixes i j A
+  assumes "i < dim_row U\<^sub>f"
+  and " j < dim_col U\<^sub>f"
+  assumes "even i" 
+  shows "(\<Sum>k\<in>{0.. dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+proof-
+  have "dim_row U\<^sub>f = 2 ^ (n+1)" by simp
+  have "{0..  2 ^ (n+1)} = {0..(i-1)} \<union> {i..2 ^ (n+1)}" using assms by auto
+  moreover have f1: "{i..2 ^ (n+1)} = {i,i+1} \<union> {(i+2)..2 ^ (n+1)}" using assms by auto
+  ultimately have  "{0..  2 ^ (n+1)} = {0..(i-1)} \<union> {i,i+1} \<union> {(i+2)..2 ^ (n+1)}" by blast
+  then have "(\<Sum>k\<in>{0..(i-1)} \<union> {i..2 ^ (n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 
+(\<Sum>k\<in>{0..(i-1)}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
+(\<Sum>k\<in>{i..2 ^ (n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) " using assms f1  sorry
+
+  have "k\<in>{0.. (i-1)} \<longrightarrow> U\<^sub>f $$ (i, k) =0" for k using jozsa_transform_coeff assms sorry
+  then have "(\<Sum>k\<in>{0.. (i-1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = (\<Sum>k\<in>{0.. (i-1)}. 0 * A $$ (k, j)) " by simp
+
+qed
+
+lemma disj_four_cases:
+  assumes "A \<or> B \<or> C \<or> D"
+  and "A \<Longrightarrow> P"
+  and "B \<Longrightarrow> P"
+  and "C \<Longrightarrow> P"
+  and "D \<Longrightarrow> P"
+  shows "P"
+proof -
+  from assms show ?thesis by blast
+qed
+
+
+
 lemma (in jozsa) U\<^sub>f_mult_without_empty_summands: 
   fixes i j A
   assumes "i < dim_row U\<^sub>f \<and> j < dim_col U\<^sub>f"
   shows "even i \<longrightarrow> (\<Sum>k\<in>{0.. dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
     and "odd i \<longrightarrow> (\<Sum>k\<in>{0.. dim_row U\<^sub>f}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i-1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
   sorry
+
+lemma (in jozsa) U\<^sub>f_mult_without_empty_summands2: 
+  fixes i j A
+  assumes "i < dim_row U\<^sub>f \<and> j < dim_col U\<^sub>f"
+  shows "even i \<longrightarrow> (U\<^sub>f * A) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+    and "odd i \<longrightarrow> (U\<^sub>f * A) $$ (i,j) = (\<Sum>k\<in>{i,i-1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+  sorry
+
+
 
 lemma disj_four_cases:
   assumes "A \<or> B \<or> C \<or> D"
@@ -230,6 +280,7 @@ next
   qed 
 qed
 
+(*TODO: clean up,delete unused facts*)
 lemma (in jozsa) jozsa_transform_is_gate:
   shows "gate (n+1) U\<^sub>f"
 proof
@@ -250,24 +301,26 @@ next
       then have a2: "i< 2^(n+1)" and a3: "j< 2^(n+1)"
         using one_mat_def jozsa_transform_def by auto
       then have a4: "i < dim_row U\<^sub>f" and a5:"j < dim_col U\<^sub>f" by auto
-      then have f6: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k< 2^(n+1). U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j))"
-        using index_matrix_prod a4 a5 by auto
-      then have f7: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k\<in> {0.. 2^(n+1)}. U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j))"
-          using index_matrix_prod a4 a5 sorry
+
+      have a19: "i < dim_col U\<^sub>f" sorry
       show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
       proof(rule disjE)(*instead proof with four cases?*)
         show "even i \<or> odd i" by auto
       next 
-        assume "even i"
-        then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) =  of_nat (Suc 0 - f (i div 2)) * U\<^sub>f $$ (i, j) + U\<^sub>f $$ (i, Suc i) * U\<^sub>f $$ (Suc i, j)" 
-          using U\<^sub>f_mult_without_empty_summands(1) a4 a5 f7 by auto
-        then have " of_nat (Suc 0 - f (i div 2)) * U\<^sub>f $$ (i, j) + U\<^sub>f $$ (i, Suc i) * U\<^sub>f $$ (Suc i, j) =  1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
-          sorry (*proof mit four cases*)
-        then show ?thesis sorry
-      next 
-         show ?thesis sorry
-       qed
-     qed
+        assume a6: "even i"
+        then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j)) " 
+          using U\<^sub>f_mult_without_empty_summands2(1) a0 a1 a4 a5 by blast
+        moreover have "U\<^sub>f $$ (i, i) * U\<^sub>f $$ (i, i) = (1-f(i div 2)) * (1-f(i div 2))" 
+          using a6 jozsa_transform_coeff a4 a19 by simp
+        moreover have "U\<^sub>f $$ (i, i+1) * U\<^sub>f $$ (i+1, j) = f(i div 2) * U\<^sub>f $$ (i+1, j)" 
+          using a6 jozsa_transform_coeff a4 a19 a2 a3 
+          by (smt Groups.ab_semigroup_add_class.add.commute Groups.monoid_add_class.add.right_neutral One_nat_def Suc_leI add_Suc_right diff_add_inverse2 dvd_minus_add even_add even_plus_one_iff even_succ_div_two index_transpose_mat(1) jozsa_transform_dim(1) nat_less_le power_add power_one_right transpose_of_jozsa_transform)
+        (*Four fold case distinction as before? *)
+        ultimately show ?thesis sorry
+      next
+        assume a6: "odd i"
+        show ?thesis sorry
+ qed
 
 (*As n has to be at least 1 we have to adapt the induction rule *)
 lemma ind_from_1 [case_names n_ge_1 1 step]:
@@ -613,18 +666,21 @@ lemma \<psi>\<^sub>1_is_state:
 
 
 abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
-"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (-1)^(f(i div 2))/(sqrt(2)^(n+1)) 
-                                      else (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1)))"
+
+"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
+                                      else (-1+2*f(i div 2))/(sqrt(2)^(n+1)))"
 
 (*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))
-Is also correct saves a lot of work and we don't have to stick to the paper proof in all points*)
+Is also correct saves a lot of work and we don't have to stick to the paper proof in all points
+Edit: changed it*)
 
 lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
   fixes i j 
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "even i"
-  shows "\<psi>\<^sub>2  $$ (i,j) = (-1)^(f(i div 2))/(sqrt(2)^(n+1))" 
+
+  shows "\<psi>\<^sub>2  $$ (i,j) = (1-2*f(i div 2))/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
 lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
@@ -632,41 +688,62 @@ lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "odd i"
-  shows "\<psi>\<^sub>2  $$ (i,j) = (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1))" 
+
+  shows "\<psi>\<^sub>2  $$ (i,j) = (-1+2*f(i div 2))/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
+lemma t1:
+  fixes m::int 
+  shows "((1-m)+(-m)) = 1- 2*m" by simp
+
+(*TODO: clean up,delete unused facts. Resolve integer thing. Prove used lemma*)
 lemma (in jozsa) "U\<^sub>f_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2":
-  assumes "n \<ge> 1"
   shows "U\<^sub>f * (\<psi>\<^sub>1 n) = \<psi>\<^sub>2 " 
 proof 
+  show  "dim_row (U\<^sub>f * (\<psi>\<^sub>1 n)) = dim_row \<psi>\<^sub>2 " by simp
+next
+  show  "dim_col (U\<^sub>f * (\<psi>\<^sub>1 n)) = dim_col \<psi>\<^sub>2 " by simp
+next
   fix i j ::nat
   assume a0: "i < dim_row \<psi>\<^sub>2" and a1: "j < dim_col \<psi>\<^sub>2"
   then have f0:"i \<in> {0..2^(n+1)}" and f1: "j=0" by auto
-  then have f2: "i < dim_row U\<^sub>f " and f3: "j < dim_col U\<^sub>f " and f4: "i < dim_col  \<psi>\<^sub>2 " sorry
+  then have f2: "i < dim_row U\<^sub>f " and f3: "j < dim_col U\<^sub>f "  sorry
+  then have f4: "i < dim_row (\<psi>\<^sub>1 n)" and f5: "j < dim_col (\<psi>\<^sub>1 n) "  sorry
   show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" 
   proof (rule disjE)
     show "even i \<or> odd i" by auto
   next
     assume a2: "even i"
-    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,0) 
-      =  Matrix.row U\<^sub>f i \<bullet> Matrix.col (\<psi>\<^sub>1 n) 0"
-      using times_mat_def 
-      by (smt f1 a0 dim_col_mat(1) dim_row_mat(1) index_mult_mat(1) jozsa_transform_dim(1) less_numeral_extra(1))
-    then have  "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,0) 
-      =  (\<Sum> k \<in> {0 ..< dim_vec (Matrix.col (\<psi>\<^sub>1 n) 0)}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col (\<psi>\<^sub>1 n) 0) $ k)"
-      using scalar_prod_def a0 a1 f0 f1 f2 f3  
-      by (smt Groups_Big.comm_monoid_add_class.sum.cong) 
-    then have  f5:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,0) 
-      =  (\<Sum> k \<in> {0 ..< 2^(n+1)}. (Matrix.row U\<^sub>f i) $ k * (Matrix.col (\<psi>\<^sub>1 n) 0) $ k)"
-      by (metis dim_col dim_row_mat(1)) 
-    have f6:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
-      using U\<^sub>f_mult_without_empty_summands sorry
+    then have f6:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
+      using f2 f3 U\<^sub>f_mult_without_empty_summands2(1)[of i j "(\<psi>\<^sub>1 n)"] by auto 
     moreover have "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       using jozsa_transform_coeff(1) f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
     moreover have "U\<^sub>f $$ (i, i+1) * (\<psi>\<^sub>1 n)$$ (i+1, j) = (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
-    ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))" by auto
 
-(*TODO: show that \<psi>\<^sub>2 has the same value *)
+    ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
+      by auto
+    also have "... = ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1))" 
+      using add_divide_distrib 
+      by (metis (no_types, hide_lams) Groups.monoid_mult_class.mult.right_neutral of_int_add of_int_of_nat_eq)
+    also have "... = (1 - 2* f(i div 2)) * 1/(sqrt(2)^(n+1))" using t1[of "f(i div 2)"] sorry (*Problem with int and nat*)
+    finally have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1 - 2* f(i div 2)) * 1/(sqrt(2)^(n+1))" by auto
+    then show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_even a2 a0 a1 by auto
+  next 
+    assume a3: "odd i"
+    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i-1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
+      using a3 f2 f3  U\<^sub>f_mult_without_empty_summands2(2)[of i j "(\<psi>\<^sub>1 n)"] by auto 
+    moreover have  "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1))" 
+      using \<psi>\<^sub>1_values_odd f4 f5 a3 jozsa_transform_coeff(1) f2 f3 by auto
+    moreover have "U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n)$$ (i-1, j) = f(i div 2)* 1/(sqrt(2)^(n+1))" 
+      using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_odd a3 f0 a0 a1 f1 by auto
+    ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1))" 
+      sorry
+    moreover have "(1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1)) = (-1 + 2*(f(i div 2)))* 1/(sqrt(2)^(n+1)) " 
+      sorry
+    ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (-1 + 2*(f(i div 2)))* 1/(sqrt(2)^(n+1))" sorry 
+    then show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_odd a3 a0 a1 by auto
+  qed
+qed
 
 end
