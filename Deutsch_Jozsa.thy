@@ -95,7 +95,55 @@ lemma (in jozsa) jozsa_transform_coeff [simp]:
   using jozsa_transform_def assms by auto
 
 (*Should this be a lemma on its own? could easily be integrated in main lemma (next one)*)
+(*Is this version structured better than the next??? I am not sure*)
 lemma (in jozsa) U\<^sub>f_mult_without_empty_summands_sum_even:  (*better name*)
+  fixes i j A
+  assumes "i < dim_row U\<^sub>f" and "j < dim_col A"
+  and "even i" 
+  and "dim_col U\<^sub>f = dim_row A"
+  shows "(\<Sum>k\<in>{0..< dim_row A}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j)) "
+proof-
+  have "(\<Sum>k\<in>{0..< 2 ^ (n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 
+             (\<Sum>k \<in> {0..<i}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
+             (\<Sum>k \<in> {i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
+             (\<Sum>k \<in> {(i+2)..< 2^(n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) " 
+  proof - 
+    have "{0..< 2^(n+1)} = {0..<i} \<union> {i..< 2^(n+1)} 
+          \<and> {i..< 2^(n+1)} = {i,i+1} \<union> {(i+2)..<2^(n+1)}" using assms(1-3) by auto
+    moreover have "{0..<i} \<inter> {i,i+1} = {} 
+                  \<and> {i,i+1} \<inter> {(i+2)..< 2^(n+1)} = {} 
+                  \<and> {0..<i} \<inter> {(i+2)..< 2^(n+1)} = {}" using assms by auto
+    ultimately show ?thesis
+      using assms sum.union_disjoint  
+      by (metis (no_types, lifting) finite_Un finite_atLeastLessThan is_num_normalize(1) ivl_disj_int_two(3))
+  qed
+  moreover have "(\<Sum>k \<in> {0..<i}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 0 " 
+  proof-
+    have "k \<in> {0..<i} \<longrightarrow> (i\<noteq>k \<and> \<not>(i=k+1 \<and> odd i) \<and> \<not> (i=k-1 \<and> even i \<and> k\<ge>1))" for k 
+      using assms by auto
+    then have "k \<in> {0..<i} \<longrightarrow> U\<^sub>f $$ (i, k) =0" for k
+      by (metis assms(1) atLeastLessThan_iff jozsa_transform_coeff_is_zero jozsa_transform_dim 
+          less_imp_add_positive trans_less_add1)
+    then show ?thesis 
+      by simp
+  qed
+  moreover have "(\<Sum>k \<in> {(i+2)..< 2^(n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 0 " 
+  proof- 
+    have  "k \<in> {(i+2)..< 2^(n+1)} \<longrightarrow> (i\<noteq>k \<and> \<not>(i=k+1 \<and> odd i) \<and> \<not> (i=k-1 \<and> even i \<and> k\<ge>1))" for k
+      using assms by auto
+    then have "k \<in> {(i+2)..< 2^(n+1)}\<longrightarrow> U\<^sub>f $$ (i, k) = 0" for k
+      using jozsa_transform_coeff_is_zero assms  by auto
+    then show ?thesis
+      by simp
+  qed
+  moreover have  "dim_row A =  2^(n+1)" using assms by simp
+  ultimately show "(\<Sum>k\<in>{0..< dim_row A}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j))"
+    using assms 
+    by (metis (no_types, lifting) add.left_neutral add.right_neutral)
+qed
+
+(*Second version with different structure*)
+lemma (in jozsa) U\<^sub>f_mult_without_empty_summands_sum_even':  (*better name*)
   fixes i j A
   assumes "i < dim_row U\<^sub>f" and "j < dim_col A"
   and "even i" 
@@ -111,13 +159,14 @@ proof-
              (\<Sum>k \<in> {0..<i}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
              (\<Sum>k \<in> {i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
              (\<Sum>k \<in> {(i+2)..< 2^(n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) " 
-    using assms Groups_Big.comm_monoid_add_class.sum.union_disjoint  
+    using assms sum.union_disjoint  
     by (metis (no_types, lifting) finite_Un finite_atLeastLessThan is_num_normalize(1) ivl_disj_int_two(3))
 
   have "k \<in> {0..<i} \<longrightarrow> (i\<noteq>k \<and> \<not>(i=k+1 \<and> odd i) \<and> \<not> (i=k-1 \<and> even i \<and> k\<ge>1))" for k 
     using assms by auto
   then have "k \<in> {0..<i} \<longrightarrow> U\<^sub>f $$ (i, k) =0" for k
-    by (metis assms(1) atLeastLessThan_iff jozsa_transform_coeff_is_zero jozsa_transform_dim less_imp_add_positive trans_less_add1)
+    by (metis assms(1) atLeastLessThan_iff jozsa_transform_coeff_is_zero jozsa_transform_dim 
+        less_imp_add_positive trans_less_add1)
   then have f1:"(\<Sum>k \<in> {0..<i}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 0 " 
     by simp
 
@@ -131,7 +180,7 @@ proof-
   have "dim_row A =  2^(n+1)" using assms by simp
   then show "(\<Sum>k\<in>{0..< dim_row A}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * A $$ (k, j))"
     using f0 f1 f2 assms 
-    by (metis (no_types, lifting) Groups.monoid_add_class.add.left_neutral Groups.monoid_add_class.add.right_neutral)
+    by (metis (no_types, lifting) add.left_neutral add.right_neutral)
 qed
 
 lemma (in jozsa) U\<^sub>f_mult_without_empty_summands_even: 
@@ -170,13 +219,14 @@ proof-
              (\<Sum>k \<in> {0..<(i-1)}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
              (\<Sum>k \<in> {i-1,i}. U\<^sub>f $$ (i, k) * A $$ (k, j))+
              (\<Sum>k \<in> {(i+1)..<2^(n+1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) " 
-    using assms Groups_Big.comm_monoid_add_class.sum.union_disjoint  
+    using assms sum.union_disjoint  
     by (metis (no_types, lifting) finite_Un finite_atLeastLessThan is_num_normalize(1) ivl_disj_int_two(3))
 
   have "k \<in> {0..<(i-1)} \<longrightarrow> (i\<noteq>k \<and> \<not>(i=k+1 \<and> odd i) \<and> \<not> (i=k-1 \<and> even i \<and> k\<ge>1))" for k 
     using assms by auto
   then have "k \<in> {0..<(i-1)} \<longrightarrow> U\<^sub>f $$ (i, k) =0" for k
-    by (metis assms(1) atLeastLessThan_iff jozsa_transform_coeff_is_zero jozsa_transform_dim less_imp_add_positive less_imp_diff_less trans_less_add1)
+    by (metis assms(1) atLeastLessThan_iff jozsa_transform_coeff_is_zero jozsa_transform_dim 
+        less_imp_add_positive less_imp_diff_less trans_less_add1)
   then have f1:"(\<Sum>k \<in> {0..<(i-1)}. U\<^sub>f $$ (i, k) * A $$ (k, j)) = 0 " 
     by simp
 
@@ -190,7 +240,7 @@ proof-
   have "dim_row A =  2^(n+1)" using assms by simp
   then show "(\<Sum>k\<in>{0..< dim_row A}. U\<^sub>f $$ (i, k) * A $$ (k, j)) =(\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * A $$ (k, j))"
     using f0 f1 f2 assms 
-    by (metis (no_types, lifting) Groups.monoid_add_class.add.left_neutral Groups.monoid_add_class.add.right_neutral)
+    by (metis (no_types, lifting) add.left_neutral add.right_neutral)
 qed
 
 
@@ -225,7 +275,7 @@ qed
 (*To deal with Uf it is often necessary to do a case distinction with four different cases.*)
 (*TODO: until now this is only used for 
 "i=j \<or> (i=j+1 \<and> odd i) \<or> (i=j-1 \<and> even i \<and> j\<ge>1) \<or> (i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
-should it be specialised more?*)
+should it be specialised more? I tend to keep the general one although it requires one step more in each proof*)
 lemma disj_four_cases:
   assumes "A \<or> B \<or> C \<or> D"
   and "A \<Longrightarrow> P"
@@ -237,10 +287,23 @@ proof -
   from assms show ?thesis by blast
 qed
 
+lemma disj_four_cases':
+  assumes  "i=j \<Longrightarrow> P"
+  and "(i=j+1 \<and> odd i) \<Longrightarrow> P"
+  and "(i=j-1 \<and> even i \<and> j\<ge>1) \<Longrightarrow> P"
+  and "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1)) \<Longrightarrow> P"
+  shows "P"
+proof -
+  have "i=j \<or> (i=j+1 \<and> odd i) \<or> (i=j-1 \<and> even i \<and> j\<ge>1) \<or> (i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
+    by linarith
+  from assms show ?thesis by blast
+qed
+
+
+
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
 
-(*TODO: clean up,delete unused facts*)
 lemma (in jozsa) transpose_of_jozsa_transform:
   shows "(U\<^sub>f)\<^sup>t = U\<^sub>f"
 proof
@@ -274,8 +337,7 @@ next
   next 
     assume a2: "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
     then have "(j\<noteq>i \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))" 
-      by (metis Groups.ordered_cancel_comm_monoid_diff_class.le_imp_diff_is_add 
-          diff_add_inverse even_plus_one_iff le_add1)
+      by (metis le_imp_diff_is_add diff_add_inverse even_plus_one_iff le_add1)
     then have "U\<^sub>f $$ (j, i) = 0" 
       using jozsa_transform_coeff_is_zero a0 a1 by auto
     moreover have "U\<^sub>f $$ (i, j) = 0" 
@@ -285,7 +347,6 @@ next
   qed 
 qed
 
-(*TODO: clean up,delete unused facts*)
 lemma (in jozsa) adjoint_of_jozsa_transform: 
   shows "(U\<^sub>f)\<^sup>\<dagger> = U\<^sub>f"
 proof
@@ -319,8 +380,7 @@ next
   next 
     assume a2: "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
     then have f0:"(i\<noteq>j \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))" 
-      by (metis Groups.ordered_cancel_comm_monoid_diff_class.le_imp_diff_is_add 
-          diff_add_inverse even_plus_one_iff le_add1)
+      by (metis le_imp_diff_is_add diff_add_inverse even_plus_one_iff le_add1)
     then have "U\<^sub>f $$ (j,i) = 0" and "cnj 0 = 0"
       using jozsa_transform_coeff_is_zero a0 a1 a2 by auto
     then have "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = 0" 
@@ -340,11 +400,13 @@ proof-
   have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * U\<^sub>f $$ (k, j)) " 
     using U\<^sub>f_mult_without_empty_summands_even[of i j U\<^sub>f ] assms by auto
   moreover have "U\<^sub>f $$ (i, i) * U\<^sub>f $$ (i, j) = (1-f(i div 2))  * U\<^sub>f $$ (i, j)" 
-    using assms jozsa_transform_coeff by simp
+    using assms by simp
   moreover have f0: "U\<^sub>f $$ (i, i+1) * U\<^sub>f $$ (i+1, j) = f(i div 2) * U\<^sub>f $$ (i+1, j)" 
-    by (smt assms Groups.monoid_add_class.add.right_neutral One_nat_def Suc_leI add_Suc_right diff_add_inverse2 dvd_minus_add even_add even_plus_one_iff even_succ_div_two index_transpose_mat(1) jozsa_transform_coeff(2) jozsa_transform_dim(1) jozsa_transform_dim(2) nat_less_le power_add power_one_right transpose_of_jozsa_transform)
-  ultimately have f1: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  * U\<^sub>f $$ (i, j) +  f(i div 2) * U\<^sub>f $$ (i+1, j)" by auto
-  show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
+    by (metis assms add.right_neutral One_nat_def Suc_leI add_Suc_right diff_add_inverse2 dvd_minus_add 
+        even_add even_plus_one_iff even_succ_div_two index_transpose_mat(1) jozsa_transform_coeff(2) 
+        jozsa_transform_dim nat_less_le power_add power_one_right transpose_of_jozsa_transform)
+  ultimately have f1: "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2)) * U\<^sub>f $$ (i, j) +  f(i div 2) * U\<^sub>f $$ (i+1, j)" by auto
+  thus "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)"
   proof (induct rule: disj_four_cases)
     show "j=i \<or> (j=i+1 \<and> odd j) \<or> (j=i-1 \<and> even j \<and> i\<ge>1) \<or> (j\<noteq>i \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))"
       by linarith
@@ -376,14 +438,14 @@ proof-
       by (metis assms index_transpose_mat(1) jozsa_transform_coeff_is_zero jozsa_transform_dim transpose_of_jozsa_transform)
     moreover have "U\<^sub>f $$ (i+1, j) = 0" 
       using assms a0
-      by (smt Groups.monoid_add_class.add.right_neutral One_nat_def Suc_leI add_Suc_right add_diff_cancel_left' 
-          add_right_cancel dvd_minus_add even_plus_one_iff jozsa_transform_coeff_is_zero jozsa_transform_dim(1) 
+      by (smt add.right_neutral One_nat_def Suc_leI add_Suc_right add_diff_cancel_left' add_right_cancel 
+          dvd_minus_add even_plus_one_iff jozsa_transform_coeff_is_zero jozsa_transform_dim(1) 
           less_imp_le_nat nat_less_le odd_one power_add power_one_right)
     ultimately have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  *0 +  f(i div 2) *0" 
       by (simp add: f1)
     then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
       using a0 assms
-      by (metis Groups.monoid_add_class.add.left_neutral index_one_mat(1) jozsa_transform_dim mult_0_right of_nat_0)
+      by (metis add.left_neutral index_one_mat(1) jozsa_transform_dim mult_0_right of_nat_0)
   qed
 qed
 
@@ -447,7 +509,7 @@ proof-
       using f2 by simp
     then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
       using a0 assms
-      by (metis Groups.monoid_add_class.add.left_neutral index_one_mat(1) jozsa_transform_dim mult_0_right of_nat_0)
+      by (metis add.left_neutral index_one_mat(1) jozsa_transform_dim mult_0_right of_nat_0)
   qed
 qed
 
@@ -489,7 +551,8 @@ lemma ind_from_1 [case_names n_ge_1 1 step]:
 
 (*TODO: Better way then always assuming n\<ge>1?, for now just keep it a moment to try out what works*)
 
-
+(*TODO: Think about binding of n and inductions. Should all lemmas be in jozsa? How to do induction then?
+But first finish last step to see what requirements exist*)
 
 
 
@@ -594,14 +657,6 @@ qed
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1"
 
-(*Should not be used in final version but are useful for finding proofs:
-lemma ket_zero_to_mat_of_cols_list: "|zero\<rangle> = mat_of_cols_list 2 [[1, 0]]"  
-  by (auto simp add: ket_vec_def mat_of_cols_list_def)
-
-lemma ket_one_to_mat_of_cols_list: "|one\<rangle> = mat_of_cols_list 2 [[0, 1]]"
-  apply (auto simp add: ket_vec_def unit_vec_def mat_of_cols_list_def)
-  using less_2_cases by fastforce*)
-
 lemma ket_zero_is_state: 
   shows "state 1 |zero\<rangle>"
   by (simp add: state_def ket_vec_def cpx_vec_length_def numerals(2))
@@ -648,7 +703,7 @@ next
     using ket_zero_is_state by simp
 qed
 
-lemma \<psi>\<^sub>1\<^sub>0_tensor_n: (*Restructure, too many names too confusing*)
+lemma \<psi>\<^sub>1\<^sub>0_tensor_n: 
   assumes "n \<ge> 1"
   shows "(\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n) = (\<psi>\<^sub>1\<^sub>0 (Suc n))"
 proof
@@ -825,9 +880,10 @@ lemma \<psi>\<^sub>1_is_state:
 abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
 
 "\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) 
-                                      else (1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1)))"
+                                      else (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)))"
 
-(*"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
+(* Would this be much better?
+"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
                                       else (-1+2*f(i div 2))/(sqrt(2)^(n+1)))"*)
 
 (*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1)) 
@@ -840,8 +896,7 @@ lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "even i"
-
-  shows "\<psi>\<^sub>2  $$ (i,j) = (1-2*f(i div 2))/(sqrt(2)^(n+1))" 
+  shows "\<psi>\<^sub>2  $$ (i,j) = ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
 lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
@@ -849,65 +904,69 @@ lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "odd i"
-
-  shows "\<psi>\<^sub>2  $$ (i,j) = (-1+2*f(i div 2))/(sqrt(2)^(n+1))" 
+  shows "\<psi>\<^sub>2  $$ (i,j) = (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
-lemma t1:
-  fixes m::int 
-  shows "((1-m)+(-m)) = 1- 2*m" by simp
 
-(*TODO: clean up,delete unused facts. Resolve integer thing. Prove used lemma*)
-lemma (in jozsa) "U\<^sub>f_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2":
+lemma (in jozsa) jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2:
   shows "U\<^sub>f * (\<psi>\<^sub>1 n) = \<psi>\<^sub>2 " 
 proof 
-  show  "dim_row (U\<^sub>f * (\<psi>\<^sub>1 n)) = dim_row \<psi>\<^sub>2 " by simp
+  show "dim_row (U\<^sub>f * (\<psi>\<^sub>1 n)) = dim_row \<psi>\<^sub>2 " by simp
 next
-  show  "dim_col (U\<^sub>f * (\<psi>\<^sub>1 n)) = dim_col \<psi>\<^sub>2 " by simp
+  show "dim_col (U\<^sub>f * (\<psi>\<^sub>1 n)) = dim_col \<psi>\<^sub>2 " by simp
 next
   fix i j ::nat
   assume a0: "i < dim_row \<psi>\<^sub>2" and a1: "j < dim_col \<psi>\<^sub>2"
-  then have f0:"i \<in> {0..2^(n+1)}" and f1: "j=0" by auto
-  then have f2: "i < dim_row U\<^sub>f " and f3: "j < dim_col U\<^sub>f " 
-    using a0 by auto
-  then have f4: "i < dim_row (\<psi>\<^sub>1 n)" and f5: "j < dim_col (\<psi>\<^sub>1 n) " 
-    using a0 a1 by auto
+  then have f0:"i \<in> {0..2^(n+1)} \<and> j=0" by auto
+  then have f1: "i < dim_row U\<^sub>f \<and> j < dim_col U\<^sub>f " using a0 by auto
+  have f2: "i < dim_row (\<psi>\<^sub>1 n) \<and> j < dim_col (\<psi>\<^sub>1 n)" using a0 a1 by auto
   show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)"
   proof (rule disjE)
     show "even i \<or> odd i" by auto
   next
     assume a2: "even i"
-    then have f6:"(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
-      using f2 f5 U\<^sub>f_mult_without_empty_summands_even[of i j "(\<psi>\<^sub>1 n)"] by auto 
+    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i,i+1}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
+      using f1 f2 U\<^sub>f_mult_without_empty_summands_even[of i j "(\<psi>\<^sub>1 n)"] by auto 
     moreover have "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1))" 
-      using jozsa_transform_coeff(1) f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
+      using f0 f1 a2 by auto
     moreover have "U\<^sub>f $$ (i, i+1) * (\<psi>\<^sub>1 n)$$ (i+1, j) = (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
-      using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_even a2 f0 f1 by auto
+      using f0 f1 a2 by auto
     ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1))" 
       by auto
     also have "... = ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1))" 
       using add_divide_distrib 
-      by (metis (no_types, hide_lams) Groups.monoid_mult_class.mult.right_neutral of_int_add of_int_of_nat_eq)
-    also have "... =  \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_even a2 a0 a1 by auto
+      by (metis (no_types, hide_lams) mult.right_neutral of_int_add of_int_of_nat_eq)
+    also have "... =  \<psi>\<^sub>2 $$ (i,j)" 
+      using a0 a1 a2 by auto
     finally show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" by auto
   next 
-    assume a3: "odd i"
-    then have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
-      using a3 f2 f3 f5 U\<^sub>f_mult_without_empty_summands_odd[of i j "(\<psi>\<^sub>1 n)"]  
+    assume a2: "odd i"
+    then have f6: "i\<ge>1"  
+    using linorder_not_less by auto
+    have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
+      using f1 f2 a2 U\<^sub>f_mult_without_empty_summands_odd[of i j "(\<psi>\<^sub>1 n)"]  
       by (smt dim_row_mat(1) jozsa_transform_dim(2)) 
     moreover have "(\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n) $$ (k, j)) 
                  = U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n) $$ (i-1, j) +  U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n) $$ (i, j)" 
-    using a3 f0 sorry
+      using a2 f6 by auto
     moreover have  "U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n)$$ (i, j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1))" 
-      using \<psi>\<^sub>1_values_odd f4 f5 a3 jozsa_transform_coeff(1) f2 f3 by auto
+      using f1 f2 a2 by auto
     moreover have "U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n)$$ (i-1, j) = f(i div 2)* 1/(sqrt(2)^(n+1))" 
-      using jozsa_transform_coeff f2 f3 \<psi>\<^sub>1_values_odd a3 f0 a0 a1 f1 by auto
+      using a0 a1 a2 by auto
     ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1))" 
        by (smt of_real_add)
-     moreover have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (-1 + 2*(f(i div 2)))* 1/(sqrt(2)^(n+1))" 
-       sorry
-    ultimately show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" using \<psi>\<^sub>2_values_odd a3 a0 a1 by auto
+     also have "... = ( -(1-f(i div 2)) + (f(i div 2)))* 1/(sqrt(2)^(n+1))" 
+       by (metis (no_types, hide_lams) mult.right_neutral add_divide_distrib mult_minus1_right 
+           of_int_add of_int_of_nat_eq)
+     finally show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" 
+       using a0 a1 a2 by auto
   qed
 qed
+
+lemma (in jozsa) \<psi>\<^sub>2_is_state:
+  assumes "n \<ge> 1"
+  shows "state (n+1) \<psi>\<^sub>2" 
+  using jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 jozsa_transform_is_gate \<psi>\<^sub>1_is_state dim gate_on_state_is_state by fastforce
+
 
 end
