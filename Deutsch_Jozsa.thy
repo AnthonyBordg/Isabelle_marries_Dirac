@@ -878,7 +878,6 @@ lemma \<psi>\<^sub>1_is_state:
 
 
 abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
-
 "\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) 
                                       else (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)))"
 
@@ -889,7 +888,8 @@ abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
 (*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1)) 
 instead of f(i div 2)^n 
 Is also correct saves a lot of work and we don't have to stick to the paper proof in all points
-Edit: changed it*)
+Edit: changed it there is some kind of integer problem, best solution right now proceed first and 
+come back to it if it turns out to be important*)
 
 lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
   fixes i j 
@@ -964,9 +964,88 @@ next
 qed
 
 lemma (in jozsa) \<psi>\<^sub>2_is_state:
-  assumes "n \<ge> 1"
   shows "state (n+1) \<psi>\<^sub>2" 
   using jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 jozsa_transform_is_gate \<psi>\<^sub>1_is_state dim gate_on_state_is_state by fastforce
 
+
+(*I need a representation of (H ^\<^sub>\<oplus> n) as matrix!!! Or at least I need to know what psi3 is!*)
+
+
+
+(*Tryout a new thing: Pretty tiresome*)
+
+fun dec_to_bin:: "nat \<Rightarrow> nat list" where
+"dec_to_bin 0 = []"
+|"dec_to_bin (Suc n) = (if ((Suc n) mod 2 = 0) then (dec_to_bin ((Suc n) div 2))@[0] 
+                       else (dec_to_bin ((Suc n) div 2))@[1] ) "
+
+fun pad_with_zero:: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where
+"pad_with_zero xs 0 = xs"
+| "pad_with_zero xs (Suc n) = [0]@ (pad_with_zero xs n)"
+
+
+value "(pad_with_zero (dec_to_bin 3) (2^2- length (dec_to_bin 3)))"
+
+fun h ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
+"h [] ys = 0"
+|"h (x#xs) (y#ys) = x*y + h xs ys"
+
+
+abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
+"Hn n \<equiv> Matrix.mat (2^n) 1 (\<lambda>(i,j). if even
+(h  (pad_with_zero (dec_to_bin i) (2^n- length (dec_to_bin i))) 
+    (pad_with_zero (dec_to_bin j) (2^n- length (dec_to_bin j))) ) 
+then (-1) else 1)"
+
+
+
+
+
+
+
+(*What I tried
+here is to separate psi2 in unit vectors multiplied with 1-2*f(i div 2) or -1+2*f(i div 2) and show 
+what the result of multiplying (H ^\<^sub>\<oplus> n) with it is. Then, add all vectors up again.  *)
+lemma H_on_unit_vec: (*Not even sure if this is true*)
+  fixes k n::nat
+  assumes "n\<ge>1"
+    and "k<n"
+  shows "(H ^\<^sub>\<oplus> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
+proof(induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "(H ^\<^sub>\<oplus> 1) * |unit_vec 1 k\<rangle> = Matrix.mat (2^1) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^1) else (-1/sqrt(2)^1))" 
+    sorry
+next 
+  fix n
+  assume "(H ^\<^sub>\<oplus> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
+  show "(H ^\<^sub>\<oplus> (Suc n)) * |unit_vec (Suc n) k\<rangle> = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). if even (i*k) 
+                                                                then (1/sqrt(2)^(Suc n)) else (-1/sqrt(2)^(Suc n)))"
+    sorry
+qed
+
+(*lemma "\<psi>\<^sub>2 = (\<Sum>k\<in>{0..<2^(n+1)}. (Matrix.mat (2^n) 1 (\<lambda>(i,j). if even k \<and> i=k then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) else 
+(if odd k \<and> i=k then (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)) else 0)) ))" 
+This could be done with finsum_vec but seems very difficult to prove.*)
+
+
+lemma H_tensor_n:
+  fixes n
+assumes "n\<ge>1"
+shows "(H ^\<^sub>\<oplus> n) = Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if (i div 2^(n-1)\<le> 1 \<or> j div 2^(n-1)\<le> 1) 
+                                                      then (H ^\<^sub>\<oplus> (n-1))$$(i mod 2^(n-1), j mod 2^(n-1)) 
+                                                          else -(H ^\<^sub>\<oplus> (n-1))$$(i mod 2^(n-1), j mod 2^(n-1)))" 
+  oops
+
+(*This needs to include all f(0) to f(2^n) in each row but how determine coefficients? Need (H ^\<^sub>\<oplus> n) for this*)
+abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
+"\<psi>\<^sub>3 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) 
+                                      else (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)))"
+
+
+lemma (in jozsa) H_tensor_n_on_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
+  shows "((H ^\<^sub>\<oplus> n) \<Otimes> Id 1)* \<psi>\<^sub>2 = \<psi>\<^sub>3" 
+proof 
+qed
 
 end
