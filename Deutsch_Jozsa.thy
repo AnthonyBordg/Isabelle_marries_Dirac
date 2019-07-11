@@ -970,54 +970,6 @@ lemma (in jozsa) \<psi>\<^sub>2_is_state:
 
 (*I need a representation of (H ^\<^sub>\<otimes> n) as matrix!!! Or at least I need to know what psi3 is!*)
 
-lemma [simp]:
-  fixes i j n
-  shows "((\<langle>unit_vec (2^n) i| unit_vec (2^n) j\<rangle>))\<in>  \<nat>"
-proof-
-  have " Im z = 0 \<and> (\<exists>i. Re z = of_nat i)" sorry
-  show ?thesis sorry
-qed
-
-
-
-(*Even does not work*)
-lemma H_tensor_n:
-  fixes n
-  assumes "n\<ge>1"
-shows "(H ^\<^sub>\<otimes> n) = Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if ((\<langle>unit_vec (2^n) i| unit_vec (2^n) j\<rangle>)) = 1
-                                                  then -1/(sqrt(2)^n) else 1/(sqrt(2)^n))" 
-proof (induction n rule: ind_from_1)
-  show "n\<ge>1" using assms by auto
-next
-  have "((\<langle>unit_vec (2^1) 0| unit_vec (2^1) 0\<rangle>)) = 1" by simp
-  moreover have "((\<langle>unit_vec (2^1) 0| unit_vec (2^1) 1\<rangle>)) = 0" by simp
-  moreover have "((\<langle>unit_vec (2^1) 1| unit_vec (2^1) 0\<rangle>)) = 0" by simp
-  moreover have "((\<langle>unit_vec (2^1) 1| unit_vec (2^1) 1\<rangle>)) = 1" by simp
-  ultimately have "H = Matrix.mat 2 2 (\<lambda>(i,j). if ((\<langle>unit_vec (2^1) i| unit_vec (2^1) j\<rangle>)) = 1
-                                                  then -1/(sqrt(2)^1) else 1/(sqrt(2)^1))"
-  show "(H ^\<^sub>\<otimes> 1) = Matrix.mat (2^1) (2^1) (\<lambda>(i,j). if ((\<langle>unit_vec (2^1) i| unit_vec (2^1) j\<rangle>)) = 1
-                                                  then -1/(sqrt(2)^1) else 1/(sqrt(2)^1))"
-  
-
-qed
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 (*Tryout a new thing: Pretty tiresome*)
 
@@ -1033,20 +985,30 @@ fun pad_with_zero:: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where
 
 value "(pad_with_zero (dec_to_bin 3) (2^2- length (dec_to_bin 3)))"
 
-fun h ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
-"h [] ys = 0"
-|"h (x#xs) (y#ys) = x*y + h xs ys"
+fun bitwise_product ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
+"bitwise_product [] ys = 0"
+|"bitwise_product (x#xs) (y#ys) = x*y + bitwise_product xs ys"
+
+
+(*does not require padding, but bitlists have to be stored in reverse order*)
+fun dec_to_bin_rev:: "nat \<Rightarrow> nat list" where
+"dec_to_bin_rev 0 = []"
+|"dec_to_bin_rev (Suc n) = (if ((Suc n) mod 2 = 0) then 0#(dec_to_bin ((Suc n) div 2)) 
+                       else 1#(dec_to_bin ((Suc n) div 2)) ) "
+
+fun bitwise_product' ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
+"bitwise_product' [] ys = 0"
+|"bitwise_product' xs [] = 0"
+|"bitwise_product' (x#xs) (y#ys) = x*y + bitwise_product' xs ys"
 
 
 abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
-"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if even
-(h  (pad_with_zero (dec_to_bin i) (2^n- length (dec_to_bin i))) 
-    (pad_with_zero (dec_to_bin j) (2^n- length (dec_to_bin j))) ) 
-then (1/sqrt(2)^n) else -1/sqrt(2)^n)"
+"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) 
+                                         then (1/sqrt(2)^n) else -1/sqrt(2)^n)"
 
 lemma H_tensor_n:
   fixes n
-  assumes "n\<ge>1"
+  assumes asm:"n\<ge>1"
   shows "(H ^\<^sub>\<otimes> n) = Hn n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
@@ -1072,50 +1034,29 @@ next
   qed
 next
   fix n 
-  assume "(H ^\<^sub>\<otimes> n) = Hn n"
-  have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" using assms  sledgehammer
-
+  assume a0: "(H ^\<^sub>\<otimes> n) = Hn n" and "n\<ge>1"
+  then have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" 
+    using pow_tensor_n by blast
+  then have "H \<Otimes> (H ^\<^sub>\<otimes> n) = H \<Otimes> Hn n" using a0 by auto
+  have  "H \<Otimes> Hn n = Hn (Suc n)"
+  proof
+    fix i j::nat
+    assume a0:"i < dim_row (Hn (Suc n))" and  a1: "j < dim_col (Hn (Suc n))"
+    then have a2: "i < 2^(n+1)" and a3: "j < 2^(n+1)" by auto
+    then  have "dim_row (Hn (Suc n)) = 2^(n+1)" and "dim_row (Hn n) = 2^n" by auto
+    then have f0:"i< dim_row H * dim_row (Hn n)" 
+      using H_without_scalar_prod dim_row_mat(1) power_Suc a2 by smt
+    have "dim_col (Hn (Suc n)) = 2^(n+1)" and a4: "dim_col (Hn n) = 2^n" by auto
+    then have f1:"j< dim_col H * dim_col (Hn n)" 
+      by (smt H_without_scalar_prod a3 dim_col_mat(1) power_Suc)
+    have f2: "dim_col H > 0"  by (simp add: H_without_scalar_prod )
+    have f3: "dim_col (Hn n) > 0" using a4 by simp
+    then have "(H \<Otimes> Hn n) $$ (i,j) = H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n))) 
+                                 * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))"
+      by (smt H_without_scalar_prod dim_col_mat(1) dim_row_mat(1) index_tensor_mat f0 f1 f2 f3) 
+    then have "(i div (dim_row (Hn n))) = "
+  qed
 qed
 
-
-
-
-(*What I tried
-here is to separate psi2 in unit vectors multiplied with 1-2*f(i div 2) or -1+2*f(i div 2) and show 
-what the result of multiplying (H ^\<^sub>\<otimes> n) with it is. Then, add all vectors up again.  *)
-lemma H_on_unit_vec: (*Not even sure if this is true*)
-  fixes k n::nat
-  assumes "n\<ge>1"
-    and "k<n"
-  shows "(H ^\<^sub>\<otimes> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
-proof(induction n rule: ind_from_1)
-  show "n\<ge>1" using assms by auto
-next
-  show "(H ^\<^sub>\<otimes> 1) * |unit_vec 1 k\<rangle> = Matrix.mat (2^1) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^1) else (-1/sqrt(2)^1))" 
-    sorry
-next 
-  fix n
-  assume "(H ^\<^sub>\<otimes> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
-  show "(H ^\<^sub>\<otimes> (Suc n)) * |unit_vec (Suc n) k\<rangle> = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). if even (i*k) 
-                                                                then (1/sqrt(2)^(Suc n)) else (-1/sqrt(2)^(Suc n)))"
-    sorry
-qed
-
-(*lemma "\<psi>\<^sub>2 = (\<Sum>k\<in>{0..<2^(n+1)}. (Matrix.mat (2^n) 1 (\<lambda>(i,j). if even k \<and> i=k then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) else 
-(if odd k \<and> i=k then (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)) else 0)) ))" 
-This could be done with finsum_vec but seems very difficult to prove.*)
-
-
-
-(*This needs to include all f(0) to f(2^n) in each row but how determine coefficients? Need (H ^\<^sub>\<otimes> n) for this*)
-abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
-"\<psi>\<^sub>3 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) 
-                                      else (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)))"
-
-
-lemma (in jozsa) H_tensor_n_on_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
-  shows "((H ^\<^sub>\<otimes> n) \<Otimes> Id 1)* \<psi>\<^sub>2 = \<psi>\<^sub>3" 
-proof 
-qed
 
 end
