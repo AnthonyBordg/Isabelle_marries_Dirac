@@ -297,21 +297,49 @@ next
     using qubits_def ket_vec_def by simp
 qed
 
-lemma qubits_representation:
+lemma qubits_rep:
   fixes n::"nat" and f g::"nat \<Rightarrow> complex"
   shows "qubits n f g = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
-proof
-  define v where d0:"v = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
-  show "dim_row (qubits n f g) = dim_row v"
-    using d0 ket_vec_def by simp
-  show "dim_col (qubits n f g) = dim_col v"
-    using d0 ket_vec_def by simp
-  show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> qubits n f g $$ (i, j) = v $$ (i, j)"
-  proof-
-    fix i j assume "i < dim_row v" and "j < dim_col v"
-    show "qubits n f g $$ (i, j) = v $$ (i, j)"
-      sorry
+proof (induction n)
+  case 0
+  define v where d0:"v = |Matrix.vec (2^0) (\<lambda>i. \<Prod>j<0. if select_index 0 j i then f(j) else g(j))\<rangle>"
+  show "qubits 0 f g = v"
+  proof
+    show "dim_row (qubits 0 f g) = dim_row v"
+      using d0 ket_vec_def by simp
+    show "dim_col (qubits 0 f g) = dim_col v"
+      using d0 ket_vec_def by simp
+    show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> qubits 0 f g $$ (i, j) = v $$ (i, j)"
+    proof-
+      fix i j assume "i < dim_row v" and "j < dim_col v"
+      then have "i = 0 \<and> j = 0"
+        using d0 ket_vec_def by simp
+      then show "qubits 0 f g $$ (i, j) = v $$ (i, j)"
+        using d0 by simp
+    qed
   qed
+next
+  case c1:(Suc n)
+  define v1 where d1:"v1 = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
+  define v2 where d2:"v2 = |Matrix.vec (2^(Suc n)) (\<lambda>i. \<Prod>j<(Suc n). if select_index (Suc n) j i then f(j) else g(j))\<rangle>"
+  have "qubits n f g = v1" using c1 d1 by simp
+  moreover have "v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f(n) else g(n))\<rangle> = v2"
+  proof
+    show "dim_row (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) = dim_row v2"
+      using d1 d2 ket_vec_def by simp
+    show "dim_col (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) = dim_col v2"
+      using d1 d2 ket_vec_def by simp
+    show "\<And>i j. i < dim_row v2 \<Longrightarrow> j < dim_col v2 \<Longrightarrow> (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
+    proof-
+      fix i j assume "i < dim_row v2" and "j < dim_col v2"
+      then have "i < 2^(n+1) \<and> j = 0"
+        using d2 ket_vec_def by simp
+      show "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
+        sorry
+    qed
+  qed
+  ultimately show "qubits (Suc n) f g = v2"
+    using qubits_def by simp
 qed
 
 lemma "qubits n (\<lambda>j. (if j<m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
