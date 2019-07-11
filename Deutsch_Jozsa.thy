@@ -556,68 +556,68 @@ But first finish last step to see what requirements exist*)
 
 
 
-fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<oplus>" 75) where
-  "A ^\<^sub>\<oplus> (Suc 0) = A"  
-| "A ^\<^sub>\<oplus> (Suc k) =  A \<Otimes> (A ^\<^sub>\<oplus> k)"
+fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<otimes>" 75) where
+  "A ^\<^sub>\<otimes> (Suc 0) = A"  
+| "A ^\<^sub>\<otimes> (Suc k) =  A \<Otimes> (A ^\<^sub>\<otimes> k)"
 
 lemma pow_tensor_1_is_id [simp]:
   fixes A
-  shows "A ^\<^sub>\<oplus> 1 = A"
+  shows "A ^\<^sub>\<otimes> 1 = A"
   using one_mat_def by auto
 
 lemma pow_tensor_n: 
   fixes n
   assumes "n \<ge> 1"
-  shows " A ^\<^sub>\<oplus> (Suc n) = A  \<Otimes>  ( A ^\<^sub>\<oplus> n)" using assms 
+  shows " A ^\<^sub>\<otimes> (Suc n) = A  \<Otimes>  ( A ^\<^sub>\<otimes> n)" using assms 
   by (metis Deutsch_Jozsa.pow_tensor.simps(2) One_nat_def Suc_le_D)
 
 lemma pow_tensor_dim_row [simp]:
   fixes A n
   assumes "n \<ge> 1"
-  shows "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
+  shows "dim_row(A ^\<^sub>\<otimes> n) = (dim_row A)^n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto 
 next
-  show "dim_row(A ^\<^sub>\<oplus> 1) = (dim_row A)^1" by simp
+  show "dim_row(A ^\<^sub>\<otimes> 1) = (dim_row A)^1" by simp
 next
   fix n
-  assume "dim_row(A ^\<^sub>\<oplus> n) = (dim_row A)^n"
-  then show "dim_row(A ^\<^sub>\<oplus> (Suc n)) = (dim_row A)^(Suc n)" 
+  assume "dim_row(A ^\<^sub>\<otimes> n) = (dim_row A)^n"
+  then show "dim_row(A ^\<^sub>\<otimes> (Suc n)) = (dim_row A)^(Suc n)" 
     by (metis One_nat_def Suc_inject Zero_not_Suc dim_row_tensor_mat pow_tensor.elims power_Suc power_one_right)
 qed
 
 lemma pow_tensor_dim_col [simp]:
   fixes A n
   assumes "n \<ge> 1"
-  shows "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
+  shows "dim_col(A ^\<^sub>\<otimes> n) = (dim_col A)^n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto 
 next
-  show "dim_col(A ^\<^sub>\<oplus> 1) = (dim_col A)^1" by simp
+  show "dim_col(A ^\<^sub>\<otimes> 1) = (dim_col A)^1" by simp
 next
   fix n
-  assume "dim_col(A ^\<^sub>\<oplus> n) = (dim_col A)^n"
-  then show "dim_col(A ^\<^sub>\<oplus> (Suc n)) = (dim_col A)^(Suc n)" 
+  assume "dim_col(A ^\<^sub>\<otimes> n) = (dim_col A)^n"
+  then show "dim_col(A ^\<^sub>\<otimes> (Suc n)) = (dim_col A)^(Suc n)" 
     by (metis dim_col_tensor_mat One_nat_def Suc_inject Zero_not_Suc pow_tensor.elims power_Suc power_one_right )
 qed
 
 lemma pow_tensor_values:
   fixes A n i j
   assumes "n \<ge> 1"
-  assumes "i < dim_row ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
-  and "j < dim_col ( A \<Otimes> ( A ^\<^sub>\<oplus> n))"
-  shows "( A ^\<^sub>\<oplus> (Suc n)) $$ (i, j) = ( A \<Otimes> ( A ^\<^sub>\<oplus> n)) $$ (i, j)"
+  assumes "i < dim_row ( A \<Otimes> ( A ^\<^sub>\<otimes> n))"
+  and "j < dim_col ( A \<Otimes> ( A ^\<^sub>\<otimes> n))"
+  shows "( A ^\<^sub>\<otimes> (Suc n)) $$ (i, j) = ( A \<Otimes> ( A ^\<^sub>\<otimes> n)) $$ (i, j)"
   using assms
   by (metis One_nat_def le_0_eq not0_implies_Suc pow_tensor.simps(2))
 
 lemma pow_tensor_mult_distr:
   assumes "n \<ge> 1"
   and "dim_col A = dim_row B" and "0 < dim_row B" and "0 < dim_col B"
-  shows "(A ^\<^sub>\<oplus> (Suc n))*(B ^\<^sub>\<oplus> (Suc n)) = (A * B) \<Otimes> ((A ^\<^sub>\<oplus> n)*(B ^\<^sub>\<oplus> n))" 
+  shows "(A ^\<^sub>\<otimes> (Suc n))*(B ^\<^sub>\<otimes> (Suc n)) = (A * B) \<Otimes> ((A ^\<^sub>\<otimes> n)*(B ^\<^sub>\<otimes> n))" 
 proof -
-  have "(A ^\<^sub>\<oplus> (Suc n))*(B ^\<^sub>\<oplus> (Suc n)) = (A \<Otimes> (A ^\<^sub>\<oplus> n)) * (B  \<Otimes> (B ^\<^sub>\<oplus> n))" 
+  have "(A ^\<^sub>\<otimes> (Suc n))*(B ^\<^sub>\<otimes> (Suc n)) = (A \<Otimes> (A ^\<^sub>\<otimes> n)) * (B  \<Otimes> (B ^\<^sub>\<otimes> n))" 
     using Suc_le_D assms(1) by fastforce
-  then show "(A ^\<^sub>\<oplus> (Suc n))*(B ^\<^sub>\<oplus> (Suc n)) =  (A * B) \<Otimes> ((A ^\<^sub>\<oplus> n)*(B ^\<^sub>\<oplus> n))" 
+  then show "(A ^\<^sub>\<otimes> (Suc n))*(B ^\<^sub>\<otimes> (Suc n)) =  (A * B) \<Otimes> ((A ^\<^sub>\<otimes> n)*(B ^\<^sub>\<otimes> n))" 
     using mult_distr_tensor [of A B "(pow_tensor A n)" "(pow_tensor B n)"] assms
     by auto
 qed
@@ -745,35 +745,35 @@ qed
 
 lemma \<psi>\<^sub>1\<^sub>0_tensor_n_is_state:
   assumes "n \<ge> 1"
-  shows "state n ( |zero\<rangle> ^\<^sub>\<oplus> n)"
+  shows "state n ( |zero\<rangle> ^\<^sub>\<otimes> n)"
 proof (induction n rule: ind_from_1)
   show "n \<ge> 1" using assms by auto
 next
-  show "state 1 ( |zero\<rangle> ^\<^sub>\<oplus> 1)" using ket_zero_is_state by auto
+  show "state 1 ( |zero\<rangle> ^\<^sub>\<otimes> 1)" using ket_zero_is_state by auto
 next
   fix n
-  assume a0: "state n ( |zero\<rangle> ^\<^sub>\<oplus> n)" and "n\<ge>1"
-  then have "( |zero\<rangle>) ^\<^sub>\<oplus> (Suc n) = ( |zero\<rangle>)  \<Otimes>  ( |zero\<rangle> ^\<^sub>\<oplus> n)" 
+  assume a0: "state n ( |zero\<rangle> ^\<^sub>\<otimes> n)" and "n\<ge>1"
+  then have "( |zero\<rangle>) ^\<^sub>\<otimes> (Suc n) = ( |zero\<rangle>)  \<Otimes>  ( |zero\<rangle> ^\<^sub>\<otimes> n)" 
     using assms pow_tensor_n[of n "|zero\<rangle>" ] by auto
-  then show "state (Suc n) ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n))" 
+  then show "state (Suc n) ( |zero\<rangle> ^\<^sub>\<otimes> (Suc n))" 
     using assms tensor_state a0 ket_zero_is_state by fastforce
 qed
 
 
 lemma H_tensor_n_is_gate:
   assumes "n \<ge> 1"
-  shows "gate n (H ^\<^sub>\<oplus> n)" 
+  shows "gate n (H ^\<^sub>\<otimes> n)" 
 proof(induction n rule: ind_from_1)
   show "n \<ge> 1" using assms by auto
 next
-  show "gate 1 (H ^\<^sub>\<oplus> 1)" 
+  show "gate 1 (H ^\<^sub>\<otimes> 1)" 
     using H_is_gate by auto
 next
   fix n 
-  assume a0: "gate n (H ^\<^sub>\<oplus> n)" and "n \<ge> 1"
-  then have "(H ^\<^sub>\<oplus> (Suc n)) = H \<Otimes> (H ^\<^sub>\<oplus> n)" 
+  assume a0: "gate n (H ^\<^sub>\<otimes> n)" and "n \<ge> 1"
+  then have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" 
     using pow_tensor_n[of n H] by auto
-  then show "gate (Suc n) (H ^\<^sub>\<oplus> (Suc n))" 
+  then show "gate (Suc n) (H ^\<^sub>\<otimes> (Suc n))" 
     using assms a0 tensor_gate H_is_gate by fastforce
 qed
 
@@ -781,22 +781,22 @@ qed
 
 lemma H_tensor_n_on_zero_tensor_n: 
   assumes "n \<ge> 1"
-  shows "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
+  shows "(H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  have "(H ^\<^sub>\<oplus> 1) * ( |zero\<rangle> ^\<^sub>\<oplus> 1) = H * |zero\<rangle>" by auto
-  show "(H ^\<^sub>\<oplus> 1) * ( |zero\<rangle> ^\<^sub>\<oplus> 1) = (\<psi>\<^sub>1\<^sub>0 1)" using H_on_ket_zero by auto
+  have "(H ^\<^sub>\<otimes> 1) * ( |zero\<rangle> ^\<^sub>\<otimes> 1) = H * |zero\<rangle>" by auto
+  show "(H ^\<^sub>\<otimes> 1) * ( |zero\<rangle> ^\<^sub>\<otimes> 1) = (\<psi>\<^sub>1\<^sub>0 1)" using H_on_ket_zero by auto
 next
   fix n
-  assume a0: "1 \<le> n" and a1: "(H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
-  then have "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (H * |zero\<rangle>) \<Otimes> ((H ^\<^sub>\<oplus> n) * ( |zero\<rangle> ^\<^sub>\<oplus> n))" 
+  assume a0: "1 \<le> n" and a1: "(H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
+  then have "(H ^\<^sub>\<otimes> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<otimes> (Suc n)) = (H * |zero\<rangle>) \<Otimes> ((H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n))" 
     using pow_tensor_mult_distr[of n "H" "|zero\<rangle>"] a0 ket_vec_def H_def
     by (simp add: H_def)
   also have  "... = (H * |zero\<rangle>) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using a1 by auto 
   also have "... = (\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using H_on_ket_zero by auto
   also have "... = (\<psi>\<^sub>1\<^sub>0 (Suc n))" using \<psi>\<^sub>1\<^sub>0_tensor_n a0 by auto
-  finally show "(H ^\<^sub>\<oplus> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<oplus> (Suc n)) = (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
+  finally show "(H ^\<^sub>\<otimes> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<otimes> (Suc n)) = (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
 qed
 
 
@@ -968,7 +968,54 @@ lemma (in jozsa) \<psi>\<^sub>2_is_state:
   using jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 jozsa_transform_is_gate \<psi>\<^sub>1_is_state dim gate_on_state_is_state by fastforce
 
 
-(*I need a representation of (H ^\<^sub>\<oplus> n) as matrix!!! Or at least I need to know what psi3 is!*)
+(*I need a representation of (H ^\<^sub>\<otimes> n) as matrix!!! Or at least I need to know what psi3 is!*)
+
+lemma [simp]:
+  fixes i j n
+  shows "((\<langle>unit_vec (2^n) i| unit_vec (2^n) j\<rangle>))\<in>  \<nat>"
+proof-
+  have " Im z = 0 \<and> (\<exists>i. Re z = of_nat i)" sorry
+  show ?thesis sorry
+qed
+
+
+
+(*Even does not work*)
+lemma H_tensor_n:
+  fixes n
+  assumes "n\<ge>1"
+shows "(H ^\<^sub>\<otimes> n) = Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if ((\<langle>unit_vec (2^n) i| unit_vec (2^n) j\<rangle>)) = 1
+                                                  then -1/(sqrt(2)^n) else 1/(sqrt(2)^n))" 
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  have "((\<langle>unit_vec (2^1) 0| unit_vec (2^1) 0\<rangle>)) = 1" by simp
+  moreover have "((\<langle>unit_vec (2^1) 0| unit_vec (2^1) 1\<rangle>)) = 0" by simp
+  moreover have "((\<langle>unit_vec (2^1) 1| unit_vec (2^1) 0\<rangle>)) = 0" by simp
+  moreover have "((\<langle>unit_vec (2^1) 1| unit_vec (2^1) 1\<rangle>)) = 1" by simp
+  ultimately have "H = Matrix.mat 2 2 (\<lambda>(i,j). if ((\<langle>unit_vec (2^1) i| unit_vec (2^1) j\<rangle>)) = 1
+                                                  then -1/(sqrt(2)^1) else 1/(sqrt(2)^1))"
+  show "(H ^\<^sub>\<otimes> 1) = Matrix.mat (2^1) (2^1) (\<lambda>(i,j). if ((\<langle>unit_vec (2^1) i| unit_vec (2^1) j\<rangle>)) = 1
+                                                  then -1/(sqrt(2)^1) else 1/(sqrt(2)^1))"
+  
+
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -992,34 +1039,64 @@ fun h ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
 
 
 abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
-"Hn n \<equiv> Matrix.mat (2^n) 1 (\<lambda>(i,j). if even
+"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if even
 (h  (pad_with_zero (dec_to_bin i) (2^n- length (dec_to_bin i))) 
     (pad_with_zero (dec_to_bin j) (2^n- length (dec_to_bin j))) ) 
-then (-1) else 1)"
+then (1/sqrt(2)^n) else -1/sqrt(2)^n)"
 
+lemma H_tensor_n:
+  fixes n
+  assumes "n\<ge>1"
+  shows "(H ^\<^sub>\<otimes> n) = Hn n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "(H ^\<^sub>\<otimes> 1) = Hn 1"
+  proof 
+    show "dim_row (H ^\<^sub>\<otimes> 1) = dim_row (Hn 1)" 
+      by (simp add:H_without_scalar_prod) 
+    show "dim_col (H ^\<^sub>\<otimes> 1) = dim_col (Hn 1)"
+      by (simp add:H_without_scalar_prod) 
+    fix i j::nat
+    assume a0:"i<dim_row (Hn 1)" and a1:" j<dim_col (Hn 1)"
+    have f0: "(pad_with_zero (dec_to_bin 0) (2- length (dec_to_bin 0))) = [0,0]" 
+      by (simp add: numeral_2_eq_2)
+    then have "Hn 1 $$ (0, 0) = 1/sqrt(2)" using f0 by auto 
+    moreover have " Hn 1 $$ (0, 1) = 1/sqrt(2)" using f0 by auto 
+    moreover have " Hn 1 $$ (1, 0) = 1/sqrt(2)" using f0 by auto 
+    moreover have " Hn 1 $$ (1, 1) = -1/sqrt(2)" using f0 by auto 
+    ultimately show "(H ^\<^sub>\<otimes> 1) $$ (i, j) = Hn 1 $$ (i, j)" using a0 a1 
+      by (smt H_without_scalar_prod Product_Type.old.prod.case dim_col_mat(1) dim_row_mat(1) 
+          divide_minus_left index_mat(1) less_2_cases one_less_numeral_iff pow_tensor_1_is_id 
+          power_one_right semiring_norm(76))
+  qed
+next
+  fix n 
+  assume "(H ^\<^sub>\<otimes> n) = Hn n"
+  have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" using assms  sledgehammer
 
-
+qed
 
 
 
 
 (*What I tried
 here is to separate psi2 in unit vectors multiplied with 1-2*f(i div 2) or -1+2*f(i div 2) and show 
-what the result of multiplying (H ^\<^sub>\<oplus> n) with it is. Then, add all vectors up again.  *)
+what the result of multiplying (H ^\<^sub>\<otimes> n) with it is. Then, add all vectors up again.  *)
 lemma H_on_unit_vec: (*Not even sure if this is true*)
   fixes k n::nat
   assumes "n\<ge>1"
     and "k<n"
-  shows "(H ^\<^sub>\<oplus> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
+  shows "(H ^\<^sub>\<otimes> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
 proof(induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  show "(H ^\<^sub>\<oplus> 1) * |unit_vec 1 k\<rangle> = Matrix.mat (2^1) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^1) else (-1/sqrt(2)^1))" 
+  show "(H ^\<^sub>\<otimes> 1) * |unit_vec 1 k\<rangle> = Matrix.mat (2^1) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^1) else (-1/sqrt(2)^1))" 
     sorry
 next 
   fix n
-  assume "(H ^\<^sub>\<oplus> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
-  show "(H ^\<^sub>\<oplus> (Suc n)) * |unit_vec (Suc n) k\<rangle> = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). if even (i*k) 
+  assume "(H ^\<^sub>\<otimes> n) * |unit_vec n k\<rangle> = Matrix.mat (2^n) 1 (\<lambda>(i,j). if even (i*k) then (1/sqrt(2)^n) else (-1/sqrt(2)^n))"
+  show "(H ^\<^sub>\<otimes> (Suc n)) * |unit_vec (Suc n) k\<rangle> = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). if even (i*k) 
                                                                 then (1/sqrt(2)^(Suc n)) else (-1/sqrt(2)^(Suc n)))"
     sorry
 qed
@@ -1029,22 +1106,15 @@ qed
 This could be done with finsum_vec but seems very difficult to prove.*)
 
 
-lemma H_tensor_n:
-  fixes n
-assumes "n\<ge>1"
-shows "(H ^\<^sub>\<oplus> n) = Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if (i div 2^(n-1)\<le> 1 \<or> j div 2^(n-1)\<le> 1) 
-                                                      then (H ^\<^sub>\<oplus> (n-1))$$(i mod 2^(n-1), j mod 2^(n-1)) 
-                                                          else -(H ^\<^sub>\<oplus> (n-1))$$(i mod 2^(n-1), j mod 2^(n-1)))" 
-  oops
 
-(*This needs to include all f(0) to f(2^n) in each row but how determine coefficients? Need (H ^\<^sub>\<oplus> n) for this*)
+(*This needs to include all f(0) to f(2^n) in each row but how determine coefficients? Need (H ^\<^sub>\<otimes> n) for this*)
 abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) 
                                       else (-(1-f(i div 2))+(f(i div 2)))* 1/(sqrt(2)^(n+1)))"
 
 
 lemma (in jozsa) H_tensor_n_on_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
-  shows "((H ^\<^sub>\<oplus> n) \<Otimes> Id 1)* \<psi>\<^sub>2 = \<psi>\<^sub>3" 
+  shows "((H ^\<^sub>\<otimes> n) \<Otimes> Id 1)* \<psi>\<^sub>2 = \<psi>\<^sub>3" 
 proof 
 qed
 
