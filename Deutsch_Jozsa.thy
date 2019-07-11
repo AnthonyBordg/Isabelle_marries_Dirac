@@ -1,15 +1,34 @@
+(*
+Authors: 
+
+  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
+*)
+
 theory Deutsch_Jozsa
 imports
   MoreTensor
   Quantum 
 begin
 
-declare [[show_abbrevs=true]]
-declare [[names_short=true]]
+
 (*There will probably be some lemmas going into Basic (maybe even Tensor) in here, 
 I will transfer them when I am sure they are actually needed*)
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
+text \<open>
+Given a constant or balanced function $f:{0,1}^n\mapsto {0,1}$, the Deutsch-Jozsa algorithm 
+decides if this function is constant or balanced with a single $f(x)$ circuit to evaluate the 
+function for multiple values of $x$ simultaneously. The algorithm makes use of quantum parallelism 
+and quantum interference.
+\<close>
+
+section \<open>Input function\<close>
+
+text \<open>
+A constant function returns either always 0 or always 1. 
+A balanced function is 0 for half of the inputs and 1 for the other half. 
+\<close>
 
 locale bob_fun =
   fixes f:: "nat \<Rightarrow> nat" and n:: "nat"
@@ -70,8 +89,41 @@ lemma f_values: "\<forall>x \<in> {(i::nat). i < 2^n} .(f x = 0 \<or> f x = 1)"
 
 end (* bob_fun *)
 
+text \<open>
+The input function has to be constant or balanced. 
+\<close>
+
 locale jozsa = bob_fun +
   assumes const_or_balanced: "is_const \<or> is_balanced "
+
+
+text \<open>
+Introduce two customised rules: disjunctions with four disjuncts and induction starting from one instead of zero.
+\<close>
+
+(*To deal with Uf it is often necessary to do a case distinction with four different cases.*)
+lemma disj_four_cases:
+  assumes "A \<or> B \<or> C \<or> D"
+  and "A \<Longrightarrow> P"
+  and "B \<Longrightarrow> P"
+  and "C \<Longrightarrow> P"
+  and "D \<Longrightarrow> P"
+  shows "P"
+proof -
+  from assms show ?thesis by blast
+qed
+
+(*As n has to be at least 1 we introduce a modified introduction rule *)
+lemma ind_from_1 [case_names n_ge_1 1 step]:
+  assumes "n \<ge> 1"
+  assumes "P(1)" 
+  assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
+  shows " P n"
+  using nat_induct_at_least assms by auto
+
+
+
+text \<open>The unitary transform @{text U\<^sub>f}.\<close>
 
 definition (in jozsa) jozsa_transform:: "complex Matrix.mat" ("U\<^sub>f") where 
 "U\<^sub>f \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j). if i = j then (1-f(i div 2)) else 
@@ -243,13 +295,6 @@ proof-
     by (metis (no_types, lifting) add.left_neutral add.right_neutral)
 qed
 
-
-
-
-
-
-
-
 lemma (in jozsa) U\<^sub>f_mult_without_empty_summands_odd: 
   fixes i j A
   assumes "i < dim_row U\<^sub>f" and "j < dim_col A"
@@ -263,42 +308,6 @@ proof-
   then show "(U\<^sub>f * A) $$ (i,j) = (\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * A $$ (k, j))" 
     using assms U\<^sub>f_mult_without_empty_summands_sum_odd by auto
 qed
-
-
-
-
-
-
-
-
-
-(*To deal with Uf it is often necessary to do a case distinction with four different cases.*)
-(*TODO: until now this is only used for 
-"i=j \<or> (i=j+1 \<and> odd i) \<or> (i=j-1 \<and> even i \<and> j\<ge>1) \<or> (i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
-should it be specialised more? I tend to keep the general one although it requires one step more in each proof*)
-lemma disj_four_cases:
-  assumes "A \<or> B \<or> C \<or> D"
-  and "A \<Longrightarrow> P"
-  and "B \<Longrightarrow> P"
-  and "C \<Longrightarrow> P"
-  and "D \<Longrightarrow> P"
-  shows "P"
-proof -
-  from assms show ?thesis by blast
-qed
-
-lemma disj_four_cases':
-  assumes  "i=j \<Longrightarrow> P"
-  and "(i=j+1 \<and> odd i) \<Longrightarrow> P"
-  and "(i=j-1 \<and> even i \<and> j\<ge>1) \<Longrightarrow> P"
-  and "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1)) \<Longrightarrow> P"
-  shows "P"
-proof -
-  have "i=j \<or> (i=j+1 \<and> odd i) \<or> (i=j-1 \<and> even i \<and> j\<ge>1) \<or> (i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
-    by linarith
-  from assms show ?thesis by blast
-qed
-
 
 
 
@@ -513,7 +522,6 @@ proof-
   qed
 qed
 
-(*TODO: clean up,delete unused facts*)
 lemma (in jozsa) jozsa_transform_is_gate:
   shows "gate (n+1) U\<^sub>f"
 proof
@@ -541,20 +549,13 @@ next
   qed
 qed
 
-(*As n has to be at least 1 we introduce a modified introduction rule *)
-lemma ind_from_1 [case_names n_ge_1 1 step]:
-  assumes "n \<ge> 1"
-  assumes "P(1)" 
-  assumes "\<And>n. n \<ge> 1 \<Longrightarrow>  P n \<Longrightarrow> P (Suc n)"
-  shows " P n"
-  using nat_induct_at_least assms by auto
 
 (*TODO: Better way then always assuming n\<ge>1?, for now just keep it a moment to try out what works*)
 
 (*TODO: Think about binding of n and inductions. Should all lemmas be in jozsa? How to do induction then?
 But first finish last step to see what requirements exist*)
 
-
+text \<open>N-fold application of the tensor product\<close>
 
 fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<otimes>" 75) where
   "A ^\<^sub>\<otimes> (Suc 0) = A"  
@@ -654,6 +655,11 @@ proof -
 qed
 
 
+text \<open>
+n+1 qubits are prepared. 
+The first n in the state $|0\rangle$, the last one in the state $|1\rangle$.
+\<close>
+
 abbreviation zero where "zero \<equiv> unit_vec 2 0"
 abbreviation one where "one \<equiv> unit_vec 2 1"
 
@@ -676,6 +682,11 @@ lemma \<psi>\<^sub>1\<^sub>0_values:
   and "n \<ge> 1"
   shows "(\<psi>\<^sub>1\<^sub>0 n) $$ (i,j) = 1/(sqrt(2)^n)" 
   using assms(1) assms(2) case_prod_conv by auto
+
+
+text \<open>
+$H^{\otimes n}$ is applied to $|0\rangle^{\otimes n}$. 
+\<close>
 
 lemma H_on_ket_zero: 
   shows "(H *  |zero\<rangle>) = (\<psi>\<^sub>1\<^sub>0 1)"
@@ -968,6 +979,56 @@ lemma (in jozsa) \<psi>\<^sub>2_is_state:
   using jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 jozsa_transform_is_gate \<psi>\<^sub>1_is_state dim gate_on_state_is_state by fastforce
 
 
+(*TODO: Should this be integrated into the last proof and \<psi>\<^sub>2 replaced by \<psi>\<^sub>2'*)
+abbreviation (in jozsa) \<psi>\<^sub>2':: "complex Matrix.mat" where
+"\<psi>\<^sub>2' \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((-1)^f(i div 2))/(sqrt(2)^(n+1)) 
+                                      else ((-1)^(f(i div 2)+1))/(sqrt(2)^(n+1)))"
+
+lemma (in jozsa) \<psi>\<^sub>2_is_\<psi>\<^sub>2':
+  shows "\<psi>\<^sub>2 = \<psi>\<^sub>2'"
+proof
+  show "dim_row \<psi>\<^sub>2 = dim_row \<psi>\<^sub>2'" by simp
+next
+  show "dim_col \<psi>\<^sub>2 = dim_col \<psi>\<^sub>2'" by simp
+next
+  fix i j::nat
+  assume a0:"i < dim_row \<psi>\<^sub>2'" and a1:"j < dim_col \<psi>\<^sub>2'"
+  show "\<psi>\<^sub>2 $$ (i,j) = \<psi>\<^sub>2' $$ (i,j)" 
+  proof (rule disjE)
+    show "even i \<or> odd i" by auto
+  next
+    assume a2: "even i"
+    then have f0: "\<psi>\<^sub>2 $$ (i,j) = ((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1))" 
+      using a0 a1 by auto
+    have "i div 2 \<in> {i. i < 2 ^ n}" 
+      using a0 by auto
+    then have " real (Suc 0 - f (i div 2)) - real (f (i div 2)) = (- 1) ^ f (i div 2)" 
+      using a0 f_values by fastforce
+    then have "((1-f(i div 2))+-f(i div 2)) * 1/(sqrt(2)^(n+1)) = (-1)^f(i div 2)/(sqrt(2)^(n+1))"
+      using f_values a0 a1 by auto
+    then show "\<psi>\<^sub>2 $$ (i,j) = \<psi>\<^sub>2' $$ (i,j)" using f0 a0 a1 a2 by auto
+  next
+    assume a2: "odd i"
+    then have f0: "\<psi>\<^sub>2 $$ (i,j) = (-(1-f(i div 2))+f(i div 2)) * 1/(sqrt(2)^(n+1))" 
+      using a0 a1 by auto
+    have "i div 2 \<in> {i. i < 2 ^ n}" 
+      using a0 by auto
+    then have "(real (f (i div 2)) - real (Suc 0 - f (i div 2))) / (sqrt 2 ^ (n+1)) =
+    - ((- 1) ^ f (i div 2) / (sqrt 2 ^ (n+1)))" 
+      using a0 f_values by fastforce
+    then have "(-(1-f(i div 2))+f(i div 2)) * 1/(sqrt(2)^(n+1)) = (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1))"
+      using f_values a0 a1 by auto
+    then show "\<psi>\<^sub>2 $$ (i,j) = \<psi>\<^sub>2' $$ (i,j)" using f0 a0 a1 a2 by auto
+  qed
+qed
+
+
+
+
+
+
+
+
 (*I need a representation of (H ^\<^sub>\<otimes> n) as matrix!!! Or at least I need to know what psi3 is!*)
 
 
@@ -1002,9 +1063,104 @@ fun bitwise_product' ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
 |"bitwise_product' (x#xs) (y#ys) = x*y + bitwise_product' xs ys"
 
 
+value "(bitwise_product' (dec_to_bin_rev 7) (dec_to_bin_rev 7) )" 
+
+
+
+
 abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
 "Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) 
                                          then (1/sqrt(2)^n) else -1/sqrt(2)^n)"
+
+lemma 
+  assumes "i div (2^(n-1)) = 0" and "j div (2^(n-1)) = 0"
+  shows "(Hn (Suc n))$$(i,j) = (Hn n)$$(i,j) "
+
+
+
+
+lemma h1:
+  assumes "i<dim_row H" and "j<dim_col H"
+    and "\<not>(i= 1 \<and> j=1)" 
+  shows "H$$(i,j) = 1/sqrt(2)" 
+  using H_without_scalar_prod assms 
+  by (smt One_nat_def case_prod_conv dim_col_mat(1) dim_row_mat(1) index_mat(1) less_2_cases)
+
+lemma Hn_tensor_n:
+  fixes n::nat
+  assumes "n\<ge>1"
+  shows  "H \<Otimes> Hn n = Hn (Suc n)" 
+proof
+  fix i j::nat
+  assume a0:"i < dim_row (Hn (Suc n))" and a1: "j < dim_col (Hn (Suc n))"
+  then have f0: "i < 2^(n+1) \<and> j < 2^(n+1)" by auto
+  have      f1: "dim_row (Hn (Suc n)) = 2^(n+1) \<and> dim_row (Hn n) = 2^n" by auto
+  then have f2: "i< dim_row H * dim_row (Hn n)" 
+    using H_without_scalar_prod dim_row_mat(1) power_Suc f0 by smt
+  have a4: "dim_col (Hn (Suc n)) = 2^(n+1) \<and> dim_col (Hn n) = 2^n" by auto
+  then have "j< dim_col H * dim_col (Hn n)" 
+    by (smt H_without_scalar_prod f0 dim_col_mat(1) power_Suc)
+  moreover have  "dim_col H > 0"  by (simp add: H_without_scalar_prod )
+  moreover have  f3: "dim_col (Hn n) > 0" by auto
+  ultimately have f4: "(H \<Otimes> Hn n) $$ (i,j) = H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n))) 
+                                 * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))"
+    by (smt H_without_scalar_prod dim_col_mat(1) dim_row_mat(1) index_tensor_mat f2) 
+
+  have f5: "(i div (dim_row (Hn n))) = 0 \<or> (i div (dim_row (Hn n))) = 1"
+  by (smt One_nat_def a0 dim_row_mat(1) less_2_cases less_power_add_imp_div_less plus_1_eq_Suc power_one_right) 
+  have f6: "(j div (dim_col (Hn n))) = 0 \<or> (j div (dim_col (Hn n))) = 1"
+    using One_nat_def dim_col_mat(1) less_2_cases  
+    by (metis (no_types, lifting) a1 less_power_add_imp_div_less plus_1_eq_Suc power_one_right)
+  have f7: "\<not>((i div (dim_row (Hn n))) = 1 \<and> (j div (dim_col (Hn n))) = 1) \<longrightarrow>
+              H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n))) = 1/sqrt(2)" 
+    using h1 f2 a1 less_mult_imp_div_less 
+    by (smt H_without_scalar_prod dim_col_mat(1) less_power_add_imp_div_less plus_1_eq_Suc power_one_right)
+
+  show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$ (i,j)"
+  proof (rule disjE)
+    show  "even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) \<or> odd (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) )"
+      by auto
+  next
+    assume ai0: "even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) "
+    show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$ (i,j)"
+    proof (induct rule: disj_four_cases) (*Should be possible without these just for H*)
+    show "((i div (dim_row (Hn n))) = 0 \<and> (j div (dim_col (Hn n))) = 0) \<or>
+          ((i div (dim_row (Hn n))) = 0 \<and> (j div (dim_col (Hn n))) = 1) \<or>
+          ((i div (dim_row (Hn n))) = 1 \<and> (j div (dim_col (Hn n))) = 0) \<or>
+          ((i div (dim_row (Hn n))) = 1 \<and> (j div (dim_col (Hn n))) = 1)"
+      using f5 f6 by blast
+  next
+    assume case0:"((i div (dim_row (Hn n))) = 0 \<and> (j div (dim_col (Hn n))) = 0)"
+    then have "(H \<Otimes> Hn n) $$ (i,j) = 1/sqrt(2)  * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))" 
+      using f4 f7 by auto
+    moreover have "even (bitwise_product' (dec_to_bin_rev (i mod (dim_row (Hn n)))) ( dec_to_bin_rev( j mod (dim_col (Hn n)))))" 
+      using case0 ai0 by (metis mod_eq_self_iff_div_eq_0) 
+    ultimately have u8: "(H \<Otimes> Hn n) $$ (i,j) = 1/sqrt(2) *1/sqrt(2)^n " 
+        using a4 f1 f3
+       by (smt Groups.ab_semigroup_mult_class.mult.commute Product_Type.prod.simps(2) Suc_1 index_mat(1) mod_less_divisor of_real_mult one_power2 power_Suc power_one_right times_divide_eq_left)       
+    moreover have " (Hn (Suc n)) $$ (i,j) = 1/sqrt(2) * 1/sqrt(2)^n " 
+        using a0 a1 ai0 by auto
+    ultimately show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$ (i,j)" by auto
+   next
+    assume case0:"((i div (dim_row (Hn n))) = 0 \<and> (j div (dim_col (Hn n))) = 1)"
+    then have "(H \<Otimes> Hn n) $$ (i,j) = 1/sqrt(2)  * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))" 
+      using f4 f7 by auto
+    then have "even (bitwise_product' (dec_to_bin_rev (i mod (dim_row (Hn n)))) (dec_to_bin_rev(j mod (dim_col (Hn n)))))" 
+      using case0 ai0 mod_eq_self_iff_div_eq_0 a0 a1 sorry
+
+     have u8: "(Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n))) = 1/sqrt(2)^n " 
+        using a4 f1 f3 a0 a1 ai0 Groups.ab_semigroup_mult_class.mult.commute Product_Type.prod.simps(2) Suc_1 index_mat(1) mod_less_divisor of_real_mult one_power2 power_Suc power_one_right times_divide_eq_left
+        case0 sorry
+    moreover have " (Hn (Suc n)) $$ (i,j) = 1/sqrt(2) * 1/sqrt(2)^n " 
+        using a0 a1 ai0 by auto
+    ultimately show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$ (i,j)" by auto
+      qed
+
+
+
+
+
+
 
 lemma H_tensor_n:
   fixes n
@@ -1021,7 +1177,7 @@ next
       by (simp add:H_without_scalar_prod) 
     fix i j::nat
     assume a0:"i<dim_row (Hn 1)" and a1:" j<dim_col (Hn 1)"
-    have f0: "(pad_with_zero (dec_to_bin 0) (2- length (dec_to_bin 0))) = [0,0]" 
+    have f0: "(bitwise_product' (dec_to_bin_rev 0) (dec_to_bin_rev 0) ) = 0" 
       by (simp add: numeral_2_eq_2)
     then have "Hn 1 $$ (0, 0) = 1/sqrt(2)" using f0 by auto 
     moreover have " Hn 1 $$ (0, 1) = 1/sqrt(2)" using f0 by auto 
@@ -1034,29 +1190,25 @@ next
   qed
 next
   fix n 
-  assume a0: "(H ^\<^sub>\<otimes> n) = Hn n" and "n\<ge>1"
+  assume a0: "(H ^\<^sub>\<otimes> n) = Hn n" and a1: "n\<ge>1"
   then have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" 
     using pow_tensor_n by blast
-  then have "H \<Otimes> (H ^\<^sub>\<otimes> n) = H \<Otimes> Hn n" using a0 by auto
-  have  "H \<Otimes> Hn n = Hn (Suc n)"
-  proof
-    fix i j::nat
-    assume a0:"i < dim_row (Hn (Suc n))" and  a1: "j < dim_col (Hn (Suc n))"
-    then have a2: "i < 2^(n+1)" and a3: "j < 2^(n+1)" by auto
-    then  have "dim_row (Hn (Suc n)) = 2^(n+1)" and "dim_row (Hn n) = 2^n" by auto
-    then have f0:"i< dim_row H * dim_row (Hn n)" 
-      using H_without_scalar_prod dim_row_mat(1) power_Suc a2 by smt
-    have "dim_col (Hn (Suc n)) = 2^(n+1)" and a4: "dim_col (Hn n) = 2^n" by auto
-    then have f1:"j< dim_col H * dim_col (Hn n)" 
-      by (smt H_without_scalar_prod a3 dim_col_mat(1) power_Suc)
-    have f2: "dim_col H > 0"  by (simp add: H_without_scalar_prod )
-    have f3: "dim_col (Hn n) > 0" using a4 by simp
-    then have "(H \<Otimes> Hn n) $$ (i,j) = H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n))) 
-                                 * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))"
-      by (smt H_without_scalar_prod dim_col_mat(1) dim_row_mat(1) index_tensor_mat f0 f1 f2 f3) 
-    then have "(i div (dim_row (Hn n))) = "
-  qed
+  also have "... = H \<Otimes> Hn n" using a0 by auto
+  also have "... = Hn (Suc n)" using Hn_tensor_n a1 by auto
+  finally show "(H ^\<^sub>\<otimes> (Suc n)) = Hn (Suc n)" by auto
 qed
+
+
+
+abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
+"\<psi>\<^sub>3  \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if even i
+                                         then (-1)^(f(i div 2)+  (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) )/(sqrt(2)^(n+1)) 
+                                          else  (-1)^(f(i div 2)+ 1+  (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) )/(sqrt(2)^(n+1)) )"
+
+lemma hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
+  shows "((H ^\<^sub>\<otimes> n)\<Otimes>Id 1) = \<psi>\<^sub>3"
+  sorry
+
 
 
 end
