@@ -267,6 +267,61 @@ proof-
     using assms(3) by blast
 qed
 
+primrec qubits :: "nat \<Rightarrow> (nat \<Rightarrow> complex) \<Rightarrow> (nat \<Rightarrow> complex) \<Rightarrow> complex Matrix.mat" where
+  "qubits 0 f g = |Matrix.vec 1 (\<lambda>i. 1)\<rangle>"
+| "qubits (Suc n) f g = qubits n f g \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f(n) else g(n))\<rangle>"
+
+lemma dim_row_qubits[simp]:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "dim_row (qubits n f g) = 2^n"
+proof (induction n)
+  case 0
+  then show ?case
+    using qubits_def ket_vec_def by simp
+next
+  case (Suc n)
+  then show ?case
+    using qubits_def ket_vec_def by simp
+qed
+
+lemma dim_col_qubits[simp]:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "dim_col (qubits n f g) = 1"
+proof (induction n)
+  case 0
+  then show ?case
+    using qubits_def ket_vec_def by simp
+next
+  case (Suc n)
+  then show ?case
+    using qubits_def ket_vec_def by simp
+qed
+
+lemma qubits_representation:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "qubits n f g = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
+proof
+  define v where d0:"v = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
+  show "dim_row (qubits n f g) = dim_row v"
+    using d0 ket_vec_def by simp
+  show "dim_col (qubits n f g) = dim_col v"
+    using d0 ket_vec_def by simp
+  show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> qubits n f g $$ (i, j) = v $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row v" and "j < dim_col v"
+    show "qubits n f g $$ (i, j) = v $$ (i, j)"
+      sorry
+  qed
+qed
+
+lemma "qubits n (\<lambda>j. (if j<m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
+       (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
+                    else (if select_index n j i then 1 else 0))*(sqrt(1/2)^m)) = 
+       |Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
+        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) i then 1 else 0)) else 1) * 
+        (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))\<rangle>"
+  sorry
+
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
