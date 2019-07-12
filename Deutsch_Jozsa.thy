@@ -8,7 +8,7 @@ Authors:
 theory Deutsch_Jozsa
 imports
   MoreTensor
-  Quantum 
+  Binary_Nat
 begin
 
 
@@ -1029,6 +1029,78 @@ qed
 (*I need a representation of (H ^\<^sub>\<otimes> n) as matrix!!! Or at least I need to know what psi3 is!*)
 
 
+(*fun bitwise_product ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" ("\<langle>_,_\<rangle>") where 
+"\<langle>[],[]\<rangle> = 0" 
+|"\<langle>[],ys\<rangle> = 0"  
+|"\<langle>xs,[]\<rangle> = 0"  
+|"\<langle>(x#xs),(y#ys)\<rangle> = x*y + \<langle>xs,ys\<rangle>"*)
+
+fun bitwise_product ::"nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat" where 
+"bitwise_product [] [] 0 = 0" 
+|"bitwise_product (x#xs) (y#ys) (Suc n) = (if x=1 \<and> y=1 then 1+(bitwise_product xs ys n) else (bitwise_product xs ys n))"
+
+
+(*Version with flipping*)
+fun bitwise_product_flip ::"nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool" where 
+"bitwise_product_flip [] [] 0 b = b" 
+|"bitwise_product_flip (x#xs) (y#ys) (Suc n) b = (if x=1 \<and> y=1 then \<not>(bitwise_product_flip xs ys n) 
+                                                      else (bitwise_product_flip xs ys n))"
+
+definition bitwise_inner_product::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("\<langle>_,_\<rangle>\<^sub>_") where 
+"\<langle>i,j\<rangle>\<^sub>n = bitwise_product (bin_rep n i) (bin_rep n j) n"
+
+
+abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
+"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j).(-1)^\<langle>i,j\<rangle>\<^sub>n/(sqrt(2)^n))"
+    
+value "map (\<lambda>x. 0 ) [0..2]"
+
+lemma  
+  assumes "i < 2^n"
+  shows "(bin_rep (Suc n) i) = [0. i <-[0..n]] @(bin_rep n i)"
+
+lemma l1:
+  fixes i j n
+  assumes "i < 2^n \<or> j < 2^n"
+  shows "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) "
+proof-
+  have "even (bitwise_product (bin_rep i (Suc n)) (bin_rep j (Suc n)) (Suc n)) \<longrightarrow>
+        even (bitwise_product (bin_rep i n) (bin_rep j n) n) " sledgehammer
+
+
+
+
+
+lemma   
+  fixes n::nat
+  assumes "n\<ge>1"
+  shows  "H \<Otimes> Hn n = Hn (Suc n)" 
+proof
+  fix i j::nat
+  assume a0: "i < dim_row (Hn (Suc n))" and a1: "j < dim_col (Hn (Suc n))"
+  then have f0: "i\<in>{0..<2^(n+1)} \<and> j\<in>{0..<2^(n+1)}" by auto
+  then have f1: "(H \<Otimes> Hn n) $$ (i,j) = H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n))) 
+                                 * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))"
+    by (simp add: H_without_scalar_prod)
+  show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)"
+  proof (rule disjE) 
+    show "(i < 2^n \<or> j < 2^n) \<or> \<not>(i < 2^n \<or> j < 2^n)" by auto
+  next
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* --------------------------------------------------------------------------------------------*)
 (*Tryout a new thing: Pretty tiresome*)
 
 fun dec_to_bin:: "nat \<Rightarrow> nat list" where
@@ -1076,9 +1148,7 @@ lemma
     and "i < 2^(n+1) \<and> j < 2^(n+1)"
   shows "even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev (j-2^n))) 
 = even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))"
-proof
-  have "(bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev (j-2^n)))"
-qed
+  sorry
 
 lemma 
   assumes "x < 2^n \<or> y < 2^n"
