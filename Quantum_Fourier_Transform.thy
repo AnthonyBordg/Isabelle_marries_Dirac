@@ -297,12 +297,65 @@ next
     using qubits_def ket_vec_def by simp
 qed
 
+lemma select_index_div_2:
+  fixes n i j::"nat"
+  assumes "i < 2^(n+1)" and "j<n"
+  shows "select_index n j (i div 2) = select_index (n+1) j i"
+proof-
+  have "2^(n-Suc j) \<le> i div 2 mod 2^(n-j) \<Longrightarrow> 2^(n-j) \<le> i mod 2^(n+1-j)"
+  proof-
+    define a::nat where a0:"a = i div 2 mod 2^(n-j)"
+    assume "2^(n-Suc j) \<le> a"
+    then have "2*a + i mod 2 \<ge> 2^(n-(Suc j)+1)" by simp
+    then have f0:"2*a + i mod 2 \<ge> 2^(n-j)"
+      by (metis Suc_diff_Suc Suc_eq_plus1 assms(2))
+    have "a < 2^(n-j)" using a0 by simp
+    then have "2*a + i mod 2 < 2*2^(n-j)" by linarith
+    then have "2*a + i mod 2 < 2^(n-j+1)" by simp
+    then have f1:"2*a + i mod 2 < 2^(n+1-j)"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    have "i = 2*(a + 2^(n-j)*(i div 2 div 2^(n-j))) + i mod 2" using a0 by simp
+    then have "i = 2*a + i mod 2 + 2^(n-j+1)*(i div 2 div 2^(n-j))" by simp
+    then have "i = 2*a + i mod 2 + 2^(n+1-j)*(i div 2 div 2^(n-j))"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    then have "i mod 2^(n+1-j) = 2*a + i mod 2"
+      using f1 by (metis mod_if mod_mult_self2)
+    then show "2^(n-j) \<le> i mod 2^(n+1-j)"
+      using f0 by simp
+  qed
+  moreover have "2^(n-j) \<le> i mod 2^(n+1-j) \<Longrightarrow> 2^(n-Suc j) \<le> i div 2 mod 2^(n-j)"
+  proof-
+    define a::nat where a0:"a = i div 2 mod 2^(n-j)"
+    assume a1:"2^(n-j) \<le> i mod 2^(n+1-j)"
+    have f0:"2^(n-j) = 2^(n-Suc j+1)"
+      by (metis Suc_diff_Suc Suc_eq_plus1 assms(2))
+    have "a < 2^(n-j)" using a0 by simp
+    then have "2*a + i mod 2 < 2*2^(n-j)" by linarith
+    then have "2*a + i mod 2 < 2^(n-j+1)" by simp
+    then have f1:"2*a + i mod 2 < 2^(n+1-j)"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    have "i = 2*(a + 2^(n-j)*(i div 2 div 2^(n-j))) + i mod 2" using a0 by simp
+    then have "i = 2*a + i mod 2 + 2^(n-j+1)*(i div 2 div 2^(n-j))" by simp
+    then have "i = 2*a + i mod 2 + 2^(n+1-j)*(i div 2 div 2^(n-j))"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    then have "i mod 2^(n+1-j) = 2*a + i mod 2"
+      using f1 by (metis mod_if mod_mult_self2)
+    then have "2*a + i mod 2 \<ge> 2^(n-j)"
+      using a1 by simp
+    then have "(2*a + i mod 2) div 2 \<ge> (2^(n-j)) div 2"
+      using div_le_mono by blast
+    then show "2^(n-Suc j) \<le> a" by (simp add: f0)
+  qed
+  ultimately show ?thesis
+    using select_index_def assms by auto
+qed
+
 lemma qubits_rep:
   fixes n::"nat" and f g::"nat \<Rightarrow> complex"
-  shows "qubits n f g = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
+  shows "qubits n f g = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then g(j) else f(j))\<rangle>"
 proof (induction n)
   case 0
-  define v where d0:"v = |Matrix.vec (2^0) (\<lambda>i. \<Prod>j<0. if select_index 0 j i then f(j) else g(j))\<rangle>"
+  define v where d0:"v = |Matrix.vec (2^0) (\<lambda>i. \<Prod>j<0. if select_index 0 j i then g(j) else f(j))\<rangle>"
   show "qubits 0 f g = v"
   proof
     show "dim_row (qubits 0 f g) = dim_row v"
@@ -320,8 +373,8 @@ proof (induction n)
   qed
 next
   case c1:(Suc n)
-  define v1 where d1:"v1 = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then f(j) else g(j))\<rangle>"
-  define v2 where d2:"v2 = |Matrix.vec (2^(Suc n)) (\<lambda>i. \<Prod>j<(Suc n). if select_index (Suc n) j i then f(j) else g(j))\<rangle>"
+  define v1 where d1:"v1 = |Matrix.vec (2^n) (\<lambda>i. \<Prod>j<n. if select_index n j i then g(j) else f(j))\<rangle>"
+  define v2 where d2:"v2 = |Matrix.vec (2^(Suc n)) (\<lambda>i. \<Prod>j<(Suc n). if select_index (Suc n) j i then g(j) else f(j))\<rangle>"
   have "qubits n f g = v1" using c1 d1 by simp
   moreover have "v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f(n) else g(n))\<rangle> = v2"
   proof
@@ -329,13 +382,22 @@ next
       using d1 d2 ket_vec_def by simp
     show "dim_col (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) = dim_col v2"
       using d1 d2 ket_vec_def by simp
-    show "\<And>i j. i < dim_row v2 \<Longrightarrow> j < dim_col v2 \<Longrightarrow> (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
+    show "\<And>i j. i < dim_row v2 \<Longrightarrow> j < dim_col v2 \<Longrightarrow> 
+          (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
     proof-
       fix i j assume "i < dim_row v2" and "j < dim_col v2"
-      then have "i < 2^(n+1) \<and> j = 0"
+      then have f0:"i < 2^(n+1) \<and> j = 0"
         using d2 ket_vec_def by simp
-      show "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
-        sorry
+      then have "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = 
+                 (\<Prod>j<n. if select_index n j (i div 2) then g(j) else f(j)) * (if i mod 2 = 0 then f n else g n)"
+        using ket_vec_def d1 by auto
+      then have "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = 
+                 (\<Prod>j<n. if select_index (n+1) j i then g(j) else f(j)) * (if i mod 2 = 0 then f n else g n)"
+        using f0 select_index_div_2 by simp
+      moreover have "(i mod 2 = 0) = (\<not>select_index (n+1) n i)"
+        using f0 select_index_def by auto
+      ultimately show "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
+        using f0 d2 by simp
     qed
   qed
   ultimately show "qubits (Suc n) f g = v2"
