@@ -896,11 +896,8 @@ abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
 "\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (1-2*f(i div 2))/(sqrt(2)^(n+1)) 
                                       else (-1+2*f(i div 2))/(sqrt(2)^(n+1)))"*)
 
-(*Maybe just change it to  (1-f(i div 2))* 1/(sqrt(2)^(n+1)) + (-f(i div 2))* 1/(sqrt(2)^(n+1)) 
-instead of f(i div 2)^n 
-Is also correct saves a lot of work and we don't have to stick to the paper proof in all points
-Edit: changed it there is some kind of integer problem, best solution right now proceed first and 
-come back to it if it turns out to be important*)
+(*Edit: see below I showed that this is equivalent to (-1)^f(i div 2) resp. (-1)^(f(i div 2)+1)
+This could also be used here and the proof below integrated in jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2*)
 
 lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
   fixes i j 
@@ -979,7 +976,7 @@ lemma (in jozsa) \<psi>\<^sub>2_is_state:
   using jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 jozsa_transform_is_gate \<psi>\<^sub>1_is_state dim gate_on_state_is_state by fastforce
 
 
-(*TODO: Should this be integrated into the last proof and \<psi>\<^sub>2 replaced by \<psi>\<^sub>2'*)
+(*TODO: Should this be integrated into the last proof and \<psi>\<^sub>2 replaced by \<psi>\<^sub>2'?*)
 abbreviation (in jozsa) \<psi>\<^sub>2':: "complex Matrix.mat" where
 "\<psi>\<^sub>2' \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((-1)^f(i div 2))/(sqrt(2)^(n+1)) 
                                       else ((-1)^(f(i div 2)+1))/(sqrt(2)^(n+1)))"
@@ -1054,30 +1051,63 @@ fun bitwise_product ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
 (*does not require padding, but bitlists have to be stored in reverse order*)
 fun dec_to_bin_rev:: "nat \<Rightarrow> nat list" where
 "dec_to_bin_rev 0 = []"
-|"dec_to_bin_rev (Suc n) = (if ((Suc n) mod 2 = 0) then 0#(dec_to_bin ((Suc n) div 2)) 
-                       else 1#(dec_to_bin ((Suc n) div 2)) ) "
+|"dec_to_bin_rev (Suc n) = (if ((Suc n) mod 2 = 0) then 0#(dec_to_bin_rev ((Suc n) div 2)) 
+                       else 1#(dec_to_bin_rev ((Suc n) div 2)) ) "
 
 fun bitwise_product' ::"nat list \<Rightarrow> nat list \<Rightarrow> nat" where
 "bitwise_product' [] ys = 0"
 |"bitwise_product' xs [] = 0"
 |"bitwise_product' (x#xs) (y#ys) = x*y + bitwise_product' xs ys"
 
-
-value "(bitwise_product' (dec_to_bin_rev 7) (dec_to_bin_rev 7) )" 
-
+lemma "bitwise_product' xs ys = bitwise_product' ys xs" sorry
 
 
 
-abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
-"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j). if even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j) ) 
-                                         then (1/sqrt(2)^n) else -1/sqrt(2)^n)"
+value "(dec_to_bin_rev 7) "
+
+value "(bitwise_product' (dec_to_bin_rev 4) (dec_to_bin_rev 3) )"
+
+value "(bitwise_product' (dec_to_bin_rev (7 mod 2)) (dec_to_bin_rev (4 mod 2)) )" 
+
+value "(dec_to_bin_rev (7-4) )" 
 
 lemma 
-  assumes "i div (2^(n-1)) = 0" and "j div (2^(n-1)) = 0"
-  shows "(Hn (Suc n))$$(i,j) = (Hn n)$$(i,j) "
+  assumes "i < 2^n \<and> j \<ge> 2^n "
+    and "i < 2^(n+1) \<and> j < 2^(n+1)"
+  shows "even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev (j-2^n))) 
+= even (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))"
+proof
+  have "(bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev (j-2^n)))"
+qed
 
+lemma 
+  assumes "x < 2^n \<or> y < 2^n"
+      and "x < 2^(n+1) \<and> y < 2^(n+1)"
+  shows "(bitwise_product' (dec_to_bin_rev (x mod (2^n))) (dec_to_bin_rev (y mod (2^n))) ) = 0"
+proof (rule disjE)
+  show "x < 2^n \<or> y < 2^n" using assms by auto
+next
+  assume "x < 2^n"
+  then have "x mod 2^n = x" by simp
+  moreover have "y mod 2^n = y \<or> y mod 2^n = y-2^n" sorry
+  ultimately have "(bitwise_product' (dec_to_bin_rev (x mod (2^n))) (dec_to_bin_rev (y mod (2^n))) )
+              = (bitwise_product' (dec_to_bin_rev x) (dec_to_bin_rev (y-2^n)) )" by auto
 
+abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
+"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j).(-1)^ (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))/(sqrt(2)^n))"
 
+lemma l1:
+  assumes "i < 2^n \<or> j < 2^n"
+  shows "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) "
+proof 
+  have "even  (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))"
+
+qed
+
+lemma l2:
+  assumes "i \<ge> 2^n \<or> j \<ge> 2^n"
+  shows "(Hn (Suc n))$$(i,j) = -1/sqrt(2)* ((Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))) "
+  sorry
 
 lemma h1:
   assumes "i<dim_row H" and "j<dim_col H"
@@ -1085,6 +1115,91 @@ lemma h1:
   shows "H$$(i,j) = 1/sqrt(2)" 
   using H_without_scalar_prod assms 
   by (smt One_nat_def case_prod_conv dim_col_mat(1) dim_row_mat(1) index_mat(1) less_2_cases)
+
+
+lemma Hn_tensor_n:
+  fixes n::nat
+  assumes "n\<ge>1"
+  shows  "H \<Otimes> Hn n = Hn (Suc n)" 
+proof
+  fix i j::nat
+  assume a0: "i < dim_row (Hn (Suc n))" and a1: "j < dim_col (Hn (Suc n))"
+  then have f0: "i\<in>{0..<2^(n+1)} \<and> j\<in>{0..<2^(n+1)}" by auto
+  then have f1: "(H \<Otimes> Hn n) $$ (i,j) = H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n))) 
+                                 * (Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))"
+    by (simp add: H_without_scalar_prod)
+  show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)"
+  proof (rule disjE) 
+    show "(i < 2^n \<or> j < 2^n) \<or> \<not>(i < 2^n \<or> j < 2^n)" by auto
+  next
+    assume a2:"(i < 2^n \<or> j < 2^n)"
+    then have "i div (dim_row (Hn n)) =0 \<or> j div (dim_col (Hn n)) =0" by auto
+    moreover have "i div (dim_row (Hn n)) < dim_row H \<and> j div (dim_row (Hn n))  < dim_col H" 
+      by (metis (no_types, lifting) H_without_scalar_prod a0 a1 dim_col_mat(1) dim_row_mat(1) less_mult_imp_div_less power_Suc)
+    ultimately have "(H \<Otimes> Hn n) $$ (i,j) = 1/sqrt(2) * ((Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n))))" 
+      using h1 f1 by auto
+    then show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)" 
+      using l1 a2 by auto
+  next 
+    assume a2:"\<not>(i < 2^n \<or> j < 2^n)"
+    then have  "i div (dim_row (Hn n)) = 1 \<and> j div (dim_col (Hn n)) =1" 
+      using a0 a1 by auto
+    moreover have "i div (dim_row (Hn n)) < dim_row H \<and> j div (dim_row (Hn n))  < dim_col H" 
+      by (metis (no_types, lifting) H_without_scalar_prod a0 a1 dim_col_mat(1) dim_row_mat(1) less_mult_imp_div_less power_Suc)
+    ultimately have "(H \<Otimes> Hn n) $$ (i,j) = -1/sqrt(2) * ((Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n))))" 
+      using f1 by (simp add: H_without_scalar_prod)
+    then show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)" 
+      using l2 a2 by auto
+  qed
+next
+  show "dim_row (H \<Otimes> Hn n) = dim_row (Hn (Suc n))" 
+    by (simp add: H_without_scalar_prod)
+  next
+  show "dim_col (H \<Otimes> Hn n) = dim_col (Hn (Suc n))" 
+    by (simp add: H_without_scalar_prod)
+qed
+
+
+
+  (*proof (induct rule: disj_four_cases) (*Should be possible without these just for H*)
+     show "(i<2^n \<and> j<2^n) \<or> (i<2^n \<and> j\<ge>2^n) \<or> (i\<ge>2^n \<and> j<2^n)  \<or> (i\<ge>2^n \<and> j\<ge>2^n)" by auto
+   next
+     assume a2:"(i<2^n \<and> j<2^n)"
+     then have "i div (dim_row (Hn n)) = 0" by auto 
+     moreover have "j div (dim_row (Hn n)) = 0" using a2 by auto
+     moreover have "i mod (dim_row (Hn n)) = i" using a2 by auto
+     moreover have "j mod (dim_row (Hn n)) = j" using a2 by auto
+     moreover have "(Hn n) $$ (i,j) =(-1)^ (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))/(sqrt(2)^n)"
+       using a2 by simp
+     moreover have "H $$ (0,0) * (Hn n) $$(i,j) = 1/sqrt(2) * (Hn n) $$(i,j) " 
+       by (simp add: H_without_scalar_prod)
+     moreover have "(Hn (Suc n)) $$(i,j) =(-1)^ (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))/(sqrt(2)^(n + 1))"
+       using a2 by simp
+     ultimately have "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)" using f1 H_without_scalar_prod by auto
+   next
+     assume a2: " (i<2^n \<and> j\<ge>2^n)"
+     then have "i div (dim_row (Hn n)) = 0" by auto 
+     moreover have "j div (dim_row (Hn n)) = 1" using a1 a2 by auto
+     moreover have "i mod (dim_row (Hn n)) = i" using a2 by auto
+     moreover have "j mod (dim_row (Hn n)) = j-2^n" using a1 a2 f0 sorry (*useful?*)
+     moreover have "(Hn n) $$ (i,j-2^n) =(-1)^ (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev (j-2^n)))/(sqrt(2)^n)"
+       using a2 f0 a1 by auto
+     moreover have "H $$ (0,1) * (Hn n) $$ (i,j-2^n) = 1/sqrt(2) * (Hn n) $$ (i,j-2^n) " 
+       by (simp add: H_without_scalar_prod)
+     moreover have "(Hn (Suc n)) $$(i,j) =(-1)^ (bitwise_product' (dec_to_bin_rev i) (dec_to_bin_rev j))/(sqrt(2)^(n + 1))"
+       using a2 by auto
+     ultimately have "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)" using f1 H_without_scalar_prod by auto
+*)
+
+
+(*lemma 
+  assumes "i div (2^(n-1)) = 0" and "j div (2^(n-1)) = 0"
+  shows "(Hn (Suc n))$$(i,j) = (Hn n)$$(i,j) "
+*)
+
+
+
+
 
 lemma Hn_tensor_n:
   fixes n::nat
@@ -1209,6 +1324,17 @@ lemma hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
   shows "((H ^\<^sub>\<otimes> n)\<Otimes>Id 1) = \<psi>\<^sub>3"
   sorry
 
+
+
+
+definition (in jozsa) deutsch_jozsa_algo:: "complex Matrix.mat" where 
+"deutsch_jozsa_algo \<equiv> ((H ^\<^sub>\<otimes> n)\<Otimes>Id 1)*(U\<^sub>f * ((H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n)) \<Otimes> (H * |one\<rangle>)) "
+
+
+theorem (in jozsa) deutsch_jozsa_algo_is_correct:
+  shows "\<forall>i\<in>{0..<n}.(prob1 n deutsch_algo i) = 0 \<longrightarrow> is_const"
+    and "\<exists>i\<in>{0..<n}.(prob1 n deutsch_algo i) \<noteq> 0 \<longrightarrow> is_balanced"
+  sorry
 
 
 end
