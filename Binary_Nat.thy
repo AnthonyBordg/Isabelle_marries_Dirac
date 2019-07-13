@@ -54,17 +54,19 @@ lemma mod_mod_power_cancel:
     
 lemma bin_rep_aux_index:
   fixes n m i:: nat
-  assumes "n \<ge> 1" and "m < 2^n" and "i < n"
+  assumes "n \<ge> 1" and "m < 2^n" and "i \<le> n"
   shows "bin_rep_aux n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
   using assms
 proof(induction n arbitrary: m i rule: nat_induct_at_least)
   case base
-  assume "m < 2^1" and "i < 1"
-  then show "bin_rep_aux 1 m ! i = m mod 2^(1-i) div 2^(1-1-i)" by simp
+  assume "m < 2^1" and "i \<le> 1"
+  then show "bin_rep_aux 1 m ! i = m mod 2^(1-i) div 2^(1-1-i)" 
+    using bin_rep_aux.simps diff_is_0_eq' div_by_1 le_0_eq le_Suc_eq mod_less nth_Cons' 
+numeral_1_eq_Suc_0 numeral_One power_0 zero_less_one by auto
 next
   case (Suc n)
-  assume a0:"\<And>m i. m < 2^n \<Longrightarrow> i < n \<Longrightarrow> bin_rep_aux n m ! i = m mod 2 ^ (n-i) div 2^(n-1-i)"
-and a1:"m < 2^(Suc n)" and a2:"i < Suc n"
+  assume a0:"\<And>m i. m < 2^n \<Longrightarrow> i \<le> n \<Longrightarrow> bin_rep_aux n m ! i = m mod 2 ^ (n-i) div 2^(n-1-i)"
+and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n"
   then show "bin_rep_aux (Suc n) m ! i = m mod 2^(Suc n - i) div 2^(Suc n - 1 - i)"
   proof-
     have "bin_rep_aux (Suc n) m = m div 2^n # bin_rep_aux n (m mod 2^n)" by simp
@@ -133,7 +135,19 @@ lemma length_of_bin_rep:
   fixes n m:: nat
   assumes "m < 2^n"
   shows "length (bin_rep n m) = n"
-  using assms length_of_bin_rep_aux bin_rep_def by simp 
+  using assms length_of_bin_rep_aux bin_rep_def by simp
+
+lemma bin_rep_index:
+  fixes n m i:: nat
+  assumes "n \<ge> 1" and "m < 2^n" and "i < n"
+  shows "bin_rep n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
+proof-
+  have "bin_rep n m ! i = bin_rep_aux n m ! i"
+    using bin_rep_def length_of_bin_rep nth_butlast assms(3)
+    by (simp add: nth_butlast assms(2))
+  thus ?thesis
+    using assms bin_rep_aux_index by simp
+qed
 
 lemma bin_rep_eq:
   fixes n m:: nat
