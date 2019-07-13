@@ -1035,15 +1035,16 @@ qed
 |"\<langle>xs,[]\<rangle> = 0"  
 |"\<langle>(x#xs),(y#ys)\<rangle> = x*y + \<langle>xs,ys\<rangle>"*)
 
+(*Possible without n but helps?*)
 fun bitwise_product ::"nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat" where 
 "bitwise_product [] [] 0 = 0" 
 |"bitwise_product (x#xs) (y#ys) (Suc n) = (if x=1 \<and> y=1 then 1+(bitwise_product xs ys n) else (bitwise_product xs ys n))"
 
 
 (*Version with flipping*)
-fun bitwise_product_flip ::"nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool" where 
-"bitwise_product_flip [] [] 0 b = b" 
-|"bitwise_product_flip (x#xs) (y#ys) (Suc n) b = (if x=1 \<and> y=1 then \<not>(bitwise_product_flip xs ys n) 
+fun bitwise_product_flip ::"nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> bool" where 
+"bitwise_product_flip [] [] 0 = True" 
+|"bitwise_product_flip (x#xs) (y#ys) (Suc n)  = (if x=1 \<and> y=1 then \<not>(bitwise_product_flip xs ys n ) 
                                                       else (bitwise_product_flip xs ys n))"
 
 definition bitwise_inner_product::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("\<langle>_,_\<rangle>\<^sub>_") where 
@@ -1053,19 +1054,131 @@ definition bitwise_inner_product::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rig
 abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
 "Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j).(-1)^\<langle>i,j\<rangle>\<^sub>n/(sqrt(2)^n))"
     
-value "map (\<lambda>x. 0 ) [0..2]"
+value "map (\<lambda>x. (0::nat) ) [0..2]"
 
-lemma  
+value "(bin_rep 5 2)"
+value "(bin_rep 4 2)"
+
+lemma  r1:
   assumes "i < 2^n"
-  shows "(bin_rep (Suc n) i) = [0. i <-[0..n]] @(bin_rep n i)"
+  and "n\<ge>1"
+  shows "(bin_rep (Suc n) i) = 0#(bin_rep n i)"
+proof-
+  have "(bin_rep (Suc n) i) =  butlast (bin_rep_aux (Suc n) i)" 
+    using bin_rep_def by blast
+  moreover have "bin_rep_aux (Suc n) i = i div 2^n # bin_rep_aux n (i mod 2^n)" by auto
+  moreover have "i div 2^n = 0" using assms by auto
+  moreover have " butlast (0# bin_rep_aux n i) = 0 # butlast(bin_rep_aux n i)" 
+    using assms bin_rep_aux_def length_of_bin_rep_aux 
+    by (metis Suc_eq_plus1 butlast.simps(2) less_imp_le_nat list.size(3) nat.simps(3))
+  ultimately show "(bin_rep (Suc n) i) = 0#(bin_rep n i)" 
+    using bin_rep_def 
+    by (simp add: assms(1))
+qed
+
+lemma r2: 
+  assumes "length xs = length ys"
+    and "n\<ge> 1"
+  shows "(bitwise_product (x#xs) (0#ys) (Suc n)) = (bitwise_product xs ys n)" 
+    and "(bitwise_product (0#xs) (y#ys) (Suc n)) = (bitwise_product xs ys n)" 
+ by auto
+
+
+
+
+lemma length_of_bin_rep:
+  fixes n m:: nat
+  assumes "m \<le> 2^n"
+  shows "length (bin_rep n m) = n" 
+  using assms
+  using bin_rep_def length_of_bin_rep_aux by auto
+
+lemma r3a:
+  assumes "n\<ge> 1"
+    and "j < 2^(n+1)"
+    and "length (bin_rep (Suc n) j) = length xs +1"
+  shows "(bitwise_product xs (tl (bin_rep (Suc n) j)) n) = (bitwise_product xs  (bin_rep n (j mod 2^n)) n)"
+  using assms bin_rep_def  
+  by (metis One_nat_def add_Suc_right bin_rep_aux.simps(2) butlast.simps(2) lessI less_imp_le_nat linorder_not_less list.sel(3) list.size(3) zero_order(2))
+
+
+
+lemma r3b:
+  assumes "n\<ge> 1"
+    and "i < 2^(n+1)"
+    and "length (bin_rep (Suc n) i) = length ys +1"
+  shows "(bitwise_product (tl (bin_rep (Suc n) i)) ys n) = (bitwise_product (bin_rep n (i mod 2^n)) ys n)"
+  using assms bin_rep_def  
+  by (metis Suc_eq_plus1 bin_rep_aux.simps(2) butlast.simps(2) length_of_bin_rep_aux less_imp_le_nat list.sel(3) list.size(3) mod_less_divisor nat.simps(3) nat_zero_less_power_iff rel_simps(51))
+
+
 
 lemma l1:
   fixes i j n
   assumes "i < 2^n \<or> j < 2^n"
+    and "n\<ge> 1"
+    and "i < 2^(n+1) \<and>  j < 2^(n+1)"
   shows "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) "
-proof-
-  have "even (bitwise_product (bin_rep i (Suc n)) (bin_rep j (Suc n)) (Suc n)) \<longrightarrow>
-        even (bitwise_product (bin_rep i n) (bin_rep j n) n) " sledgehammer
+proof(rule disjE)
+  show "i < 2^n \<or> j < 2^n" using assms by auto
+next
+  assume a0: "i < 2^n" 
+  then have g0: "(bin_rep (Suc n) i) = 0#(bin_rep n i)" using r1 assms by auto
+  moreover have g1:"length (bin_rep (Suc n) i) = length (bin_rep (Suc n) j)"  
+    using assms length_of_bin_rep by auto
+  ultimately have f1: "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) =
+         (bitwise_product (bin_rep n i) (tl (bin_rep (Suc n) j)) n) " 
+    using r2(2)[of "(bin_rep n i)"] assms a0  
+    by (smt Suc_length_conv length_of_bin_rep list.sel(3))
+  moreover have "length (bin_rep (Suc n) j) = length (bin_rep n i) +1 " 
+    using g0 g1 by auto 
+  ultimately have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) = (bitwise_product (bin_rep n i)  (bin_rep n (j mod 2^n)) n)" 
+    using assms a0 r3a
+    by auto
+  then have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) 
+              = (bitwise_product (bin_rep n (i mod 2^n))  (bin_rep n (j mod 2^n)) n)" 
+    using assms a0 by simp 
+  moreover have "(Hn (Suc n))$$(i,j) = (-1)^(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) /(sqrt(2)^(Suc n))"
+    using assms bitwise_inner_product_def by auto
+  moreover have "((Hn n) $$ (i mod 2^n, j mod 2^n)) =(-1)^(bitwise_product (bin_rep n (i mod 2^n)) (bin_rep n (j mod 2^n)) n) /(sqrt(2)^n)"
+    using a0 assms bitwise_inner_product_def by auto
+  ultimately show "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " 
+    using assms a0 bitwise_inner_product_def 
+    by (metis (mono_tags, lifting) divide_divide_eq_left mult.left_neutral of_real_divide of_real_hom.hom_one power_Suc2 times_divide_eq_left)
+next
+assume a0: "j < 2^n" 
+  then have g0: "(bin_rep (Suc n) j) = 0#(bin_rep n j)" using r1 assms by auto
+  moreover have g1:"length (bin_rep (Suc n) j) = length (bin_rep (Suc n) i)"  
+    using assms length_of_bin_rep by auto
+  ultimately have f1: "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) =
+         (bitwise_product (tl(bin_rep (Suc n) i))  (bin_rep n j) n) " 
+    using r2 assms a0  Suc_length_conv length_of_bin_rep list.sel(3) 
+    by (smt less_imp_le_nat)
+  moreover have "length (bin_rep (Suc n) i) = length (bin_rep n j) +1 " 
+    using g0 g1 by auto 
+  ultimately have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) = 
+                  (bitwise_product (bin_rep n (i mod 2^n)) (bin_rep n j) n)" 
+    using assms a0 r3b g0
+    by metis
+  then have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) 
+              = (bitwise_product (bin_rep n (i mod 2^n))  (bin_rep n (j mod 2^n)) n)" 
+    using assms a0 by simp 
+  moreover have "(Hn (Suc n))$$(i,j) = (-1)^(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) /(sqrt(2)^(Suc n))"
+    using assms bitwise_inner_product_def by auto
+  moreover have "((Hn n) $$ (i mod 2^n, j mod 2^n)) =(-1)^(bitwise_product (bin_rep n (i mod 2^n)) (bin_rep n (j mod 2^n)) n) /(sqrt(2)^n)"
+    using a0 assms bitwise_inner_product_def by auto
+  ultimately show "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " 
+    using assms a0 bitwise_inner_product_def 
+    by (metis (mono_tags, lifting) divide_divide_eq_left mult.left_neutral of_real_divide of_real_hom.hom_one power_Suc2 times_divide_eq_left)
+qed
+
+
+
+
+
+
+
+
 
 
 
