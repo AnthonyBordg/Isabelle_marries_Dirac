@@ -1132,7 +1132,8 @@ next
     by (smt Suc_length_conv length_of_bin_rep list.sel(3))
   moreover have "length (bin_rep (Suc n) j) = length (bin_rep n i) +1 " 
     using g0 g1 by auto 
-  ultimately have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) = (bitwise_product (bin_rep n i)  (bin_rep n (j mod 2^n)) n)" 
+  ultimately have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n))
+                     = (bitwise_product (bin_rep n i)  (bin_rep n (j mod 2^n)) n)" 
     using assms a0 r3a
     by auto
   then have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) 
@@ -1172,6 +1173,60 @@ assume a0: "j < 2^n"
     by (metis (mono_tags, lifting) divide_divide_eq_left mult.left_neutral of_real_divide of_real_hom.hom_one power_Suc2 times_divide_eq_left)
 qed
 
+lemma h1:
+  assumes "i<dim_row H" and "j<dim_col H"
+    and "\<not>(i= 1 \<and> j=1)" 
+  shows "H$$(i,j) = 1/sqrt(2)" 
+  using H_without_scalar_prod assms 
+  by (smt One_nat_def case_prod_conv dim_col_mat(1) dim_row_mat(1) index_mat(1) less_2_cases)
+
+lemma h2:
+  assumes "(i= 1 \<and> j=1)" 
+  shows "H$$(i,j) = -1/sqrt(2)" 
+proof-
+  have "i<dim_row H"  using assms 
+    by (simp add: H_without_scalar_prod)
+  moreover have "j<dim_col H" 
+    by (simp add: H_without_scalar_prod assms)
+  ultimately show ?thesis 
+  using H_without_scalar_prod assms 
+  by (smt case_prod_conv dim_row_mat(1) index_mat(1) minus_divide_left zero_neq_one)
+
+qed
+
+
+
+lemma t1: 
+ assumes "i \<ge> 2^n "
+    and "n\<ge> 1"
+    and "i < 2^(n+1)"
+  shows "(bin_rep (Suc n) i) = 1 # (bin_rep n (i mod 2^n))"
+proof-
+  have "bin_rep (Suc n) i = butlast (bin_rep_aux (Suc n) i)" using bin_rep_def assms by auto
+  moreover have "bin_rep_aux (Suc n) i =  1 # bin_rep_aux n (i mod 2^n)" using bin_rep_aux_def assms by auto
+  moreover have "butlast (1 # bin_rep_aux n (i mod 2^n)) = 1# (butlast ( bin_rep_aux n (i mod 2^n)))" 
+    by (metis One_nat_def add.commute assms(3) butlast.simps(2) calculation(2) length_of_bin_rep_aux less_iff_Suc_add less_imp_le_nat less_numeral_extra(4) list.size(3) list.size(4) plus_1_eq_Suc)
+  ultimately show "(bin_rep (Suc n) i) = 1 # (bin_rep n (i mod 2^n))" 
+    by (simp add: bin_rep_def)
+qed
+
+
+lemma l2:
+  fixes i j n
+  assumes "i \<ge> 2^n \<and> j \<ge> 2^n"
+    and "n\<ge> 1"
+    and "i < 2^(n+1) \<and>  j < 2^(n+1)"
+  shows "(Hn (Suc n))$$(i,j) = -1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) "
+proof-
+  have "(Hn (Suc n))$$(i,j) = (-1)^(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) /(sqrt(2)^(Suc n))"
+    using assms bitwise_inner_product_def by auto
+  moreover have "(bitwise_product (bin_rep (Suc n) i) (bin_rep (Suc n) j) (Suc n)) = 
+                  1+(bitwise_product (bin_rep n (i mod 2^n)) (bin_rep n (j mod 2^n)) n)" 
+    using assms(1) assms(2) assms(3) t1 by auto
+  moreover have "((Hn n) $$ (i mod 2^n, j mod 2^n)) =(-1)^(bitwise_product (bin_rep n (i mod 2^n)) (bin_rep n (j mod 2^n)) n) /(sqrt(2)^n)"
+    using  assms bitwise_inner_product_def by auto
+  ultimately show "(Hn (Suc n))$$(i,j) =  -1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " by auto
+qed
 
 
 
@@ -1179,12 +1234,7 @@ qed
 
 
 
-
-
-
-
-
-lemma   
+lemma Hn_tensor_n:   
   fixes n::nat
   assumes "n\<ge>1"
   shows  "H \<Otimes> Hn n = Hn (Suc n)" 
@@ -1199,6 +1249,78 @@ proof
   proof (rule disjE) 
     show "(i < 2^n \<or> j < 2^n) \<or> \<not>(i < 2^n \<or> j < 2^n)" by auto
   next
+    assume a2: "(i < 2^n \<or> j < 2^n)"
+    then have "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " 
+      using assms a0 a1 f0 l1
+      by (metis (mono_tags, lifting) atLeastLessThan_iff )
+    moreover have "H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n)))  = 1/sqrt(2) "
+      using assms a0 a1 f0 H_without_scalar_prod h1 a2 
+      by (metis (no_types, lifting) dim_col_mat(1) dim_row_mat(1) div_less less_numeral_extra(1) less_power_add_imp_div_less neq0_conv power.simps(2) power_add power_one_right)
+    ultimately show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)" using f1 by auto
+  next 
+    assume a2: "\<not>(i < 2^n \<or> j < 2^n)"
+    then have "i \<ge> 2^n \<and> j \<ge> 2^n" by auto
+    then have f2:"(Hn (Suc n))$$(i,j) = -1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " 
+      using assms a0 a1 f0 l2 by auto
+    have "i div (dim_row (Hn n)) =1" and "j div (dim_row (Hn n)) =1"  using a2 assms a0 a1 by auto
+    then have "H $$ (i div (dim_row (Hn n)), j div (dim_col (Hn n)))  = -1/sqrt(2) "
+      using assms a0 a1 f0 H_without_scalar_prod h2[of "i div (dim_row (Hn n))" "j div (dim_col (Hn n))"] a2 
+      by fastforce
+    then show "(H \<Otimes> Hn n) $$ (i,j) = (Hn (Suc n)) $$(i,j)" using f1 f2 by auto
+  qed
+next
+  show "dim_row (H \<Otimes> Hn n) = dim_row (Hn (Suc n))" 
+    by (simp add: H_without_scalar_prod) 
+next
+  show "dim_col (H \<Otimes> Hn n) = dim_col (Hn (Suc n))" 
+    by (simp add: H_without_scalar_prod) 
+qed
+
+
+
+
+lemma H_tensor_n:
+  fixes n
+  assumes asm:"n\<ge>1"
+  shows "(H ^\<^sub>\<otimes> n) = Hn n"
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "(H ^\<^sub>\<otimes> 1) = Hn 1"
+  proof 
+    show g1: "dim_row (H ^\<^sub>\<otimes> 1) = dim_row (Hn 1)" 
+      by (simp add:H_without_scalar_prod) 
+    show g2: "dim_col (H ^\<^sub>\<otimes> 1) = dim_col (Hn 1)"
+      by (simp add:H_without_scalar_prod) 
+    fix i j::nat
+    assume a0:"i<dim_row (Hn 1)" and a1:" j<dim_col (Hn 1)"
+    then have f0: "i\<in>{0,1} \<and> j\<in>{0,1}" by auto
+    then have "Hn 1 $$ (0, 0) = 1/sqrt(2)" 
+      using bin_rep_def bitwise_inner_product_def assms a0 a1 by auto
+    moreover have " Hn 1 $$ (0, 1) = 1/sqrt(2)" 
+      using bin_rep_def bitwise_inner_product_def assms a0 a1 by auto
+    moreover have " Hn 1 $$ (1, 0) = 1/sqrt(2)" 
+      using bin_rep_def bitwise_inner_product_def assms a0 a1 by auto
+    moreover have " Hn 1 $$ (1, 1) = -1/sqrt(2)" 
+      using bin_rep_def bitwise_inner_product_def assms a0 a1 by auto
+    ultimately show "(H ^\<^sub>\<otimes> 1) $$ (i, j) = Hn 1 $$ (i, j)" using a0 a1 assms f0 
+      by (metis (no_types, lifting) g1 g2 empty_iff h1 h2 insert_iff pow_tensor_1_is_id)
+  qed
+next
+  fix n 
+  assume a0: "(H ^\<^sub>\<otimes> n) = Hn n" and a1: "n\<ge>1"
+  then have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" 
+    using pow_tensor_n by blast
+  also have "... = H \<Otimes> Hn n" using a0 by auto
+  also have "... = Hn (Suc n)" using Hn_tensor_n a1 by auto
+  finally show "(H ^\<^sub>\<otimes> (Suc n)) = Hn (Suc n)" by auto
+qed
+
+
+
+
+
+
 
 
 
@@ -1291,13 +1413,6 @@ lemma l2:
   assumes "i \<ge> 2^n \<or> j \<ge> 2^n"
   shows "(Hn (Suc n))$$(i,j) = -1/sqrt(2)* ((Hn n) $$ (i mod (dim_row (Hn n)), j mod (dim_col (Hn n)))) "
   sorry
-
-lemma h1:
-  assumes "i<dim_row H" and "j<dim_col H"
-    and "\<not>(i= 1 \<and> j=1)" 
-  shows "H$$(i,j) = 1/sqrt(2)" 
-  using H_without_scalar_prod assms 
-  by (smt One_nat_def case_prod_conv dim_col_mat(1) dim_row_mat(1) index_mat(1) less_2_cases)
 
 
 lemma Hn_tensor_n:
