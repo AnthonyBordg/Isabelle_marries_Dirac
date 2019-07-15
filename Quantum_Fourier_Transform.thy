@@ -3,6 +3,7 @@ imports
   Quantum
   Tensor
   MoreTensor
+  Binary_Nat
   FFT.FFT
 begin
 
@@ -459,6 +460,43 @@ next
                                 else (if select_index n j i then 1 else 0))*(sqrt(1/2)^(Suc m)))"
     using qft_no_swap_def qubits_def
     sorry
+qed
+
+lemma select_index_eq_bin_rep:
+  fixes n m i:: nat
+  assumes "n \<ge> 1" and "m < 2^n" and "i < n"
+  shows "bin_rep n m ! i = (if (select_index n i m) then 1 else 0)"
+proof-
+  have "m mod 2^(n-i) < 2^(n-i)" by simp
+  moreover have "2*2^(n-1-i) = 2^(n-1-i+1)" using power_add by auto
+  moreover have "(n-1-i+1) = (n-i)" using assms(3) by linarith
+  ultimately have "m mod 2^(n-i) < 2*2^(n-1-i)" by smt
+  then have "m mod 2^(n-i) div 2^(n-1-i) < 2" using less_mult_imp_div_less by blast
+  moreover have "2^(n-1-i) \<le> m mod 2^(n-i) \<Longrightarrow> m mod 2^(n-i) div 2^(n-1-i) \<ge> 1"
+    by (metis (no_types) div_greater_zero_iff div_mult2_eq nat_mult_1 nat_zero_less_power_iff pos2 semiring_normalization_rules(7))
+  ultimately have "2^(n-1-i) \<le> m mod 2^(n-i) \<Longrightarrow> m mod 2^(n-i) div 2^(n-1-i) = 1" by simp
+  then show ?thesis
+    using bin_rep_index select_index_def assms
+    by auto
+qed
+
+lemma swap_of_qubits:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "SWAP n * qubits n f g = qubits n (\<lambda>i. f(n-1-i)) (\<lambda>i. g(n-1-i))"
+proof
+  define v where d0:"v = qubits n (\<lambda>i. f (n-1-i)) (\<lambda>i. g (n-1-i))"
+  show "dim_row (SWAP n * qubits n f g) = dim_row v"
+    using SWAP_def qubits_def d0 by simp
+  show "dim_col (SWAP n * qubits n f g) = dim_col v"
+    using SWAP_def qubits_def d0 by simp
+  show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> (SWAP n * qubits n f g) $$ (i, j) = v $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row v" and "j < dim_col v"
+    then show "(SWAP n * qubits n f g) $$ (i, j) = v $$ (i, j)"
+      using SWAP_def qubits_rep d0 ket_vec_def uniq_select_index
+      apply (auto simp add: times_mat_def scalar_prod_def)
+      sorry
+  qed
 qed
 
 lemma qft_of_unit_vec:
