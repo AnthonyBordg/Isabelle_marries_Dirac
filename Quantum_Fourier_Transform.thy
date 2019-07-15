@@ -404,6 +404,12 @@ next
     using qubits_def by simp
 qed
 
+lemma qubits_tensor_prod:
+  fixes n1 n2 n3::"nat" and f1 f2 f3 g1 g2 g3::"nat \<Rightarrow> complex"
+  assumes "n1 = n2 + n3"
+  shows "qubits n1 f1 g1 = qubits n2 f2 g2 \<Otimes> qubits n3 f3 g3"
+  sorry
+
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
@@ -440,11 +446,18 @@ next
                (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
                             else (if select_index n j i then 1 else 0))*(sqrt(1/2)^m))"
     by simp
-  show "qft_no_swap n (Suc m) v = qubits n 
+  have "t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = qubits n 
+        (\<lambda>j. (if j\<le>m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
+        (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+k) i then 1 else 0)) 
+                     else (if j=m then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l))*(if select_index n (l+m) i then 1 else 0)) 
+                                  else(if select_index n j i then 1 else 0)))*(sqrt(1/2)^m))"
+    sorry
+  moreover have "n-(Suc m)+1 = n-m" using c0 by auto
+  ultimately show "qft_no_swap n (Suc m) v = qubits n 
                    (\<lambda>j. (if j<(Suc m) then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^(Suc m)))
                    (\<lambda>j. (if j<(Suc m) then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
                                 else (if select_index n j i then 1 else 0))*(sqrt(1/2)^(Suc m)))"
-    using qft_no_swap_def
+    using qft_no_swap_def qubits_def
     sorry
 qed
 
