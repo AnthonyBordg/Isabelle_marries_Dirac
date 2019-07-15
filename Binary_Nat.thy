@@ -137,6 +137,12 @@ lemma length_of_bin_rep:
   shows "length (bin_rep n m) = n"
   using assms length_of_bin_rep_aux bin_rep_def by simp
 
+lemma bin_rep_coeff:
+  fixes n m i:: nat
+  assumes "m < 2^n" and "i < n"
+  shows "bin_rep n m ! i = 0 \<or> bin_rep n m ! i = 1"
+  using assms bin_rep_def bin_rep_aux_coeff length_of_bin_rep by(simp add: nth_butlast)
+
 lemma bin_rep_index:
   fixes n m i:: nat
   assumes "n \<ge> 1" and "m < 2^n" and "i < n"
@@ -151,7 +157,38 @@ qed
 
 lemma bin_rep_eq:
   fixes n m:: nat
-  assumes "m < 2^n"
-  shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))" sorry
+  assumes "n \<ge> 1" and "m < 2^n"
+  shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"
+proof-
+  {
+    fix i:: nat
+    assume "i < n"
+    then have "bin_rep n m ! i * 2^(n-1-i) = (m mod 2^(n-i)) div 2^(n-1-i) * 2^(n-1-i)"
+      using assms bin_rep_index by simp
+    moreover have "\<dots> = m mod 2^(n-i) - m mod 2^(n-i) mod 2^(n-1-i)"
+      by (simp add: minus_mod_eq_div_mult)
+    moreover have "\<dots> = m mod 2^(n-i) - m mod 2^(n-1-i)" 
+      using mod_mod_power_cancel[of "n-1-i" "n-i" "m"] by(metis diff_le_self diff_right_commute)
+    ultimately have "bin_rep n m ! i * 2^(n-1-i) = m mod 2^(n-i) - m mod 2^(n-1-i)" by simp
+  }
+  then have "(\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i)) = (\<Sum>i<n. m mod 2^(n-i) - m mod 2^(n-1-i))" by simp
+  moreover have "\<dots> = m mod 2^n - m mod 2^0" sorry
+  (*proof-
+    {
+      fix i::nat
+      assume "i + 1 < n"
+      then have "m mod 2^(n-i) - m mod 2^(n-1-i) + m mod 2^(n-(i+1)) - m mod 2^(n-1-(i+1)) =
+m mod 2^(n-i) - m mod 2^(n-1-(i+1))" sorry
+      proof-
+        have "of_nat (m mod 2^(n-1-i)) = of_nat (m mod 2^(n-(i+1)))" by simp
+        then have "of_nat (m mod 2^(n-(i+1))) - of_nat (m mod 2^(n-1-i)) = 0"
+        moreover have "of_nat (m mod 2^(n-i)) - of_nat (m mod 2^(n-1-i)) + of_nat (m mod 2^(n-(i+1))) - of_nat (m mod 2^(n-1-(i+1)))
+= of_nat (m mod 2^(n-i)) + of_nat (m mod 2^(n-(i+1))) - of_nat (m mod 2^(n-1-i)) - of_nat (m mod 2^(n-1-(i+1)))"
+          using uminus_add_conv_diff[of "of_nat m mod 2^(n-1-i)" "of_nat m mod 2^(n-(i+1))"] 
+diff_conv_add_uminus[of "of_nat m mod 2^(n-i)" "of_nat m mod 2^(n-1-i)"]
+    }
+*)
+  finally show ?thesis using assms(2) by simp
+qed
 
 end
