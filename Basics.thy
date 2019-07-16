@@ -117,8 +117,8 @@ lemma sum_insert [simp]:
   shows "(\<Sum>y\<in>insert x F. P y) = (\<Sum>y\<in>F. P y) + P x"
   using assms insert_def by(simp add: add.commute)
 
-lemma sum_diff [simp]:
-  fixes f::"nat \<Rightarrow> complex"
+lemma sum_of_index_diff [simp]:
+  fixes f:: "nat \<Rightarrow> complex"
   shows "(\<Sum>i\<in>{a..<a+b}. f(i-a)) = (\<Sum>i\<in>{..<b}. f(i))"
 proof (induction b)
   case 0
