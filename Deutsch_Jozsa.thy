@@ -1270,9 +1270,16 @@ qed
 
 
 abbreviation  HnId:: "nat \<Rightarrow> complex Matrix.mat" where
-"HnId n \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j).if (i mod 2 = j mod 2) then (-1)^(\<langle>(i div 2),(j div 2)\<rangle>\<^sub>n)/(sqrt(2)^n) else 0)"
+"HnId n \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j).if (i mod 2 = j mod 2) 
+                                                    then (-1)^((i div 2) \<cdot>\<^sub>n (j div 2))/(sqrt(2)^n) else 0)"
 
-lemma [simp]:
+
+abbreviation  HnId':: "nat \<Rightarrow> complex Matrix.mat" where
+"HnId' n \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j).if (even i \<and> even j) then (-1)^((i div 2) \<cdot>\<^sub>n (j div 2))/(sqrt(2)^n) else
+                                                    (if (odd i \<and> odd j) then (-1)^((i div 2) \<cdot>\<^sub>n (j div 2))/(sqrt(2)^n) else 0))"
+
+
+lemma [simp]: (*Should this really be simp?*)
   shows "(even i \<and> even j)\<longrightarrow>(i mod 2 = j mod 2)"
   by auto
 
@@ -1280,19 +1287,23 @@ lemma [simp]:
   shows "(odd i \<and> odd j)\<longrightarrow>(i mod 2 = j mod 2)"
   by (simp add: mod2_eq_if)
 
+lemma h1: "((even i \<and> even j) \<or> (odd i \<and> odd j)) \<longleftrightarrow> (i mod 2 = j mod 2)" 
+  by (metis dvd_eq_mod_eq_0 odd_iff_mod_2_eq_one)
+
+
 lemma HnId_values[simp]:
   assumes "n \<ge> 1"
       and "i < dim_row (HnId n)" and "j < dim_col (HnId n)"
-    shows "even i \<and> even j \<longrightarrow> (HnId n)$$(i,j) = (-1)^(\<langle>(i div 2),(j div 2)\<rangle>\<^sub>n)/(sqrt(2)^n)"
-      and "odd i \<and> odd j \<longrightarrow> (HnId n)$$(i,j) = (-1)^(\<langle>(i div 2),(j div 2)\<rangle>\<^sub>n)/(sqrt(2)^n)"
-      and "(i mod 2 = j mod 2) \<longrightarrow> (HnId n)$$(i,j) = (-1)^(\<langle>(i div 2),(j div 2)\<rangle>\<^sub>n)/(sqrt(2)^n)"
+    shows "even i \<and> even j \<longrightarrow> (HnId n)$$(i,j) = (-1)^((i div 2) \<cdot>\<^sub>n (j div 2))/(sqrt(2)^n)"
+      and "odd i \<and> odd j \<longrightarrow> (HnId n)$$(i,j) = (-1)^((i div 2) \<cdot>\<^sub>n (j div 2))/(sqrt(2)^n)"
+      and "(i mod 2 = j mod 2) \<longrightarrow> (HnId n)$$(i,j) = (-1)^((i div 2) \<cdot>\<^sub>n (j div 2))/(sqrt(2)^n)"
       and "\<not>(i mod 2 = j mod 2) \<longrightarrow> (HnId n)$$(i,j) = 0"
   using assms by auto
 
 
 
-
-lemma u1:
+(*Tidy up*)
+lemma Hn_tensor_Id1_is_HnId:
   assumes "n\<ge>1"
   shows "(Hn n)\<Otimes>Id 1 = HnId n"
 proof
@@ -1319,8 +1330,8 @@ next
     then have "(Id 1) $$ (i mod (dim_row (Id 1)), j mod (dim_col (Id 1))) = 1" 
       by (simp add: Quantum.Id_def)
     moreover have "(Hn n) $$ (i div (dim_row (Id 1)), j div (dim_col (Id 1))) 
-                    = (-1)^(\<langle>(i div (dim_row (Id 1))),(j div (dim_col (Id 1)))\<rangle>\<^sub>n)/(sqrt(2)^n)" 
-      using Hn_values assms f1 less_mult_imp_div_less by blast
+                    = (-1)^((i div (dim_row (Id 1))) \<cdot>\<^sub>n (j div (dim_col (Id 1))))/(sqrt(2)^n)" 
+      using Hn_values assms f1 less_mult_imp_div_less by auto
     ultimately show "((Hn n)\<Otimes>Id 1) $$ (i,j) = (HnId n) $$ (i,j)" 
       using f3 a2 f0 Id_def 
       by (smt index_mat(1) index_one_mat(2) index_one_mat(3) mult.right_neutral power_one_right prod.simps(2))
@@ -1334,77 +1345,88 @@ next
 qed
 
 
-(*
-
-abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
-"Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j).(-1)^(\<langle>i,j\<rangle>\<^sub>n)/(sqrt(2)^n))"
-
-*)
 
 abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3  \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if even i
-                                         then (\<Sum> k \<in> {0 ..< 2^n}. (-1)^(f(k) + \<langle>k,j\<rangle>\<^sub>n)/(sqrt(2)^n * sqrt(2)^(n+1))) 
-                                          else (\<Sum> k \<in> {0 ..< 2^n}. (-1)^(f(k) + 1 + \<langle>k,j\<rangle>\<^sub>n)/(sqrt(2)^n * sqrt(2)^(n+1))) )"
-
-(*  have "(H ^\<^sub>\<otimes> n)\<Otimes>Id 1 = HnId n" 
-    using u1 H_tensor_n dim by auto*)
+                                         then (\<Sum> k < 2^n. (-1)^(f(k) + ((i div 2) \<cdot>\<^sub>n k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
+                                          else (\<Sum> k < 2^n. (-1)^(f(k) + 1 + ((i div 2) \<cdot>\<^sub>n k))/(sqrt(2)^n * sqrt(2)^(n+1))) )"
 
 
-(*abbreviation (in jozsa) \<psi>\<^sub>2':: "complex Matrix.mat" where
-"\<psi>\<^sub>2' \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then ((-1)^f(i div 2))/(sqrt(2)^(n+1)) 
-                                      else ((-1)^(f(i div 2)+1))/(sqrt(2)^(n+1)))"
-*)
-
-value "{(0::nat)..<(2^((0::nat)+2))}" 
-value "{(0::nat) ..<(2^(0+1))} \<union> {(2^(0+1))..<(2^(0+2))}"
-
- 
-lemma
-  assumes "\<forall>k.(odd k \<and> k<2^(n+1)) \<longrightarrow> (A $$ (i,k)) * (B $$ (k,j)) = 0" 
+(*Try with generalizing the IH*)
+lemma t1:
+  fixes A::"nat \<Rightarrow> nat"
+  assumes "\<forall>A i. i<(2^(n+1)) \<and> odd i \<longrightarrow> A i = 0"
     and "n\<ge>1"
-    and "even i" 
-  shows  "(\<Sum>k\<in> {0..<(2^(n+1))}. (A $$ (i,k)) * (B $$ (k,j))) 
-                    = (\<Sum>k\<in> {0..<(2^n)}. (A $$ (i,2*k)) * (B $$ (2*k,j)))" 
-proof (induction n rule: ind_from_1)
-  show "n\<ge>1" using assms by auto 
+  shows "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^n)}. A (2*k)) " 
+  using assms 
+(*proof (induction n arbitrary: A)
+  show "\<And>A. \<forall>i. i < 2 ^ (0 + 1) \<and> odd i \<longrightarrow> A i = 0 \<Longrightarrow> 1 \<le> 0 \<Longrightarrow> sum A {0..<2 ^ (0 + 1)} = (\<Sum>k = 0..<2 ^ 0. A (2 * k))" sorry
 next
-  have f0: "(\<Sum>k\<in> {0..<(2^(1+1))}. (A $$ (i,k)) * (B $$ (k,j))) 
-                    = (\<Sum>k\<in> {0,1,2,3}. (A $$ (i,k)) * (B $$ (k,j))) " by auto
-  then have f1: "(odd k \<and> k<2^(1+1)) \<longrightarrow> (A $$ (i,k)) * (B $$ (k,j)) = 0" for k
-    using assms 
-    by (smt Suc_leI le_trans linorder_not_less nat_less_le odd_iff_mod_2_eq_one one_less_numeral_iff power_increasing_iff semiring_norm(175) semiring_norm(76) trans_less_add1)
-  then have "(\<Sum>k\<in> {0,1,2,3}. (A $$ (i,k)) * (B $$ (k,j))) = (\<Sum>k\<in> {0,2}. (A $$ (i,k)) * (B $$ (k,j))) "
-    by auto
-  then show "(\<Sum>k\<in> {0..<(2^(1+1))}. (A $$ (i,k)) * (B $$ (k,j))) 
-                    = (\<Sum>k\<in> {0..<(2^1)}. (A $$ (i,2*k)) * (B $$ (2*k,j)))" by auto
-next 
-  assume a0: "(\<Sum>k\<in> {0..<(2^(n+1))}. (A $$ (i,k)) * (B $$ (k,j))) 
-                    = (\<Sum>k\<in> {0..<(2^n)}. (A $$ (i,2*k)) * (B $$ (2*k,j)))" 
-  have "{0..<(2^(n+2))} = {(0::nat)..<(2^(n+1))} \<union> {(2^(n+1))..<(2^(n+2))}" 
-    by (simp add: atLeast0LessThan ivl_disj_un_one(2))
-  then have "(\<Sum>k\<in> {0..<(2^(n+2))}. (A $$ (i,k)) * (B $$ (k,j))) 
-                    = (\<Sum>k\<in> {0..<(2^(n+1))}. (A $$ (i,k)) * (B $$ (k,j))) + (\<Sum>k\<in> {(2^(n+1))..<(2^(n+2))}. (A $$ (i,k)) * (B $$ (k,j)))" 
+  fix n::nat
+  fix A::"nat \<Rightarrow> nat"
+    assume IH: "(\<And>A. \<forall>i. i < 2 ^ (n + 1) \<and> odd i \<longrightarrow> A i = 0 \<Longrightarrow>
+                 1 \<le> n \<Longrightarrow> sum A {0..<2 ^ (n + 1)} = (\<Sum>k = 0..<2 ^ n. A (2 * k)))"
+    and "\<forall>i. i < 2 ^ (Suc n + 1) \<and> odd i \<longrightarrow> A i = 0" 
+    and "1 \<le> Suc n "
+    have "{(0::nat)..<(2^(n+2))} = {(0::nat)..<(2^(n+1))} \<union> {(2^(n+1))..<(2^(n+2))}" by auto
+    then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) 
+            = (\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) + (\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k)" 
+      by (simp add: sum.union_disjoint)
+    then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^n)}. A (2*k)) + (\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k)" 
+      using IH by auto
+  have "(\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k) = (\<Sum>k \<in>{0..<2^(n+1)}. A (k+2^(n+1)))" sorry
+    show  "sum A {0..<2 ^ (Suc n + 1)} = (\<Sum>k = 0..<2 ^ Suc n. A (2 * k)) "  sorry
+  qed*)
+
+
+proof (induction n rule: ind_from_1 )
+  show "n\<ge>1" using assms by auto
+next
+  show "(\<Sum>k \<in>{(0::nat)..<(2^(1+1))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^1)}. A (2*k)) "
+    sorry
+next
+
+
+  have "{(0::nat)..<(2^(n+2))} = {(0::nat)..<(2^(n+1))} \<union> {(2^(n+1))..<(2^(n+2))}" by auto
+  then have "\<forall>A.(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) 
+            = (\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) + (\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k)" 
     by (simp add: sum.union_disjoint)
-  then have "(\<Sum>k\<in> {0..<(2^(n+2))}. (A $$ (i,k)) * (B $$ (k,j))) 
-                    = (\<Sum>k\<in> {0..<(2^n)}. (A $$ (i,2*k)) * (B $$ (2*k,j))) + (\<Sum>k\<in> {(2^(n+1))..<(2^(n+2))}. (A $$ (i,k)) * (B $$ (k,j)))"
-    using a0 by auto
-  have "(\<Sum>k\<in> {(2^(n+1))..<(2^(n+2))}. (A $$ (i,k)) * (B $$ (k,j))) = (\<Sum>k\<in> {0..<(2^(n+1))}. (A $$ (i,k-(2^(n+1)))) * (B $$ (k-(2^(n+1)),j)))"
-    sorry (*index shift*)
-  then have " (\<Sum>k\<in> {0..<(2^(n+1))}. (A $$ (i,k-(2^(n+1)))) * (B $$ (k-(2^(n+1)),j))) 
-              = (\<Sum>k\<in> {0..<(2^n)}. (A $$ (i,2*(k-(2^(n+1))))) * (B $$ (2*k-(2^(n+1)),j)))" using a0 sorry
-  (*Unclear was supposed to be IH but is not*)
-  have "(\<Sum>k\<in> {0..<(2^n)}. (A $$ (i,2*(k-(2^(n+1))))) * (B $$ (2*k-(2^(n+1)),j))) = 
-          (\<Sum>k\<in> {(2^n)..<(2^(n+1))}. (A $$ (i,2*k))) * (B $$ (2*k,j))" sorry (*index shift*)
-  show " (\<Sum>k = 0..<2 ^ (Suc n + 1). A $$ (i, k) * B $$ (k, j)) = (\<Sum>k = 0..<2 ^ Suc n. A $$ (i, 2 * k) * B $$ (2 * k, j))" sorry
+  then have "\<forall>A.(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^n)}. A (2*k)) + (\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k)" 
+    using IH by auto
+  have "(\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k) = (\<Sum>k \<in>{0..<2^(n+1)}. A (k+2^(n+1)))" sorry
+  have "" 
 qed
 
 
-
-
-
-
-
-
+lemma t1:
+  assumes "\<forall>i. i<(2^(n+1)) \<and> odd i \<longrightarrow> A i = 0"
+    and "n\<ge>1"
+  shows "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^n)}. A (2*k)) " 
+  using assms 
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  assume a0: "\<forall>i. i<(2^(1+1)) \<and> odd i \<longrightarrow> A i = 0"
+  have "(\<Sum>k \<in>{(0::nat)..<4}. A k) = A 0 + A 1 + A 2 + A 3" 
+    by (simp add: add.commute add.left_commute)
+  moreover have "A 1 = 0" using a0 by auto 
+  moreover have "A 3 = 0" using a0 by auto 
+  moreover have "(\<Sum>k\<in>{0..< (2^1)}. A (2*k)) = A 0 + A 2" 
+    using add.commute add.left_commute by simp
+  ultimately show "(\<Sum>k \<in>{0..<(2^(1+1))}. A k) = (\<Sum>k\<in>{0..< (2^1)}. A (2*k))" by simp
+next
+  assume a0: "\<forall>i. i<(2^(n+1)) \<and> odd i \<longrightarrow> A i = 0"
+     and a1: "n\<ge>1"
+     and IH: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^n)}. A (2*k)) "
+  have "{(0::nat)..<(2^(n+2))} = {(0::nat)..<(2^(n+1))} \<union> {(2^(n+1))..<(2^(n+2))}" by auto
+  then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) 
+            = (\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) + (\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k)" 
+    by (simp add: sum.union_disjoint)
+  then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) = (\<Sum>k\<in>{(0::nat)..< (2^n)}. A (2*k)) + (\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k)" 
+    using IH by auto
+  have "(\<Sum>k \<in>{(2^(n+1))..<(2^(n+2))}. A k) = (\<Sum>k \<in>{0..<2^(n+1)}. A (k+2^(n+1)))" sorry
+  have "" 
+qed
 
 
 lemma (in jozsa) hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
@@ -1417,36 +1439,47 @@ proof
   then have "((HnId n)* \<psi>\<^sub>2') $$ (i,j) = (\<Sum>k< (2^(n+1)). ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)))" 
     using a1 f0 by auto
   then have f1: "((HnId n)* \<psi>\<^sub>2') $$ (i,j) 
-                = (\<Sum>k\<in> {0..<(2^(n+1))}. ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)))" 
+                = (\<Sum>k<(2^(n+1)). ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)))" 
     by (simp add: atLeast0LessThan)
   show "((HnId n)* \<psi>\<^sub>2') $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)"
   proof(rule disjE)
     show "even i \<or> odd i" by auto
   next
     assume a2: "even i"
-    then have f2: "\<psi>\<^sub>3 $$ (i,j) =  (\<Sum> k \<in> {0 ..< 2^n}. (-1)^(f(k) + \<langle>k,j\<rangle>\<^sub>n)/(sqrt(2)^n * sqrt(2)^(n+1)))" 
+    then have f2: "\<psi>\<^sub>3 $$ (i,j) = (\<Sum> k < 2^n. (-1)^(f(k) + ((i div 2) \<cdot>\<^sub>n k))/(sqrt(2)^n * sqrt(2)^(n+1)))" 
       using a0 a1 by auto
-    then have g1:"(\<not>(i mod 2 = k mod 2) \<and> k<dim_col (HnId n)) \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)) = 0" 
+    then have f3:"(\<not>(i mod 2 = k mod 2) \<and> k<dim_col (HnId n)) \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)) = 0" 
       for k using f1 a2 a0 a1 f0 by auto
-    have r1: "(i mod 2 = k mod 2) \<longrightarrow> even k" for k using a2 by auto
-    moreover have "(even k  \<and> k<dim_row \<psi>\<^sub>2') 
+    then have f4:"k<(2^(n+1)) \<and> odd k \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)) = 0" 
+      for k using a2 h1
+      by (metis (no_types, lifting) dim_col_mat(1))
+    then have f5: "(\<Sum>k< (2^(n+1)). ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j))) 
+                  = (\<Sum>k< (2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2' $$ (2*k,j)))" 
+      using t1 by auto
+    have "(even k  \<and> k<dim_row \<psi>\<^sub>2') 
             \<longrightarrow>  (\<psi>\<^sub>2' $$ (k,j)) =  ((-1)^f(k div 2))/(sqrt(2)^(n+1)) " 
       for k using f1 a2 a0 a1 f0  
       by (smt dim_row_mat(1) index_mat(1) less_numeral_extra(1) prod.simps(2))
-    moreover have "((i mod 2 = k mod 2) \<and> k<dim_col (HnId n) \<and> k<dim_row \<psi>\<^sub>2') 
-            \<longrightarrow> ((HnId n) $$ (i,k))  = (-1)^(\<langle>(i div 2),(k div 2)\<rangle>\<^sub>n)/(sqrt(2)^n) " for k
+    then have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2' $$ (2*k,j))) 
+                  =  (\<Sum> k < 2^n. ((HnId n) $$ (i,2*k)) *((-1)^f((2*k) div 2))/(sqrt(2)^(n+1)))" 
+      by auto
+    moreover have "(even k \<and> k<dim_col (HnId n))
+            \<longrightarrow> ((HnId n) $$ (i,k))  = (-1)^((i div 2) \<cdot>\<^sub>n (k div 2))/(sqrt(2)^n) " for k
       using f1 a2 a0 a1 f0 by auto
-    ultimately have g2:"((i mod 2 = k mod 2) \<and> k<dim_col (HnId n) \<and> k<dim_row \<psi>\<^sub>2') 
-            \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j)) = (-1)^(\<langle>(i div 2),(k div 2)\<rangle>\<^sub>n)/(sqrt(2)^n) * ((-1)^f(k div 2))/(sqrt(2)^(n+1)) " 
-      for k using f1 a2 a0 a1 f0 
-      by (smt of_real_mult times_divide_eq_right)
-     have "(\<Sum>k\<in> {0..<(2^(n+1))}. ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2' $$ (k,j))) 
-                    = (\<Sum>k\<in> {0..<(2^n)}. ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2' $$ (2*k,j)))" 
-       using g1 a0 a1 a2 f0 f1  sorry
-     then have  "(\<Sum>k\<in> {0..<(2^n)}. ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2' $$ (2*k,j))) =  (\<Sum> k \<in> {0 ..< 2^n}. (-1)^(f(k) + \<langle>k,j\<rangle>\<^sub>n)/(sqrt(2)^n * sqrt(2)^(n+1)))" 
-       using f1 g2 r1 a2 sledgehammer
-
-  next
+    ultimately have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2' $$ (2*k,j))) 
+                  =  (\<Sum> k < 2^n.(-1)^((i div 2) \<cdot>\<^sub>n ((2*k) div 2))/(sqrt(2)^n) *((-1)^f((2*k) div 2))/(sqrt(2)^(n+1)))" 
+      by auto
+    then have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2' $$ (2*k,j))) 
+                  =  (\<Sum> k < 2^n.(-1)^((i div 2) \<cdot>\<^sub>n k)/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)))" 
+      by auto
+    then have "((HnId n)* \<psi>\<^sub>2') $$ (i,j) = (\<Sum> k < 2^n.(-1)^((i div 2) \<cdot>\<^sub>n k)/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)))" 
+      using f1 f2 f5 by auto
+    moreover have "(-1)^((i div 2) \<cdot>\<^sub>n k)/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)) = 
+                  (-1)^(f(k)+((i div 2) \<cdot>\<^sub>n k))/((sqrt(2)^n)*(sqrt(2)^(n+1)))" for k sorry
+    ultimately have "((HnId n)* \<psi>\<^sub>2') $$ (i,j) = (\<Sum> k < 2^n.(-1)^(f(k)+((i div 2) \<cdot>\<^sub>n k))/((sqrt(2)^n)*(sqrt(2)^(n+1))))" 
+      sorry
+    then show "((HnId n)* \<psi>\<^sub>2') $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)" using f2 by auto
+    next
     assume a2: "odd i"
     show "((HnId n)* \<psi>\<^sub>2') $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)" sorry
   qed
