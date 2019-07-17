@@ -4,14 +4,15 @@ theory Binary_Nat
 imports
   HOL.Nat
   HOL.List
-begin
+  Basics
+begin 
 
-primrec bin_rep_aux:: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
+primrec bin_rep_aux:: "nat \<Rightarrow> int \<Rightarrow> int list" where
   "bin_rep_aux 0 m = [m]"
 | "bin_rep_aux (Suc n) m = m div 2^n # bin_rep_aux n (m mod 2^n)"
 
 lemma length_of_bin_rep_aux:
-  fixes n m:: nat
+  fixes n:: nat and m:: int
   assumes "m < 2^n"
   shows "length (bin_rep_aux n m) = n+1" 
   using assms
@@ -26,47 +27,49 @@ next
 qed
 
 lemma bin_rep_aux_neq_nil:
-  fixes n m:: nat
+  fixes n:: nat and m:: int
   shows "bin_rep_aux n m \<noteq> []" 
   using bin_rep_aux.simps by (metis list.distinct(1) old.nat.exhaust)
 
 lemma last_of_bin_rep_aux:
-  fixes n m:: nat
-  assumes "m < 2^n"
+  fixes n:: nat and m:: int 
+  assumes "m < 2^n" and "m \<ge> 0"
   shows "last (bin_rep_aux n m) = 0"
   using assms
 proof(induction n arbitrary: m)
   case 0
-  assume "m < 2^0"
+  assume "m < 2^0" and "m \<ge> 0"
   then show "last (bin_rep_aux 0 m) = 0" by simp
 next
   case (Suc n)
-  assume a0:"\<And>m. m < 2^n \<Longrightarrow> last (bin_rep_aux n m) = 0" and "m < 2^(Suc n)"
+  assume a0:"\<And>m. m < 2^n \<Longrightarrow> m \<ge> 0 \<Longrightarrow> last (bin_rep_aux n m) = 0" and "m < 2^(Suc n)"
+and "m \<ge> 0"
   then show "last (bin_rep_aux (Suc n) m) = 0" 
     using bin_rep_aux_neq_nil by simp
 qed
 
 lemma mod_mod_power_cancel:
-  fixes m n p:: nat
+  fixes m n:: nat and p:: int
   assumes "m \<le> n"
   shows "p mod 2^n mod 2^m = p mod 2^m" 
   using assms by (simp add: dvd_power_le mod_mod_cancel)
     
 lemma bin_rep_aux_index:
-  fixes n m i:: nat
-  assumes "n \<ge> 1" and "m < 2^n" and "i \<le> n"
+  fixes n i:: nat and m:: int
+  assumes "n \<ge> 1" and "m < 2^n" and "m \<ge> 0" and "i \<le> n"
   shows "bin_rep_aux n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
   using assms
 proof(induction n arbitrary: m i rule: nat_induct_at_least)
   case base
   assume "m < 2^1" and "i \<le> 1"
   then show "bin_rep_aux 1 m ! i = m mod 2^(1-i) div 2^(1-1-i)" 
-    using bin_rep_aux.simps diff_is_0_eq' div_by_1 le_0_eq le_Suc_eq mod_less nth_Cons' 
-numeral_1_eq_Suc_0 numeral_One power_0 zero_less_one by auto
+    using bin_rep_aux.simps
+    by (metis One_nat_def base.prems(2) diff_is_0_eq' diff_zero div_by_1 le_Suc_eq le_numeral_extra(3) 
+nth_Cons' power_0 unique_euclidean_semiring_numeral_class.mod_less)
 next
   case (Suc n)
-  assume a0:"\<And>m i. m < 2^n \<Longrightarrow> i \<le> n \<Longrightarrow> bin_rep_aux n m ! i = m mod 2 ^ (n-i) div 2^(n-1-i)"
-and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n"
+  assume a0:"\<And>m i. m < 2^n \<Longrightarrow> m \<ge> 0 \<Longrightarrow> i \<le> n \<Longrightarrow> bin_rep_aux n m ! i = m mod 2 ^ (n-i) div 2^(n-1-i)"
+and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n" and a3:"m \<ge> 0"
   then show "bin_rep_aux (Suc n) m ! i = m mod 2^(Suc n - i) div 2^(Suc n - 1 - i)"
   proof-
     have "bin_rep_aux (Suc n) m = m div 2^n # bin_rep_aux n (m mod 2^n)" by simp
@@ -75,7 +78,7 @@ and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n"
     then have f1:"bin_rep_aux (Suc n) m ! i = m mod 2^(Suc n - i) div 2^(Suc n - 1 - i)" if "i = 0"
     proof-
       have "m mod 2^(Suc n - i) = m" 
-        using that a1 by simp
+        using that a1 by (simp add: Suc.prems(2))
       then have "m mod 2^(Suc n - i) div 2^(Suc n - 1 - i) = m div 2^n" 
         using that by simp
       thus ?thesis by (simp add: that)
@@ -83,14 +86,14 @@ and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n"
     then have "bin_rep_aux (Suc n) m ! i = bin_rep_aux n (m mod 2^n) ! (i-1)" if "i \<ge> 1"
       using that f0 by simp
     then have f2:"bin_rep_aux (Suc n) m ! i = ((m mod 2^n) mod 2^(n - (i - 1))) div 2^(n - 1 - (i - 1))" if "i \<ge> 1"
-      using that a0 Suc.prems(2) by simp
+      using that a0 a1 a2 a3 Suc.prems(2) by simp
     then have f3:"bin_rep_aux (Suc n) m ! i = ((m mod 2^n) mod 2^(Suc n - i)) div 2^(Suc n - 1 - i)" if "i \<ge> 1"
       using that by simp
     then have "bin_rep_aux (Suc n) m ! i = m mod 2^(Suc n - i) div 2^(Suc n - 1 - i)" if "i \<ge> 1" 
     proof-
       have "Suc n - i \<le> n" using that by simp
       then have "m mod 2^n mod 2^(Suc n - i) = m mod 2^(Suc n - i)" 
-        using that mod_mod_power_cancel[of "Suc n - i" "n" "m"] by simp
+        using mod_mod_power_cancel[of "Suc n - i" "n" "m"] by simp
       thus ?thesis 
         using that f3 by simp
     qed
@@ -100,18 +103,18 @@ and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n"
 qed
 
 lemma bin_rep_aux_coeff:
-  fixes n m i:: nat
-  assumes "m < 2^n" and "i \<le> n"
-  shows "bin_rep_aux n m ! i = 0 \<or> bin_rep_aux n m ! i = 1" 
+  fixes n i:: nat and m:: int
+  assumes "m < 2^n" and "i \<le> n" and "m \<ge> 0"
+  shows "bin_rep_aux n m ! i = 0 \<or> bin_rep_aux n m ! i = 1"
   using assms
 proof(induction n arbitrary: m i)
   case 0
-  assume "m < 2^0" and "i \<le> 0"
+  assume "m < 2^0" and "i \<le> 0" and "m \<ge> 0"
   then show "bin_rep_aux 0 m ! i = 0 \<or> bin_rep_aux 0 m ! i = 1" by simp
 next
   case (Suc n)
-  assume a0:"\<And>m i. m < 2 ^ n \<Longrightarrow> i \<le> n \<Longrightarrow> bin_rep_aux n m ! i = 0 \<or> bin_rep_aux n m ! i = 1" 
-and a1:"m < 2^Suc n" and a2:"i \<le> Suc n"
+  assume a0:"\<And>m i. m < 2 ^ n \<Longrightarrow> i \<le> n \<Longrightarrow> m \<ge> 0 \<Longrightarrow> bin_rep_aux n m ! i = 0 \<or> bin_rep_aux n m ! i = 1" 
+and a1:"m < 2^Suc n" and a2:"i \<le> Suc n" and a3:"m \<ge> 0"
   then show "bin_rep_aux (Suc n) m ! i = 0 \<or> bin_rep_aux (Suc n) m ! i = 1"
   proof-
     have "bin_rep_aux (Suc n) m ! i = (m div 2^n # bin_rep_aux n (m mod 2^n)) ! i" by simp
@@ -120,32 +123,32 @@ and a1:"m < 2^Suc n" and a2:"i \<le> Suc n"
     moreover have "m mod 2^n < 2^n" by simp
     ultimately have "bin_rep_aux (Suc n) m ! i = 0 \<or> bin_rep_aux (Suc n) m ! i = 1" if "i\<ge>1"
       using that a0[of "m mod 2^n" "i-1"] a2 by simp
-    moreover have "m div 2^n \<le> 1" 
-      using a1 less_mult_imp_div_less by fastforce
-    ultimately show ?thesis
-      by (metis One_nat_def Suc_pred bin_rep_aux.simps(2) less_Suc_eq_le linorder_not_less neq0_conv 
-nth_Cons_0)
+    moreover have "m div 2^n = 0 \<or> m div 2^n = 1" 
+      using a1 a3 less_mult_imp_div_less
+      by (smt Euclidean_Division.pos_mod_sign cancel_div_mod_rules(2) mult_minus_right 
+nonzero_mult_div_cancel_right pos_imp_zdiv_nonneg_iff power.simps(2) zdiv_mono1)
+    ultimately show ?thesis by (simp add: nth_Cons')
   qed
 qed
 
-definition bin_rep:: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
+definition bin_rep:: "nat \<Rightarrow> int \<Rightarrow> int list" where
 "bin_rep n m = butlast (bin_rep_aux n m)"
 
 lemma length_of_bin_rep:
-  fixes n m:: nat
+  fixes n:: nat and m:: int
   assumes "m < 2^n"
   shows "length (bin_rep n m) = n"
   using assms length_of_bin_rep_aux bin_rep_def by simp
 
 lemma bin_rep_coeff:
-  fixes n m i:: nat
-  assumes "m < 2^n" and "i < n"
-  shows "bin_rep n m ! i = 0 \<or> bin_rep n m ! i = 1"
+  fixes n i:: nat and m:: int
+  assumes "m < 2^n" and "i < n" and "m \<ge> 0"
+  shows "bin_rep n m ! i = 0 \<or> bin_rep n m ! i = 1" 
   using assms bin_rep_def bin_rep_aux_coeff length_of_bin_rep by(simp add: nth_butlast)
 
 lemma bin_rep_index:
-  fixes n m i:: nat
-  assumes "n \<ge> 1" and "m < 2^n" and "i < n"
+  fixes n i:: nat and m:: int
+  assumes "n \<ge> 1" and "m < 2^n" and "i < n" and "m \<ge> 0"
   shows "bin_rep n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
 proof-
   have "bin_rep n m ! i = bin_rep_aux n m ! i"
@@ -156,8 +159,8 @@ proof-
 qed
 
 lemma bin_rep_eq:
-  fixes n m:: nat
-  assumes "n \<ge> 1" and "m < 2^n"
+  fixes n:: nat and m:: int 
+  assumes "n \<ge> 1" and "m \<ge> 0" and "m < 2^n" and "m \<ge> 0"
   shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"
 proof-
   {
@@ -168,27 +171,29 @@ proof-
     moreover have "\<dots> = m mod 2^(n-i) - m mod 2^(n-i) mod 2^(n-1-i)"
       by (simp add: minus_mod_eq_div_mult)
     moreover have "\<dots> = m mod 2^(n-i) - m mod 2^(n-1-i)" 
-      using mod_mod_power_cancel[of "n-1-i" "n-i" "m"] by(metis diff_le_self diff_right_commute)
+      using mod_mod_power_cancel[of "n-1-i" "n-i"] by (simp add: dvd_power_le mod_mod_cancel)
     ultimately have "bin_rep n m ! i * 2^(n-1-i) = m mod 2^(n-i) - m mod 2^(n-1-i)" by simp
   }
-  then have "(\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i)) = (\<Sum>i<n. m mod 2^(n-i) - m mod 2^(n-1-i))" by simp
-  moreover have "\<dots> = m mod 2^n - m mod 2^0" sorry
-  (*proof-
-    {
-      fix i::nat
-      assume "i + 1 < n"
-      then have "m mod 2^(n-i) - m mod 2^(n-1-i) + m mod 2^(n-(i+1)) - m mod 2^(n-1-(i+1)) =
-m mod 2^(n-i) - m mod 2^(n-1-(i+1))" sorry
-      proof-
-        have "of_nat (m mod 2^(n-1-i)) = of_nat (m mod 2^(n-(i+1)))" by simp
-        then have "of_nat (m mod 2^(n-(i+1))) - of_nat (m mod 2^(n-1-i)) = 0"
-        moreover have "of_nat (m mod 2^(n-i)) - of_nat (m mod 2^(n-1-i)) + of_nat (m mod 2^(n-(i+1))) - of_nat (m mod 2^(n-1-(i+1)))
-= of_nat (m mod 2^(n-i)) + of_nat (m mod 2^(n-(i+1))) - of_nat (m mod 2^(n-1-i)) - of_nat (m mod 2^(n-1-(i+1)))"
-          using uminus_add_conv_diff[of "of_nat m mod 2^(n-1-i)" "of_nat m mod 2^(n-(i+1))"] 
-diff_conv_add_uminus[of "of_nat m mod 2^(n-i)" "of_nat m mod 2^(n-1-i)"]
-    }
-*)
-  finally show ?thesis using assms(2) by simp
+  then have f0:"(\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i)) = (\<Sum>i<n. m mod 2^(n-i) - m mod 2^(n-1-i))" by simp
+  thus ?thesis
+  proof-
+    have "(\<Sum>i<n. m mod 2^(n - i) - m mod 2^(n - 1 - i)) = 
+(\<Sum>i<n. m mod 2^(n - i)) - (\<Sum>i<n. m mod 2^(n - 1 - i))"
+      using sum_subtractf[of "\<lambda>i. m mod 2^(n-i)" "\<lambda>i. m mod 2^(n-1-i)" "{..<n}"] by simp
+    moreover have "\<dots> = m mod 2^n + (\<Sum>i\<in>{1..<n}. m mod 2^(n-i)) - (\<Sum>i<n-1. m mod 2^(n-1-i))
+- m mod 2^0" 
+      using sum.atLeast_Suc_atMost sum.lessThan_Suc assms(1)
+      by (smt One_nat_def Suc_le_eq diff_self_eq_0 le_add_diff_inverse lessThan_atLeast0 minus_nat.diff_0 
+plus_1_eq_Suc sum.atLeast_Suc_lessThan)
+    moreover have "\<dots> = m mod 2^n + (\<Sum>i<n-1. m mod 2^(n-i-1)) - (\<Sum>i<n-1. m mod 2^(n-1-i)) - m mod 2^0" 
+      apply (auto simp add: sum_of_index_diff[of "\<lambda>i. m mod 2 ^ (n - 1 - i)" "1" "n-1"])
+      by (smt One_nat_def assms(1) le_add_diff_inverse lessThan_atLeast0 plus_1_eq_Suc sum.cong sum.shift_bounds_Suc_ivl)
+    moreover have "\<dots> = m mod 2^n - m mod 2^0" by simp
+    ultimately show ?thesis 
+      using assms(3) f0
+      by (metis assms(2) diff_zero mod_by_1 power_0 unique_euclidean_semiring_numeral_class.mod_less)
+  qed
 qed
+
 
 end
