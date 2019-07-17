@@ -1025,21 +1025,28 @@ definition bitwise_inner_product::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rig
 "i \<cdot>\<^sub>n j = nat(\<Sum>k\<in>{0..<n}. (bin_rep n i)!k * (bin_rep n j)!k)"
 (*The dot (without the n) is the standard notation I found, but maybe it would be nice to replace it with something else
 as it is not possible to write i \<cdot>(n+1) j. Problem if dot is there bitwise_inner_product xs (n+1) ys *)
+(*Edit: comment was deleted. Order of the arguments not natural if bitwise_inner_product i n j is used instead of i \<cdot>\<^sub>n j*)
 
+(*Rather give it a shorter name? *)
+notation bitwise_inner_product ("bip _ _ _")
 
-lemma j1:
+lemma j1: (*Rename if stays*)
   assumes "i \<ge> 0 \<and> j \<ge> 0"
   shows "i \<cdot>\<^sub>n j \<ge> 0" 
   by simp
 
-lemma j2: 
-  assumes "i \<ge> 0 \<and> n\<ge>1"
-  shows "k\<in>{0..<n}\<longrightarrow> bin_rep n i!k \<ge>0" 
-  sorry
+lemma j2:  (*Rename if stays*)
+  assumes "i \<ge> 0"
+  and "n\<ge>1"
+  and "k\<in>{0..<n}"
+  shows "bin_rep n i!k \<ge>0" 
+proof (induction n rule: ind_from_1)  
+  show "n\<ge>1" using assms by auto
+next
+  show "bin_rep 1 i!k \<ge>0" using bin_rep_def bin_rep_aux_def assms sledgehammer
 
+qed
 
-(*Rather give it a shorter name? *)
-notation bitwise_inner_product ("bip _ _ _")
 
 abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
 "Hn n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j).(-1)^(i \<cdot>\<^sub>n j)/(sqrt(2)^n))"
@@ -1066,7 +1073,7 @@ qed
 
 
 
-lemma [simp]:
+lemma [simp]: (*Give name if stays*)
 "(int i mod 2 ^ n) = (int (i mod 2 ^ n))" 
   by (simp add: of_nat_mod)
 
@@ -1101,7 +1108,7 @@ proof-
     by auto
 qed
 
-lemma [simp]:
+lemma [simp]: (*Give name if stays*)
   fixes i::int  
   assumes "i \<ge> 2^n" and "i < 2^(n+1)" and "i\<ge>0" 
   shows "(i div 2^n) = 1" using assms Suc_eq_plus1 atLeastLessThan_iff index_div_eq less_add_eq_less mult.left_neutral one_add_one power.simps(2)
@@ -1124,10 +1131,6 @@ proof-
     by (simp add: bin_rep_aux_neq_nil)
 qed
 
-lemma 
-  assumes "A\<ge>0"
-  shows "nat (1+A) = 1+nat A" 
-  by (simp add: Suc_nat_eq_nat_zadd1 assms)
 
 (*TODO: There is some duplicate code with bitwise_inner_product_first_element_zero. Might be nice 
 to have an extra lemma for this. *)
