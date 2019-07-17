@@ -118,7 +118,7 @@ lemma sum_insert [simp]:
   using assms insert_def by(simp add: add.commute)
 
 lemma sum_of_index_diff [simp]:
-  fixes f:: "nat \<Rightarrow> complex"
+  fixes f:: "nat \<Rightarrow> 'a::comm_monoid_add"
   shows "(\<Sum>i\<in>{a..<a+b}. f(i-a)) = (\<Sum>i\<in>{..<b}. f(i))"
 proof (induction b)
   case 0

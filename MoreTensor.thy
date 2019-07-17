@@ -325,7 +325,7 @@ next
   also have "\<dots> = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j)) + f(a) * (\<Sum>i\<in>{a*b..<(a+1)*b}. g(i-a*b))" 
     by(simp add: sum_distrib_left)
   also have "\<dots> = (\<Sum>i<a. f(i)) * (\<Sum>j<b. g(j)) + f(a) * (\<Sum>i\<in>{..<b}. g(i))"
-    using sum_diff[of "g" "(a*b)" "b"] by (simp add: algebra_simps)
+    using sum_of_index_diff[of "g" "(a*b)" "b"] by (simp add: algebra_simps)
   ultimately show ?case  by (simp add: semiring_normalization_rules(1))
 qed
 
