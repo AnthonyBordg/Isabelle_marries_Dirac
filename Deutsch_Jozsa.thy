@@ -1020,9 +1020,15 @@ next
 qed
 
 definition bitwise_inner_product::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("_\<cdot>\<^sub>_ _") where 
-"i \<cdot>\<^sub>n j = (\<Sum>k\<in>{0..<n}. (bin_rep n i)!k * (bin_rep n j)!k)"
+"i \<cdot>\<^sub>n j = nat(\<Sum>k\<in>{0..<n}. (bin_rep n i)!k * (bin_rep n j)!k)"
 (*The dot (without the n) is the standard notation I found, but maybe it would be nice to replace it with something else
 as it is not possible to write i \<cdot>(n+1) j. Problem if dot is there bitwise_inner_product xs (n+1) ys *)
+
+
+lemma j1:
+  assumes "i \<ge> 0 \<and> j \<ge> 0"
+  shows "i \<cdot>\<^sub>n j \<ge> 0" 
+  by simp
 
 
 (*Rather give it a shorter name? *)
@@ -1041,6 +1047,7 @@ lemma Hn_values[simp]:
 
 lemma bin_rep_fst_if_smaller_n: (*This could go into Binary_Nat but it could also stay here? If its not already there*)
   assumes "i < 2^n"
+      and "i\<ge>0"
   shows "(bin_rep (Suc n) i)!0 = 0"
 proof-
     have "butlast (0# bin_rep_aux n i) = 0 # butlast(bin_rep_aux n i)"
@@ -1050,41 +1057,63 @@ proof-
     using bin_rep_def assms by simp
 qed
 
+
+lemma k1:
+  assumes "i\<ge>0 \<and> i < 2^(n+1) "
+  shows "k\<in>{0..n}\<longrightarrow>(bin_rep (Suc n) i)!(k+1) = (bin_rep n (i mod 2^n))!k" 
+  using assms bin_rep_def length_of_bin_rep_aux
+  by (metis Suc_eq_plus1 bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
+
+
+lemma [simp]:
+"(int i mod 2 ^ n) = (int (i mod 2 ^ n))" 
+  by (simp add: of_nat_mod)
+
 lemma bitwise_inner_product_first_element_zero: 
   assumes "i < 2^n \<or> j < 2^n"
+    and "i\<ge>0 \<and> j\<ge>0"
     and "i < 2^(n+1) \<and> j < 2^(n+1)" 
   shows "(bitwise_inner_product i (Suc n) j) = (bitwise_inner_product (i mod 2^n) n (j mod 2^n))" 
 proof-
-  have "(bitwise_inner_product i (Suc n) j) = (\<Sum>k\<in>{0..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)" 
+  have "(bitwise_inner_product i (Suc n) j) = nat (\<Sum>k\<in>{0..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)" 
     using bitwise_inner_product_def by blast
-  also have "... = (bin_rep (Suc n) i)!0 * (bin_rep (Suc n) j)!0 + 
-            (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)" 
+  also have "... = nat ((bin_rep (Suc n) i)!0 * (bin_rep (Suc n) j)!0 + 
+             (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k))" 
     by (metis (no_types, lifting) One_nat_def sum.atLeast_Suc_lessThan zero_less_Suc)
-  also have "... = (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)"
+  also have "... = nat (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)"
     using bin_rep_fst_if_smaller_n[of i n] bin_rep_fst_if_smaller_n[of j n] assms by auto
-  also have "... = (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1))" 
+  also have "... = nat (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1))" 
      using sum.shift_bounds_Suc_ivl[of "\<lambda>k. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k" "0" "n"] 
      by (metis (no_types, lifting) One_nat_def add.commute plus_1_eq_Suc sum.cong)
-  finally have "(bitwise_inner_product i (Suc n) j) = (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1))" 
-     by blast
+  finally have "(bitwise_inner_product i (Suc n) j) = nat (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1))" 
+    by blast
   moreover have "k\<in>{0..n}\<longrightarrow>(bin_rep (Suc n) i)!(k+1) = (bin_rep n (i mod 2^n))!k" for k
-  using assms bin_rep_def length_of_bin_rep_aux by fastforce
+    using assms bin_rep_def 
+    by (metis (no_types, hide_lams) Suc_eq_plus1 of_nat_mod of_nat_numeral of_nat_power Suc_eq_plus1 
+        bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
   moreover have "k\<in>{0..n}\<longrightarrow>(bin_rep (Suc n) j)!(k+1) = (bin_rep n (j mod 2^n))!k" for k 
-  using assms bin_rep_def length_of_bin_rep_aux by fastforce
+  using assms bin_rep_def 
+    by (metis (no_types, hide_lams) Suc_eq_plus1 of_nat_mod of_nat_numeral of_nat_power Suc_eq_plus1 
+        bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
   ultimately show "(bitwise_inner_product i (Suc n) j) = (bitwise_inner_product (i mod 2^n) n (j mod 2^n))" 
     using assms(1) bin_rep_fst_if_smaller_n bitwise_inner_product_def
     by auto
 qed
 
+lemma [simp]:
+  fixes i::int 
+  assumes "i\<ge>0" and "i \<ge> 2^n" and "i < 2^(n+1)" 
+  shows "(i div 2^n) = 1" sorry
+
+
 lemma bin_rep_fst_if_greater_n:  (*This could go into Binary_Nat but it could also stay here? If its not already there*)
-  assumes "i \<ge> 2^n" and "i < 2^(n+1)"
+  fixes i::int
+  assumes "i \<ge> 2^n" and "i < 2^(n+1)" and "i\<ge>0"
   shows "(bin_rep (Suc n) i)!0 = 1"
 proof-
   have "(bin_rep (Suc n) i) =  butlast (bin_rep_aux (Suc n) i)" using bin_rep_def by auto
-  moreover have "bin_rep_aux (Suc n) i = 1# (bin_rep_aux n (i mod 2^n))" 
-    using assms bin_rep_aux.simps
-    by (metis One_nat_def Suc_eq_plus1 less_2_cases less_mult_imp_div_less mod_eq_self_iff_div_eq_0 
-        mod_less_divisor not_less power.simps(2) zero_less_power)
+  then have "bin_rep_aux (Suc n) i = 1 # (bin_rep_aux n (i mod 2^n))" 
+    using assms bin_rep_aux_def by auto
   moreover have "butlast (1# bin_rep_aux n i) = 1 # butlast(bin_rep_aux n i)"
     using assms length_of_bin_rep_aux Suc_eq_plus1 butlast.simps(2) nat.simps(3)
     by (metis bin_rep_aux_neq_nil)
