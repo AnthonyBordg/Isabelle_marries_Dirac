@@ -421,9 +421,11 @@ proof-
       by linarith
   next
     assume a0: "j=i"
-    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  *(1-f(i div 2)) +  f(i div 2) * f(i div 2)" 
+    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  *(1-f(i div 2)) +  f(i div 2) * f(i div 2)" (*TODO: proof without smt*)
       using f1 assms
-      by (smt Groups.monoid_add_class.add.right_neutral One_nat_def Suc_leI add_Suc_right even_add even_mult_iff even_plus_one_iff even_succ_div_two jozsa_transform_coeff(1) jozsa_transform_coeff(2) jozsa_transform_dim(1) nat_less_le of_nat_add of_nat_mult one_add_one power_add power_one_right)
+      by (smt Groups.monoid_add_class.add.right_neutral One_nat_def Suc_leI add_Suc_right even_add 
+          even_mult_iff even_plus_one_iff even_succ_div_two jozsa_transform_coeff(1) jozsa_transform_coeff(2) 
+          jozsa_transform_dim(1) nat_less_le of_nat_add of_nat_mult one_add_one power_add power_one_right)
     moreover have "(1-f(i div 2))  *(1-f(i div 2)) +  f(i div 2) * f(i div 2) = 1" 
       using f_values assms
       by (metis (no_types, lifting) Nat.minus_nat.diff_0 diff_add_0 diff_add_inverse jozsa_transform_dim(1) less_power_add_imp_div_less mem_Collect_eq mult_eq_if one_power2 power2_eq_square power_one_right) 
@@ -431,7 +433,7 @@ proof-
       by (metis assms(2) a0 index_one_mat(1) of_nat_1)
   next
     assume a0: "(j=i+1 \<and> odd j)"
-    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  *f(i div 2) +  f(i div 2) *(1-f(i div 2))" 
+    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = (1-f(i div 2))  *f(i div 2) +  f(i div 2) *(1-f(i div 2))" (*TODO: proof without smt*)
       using f0 f1 assms
       by (smt jozsa_transform_coeff(1) Groups.ab_semigroup_mult_class.mult.commute even_succ_div_two 
           jozsa_transform_dim of_nat_add of_nat_mult)
@@ -445,7 +447,7 @@ proof-
     assume a0: "(j\<noteq>i \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))"
     then have "U\<^sub>f $$ (i, j) = 0" 
       by (metis assms index_transpose_mat(1) jozsa_transform_coeff_is_zero jozsa_transform_dim transpose_of_jozsa_transform)
-    moreover have "U\<^sub>f $$ (i+1, j) = 0" 
+    moreover have "U\<^sub>f $$ (i+1, j) = 0" (*TODO: proof without smt*)
       using assms a0
       by (smt add.right_neutral One_nat_def Suc_leI add_Suc_right add_diff_cancel_left' add_right_cancel 
           dvd_minus_add even_plus_one_iff jozsa_transform_coeff_is_zero jozsa_transform_dim(1) 
@@ -484,14 +486,15 @@ proof-
       by linarith
   next
     assume a0: "j=i"
-    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = f(i div 2) * f(i div 2) +  (1-f(i div 2)) *  (1-f(i div 2))" 
+    then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = f(i div 2) * f(i div 2) +  (1-f(i div 2)) *  (1-f(i div 2))" (*TODO: proof without smt*)
       using f2 assms 
       by (smt diff_less index_transpose_mat(1) jozsa_transform_coeff(1) jozsa_transform_coeff(2) 
           less_imp_add_positive less_numeral_extra(1) odd_pos odd_two_times_div_two_nat odd_two_times_div_two_succ 
           of_nat_add of_nat_mult trans_less_add1 transpose_of_jozsa_transform)
     moreover have "f(i div 2) * f(i div 2) +  (1-f(i div 2)) *  (1-f(i div 2)) = 1" 
       using f_values assms
-      by (metis (no_types, lifting) Nat.minus_nat.diff_0 diff_add_0 diff_add_inverse jozsa_transform_dim(1) less_power_add_imp_div_less mem_Collect_eq mult_eq_if one_power2 power2_eq_square power_one_right) 
+      by (metis (no_types, lifting) Nat.minus_nat.diff_0 diff_add_0 diff_add_inverse jozsa_transform_dim(1) 
+          less_power_add_imp_div_less mem_Collect_eq mult_eq_if one_power2 power2_eq_square power_one_right) 
     ultimately show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
       by (metis assms(2) a0 index_one_mat(1) of_nat_1)
   next
@@ -502,7 +505,7 @@ proof-
     assume a0:"(j=i-1 \<and> even j \<and> i\<ge>1)"
     then have "(U\<^sub>f * U\<^sub>f) $$ (i,j) = f(i div 2) * (1-f(i div 2)) +  (1-f(i div 2)) *  f(i div 2)" 
       using f0 f1 f2 assms
-      by (smt jozsa_transform_coeff(1) Groups.ab_semigroup_mult_class.mult.commute even_succ_div_two f2 
+      by (metis jozsa_transform_coeff(1) Groups.ab_semigroup_mult_class.mult.commute even_succ_div_two f2 
           jozsa_transform_dim odd_two_times_div_two_nat odd_two_times_div_two_succ of_nat_add of_nat_mult)
     then show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
       using assms a0 by auto
@@ -510,7 +513,7 @@ proof-
     assume a0: "(j\<noteq>i \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))"
     then have "U\<^sub>f $$ (i, j) = 0" 
       by (metis assms index_transpose_mat(1) jozsa_transform_coeff_is_zero jozsa_transform_dim transpose_of_jozsa_transform)
-    moreover have "U\<^sub>f $$ (i-1, j) = 0" 
+    moreover have "U\<^sub>f $$ (i-1, j) = 0" (*TODO: proof without smt*)
       using assms a0 f0 
       by (smt Groups.ordered_cancel_comm_monoid_diff_class.add_diff_inverse diff_less even_diff_nat 
           even_plus_one_iff  jozsa_transform_coeff_is_zero less_imp_add_positive less_numeral_extra(1) trans_less_add1)
@@ -739,8 +742,7 @@ next
     also have "... = 1/sqrt(2) * 1/(sqrt(2)^n)"
       using \<psi>\<^sub>1\<^sub>0_values a2 assms by auto
     finally show  "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,j) = (\<psi>\<^sub>1\<^sub>0 (Suc n)) $$ (i,j)" 
-      using f2  
-      by (smt divide_divide_eq_left power_Suc)
+      using f2 divide_divide_eq_left power_Suc by simp
   next (* case i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n) *)
     assume "i \<ge> dim_row (\<psi>\<^sub>1\<^sub>0 n)"
     then have "((\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)) $$ (i,0) = ((\<psi>\<^sub>1\<^sub>0 1)  $$ (1, 0)) * ((\<psi>\<^sub>1\<^sub>0 n) $$ ( i -dim_row (\<psi>\<^sub>1\<^sub>0 n),0))"
@@ -953,7 +955,7 @@ next
     using linorder_not_less by auto
     have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n)$$ (k, j))"
       using f1 f2 a2 U\<^sub>f_mult_without_empty_summands_odd[of i j "(\<psi>\<^sub>1 n)"]  
-      by (smt dim_row_mat(1) jozsa_transform_dim(2)) 
+      by (metis dim_row_mat(1) jozsa_transform_dim(2)) 
     moreover have "(\<Sum>k\<in>{i-1,i}. U\<^sub>f $$ (i, k) * (\<psi>\<^sub>1 n) $$ (k, j)) 
                  = U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n) $$ (i-1, j) +  U\<^sub>f $$ (i, i) * (\<psi>\<^sub>1 n) $$ (i, j)" 
       using a2 f6 by auto
@@ -962,7 +964,7 @@ next
     moreover have "U\<^sub>f $$ (i, i-1) * (\<psi>\<^sub>1 n)$$ (i-1, j) = f(i div 2)* 1/(sqrt(2)^(n+1))" 
       using a0 a1 a2 by auto
     ultimately have "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = (1-f(i div 2))* -1/(sqrt(2)^(n+1)) +(f(i div 2))* 1/(sqrt(2)^(n+1))" 
-       by (smt of_real_add)
+       using of_real_add by auto
      also have "... = ( -(1-f(i div 2)) + (f(i div 2)))* 1/(sqrt(2)^(n+1))" 
        by (metis (no_types, hide_lams) mult.right_neutral add_divide_distrib mult_minus1_right 
            of_int_add of_int_of_nat_eq)
@@ -1030,6 +1032,11 @@ lemma j1:
   shows "i \<cdot>\<^sub>n j \<ge> 0" 
   by simp
 
+lemma j2: 
+  assumes "i \<ge> 0 \<and> n\<ge>1"
+  shows "k\<in>{0..<n}\<longrightarrow> bin_rep n i!k \<ge>0" 
+  sorry
+
 
 (*Rather give it a shorter name? *)
 notation bitwise_inner_product ("bip _ _ _")
@@ -1057,12 +1064,6 @@ proof-
     using bin_rep_def assms by simp
 qed
 
-
-lemma k1:
-  assumes "i\<ge>0 \<and> i < 2^(n+1) "
-  shows "k\<in>{0..n}\<longrightarrow>(bin_rep (Suc n) i)!(k+1) = (bin_rep n (i mod 2^n))!k" 
-  using assms bin_rep_def length_of_bin_rep_aux
-  by (metis Suc_eq_plus1 bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
 
 
 lemma [simp]:
@@ -1101,9 +1102,10 @@ proof-
 qed
 
 lemma [simp]:
-  fixes i::int 
-  assumes "i\<ge>0" and "i \<ge> 2^n" and "i < 2^(n+1)" 
-  shows "(i div 2^n) = 1" sorry
+  fixes i::int  
+  assumes "i \<ge> 2^n" and "i < 2^(n+1)" and "i\<ge>0" 
+  shows "(i div 2^n) = 1" using assms Suc_eq_plus1 atLeastLessThan_iff index_div_eq less_add_eq_less mult.left_neutral one_add_one power.simps(2)
+  sorry 
 
 
 lemma bin_rep_fst_if_greater_n:  (*This could go into Binary_Nat but it could also stay here? If its not already there*)
@@ -1122,31 +1124,48 @@ proof-
     by (simp add: bin_rep_aux_neq_nil)
 qed
 
+lemma 
+  assumes "A\<ge>0"
+  shows "nat (1+A) = 1+nat A" 
+  by (simp add: Suc_nat_eq_nat_zadd1 assms)
 
 (*TODO: There is some duplicate code with bitwise_inner_product_first_element_zero. Might be nice 
 to have an extra lemma for this. *)
 lemma bitwise_inner_product_first_element_one:  
   assumes "i \<ge> 2^n \<and> j \<ge> 2^n"
     and "i < 2^(n+1) \<and> j < 2^(n+1)" 
+    and "n\<ge>1"
   shows "(bitwise_inner_product i (Suc n) j) = 1 + (bitwise_inner_product (i mod 2^n) n (j mod 2^n))" 
 proof-
-  have "(bitwise_inner_product i (Suc n) j) = (\<Sum>k\<in>{0..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)" 
+  have "(bitwise_inner_product i (Suc n) j) = nat (\<Sum>k\<in>{0..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)" 
     using bitwise_inner_product_def by blast
-  also have "... = (bin_rep (Suc n) i)!0 * (bin_rep (Suc n) j)!0 + 
-            (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)" 
-    by (simp add: sum.atLeast_Suc_lessThan)
-  also have "... = 1 + (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k)"
-    using  bin_rep_fst_if_greater_n[of n i] bin_rep_fst_if_greater_n[of n j] assms by auto
-  also have "... = 1 + (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1))" 
+  also have "... = nat( (bin_rep (Suc n) i)!0 * (bin_rep (Suc n) j)!0 + 
+            (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k))" 
+    by (metis (no_types, lifting) One_nat_def sum.atLeast_Suc_lessThan zero_less_Suc)
+  also have "... = nat (1 + (\<Sum>k\<in>{1..<(Suc n)}. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k))"
+    using  bin_rep_fst_if_greater_n[of n i] bin_rep_fst_if_greater_n[of n j] assms 
+    by (smt Suc_1 less_imp_of_nat_less linordered_nonzero_semiring_class.of_nat_mono of_nat_0_le_iff 
+        of_nat_1 of_nat_Suc of_nat_power pos_zmult_eq_1_iff)
+  also have "... = nat (1 + (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1)))" 
     using sum.shift_bounds_Suc_ivl[of "\<lambda>k. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k" "0" "n"] 
-      by (metis (no_types, lifting) One_nat_def add.commute plus_1_eq_Suc sum.cong)
-  finally have "(bitwise_inner_product i (Suc n) j) = 1 + (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1))" 
-     by blast
+    by (metis (no_types, lifting) One_nat_def Suc_eq_plus1 sum.cong)
+  finally have f0:"(bitwise_inner_product i (Suc n) j) = nat(1 + (\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1)))"
+    by blast
+  have "k\<in>{0..<n} \<longrightarrow> 0 \<le> (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1)" for k 
+    using j2[of i "Suc n" "k+1"] j2[of j "Suc n" "k+1"] assms by auto
+  have "(\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1)) \<ge>0" 
+    by (meson \<open>\<And>k. k \<in> {0..<n} \<longrightarrow> 0 \<le> bin_rep (Suc n) (int i) ! (k + 1) * bin_rep (Suc n) (int j) ! (k + 1)\<close> sum_nonneg)
+  then have "(bitwise_inner_product i (Suc n) j) = 1 + nat ((\<Sum>k\<in>{0..<n}. (bin_rep (Suc n) i)!(k+1) * (bin_rep (Suc n) j)!(k+1)))"
+    using f0 by linarith
   moreover have "k\<in>{0..n}\<longrightarrow>(bin_rep (Suc n) i)!(k+1) = (bin_rep n (i mod 2^n))!k" for k
-  using assms bin_rep_def length_of_bin_rep_aux by fastforce
+    using assms bin_rep_def 
+    by (metis (no_types, hide_lams) Suc_eq_plus1 of_nat_mod of_nat_numeral of_nat_power Suc_eq_plus1 
+        bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
   moreover have "k\<in>{0..n}\<longrightarrow>(bin_rep (Suc n) j)!(k+1) = (bin_rep n (j mod 2^n))!k" for k 
-  using assms bin_rep_def length_of_bin_rep_aux by fastforce
-  ultimately show "(bitwise_inner_product i (Suc n) j) = 1 + (bitwise_inner_product (i mod 2^n) n (j mod 2^n))" 
+  using assms bin_rep_def 
+    by (metis (no_types, hide_lams) Suc_eq_plus1 of_nat_mod of_nat_numeral of_nat_power Suc_eq_plus1 
+        bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
+  ultimately show "(bitwise_inner_product i (Suc n) j) =  1 + (bitwise_inner_product (i mod 2^n) n (j mod 2^n))" 
     using assms(1) bin_rep_fst_if_smaller_n bitwise_inner_product_def
     by auto
 qed
@@ -1169,7 +1188,8 @@ proof-
     by auto
   ultimately show "(Hn (Suc n))$$(i,j) = 1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " 
     using assms bitwise_inner_product_def 
-    by (smt divide_divide_eq_left' left_minus_one_mult_self minus_one_mult_self mult.commute of_real_mult power_Suc times_divide_eq_right)
+    by (smt divide_divide_eq_left' left_minus_one_mult_self minus_one_mult_self mult.commute of_real_mult 
+        power_Suc times_divide_eq_right)
 qed
 
 lemma Hn_first_factor_is_minus_sqrt_2:
@@ -1177,12 +1197,13 @@ lemma Hn_first_factor_is_minus_sqrt_2:
   assumes "i \<ge> 2^n \<and> j \<ge> 2^n"
     and "n\<ge> 1"
     and "i < 2^(n+1) \<and>  j < 2^(n+1)"
+    and "i\<ge>0 \<and> j\<ge>0"
   shows "(Hn (Suc n))$$(i,j) = -1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) "
 proof-
   have "(Hn (Suc n))$$(i,j) = (-1)^(bitwise_inner_product i (Suc n) j)/(sqrt(2)^(Suc n))" 
     using assms by auto
   moreover have "(bitwise_inner_product i (Suc n) j) = 1 + (bitwise_inner_product (i mod 2^n) n (j mod 2^n))" 
-    using bitwise_inner_product_first_element_one assms by blast
+    using bitwise_inner_product_first_element_one assms by auto
   moreover have "(-1)^( 1 + (bitwise_inner_product (i mod 2^n) n (j mod 2^n)))/(sqrt(2)^(Suc n)) 
                  = -1/sqrt(2)* (-1)^((bitwise_inner_product (i mod 2^n) n (j mod 2^n)))/(sqrt(2)^n)" 
     by auto
@@ -1190,7 +1211,8 @@ proof-
     by auto
   ultimately show "(Hn (Suc n))$$(i,j) = -1/sqrt(2)* ((Hn n) $$ (i mod 2^n, j mod 2^n)) " 
     using assms bitwise_inner_product_def 
-    by (smt divide_divide_eq_left' left_minus_one_mult_self minus_one_mult_self mult.commute of_real_mult power_Suc times_divide_eq_right)
+    by (smt divide_divide_eq_left' left_minus_one_mult_self minus_one_mult_self mult.commute of_real_mult 
+        power_Suc times_divide_eq_right)
 qed
 
 lemma H_values: (*This should go in some other theory?*)
