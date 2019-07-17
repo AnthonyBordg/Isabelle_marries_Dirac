@@ -1038,14 +1038,45 @@ lemma j1: (*Rename if stays*)
 lemma j2:  (*Rename if stays*)
   assumes "i \<ge> 0"
   and "n\<ge>1"
-  and "k\<in>{0..<n}"
-  shows "bin_rep n i!k \<ge>0" 
-proof (induction n rule: ind_from_1)  
+  shows "k\<in>{0..<n} \<longrightarrow> bin_rep n i!k \<ge>0" 
+proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  show "bin_rep 1 i!k \<ge>0" using bin_rep_def bin_rep_aux_def assms sledgehammer
-
+  have "k\<in>{0..<1}\<longrightarrow>k\<in>{0}" by auto
+  moreover have "(bin_rep 1 i)!0 \<ge> 0" using bin_rep_def assms by auto
+  ultimately show "k\<in>{0..<1}\<longrightarrow>bin_rep 1 i!k \<ge>0" using bin_rep_def bin_rep_aux_def assms 
+    by (metis One_nat_def atLeastLessThan_iff less_Suc0)
+next
+  fix n
+  assume a0: "n\<ge>1"
+  and a1: "k\<in>{0..<n} \<longrightarrow> bin_rep n i!k \<ge>0" (*IH is not used if proof stays restructure it*)
+  moreover have "k \<in> {0..<Suc n} \<longrightarrow> k \<in> {0..<n} \<or> k \<in> {n}" by auto
+  moreover have "k \<in> {n} \<longrightarrow> bin_rep (Suc n) i!k \<ge> 0" 
+    by (smt pos_mod_bound pos_mod_sign One_nat_def a0 bin_rep_aux.simps(2) bin_rep_aux_neq_nil 
+        bin_rep_coeff bin_rep_def butlast.simps(2) diff_diff_cancel diff_is_0_eq le_less_linear 
+        less_Suc0 nth_Cons' one_neq_zero singleton_iff zero_less_power) 
+  moreover have "k \<in> {0..<n} \<longrightarrow> bin_rep (Suc n) i!k \<ge> 0" 
+  proof
+    {assume a2: "k \<in> {0..<n}"
+    have "bin_rep (Suc n) i!k = (butlast (i div 2^n # bin_rep_aux n (i mod 2^n)))!k" 
+      using bin_rep_def bin_rep_aux_def by auto 
+    also have "... = (i div 2^n # (butlast ( bin_rep_aux n (i mod 2^n))))!k" 
+      by (simp add: bin_rep_aux_neq_nil)
+    also have "... = (i div 2^n # bin_rep n (i mod 2^n))!k" 
+      using bin_rep_def bin_rep_aux_def by auto
+    moreover have "k \<in> {0} \<or> k \<in> {1..<n}" using a2 by auto
+    moreover have "k=0 \<longrightarrow>(i div 2^n # bin_rep n (i mod 2^n))!k \<ge> 0"
+      by (simp add: assms(1) pos_imp_zdiv_nonneg_iff)
+    moreover have "k\<in>{1..<n} \<longrightarrow>(i div 2^n # bin_rep n (i mod 2^n))!k \<ge> 0"
+      by (smt Euclidean_Division.pos_mod_bound Euclidean_Division.pos_mod_sign One_nat_def Suc_pred 
+          atLeastLessThan_iff bin_rep_coeff le_trans lessI less_imp_le_nat not_less nth_Cons' zero_less_power)
+    ultimately show "bin_rep (Suc n) i ! k \<ge> 0" 
+      using bin_rep_def bin_rep_aux_def assms 
+      by (metis singleton_iff)}
+  qed
+  ultimately show "k\<in>{0..<(Suc n)} \<longrightarrow> bin_rep (Suc n) i!k \<ge>0" by blast
 qed
+
 
 
 abbreviation  Hn:: "nat \<Rightarrow> complex Matrix.mat" where
@@ -1111,9 +1142,15 @@ qed
 lemma [simp]: (*Give name if stays*)
   fixes i::int  
   assumes "i \<ge> 2^n" and "i < 2^(n+1)" and "i\<ge>0" 
-  shows "(i div 2^n) = 1" using assms Suc_eq_plus1 atLeastLessThan_iff index_div_eq less_add_eq_less mult.left_neutral one_add_one power.simps(2)
-  sorry 
-
+  shows "(i div 2^n) = 1" 
+proof-
+  have "i = nat i" using assms by auto
+  then have "((nat i) div 2^n) = 1" 
+    by (metis Suc_1 Suc_eq_plus1 assms(1) assms(2) div_nat_eqI nat_less_numeral_power_cancel_iff 
+        nat_mult_1_right of_nat_le_of_nat_power_cancel_iff of_nat_numeral power.simps(2) power_commutes)
+  then show "(i div 2^n) = 1" 
+    by (metis \<open>i = int (nat i)\<close> int_ops(2) int_ops(3) of_nat_power zdiv_int)
+qed
 
 lemma bin_rep_fst_if_greater_n:  (*This could go into Binary_Nat but it could also stay here? If its not already there*)
   fixes i::int
