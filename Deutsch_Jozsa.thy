@@ -1734,40 +1734,65 @@ qed
 
 
 
+definition (in jozsa) deutsch_jozsa_algo:: "complex Matrix.mat" where 
+"deutsch_jozsa_algo \<equiv> ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) * (U\<^sub>f * (((H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n)) \<Otimes> (H * |one\<rangle>)))"
 
 
+lemma (in jozsa) deutsch_jozsa_algo_result [simp]: 
+  shows "deutsch_jozsa_algo = \<psi>\<^sub>3" 
+  using deutsch_jozsa_algo_def H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 H_tensor_n_on_zero_tensor_n \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1
+  jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 \<psi>\<^sub>2_is_\<psi>\<^sub>2' hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3 dim  by auto
 
+
+lemma (in jozsa) deutsch_jozsa_algo_result_is_state: 
+  shows "state (n+1) deutsch_jozsa_algo" 
+  using \<psi>\<^sub>3_is_state by simp
 
 
 text \<open>Measurement\<close>
 
+lemma (in jozsa)
+  fixes i::nat
+  shows " select_index n i k = ((bin_rep n i)!k =1)" sorry
+
+lemma (in jozsa)
+  shows "odd (nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k)) \<longrightarrow> even ( nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  (Suc k)))" sorry
 
 
+lemma (in jozsa)
+  fixes i::nat 
+  assumes "i\<in>{0..<n}"
+    and "const 0"
+  shows "(prob1 (n+1) deutsch_jozsa_algo i) = 1"
+proof-
+  have "(prob1 (n+1) deutsch_jozsa_algo i) = 
+        (\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_jozsa_algo_result_is_state prob1_def select_index_def by auto 
+(*Why should only even elements be selected, seems like this in my slides but makes sense???
+Do the same for odd ones and show that
+  have "(i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i)) \<longrightarrow> nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k) = 1" ?
+If this holds it would be great! *)
+  have "(cmod(\<Sum> k < 2^n. (-1)^(f(k) + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
+        = (cmod(\<Sum> k < 2^n. (-1)^( nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+    using assms const_def by auto
+  have "(i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i)) \<longrightarrow> nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k) = 0" sorry
+  have "(cmod(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 " sorry
+  have "(cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod (1/(sqrt(2))))\<^sup>2" sorry
+  have "(cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = 1/(sqrt(2))" sorry
+  have "card {k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} = 2^n " sorry 
+(*Is this even true? If so each summand should be 1/(sqrt(2))^n in the last have then all would add up to 1*)
+  have "(\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+        = 1" sorry
+(*
+abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
+"\<psi>\<^sub>3  \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if even i
+                                         then (\<Sum> k < 2^n. (-1)^(f(k) + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
+                                          else (\<Sum> k < 2^n. (-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) )"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-definition (in jozsa) deutsch_jozsa_algo:: "complex Matrix.mat" where 
-"deutsch_jozsa_algo \<equiv> ((H ^\<^sub>\<otimes> n) \<Otimes> Id 1) * (U\<^sub>f * ((H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n)) \<Otimes> (H * |one\<rangle>))"
-
-
-
+*)
 theorem (in jozsa) deutsch_jozsa_algo_is_correct:
-  shows "\<forall>i\<in>{0..<n}.(prob1 n deutsch_algo i) = 0 \<longrightarrow> is_const"
-    and "\<exists>i\<in>{0..<n}.(prob1 n deutsch_algo i) \<noteq> 0 \<longrightarrow> is_balanced"
+  shows "\<forall>i\<in>{0..<n}.(prob1 n deutsch_jozsa_algo i) = 0 \<longrightarrow> is_const"
+    and "\<exists>i\<in>{0..<n}.(prob1 n deutsch_jozsa_algo i) \<noteq> 0 \<longrightarrow> is_balanced"
   sorry
 
 
