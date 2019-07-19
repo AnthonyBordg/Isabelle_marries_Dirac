@@ -1070,7 +1070,6 @@ definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Right
 abbreviation bip:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> int" ("_ \<cdot>\<^bsub>_\<^esub>  _") where
 "bip i n j \<equiv> bitwise_inner_prod n i j"
 
-
 lemma bin_rep_geq_0:  (*I had to restore this since bin_rep_coeff uses the assumption that i\<le>2^n*)
   assumes "i \<ge> 0"
   and "n\<ge>1"
@@ -1751,38 +1750,233 @@ lemma (in jozsa) deutsch_jozsa_algo_result_is_state:
 
 text \<open>Measurement\<close>
 
-lemma (in jozsa)
-  fixes i::nat
-  shows " select_index n i k = ((bin_rep n i)!k =1)" sorry
+(*Maybe try different approach. Do not show that measuring each qubit \<le>n yields 0 with prob 1 but that
+measuring n qubits in state 0 yields one. but how?*)
 
-lemma (in jozsa)
-  shows "odd (nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k)) \<longrightarrow> even ( nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  (Suc k)))" sorry
 
+(*Can be easily generalised to any list of qubits*)
+(*SHOW SOMEHOW THAT THIS IS EQUIVALENT TO MEASURING THE FIRST N QUBITS AND MULT THE PROB*)
+definition prob_first_m_qubits_0 ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> nat \<Rightarrow> real" where
+"prob_first_m_qubits_0 n v m \<equiv>
+  if state n v then \<Sum>j\<in>{k| k i::nat. (k<2^n) \<and> i<m \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
+
+definition prob_first_m_qubits_0' ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> real" where
+"prob_first_m_qubits_0' n v \<equiv>
+  if state (n+1) v then \<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
+
+
+lemma
+  shows "\<forall>v. state (n+1) v \<longrightarrow> (\<Prod>i\<in>{0..n} . prob0 (n+1) v i) = prob_first_m_qubits_0' n v" 
+(*proof (rule allI,induction n,rule impI)
+  fix v 
+  assume a0: "state (0+1) v "
+  have "prob_first_m_qubits_0' 0 v = (\<Sum>j\<in>{k| k i::nat. (k<2^(0+1)) \<and> i\<le>0 \<and> \<not> select_index (0+1) i k}. (cmod(v $$ (j,0)))\<^sup>2)"
+    using a0 prob_first_m_qubits_0'_def by auto
+  then have "prob_first_m_qubits_0' 0 v = (\<Sum>j\<in>{k| k ::nat. (k<2^(0+1))  \<and> \<not> select_index 1 0 k}. (cmod(v $$ (j,0)))\<^sup>2)"
+    by auto
+  moreover have " prob0 1 v 0 = (\<Sum>j\<in>{k| k::nat. (k<2^1) \<and> \<not>select_index 1 0 k }. (cmod(v $$ (j,0)))\<^sup>2)"
+    using prob0_def a0 by auto
+  ultimately show "prod (prob0 (0 + 1) v) {0..0} = prob_first_m_qubits_0' 0 v" by auto
+next
+  fix v n
+  assume IH: "\<And>v. state (n + 1) v \<longrightarrow> prod (prob0 (n + 1) v) {0..n} = prob_first_m_qubits_0' n v"
+  show "state (Suc n + 1) v \<longrightarrow> prod (prob0 (Suc n + 1) v) {0..Suc n} = prob_first_m_qubits_0' (Suc n) v" 
+qed*)sorry
+
+
+(*
+definition select_index ::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
+"select_index n i j \<equiv> (i\<le>n-1) \<and> (j\<le>2^n - 1) \<and> (j mod 2^(n-i) \<ge> 2^(n-1-i))"
+
+definition prob0 ::"nat \<Rightarrow> complex mat \<Rightarrow> nat \<Rightarrow> real" where
+"prob0 n v i \<equiv>
+  if state n v then \<Sum>j\<in>{k| k::nat. (k<2^n) \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
+
+
+*)
+value " (bin_rep 3 1)!1" 
+value "(nat (0 \<cdot>\<^bsub>3\<^esub>  7))"
+
+lemma q2:
+  assumes "k<2^n"
+  shows "(nat (0 \<cdot>\<^bsub>n\<^esub>  k)) = 0" 
+  sorry
+(*    have "k<n \<longrightarrow> bin_rep n (0 div 2)!k = 0" for k 
+      using bin_rep_def bin_rep_aux_def bin_rep_index assms  
+      by simp*)
+
+lemma q1:
+"{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" sorry
+
+  declare [[show_types]]
+  declare [[show_sorts]]
+  declare [[show_consts]]
 
 lemma (in jozsa)
   fixes i::nat 
   assumes "i\<in>{0..<n}"
     and "const 0"
-  shows "(prob1 (n+1) deutsch_jozsa_algo i) = 1"
+  shows "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) = 1"
+proof-
+  have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" sorry
+  moreover have "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) =
+        (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_jozsa_algo_result_is_state prob_first_m_qubits_0_def by auto 
+  ultimately have "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) =
+        (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    by auto
+
+  have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
+  proof-
+    have f0: "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod (\<Sum> k < 2^n. (-1)^(nat ((0 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using deutsch_jozsa_algo_result const_def assms by auto
+    have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+      using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def q2 by auto
+    moreover have " (2::nat) ^ n = card {..<(2::nat) ^ n}" by auto
+    ultimately have "(\<Sum> k < (2::nat)^n. (-1)^(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) =  (\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1)))" 
+      by auto
+    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      using f0 sorry
+    then have "(cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =  (cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" sorry
+    then have "(cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =(cmod(1/(sqrt(2))))\<^sup>2 " sorry
+    then show "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" sorry
+  qed
+
+  have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
+  proof-
+    have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < 2^n. (-1)^(nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using deutsch_jozsa_algo_result const_def assms sorry
+    have "k<n \<longrightarrow> bin_rep n (1 div 2)!k = 0" for k 
+      using bin_rep_def bin_rep_aux_def bin_rep_index assms  
+      by simp
+    then have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+      using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def sorry
+    then have "(\<Sum> k < 2^n. (-1)^(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) =  (\<Sum> k < 2^n.(-1)^(0)/(sqrt(2)^n * sqrt(2)^(n+1)))" 
+      sorry
+    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" sorry
+    then have "(cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =  (cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" sorry
+    then have "(cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =(cmod(1/(sqrt(2))))\<^sup>2 " sorry
+    then show "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" sorry
+  qed
+    
+  then have " (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2) = 1/2 + 1/2" sorry
+  then show  "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) = 1" sorry
+qed
+
+
+value "bin_rep 1 (0 div 2)"
+
+
+
+(*See old/first version with prob1 below still mixed up*)
+lemma (in jozsa)
+  fixes i::nat 
+  assumes "i\<in>{0..<n}"
+    and "const 0"
+  shows "(prob0 (n+1) deutsch_jozsa_algo i) = 1"
+proof-
+  have "\<not> select_index (n+1) i k = ((k>2^(n+1)-1) \<or> (k mod 2^((n+1)-i) < 2^((n+1)-i-1)))" for k
+    using assms 
+    by (simp add: not_less select_index_def)
+  moreover have "(prob0 (n+1) deutsch_jozsa_algo i) = 
+        (\<Sum>j\<in>{k| k::nat.(k<2^(n+1)) \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_jozsa_algo_result_is_state prob0_def by auto 
+  ultimately have "(prob0 (n+1) deutsch_jozsa_algo i) = 
+        (\<Sum>j\<in>{k| k::nat.(k<2^(n+1)) \<and> ((k>2^(n+1)-1) \<or> (k mod 2^((n+1)-i) < 2^((n+1)-i-1)))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    by auto
+  have "even j \<longrightarrow> j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((n+1)-i) < 2^(n-i))} \<longrightarrow>(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2 = 1/(2^(n+1))"
+  proof(rule impI, rule impI)
+    assume a0: "even j"
+    assume a1: "j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((n+1)-i) < 2^(n-i))}"
+    then have "j < dim_row deutsch_jozsa_algo" 
+      using deutsch_jozsa_algo_result by auto
+    then have "(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2
+              =(cmod (\<Sum> k < 2^n. (-1)^(f(k) + nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using a0 deutsch_jozsa_algo_result by auto
+    then have "(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2
+              =(cmod(\<Sum> k < 2^n. (-1)^( nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      using const_def assms by auto
+    moreover have "(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))) = 1/(sqrt(2)^n * sqrt(2)^(n+1))*2^n"
+      sorry
+    ultimately have  "(cmod(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod ( 2^n*1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 " 
+      sorry
+    have "(cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod (1/(sqrt(2))))\<^sup>2" sorry
+    have "(cmod (1/(sqrt(2))))\<^sup>2 = 1/2" sorry
+    show "(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2 = 1/(2^(n+1))" sorry
+  qed
+  moreover have "odd j \<longrightarrow> j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} \<longrightarrow>(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2 = 1/(2^(n+1))" 
+    sorry
+  moreover have "card {k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} = 2^(n+1) " sorry
+  ultimately have 
+       "(\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+        = 2^(n+1)*1/(2^(n+1))" sorry
+  then have  "(\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+        = 1" sorry
+  then show ?thesis sorry
+qed
+
+
+
+(*Might be better to use prob0. Proof outline below kind of does that?*)
+(*lemma (in jozsa)
+  fixes i::nat 
+  assumes "i\<in>{0..<n}"
+    and "const 0"
+  shows "(prob1 (n+1) deutsch_jozsa_algo i) = 0"
 proof-
   have "(prob1 (n+1) deutsch_jozsa_algo i) = 
-        (\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
-    using deutsch_jozsa_algo_result_is_state prob1_def select_index_def by auto 
+        (\<Sum>j\<in>{k| k::nat. (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_jozsa_algo_result_is_state prob1_def select_index_def assms by auto 
+  have "even j \<longrightarrow> j\<in>{k| k::nat. (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} \<longrightarrow>(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2 = 1/(2^(n+1))"
+  proof(rule impI, rule impI)
+    assume a0: "even j"
+    assume a1: "j\<in>{k| k::nat. (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}"
+    then have "j \<le> 2^(n+1)-1" by blast
+    then have "j < dim_row deutsch_jozsa_algo" 
+      using deutsch_jozsa_algo_result 
+      by (metis (no_types, lifting) diff_diff_cancel dim_row_mat(1) le_antisym le_trans less_numeral_extra(1) 
+          nat_less_le one_le_numeral one_le_power zero_less_diff)
+    then have "(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2
+              =(cmod (\<Sum> k < 2^n. (-1)^(f(k) + nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using a0 deutsch_jozsa_algo_result by auto
+    have "(cmod(\<Sum> k < 2^n. (-1)^(f(k) + nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
+        = (cmod(\<Sum> k < 2^n. (-1)^( nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      using const_def assms by auto
+    have "k < 2^n \<longrightarrow>nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k) = 0" 
+      sorry
+    have "(cmod(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = 2^n/(cmod ((sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 " sorry
+    have "2^n/(cmod ((sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = 2^n/(2^n * 2^(n+1))" sorry
+    have "2^n/(2^n * 2^(n+1)) = 1/(2^(n+1))" sorry
+    show "(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2 = 1/(2^(n+1))" sorry
+  qed
+  moreover have "odd j \<longrightarrow> j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} \<longrightarrow>(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2 = 1/(2^(n+1))" 
+    sorry
+  moreover have "card {k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} = 2^(n+1) " sorry
+  ultimately have 
+       "(\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+        = 2^(n+1)*1/(2^(n+1))" sorry
+  then have  "(\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+        = 1" sorry
+  then show ?thesis sorry
+qed*)
+
+
+
+(*
+  have "\<not> select_index (n+1) i k = (i > n \<or> (k>2^(n+1)-1) \<or> (k mod 2^((n+1)-i) < 2^((n+1)-i-1)))"
+    by (simp add: not_less select_index_def)
+  moreover have "(prob0 (n+1) deutsch_jozsa_algo i) = 
+        (\<Sum>j\<in>{k| k::nat.(k<2^(n+1)) \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+    using deutsch_jozsa_algo_result_is_state prob0_def by auto 
+  ultimately have "(prob0 (n+1) deutsch_jozsa_algo i) = 
+        (\<Sum>j\<in>{k| k::nat.(k<2^(n+1)) \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"*)
+
+
 (*Why should only even elements be selected, seems like this in my slides but makes sense???
 Do the same for odd ones and show that
-  have "(i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i)) \<longrightarrow> nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k) = 1" ?
+  have "(i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i)) \<longrightarrow> nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k) = 1" ?
 If this holds it would be great! *)
-  have "(cmod(\<Sum> k < 2^n. (-1)^(f(k) + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
-        = (cmod(\<Sum> k < 2^n. (-1)^( nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-    using assms const_def by auto
-  have "(i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i)) \<longrightarrow> nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k) = 0" sorry
-  have "(cmod(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 " sorry
-  have "(cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod (1/(sqrt(2))))\<^sup>2" sorry
-  have "(cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = 1/(sqrt(2))" sorry
-  have "card {k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))} = 2^n " sorry 
-(*Is this even true? If so each summand should be 1/(sqrt(2))^n in the last have then all would add up to 1*)
-  have "(\<Sum>j\<in>{k| k::nat. (i\<le>n) \<and> (k\<le>2^(n+1)-1) \<and> (k mod 2^((n+1)-i) \<ge> 2^(n-i))}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
-        = 1" sorry
+
 (*
 abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3  \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if even i
@@ -1791,8 +1985,8 @@ abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
 
 *)
 theorem (in jozsa) deutsch_jozsa_algo_is_correct:
-  shows "\<forall>i\<in>{0..<n}.(prob1 n deutsch_jozsa_algo i) = 0 \<longrightarrow> is_const"
-    and "\<exists>i\<in>{0..<n}.(prob1 n deutsch_jozsa_algo i) \<noteq> 0 \<longrightarrow> is_balanced"
+  shows "\<forall>i\<in>{0..<n}.(prob1 (n+1) deutsch_jozsa_algo i) = 0 \<longrightarrow> is_const"
+    and "\<exists>i\<in>{0..<n}.(prob1 (n+1) deutsch_jozsa_algo i) \<noteq> 0 \<longrightarrow> is_balanced"
   sorry
 
 
