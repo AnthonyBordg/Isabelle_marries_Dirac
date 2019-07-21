@@ -3,6 +3,7 @@ imports
   Quantum
   Tensor
   MoreTensor
+  Binary_Nat
   FFT.FFT
 begin
 
@@ -267,22 +268,226 @@ proof-
     using assms(3) by blast
 qed
 
-lemma adding_term_to_prod:
-  fixes f::"nat \<Rightarrow> complex" and m::"nat"
-  shows "(\<Prod>k<m. f(k)) * f(m) = (\<Prod>k<(Suc m). f(k))"
-  by auto
+primrec qubits :: "nat \<Rightarrow> (nat \<Rightarrow> complex) \<Rightarrow> (nat \<Rightarrow> complex) \<Rightarrow> complex Matrix.mat" where
+  "qubits 0 f g = |Matrix.vec 1 (\<lambda>i. 1)\<rangle>"
+| "qubits (Suc n) f g = qubits n f g \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f(n) else g(n))\<rangle>"
+
+lemma dim_row_qubits[simp]:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "dim_row (qubits n f g) = 2^n"
+proof (induction n)
+  case 0
+  then show ?case
+    using qubits_def ket_vec_def by simp
+next
+  case (Suc n)
+  then show ?case
+    using qubits_def ket_vec_def by simp
+qed
+
+lemma dim_col_qubits[simp]:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "dim_col (qubits n f g) = 1"
+proof (induction n)
+  case 0
+  then show ?case
+    using qubits_def ket_vec_def by simp
+next
+  case (Suc n)
+  then show ?case
+    using qubits_def ket_vec_def by simp
+qed
+
+lemma select_index_div_2:
+  fixes n i j::"nat"
+  assumes "i < 2^(n+1)" and "j<n"
+  shows "select_index n j (i div 2) = select_index (n+1) j i"
+proof-
+  have "2^(n-Suc j) \<le> i div 2 mod 2^(n-j) \<Longrightarrow> 2^(n-j) \<le> i mod 2^(n+1-j)"
+  proof-
+    define a::nat where a0:"a = i div 2 mod 2^(n-j)"
+    assume "2^(n-Suc j) \<le> a"
+    then have "2*a + i mod 2 \<ge> 2^(n-(Suc j)+1)" by simp
+    then have f0:"2*a + i mod 2 \<ge> 2^(n-j)"
+      by (metis Suc_diff_Suc Suc_eq_plus1 assms(2))
+    have "a < 2^(n-j)" using a0 by simp
+    then have "2*a + i mod 2 < 2*2^(n-j)" by linarith
+    then have "2*a + i mod 2 < 2^(n-j+1)" by simp
+    then have f1:"2*a + i mod 2 < 2^(n+1-j)"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    have "i = 2*(a + 2^(n-j)*(i div 2 div 2^(n-j))) + i mod 2" using a0 by simp
+    then have "i = 2*a + i mod 2 + 2^(n-j+1)*(i div 2 div 2^(n-j))" by simp
+    then have "i = 2*a + i mod 2 + 2^(n+1-j)*(i div 2 div 2^(n-j))"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    then have "i mod 2^(n+1-j) = 2*a + i mod 2"
+      using f1 by (metis mod_if mod_mult_self2)
+    then show "2^(n-j) \<le> i mod 2^(n+1-j)"
+      using f0 by simp
+  qed
+  moreover have "2^(n-j) \<le> i mod 2^(n+1-j) \<Longrightarrow> 2^(n-Suc j) \<le> i div 2 mod 2^(n-j)"
+  proof-
+    define a::nat where a0:"a = i div 2 mod 2^(n-j)"
+    assume a1:"2^(n-j) \<le> i mod 2^(n+1-j)"
+    have f0:"2^(n-j) = 2^(n-Suc j+1)"
+      by (metis Suc_diff_Suc Suc_eq_plus1 assms(2))
+    have "a < 2^(n-j)" using a0 by simp
+    then have "2*a + i mod 2 < 2*2^(n-j)" by linarith
+    then have "2*a + i mod 2 < 2^(n-j+1)" by simp
+    then have f1:"2*a + i mod 2 < 2^(n+1-j)"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    have "i = 2*(a + 2^(n-j)*(i div 2 div 2^(n-j))) + i mod 2" using a0 by simp
+    then have "i = 2*a + i mod 2 + 2^(n-j+1)*(i div 2 div 2^(n-j))" by simp
+    then have "i = 2*a + i mod 2 + 2^(n+1-j)*(i div 2 div 2^(n-j))"
+      by (metis Nat.add_diff_assoc2 Suc_leD Suc_leI assms(2))
+    then have "i mod 2^(n+1-j) = 2*a + i mod 2"
+      using f1 by (metis mod_if mod_mult_self2)
+    then have "2*a + i mod 2 \<ge> 2^(n-j)"
+      using a1 by simp
+    then have "(2*a + i mod 2) div 2 \<ge> (2^(n-j)) div 2"
+      using div_le_mono by blast
+    then show "2^(n-Suc j) \<le> a" by (simp add: f0)
+  qed
+  ultimately show ?thesis
+    using select_index_def assms by auto
+qed
+
+lemma qubits_rep:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "qubits n f g = |Matrix.vec (2^n) (\<lambda>j. \<Prod>i<n. if select_index n i j then g(i) else f(i))\<rangle>"
+proof (induction n)
+  case 0
+  define v where d0:"v = |Matrix.vec (2^0) (\<lambda>j. \<Prod>i<0. if select_index 0 i j then g(i) else f(i))\<rangle>"
+  show "qubits 0 f g = v"
+  proof
+    show "dim_row (qubits 0 f g) = dim_row v"
+      using d0 ket_vec_def by simp
+    show "dim_col (qubits 0 f g) = dim_col v"
+      using d0 ket_vec_def by simp
+    show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> qubits 0 f g $$ (i, j) = v $$ (i, j)"
+    proof-
+      fix i j assume "i < dim_row v" and "j < dim_col v"
+      then have "i = 0 \<and> j = 0"
+        using d0 ket_vec_def by simp
+      then show "qubits 0 f g $$ (i, j) = v $$ (i, j)"
+        using d0 by simp
+    qed
+  qed
+next
+  case c1:(Suc n)
+  define v1 where d1:"v1 = |Matrix.vec (2^n) (\<lambda>j. \<Prod>i<n. if select_index n i j then g(i) else f(i))\<rangle>"
+  define v2 where d2:"v2 = |Matrix.vec (2^(Suc n)) (\<lambda>j. \<Prod>i<(Suc n). if select_index (Suc n) i j then g(i) else f(i))\<rangle>"
+  have "qubits n f g = v1" using c1 d1 by simp
+  moreover have "v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f(n) else g(n))\<rangle> = v2"
+  proof
+    show "dim_row (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) = dim_row v2"
+      using d1 d2 ket_vec_def by simp
+    show "dim_col (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) = dim_col v2"
+      using d1 d2 ket_vec_def by simp
+    show "\<And>i j. i < dim_row v2 \<Longrightarrow> j < dim_col v2 \<Longrightarrow> 
+          (v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
+    proof-
+      fix i j assume "i < dim_row v2" and "j < dim_col v2"
+      then have f0:"i < 2^(n+1) \<and> j = 0"
+        using d2 ket_vec_def by simp
+      then have "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = 
+                 (\<Prod>j<n. if select_index n j (i div 2) then g(j) else f(j)) * (if i mod 2 = 0 then f n else g n)"
+        using ket_vec_def d1 by auto
+      then have "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = 
+                 (\<Prod>j<n. if select_index (n+1) j i then g(j) else f(j)) * (if i mod 2 = 0 then f n else g n)"
+        using f0 select_index_div_2 by simp
+      moreover have "(i mod 2 = 0) = (\<not>select_index (n+1) n i)"
+        using f0 select_index_def by auto
+      ultimately show "(v1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i = 0 then f n else g n)\<rangle>) $$ (i, j) = v2 $$ (i, j)"
+        using f0 d2 by simp
+    qed
+  qed
+  ultimately show "qubits (Suc n) f g = v2"
+    using qubits_def by simp
+qed
+
+lemma tensor_with_qubits_0:
+  fixes f g:: "nat \<Rightarrow> complex" and M:: "complex Matrix.mat"
+  shows "M \<Otimes> (qubits 0 f g) = M"
+proof
+  show c0:"dim_row (M \<Otimes> qubits 0 f g) = dim_row M" 
+    using dim_row_tensor_mat dim_row_qubits[of 0 f g] power_0[of 2] by simp 
+  show c1:"dim_col (M \<Otimes> qubits 0 f g) = dim_col M"
+    using dim_row_tensor_mat dim_col_qubits[of 0 f g] by simp
+  show "\<And>i j. i < dim_row M \<Longrightarrow> j < dim_col M \<Longrightarrow> (M \<Otimes> qubits 0 f g) $$ (i, j) = M $$ (i, j)"
+    using qubits.simps(1) index_tensor_mat c0 c1 by simp
+qed
+
+lemma qubits_tensor_eq:
+  fixes n:: nat and f1 f2 g1 g2:: "nat \<Rightarrow> complex"
+  assumes "\<forall>j<2^n. \<forall>i<n. (select_index n i j \<longrightarrow> g1(i) = g2(i)) \<and> (\<not> select_index n i j \<longrightarrow> f1(i) = f2(i))"
+  shows "qubits n f1 g1 = qubits n f2 g2"
+proof
+  show "dim_col (qubits n f1 g1) = dim_col (qubits n f2 g2)" 
+    using dim_col_qubits by simp
+  show "dim_row (qubits n f1 g1) = dim_row (qubits n f2 g2)"
+    using dim_row_qubits by simp
+  show "\<And>i j. i < dim_row (qubits n f2 g2) \<Longrightarrow>
+           j < dim_col (qubits n f2 g2) \<Longrightarrow> qubits n f1 g1 $$ (i, j) = qubits n f2 g2 $$ (i, j)"
+  proof-
+    have f0:"\<And>i. i < dim_row (qubits n f2 g2) \<Longrightarrow> i < 2^n" 
+      using dim_row_qubits by simp
+    moreover have f1:"\<And>j. j < dim_col (qubits n f2 g2) \<Longrightarrow> j = 0"
+      using dim_col_qubits by simp
+    ultimately show "\<And>i j. i < dim_row (qubits n f2 g2) \<Longrightarrow>
+           j < dim_col (qubits n f2 g2) \<Longrightarrow> qubits n f1 g1 $$ (i, j) = qubits n f2 g2 $$ (i, j)"
+      using assms eq_vecI f0 prod.cong qubits_rep by (smt dim_vec index_vec lessThan_iff)
+  qed
+qed
+
+lemma qubits_tensor_prod:
+  fixes n1 n2 n3:: "nat" and f1 f2 f3 g1 g2 g3:: "nat \<Rightarrow> complex"
+  assumes "n1 = n2 + n3" and "\<forall>i < n2. f2 i = f1 i \<and> g2 i = g1 i" and 
+"\<forall>i < n3. f3 i = f1 (i + n2) \<and> g3 i = g1 (i + n2)"
+  shows "qubits n1 f1 g1 = qubits n2 f2 g2 \<Otimes> qubits n3 f3 g3"
+  using assms
+proof(induction n3 arbitrary: n1 n2)
+  case 0
+  assume "n1 = n2 + 0" and "\<forall>i < n2. f2 i = f1 i \<and> g2 i = g1 i"
+  then show "qubits n1 f1 g1 = qubits n2 f2 g2 \<Otimes> qubits 0 f3 g3"
+    using qubits_tensor_eq tensor_with_qubits_0 by simp
+next
+  case (Suc n3)
+  assume a0:"\<And>n1 n2.
+           n1 = n2 + n3 \<Longrightarrow>
+           \<forall>i<n2. f2 i = f1 i \<and> g2 i = g1 i \<Longrightarrow>
+           \<forall>i<n3. f3 i = f1 (i + n2) \<and> g3 i = g1 (i + n2) \<Longrightarrow>
+           qubits n1 f1 g1 = qubits n2 f2 g2 \<Otimes> qubits n3 f3 g3" and a1:"n1 = n2 + Suc n3" and
+a2:"\<forall>i<n2. f2 i = f1 i \<and> g2 i = g1 i" and a3:"\<forall>i<Suc n3. f3 i = f1 (i + n2) \<and> g3 i = g1 (i + n2)"
+  then show "qubits n1 f1 g1 = qubits n2 f2 g2 \<Otimes> qubits (Suc n3) f3 g3"
+  proof-
+    have f0:"n1 - 1 = n2 + n3" using a1 by simp
+    moreover have "qubits n2 f2 g2 \<Otimes> qubits (Suc n3) f3 g3 = 
+qubits n2 f2 g2 \<Otimes> (qubits n3 f3 g3 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f3(n3) else g3(n3))\<rangle>)"
+      using qubits.simps(2) by simp
+    moreover have "\<dots> = (qubits n2 f2 g2 \<Otimes> qubits n3 f3 g3) \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f3(n3) else g3(n3))\<rangle>"
+      using tensor_mat_is_assoc by simp
+    moreover have "\<dots> = (qubits n2 f2 g2 \<Otimes> qubits n3 f3 g3) \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f1(n1-1) else g1(n1-1))\<rangle>"
+      using a3 f0 by (metis (full_types) add.commute lessI)
+    moreover have "\<dots> = qubits (n1-1) f1 g1 \<Otimes> |Matrix.vec 2 (\<lambda>i. if i=0 then f1(n1-1) else g1(n1-1))\<rangle>"
+      using a0[of "n1-1" "n2"] a2 a3 f0 by simp
+    ultimately show ?thesis 
+      using qubits.simps(2) by (metis a1 add.commute add_Suc)
+  qed
+qed
 
 lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
-  shows "m \<le> n \<Longrightarrow> qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
-         root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-         (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
+  shows "m \<le> n \<Longrightarrow> qft_no_swap n m v = qubits n 
+         (\<lambda>j. (if j<m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
+         (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
+                      else (if select_index n j i then 1 else 0))*(sqrt(1/2)^m))"
 proof (induction m)
   case 0
-  define w where d0:"w = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<0. if select_index n k j then 
-        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) *
-        (\<Prod>k<n-0. if select_index n (k+0) i = select_index n (k+0) j then 1 else 0) / (sqrt(2)^0))"
+  define w where d0:"w = qubits n 
+         (\<lambda>j. (if j<0 then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^0))
+         (\<lambda>j. (if j<0 then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
+                      else (if select_index n j i then 1 else 0))*(sqrt(1/2)^0))"
   have "qft_no_swap n 0 v = w"
   proof
     show "dim_vec (qft_no_swap n 0 v) = dim_vec w"
@@ -290,54 +495,74 @@ proof (induction m)
     show " \<And>j. j < dim_vec w \<Longrightarrow> (qft_no_swap n 0 v) $ j = w $ j"
     proof-
       fix j assume "j < dim_vec w"
-      then show "(qft_no_swap n 0 v) $ j = w $ j"
-        by (simp add: assms(1,2) d0 uniq_select_index)
+      moreover have "\<And>k l. k<n \<Longrightarrow> (if select_index n k l then if select_index n k i then 1 else 0 else complex_of_real (if select_index n k i then 0 else 1)) = 
+            (if (select_index n k l = select_index n k i) then 1 else 0)"
+        by simp
+      ultimately show "(qft_no_swap n 0 v) $ j = w $ j"
+        using qubits_rep
+        by (auto simp add: assms(1,2) d0 uniq_select_index)
     qed
   qed
   then show "0 \<le> n \<Longrightarrow> qft_no_swap n 0 v = w" by simp
 next
   case c0:(Suc m)
-  then have c1:"qft_no_swap n m v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<m. if select_index n k j then 
-             (root (2^(n-k)))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-             (\<Prod>k<n-m. if (select_index n (k+m) i = select_index n (k+m) j) then 1 else 0) / (sqrt(2)^m))"
+  then have c1:"qft_no_swap n m v = qubits n 
+               (\<lambda>j. (if j<m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
+               (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
+                            else (if select_index n j i then 1 else 0))*(sqrt(1/2)^m))"
     by simp
-  have "\<And>t. t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = Matrix.vec (2^n) (\<lambda>j. 
-        (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-        (if select_index n m j then (root (2^(n-k)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
-        (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
-  proof-
-    fix t
-    show "t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = Matrix.vec (2^n) (\<lambda>j. 
-          (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-          (if select_index n m j then (root (2^(n-k)))^(\<Sum>l<t+1. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
-          (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
-    proof (induction t)
-      case 0
-      then show ?case
-        using c1 qft_single_qbit_def
-        apply auto
-        sorry
-    next
-      case (Suc t)
-      then show ?case
-        using c1 qft_single_qbit_def
-        apply auto
-        sorry
-    qed
-  qed
-  moreover have "n-(Suc m)+1 = n-m" using c0 by auto
-  ultimately have "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. 
-             (\<Prod>k<m. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-             (if select_index n m j then (root (2^(n-k)))^(\<Sum>l<n-m. (2^(n-m-l)) * (if select_index n (l+m) j then 1 else 0)) else 1) *
-             (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
-    using qft_no_swap_def
-    by auto
-  then show "qft_no_swap n (Suc m) v = Matrix.vec (2^n) (\<lambda>j. (\<Prod>k<(Suc m). if select_index n k j then 
-        root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1) * 
-        (\<Prod>k<n-(Suc m). if (select_index n (k+(Suc m)) i = select_index n (k+(Suc m)) j) then 1 else 0) / (sqrt(2)^(Suc m)))"
-    using adding_term_to_prod[of "\<lambda>k. if select_index n k j then root (2^(n-k))^(\<Sum>l<(n-k). (2^(n-k-l)) * (if select_index n (l+k) j then 1 else 0)) else 1" "m"]
-    apply auto (* I don't know why auto can't automatically prove this; the goal is already reduced to a proposition of form X = X. *)
+  have "t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = qubits n 
+        (\<lambda>j. (if j\<le>m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
+        (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+k) i then 1 else 0)) 
+                     else (if j=m then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l))*(if select_index n (l+m) i then 1 else 0)) 
+                                  else(if select_index n j i then 1 else 0)))*(sqrt(1/2)^m))"
     sorry
+  moreover have "n-(Suc m)+1 = n-m" using c0 by auto
+  ultimately show "qft_no_swap n (Suc m) v = qubits n 
+                   (\<lambda>j. (if j<(Suc m) then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^(Suc m)))
+                   (\<lambda>j. (if j<(Suc m) then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+k) i then 1 else 0)) 
+                                else (if select_index n j i then 1 else 0))*(sqrt(1/2)^(Suc m)))"
+    using qft_no_swap_def qubits_def
+    sorry
+qed
+
+lemma select_index_eq_bin_rep:
+  fixes n m i:: nat
+  assumes "n \<ge> 1" and "m < 2^n" and "i < n"
+  shows "bin_rep n m ! i = (if (select_index n i (nat m)) then 1 else 0)"
+proof-
+  have "m mod 2^(n-i) < 2^(n-i)" by simp
+  moreover have f0:"2*2^(n-1-i) = 2^(n-1-i+1)" using power_add by auto
+  moreover have f1:"(n-1-i+1) = (n-i)" using assms(3) by linarith
+  ultimately have "m mod 2^(n-i) < 2*2^(n-1-i)" by metis
+  then have "m mod 2^(n-i) div 2^(n-1-i) < 2" using less_mult_imp_div_less by simp
+  moreover have "2^(n-1-i) \<le> m mod 2^(n-i) \<Longrightarrow> m mod 2^(n-i) div 2^(n-1-i) \<ge> 1"
+    by (metis (no_types) div_greater_zero_iff div_mult2_eq nat_mult_1 nat_zero_less_power_iff pos2 
+semiring_normalization_rules(7))
+  ultimately have "2^(n-1-i) \<le> m mod 2^(n-i) \<Longrightarrow> int(m mod 2^(n-i) div 2^(n-1-i)) = 1" by simp 
+  thus ?thesis 
+    using bin_rep_index select_index_def assms
+    by (smt One_nat_def Suc_diff_1 Suc_leI Suc_le_mono div_greater_zero_iff int_nat_eq less_imp_of_nat_less 
+nat_2 nat_int of_nat_0_less_iff of_nat_power one_add_one plus_1_eq_Suc zdiv_int zmod_int)
+qed
+
+lemma swap_of_qubits:
+  fixes n::"nat" and f g::"nat \<Rightarrow> complex"
+  shows "SWAP n * qubits n f g = qubits n (\<lambda>i. f(n-1-i)) (\<lambda>i. g(n-1-i))"
+proof
+  define v where d0:"v = qubits n (\<lambda>i. f (n-1-i)) (\<lambda>i. g (n-1-i))"
+  show "dim_row (SWAP n * qubits n f g) = dim_row v"
+    using SWAP_def qubits_def d0 by simp
+  show "dim_col (SWAP n * qubits n f g) = dim_col v"
+    using SWAP_def qubits_def d0 by simp
+  show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> (SWAP n * qubits n f g) $$ (i, j) = v $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row v" and "j < dim_col v"
+    then show "(SWAP n * qubits n f g) $$ (i, j) = v $$ (i, j)"
+      using SWAP_def qubits_rep d0 ket_vec_def uniq_select_index
+      apply (auto simp add: times_mat_def scalar_prod_def)
+      sorry
+  qed
 qed
 
 lemma qft_of_unit_vec:
@@ -357,6 +582,27 @@ proof
   qed
 qed
 
+lemma sum_of_unit_vec:
+  fixes v::"complex Matrix.vec"
+  assumes "dim_vec v = n"
+  shows "v = finsum_vec TYPE(complex) n (\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k) {0..<n}"
+proof
+  define w where d0:"w = finsum_vec TYPE(complex) n (\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k) {0..<n}"
+  show c0:"dim_vec v = dim_vec w"
+    using finsum_vec_closed[of "(\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k)" "{0..<n}" "n"] carrier_vec_def unit_vec_def assms d0
+    by auto
+  show "\<And>i. i < dim_vec w \<Longrightarrow> v $ i = w $ i"
+  proof-
+    fix i assume "i < dim_vec w"
+    moreover have "(\<Sum>f = 0..<dim_vec v. v $ f * (if i = f then 1 else 0)) = 
+                   (\<Sum>f = 0..<dim_vec v. (if i = f then v $ f else 0))"
+      using sum.cong
+      by (smt mult_cancel_left1 mult_cancel_right1)
+    ultimately show "v $ i = w $ i"
+      using index_finsum_vec[of "{0..<n}" "i" "n" "(\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec n k)"] d0 c0 assms
+      by simp
+  qed
+qed
 
 theorem qft_fourier: 
   fixes v::"complex Matrix.vec"
