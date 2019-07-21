@@ -439,5 +439,33 @@ proof -
    finally show ?thesis by(simp add: tensor_mat_def)
  qed
 
+lemma tensor_mat_is_assoc:
+  fixes A B C:: "complex Matrix.mat"
+  shows "A \<Otimes> (B \<Otimes> C) = (A \<Otimes> B) \<Otimes> C"
+proof-
+  define M where d:"M = mat_of_cols_list (dim_row B * dim_row C) (mult.Tensor (*) (mat_to_cols_list B) (mat_to_cols_list C))"
+  then have "B \<Otimes> C = M" 
+    using tensor_mat_def by simp
+  moreover have "A \<Otimes> (B \<Otimes> C) = mat_of_cols_list (dim_row A * (dim_row B * dim_row C))
+(mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list M))"
+    using tensor_mat_def d dim_row_tensor_mat by simp
+  moreover have "mat_to_cols_list M = mult.Tensor (*) (mat_to_cols_list B) (mat_to_cols_list C)"
+    using d list_to_mat_to_cols_list
+    by (smt calculation(1) dim_col_tensor_mat length_greater_0_conv length_mat_to_cols_list mat_to_cols_list_is_mat 
+mult.Tensor.simps(1) mult.Tensor_null mult.well_defined_Tensor nat_0_less_mult_iff plus_mult_cpx plus_mult_def row_length_mat_to_cols_list)
+  ultimately have "A \<Otimes> (B \<Otimes> C) = mat_of_cols_list (dim_row A * (dim_row B * dim_row C))
+(mult.Tensor (*) (mat_to_cols_list A) (mult.Tensor (*) (mat_to_cols_list B) (mat_to_cols_list C)))" by simp
+  moreover have "\<dots> = mat_of_cols_list ((dim_row A * dim_row B) * dim_row C) 
+(mult.Tensor (*) (mult.Tensor (*) (mat_to_cols_list A) (mat_to_cols_list B)) (mat_to_cols_list C))"
+    using Matrix_Tensor.mult.associativity
+    by (smt length_greater_0_conv length_mat_to_cols_list linordered_field_class.sign_simps(4) 
+mat_to_cols_list_is_mat mult.Tensor.simps(1) mult.Tensor_null plus_mult_cpx plus_mult_def)
+  ultimately show ?thesis
+    using tensor_mat_def
+    by (smt Tensor.mat_of_cols_list_def dim_col_mat(1) dim_col_tensor_mat dim_row_tensor_mat length_0_conv 
+list_to_mat_to_cols_list mat_to_cols_list_is_mat mult.well_defined_Tensor mult_is_0 neq0_conv 
+plus_mult_cpx plus_mult_def row_length_mat_to_cols_list)
+qed
+
 
 end
