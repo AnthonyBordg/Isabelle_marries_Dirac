@@ -1750,6 +1750,22 @@ lemma (in jozsa) deutsch_jozsa_algo_result_is_state:
 
 text \<open>Measurement\<close>
 
+(*HL to AB: I want to show that the probability that the first n qubits of deutsch_jozsa_algo are 0 
+is 
+
+(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) 
+= (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+= (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+
+Intuitively this makes sense to me. We search all indices where this n indices are 0. But the proof that
+{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} is the right set to choose from is hard.
+
+First, I tried to give the probability for (prob0 (n+1) deutsch_jozsa_algo i) for each i<n (see below) but that 
+was very hard. 
+*)
+
+
+
 (*Maybe try different approach. Do not show that measuring each qubit \<le>n yields 0 with prob 1 but that
 measuring n qubits in state 0 yields one. but how?*)
 
@@ -1760,13 +1776,24 @@ definition prob_first_m_qubits_0 ::"nat \<Rightarrow> complex Matrix.mat \<Right
 "prob_first_m_qubits_0 n v m \<equiv>
   if state n v then \<Sum>j\<in>{k| k i::nat. (k<2^n) \<and> i<m \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
 
+(*Rather take this one for now (if proven use it without definition just as a fact)*)
+(*PUT IN deutsch_jozsa_algo INSTEAD OF V*)
 definition prob_first_m_qubits_0' ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> real" where
 "prob_first_m_qubits_0' n v \<equiv>
   if state (n+1) v then \<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
 
 
+(*Show that the probability that the first n qubits of a n+1 qubit system are 0 is equal to the 
+probability that the first qubit is zero times the prob that the second is zero and so on.*)
 lemma
+  fixes j n ::nat
   shows "\<forall>v. state (n+1) v \<longrightarrow> (\<Prod>i\<in>{0..n} . prob0 (n+1) v i) = prob_first_m_qubits_0' n v" 
+proof (rule allI,rule impI)
+  fix v
+  assume "state (n+1) v "
+  show "(\<Prod>i\<in>{0..n} . prob0 (n+1) v i) = prob_first_m_qubits_0' n v" 
+    oops
+qed
 (*proof (rule allI,induction n,rule impI)
   fix v 
   assume a0: "state (0+1) v "
@@ -1781,7 +1808,7 @@ next
   fix v n
   assume IH: "\<And>v. state (n + 1) v \<longrightarrow> prod (prob0 (n + 1) v) {0..n} = prob_first_m_qubits_0' n v"
   show "state (Suc n + 1) v \<longrightarrow> prod (prob0 (Suc n + 1) v) {0..Suc n} = prob_first_m_qubits_0' (Suc n) v" 
-qed*)sorry
+qed*)
 
 
 (*
@@ -1794,19 +1821,108 @@ definition prob0 ::"nat \<Rightarrow> complex mat \<Rightarrow> nat \<Rightarrow
 
 
 *)
-value " (bin_rep 3 1)!1" 
+value " (bin_rep 4 0)" 
 value "(nat (0 \<cdot>\<^bsub>3\<^esub>  7))"
 
-lemma q2:
+lemma bitwise_inner_prod_with_zero:
   assumes "k<2^n"
   shows "(nat (0 \<cdot>\<^bsub>n\<^esub>  k)) = 0" 
-  sorry
-(*    have "k<n \<longrightarrow> bin_rep n (0 div 2)!k = 0" for k 
-      using bin_rep_def bin_rep_aux_def bin_rep_index assms  
-      by simp*)
+proof-
+  have "(nat (0 \<cdot>\<^bsub>n\<^esub>  k)) = nat (\<Sum>j\<in>{0..<n}. (bin_rep n 0)!j * (bin_rep n k)!j)" 
+    using bitwise_inner_prod_def by auto
+  moreover have "nat (\<Sum>j\<in>{0..<n}. (bin_rep n 0)!j * (bin_rep n k)!j) 
+                =  nat (\<Sum>j\<in>{0..<n}. 0 * (bin_rep n k)!j)" by (simp add: bin_rep_index)
+  ultimately show "(nat (0 \<cdot>\<^bsub>n\<^esub>  k)) = 0" by auto
+qed
 
-lemma q1:
-"{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" sorry
+
+value "\<not>(select_index 1 0 0)"
+
+
+lemma u5:
+  fixes j n::nat
+  shows "j mod 2^(n+1) < 2^n \<longrightarrow> j \<notin> {2^n..<2^(n+1)}" 
+  by force
+
+value "(\<forall>i\<in>{0..1}.( (2::nat)\<notin>{2^(1-i)+1..2^((1+1)-i)})) \<and>
+   ((2::nat)\<in>{(0::nat)..<(2::nat)^(1+1)})\<longrightarrow> (2::nat)\<in>{0,1}"
+
+lemma
+  fixes  k n::nat
+  assumes "n\<ge>1"
+  shows "\<forall>i\<in>{0..n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)}) \<and>
+   (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" 
+proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  show "\<forall>i\<in>{0..1}.( k\<notin>{2^(1-i)+1..2^((1+1)-i)}) \<and> (k\<in>{0..<2^(1+1)}) \<longrightarrow> k\<in>{0,1}" sorry
+next
+ 
+   
+next
+  fix n
+  assume IH:"\<forall>i\<in>{0..<n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)}) \<longrightarrow>
+   (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}"
+  and "n\<ge>1"
+  have "\<forall>i\<in>{0..<Suc n}. k \<notin> {2 ^ (Suc n - i)+1..2 ^ (Suc n + 1 - i)} \<longrightarrow>
+        (\<forall>i\<in>{0..<n}. k \<notin> {2 ^ (Suc n - i)+1..2 ^ (Suc n + 1 - i)}) \<and> ( k \<notin> {2 ^ (Suc n - n)..<2 ^ (Suc n + 1 - n)}) "
+  show "\<forall>i\<in>{0..<Suc n}. k \<notin> {2 ^ (Suc n - i)..<2 ^ (Suc n + 1 - i)} \<longrightarrow> k \<in> {0..<2 ^ (Suc n + 1)} \<longrightarrow> k \<in> {0, 1}" 
+
+qed
+
+
+lemma 
+  fixes n::nat
+  assumes "n\<ge>1"
+  shows "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" 
+proof-
+  have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} =
+        {k| k i::nat. (k\<in>{0..<2^(n+1)}) \<and> i\<in>{0..<n} \<and> \<not> select_index (n+1) i k} " by auto
+  then have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}  = {k| k i::nat. (k\<in>{0..<2^(n+1)}) \<and> i\<in>{0..<n} \<and> (k mod 2^((n+1)-i) < 2^(n-i))} "
+    using select_index_def by auto
+  moreover have "(k\<in>{0..<2^(n+1)}) \<and> i\<in>{0..<n} \<longrightarrow> (k mod 2^((n+1)-i) < 2^(n-i)) \<longrightarrow> k\<notin>{2^(n-i)..<2^((n+1)-i)}"
+    for i k::nat using u5[of k "(n-i)"] 
+    by (simp add: mod_if) 
+  have "(\<forall>i\<in>{0..<n}.k\<notin>{2^(n-i)..<2^((n+1)-i)})\<and>(k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" for k::nat sorry 
+      (*induction up to n needed?*)
+  ultimately have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" sorry
+qed
+
+
+(* proof (induction n rule: ind_from_1)
+  show "n\<ge>1" using assms by auto
+next
+  have "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} = 
+        {k| k i::nat. (k\<in>{0,1,2,3}) \<and> i<1 \<and> \<not> select_index (1+1) i k} " by auto
+  also have "... = {k| k i::nat. (k\<in>{0,1,2,3}) \<and> i<1 \<and> \<not> select_index 2 i k}" 
+    by (metis one_add_one)
+  also have "... = {k| k i::nat. (k\<in>{0,1,2,3}) \<and> i=0 \<and> \<not> ((i\<le>1) \<and> (k\<le>3) \<and> (k mod 2^(2-i) \<ge> 2^(1-i)))}" 
+    by (simp add: select_index_def)
+  also have "... = {k| k ::nat. (k\<in>{0,1,2,3}) \<and> (k mod 4 < 2)}" 
+    by auto
+  finally have "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} = {k| k ::nat. (k\<in>{0,1,2,3}) \<and> (k mod 4 < (2::nat))}"
+    by auto
+  moreover have "(0 mod 4 < (2::nat))" by simp
+  moreover have "(1 mod 4 < (2::nat))" by simp
+  moreover have "\<not>(2 mod 4 < (2::nat))" by simp
+  moreover have "\<not>(3 mod 4 < (2::nat))" by simp
+  ultimately have "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} 
+      =  {k| k ::nat. (k\<in>{0,1,2,3}) \<and> (k \<in>{0,1})}" 
+    using set_4 
+    by (smt Collect_cong atLeastLessThan_iff mod_less set_2)
+  then show  "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} = {0,1}" by auto
+next
+  fix n 
+  assume IH: "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" 
+     and a0: "n\<ge>1"
+  have "{k| k i::nat. (k<2^(n+2)) \<and> i<(n+1) \<and> \<not> select_index (n+2) i k} = "
+qed*)
+
+
+definition select_index ::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
+"select_index n i j \<equiv> (i\<le>n-1) \<and> (j\<le>2^n - 1) \<and> (j mod 2^(n-i) \<ge> 2^(n-1-i))"
+
+
 
   declare [[show_types]]
   declare [[show_sorts]]
