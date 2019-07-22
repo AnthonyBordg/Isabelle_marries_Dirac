@@ -1755,6 +1755,8 @@ lemma (in jozsa) deutsch_jozsa_algo_result_is_state:
   using \<psi>\<^sub>3_is_state by simp
 
 
+
+
 text \<open>Measurement\<close>
 
 (*HL to AB: I want to show that the probability that the first n qubits of deutsch_jozsa_algo are 0 
@@ -1788,6 +1790,68 @@ definition prob_first_m_qubits_0 ::"nat \<Rightarrow> complex Matrix.mat \<Right
 definition prob_first_m_qubits_0' ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> real" where
 "prob_first_m_qubits_0' n v \<equiv>
   if state (n+1) v then \<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
+
+
+
+(*How can I even proof this? I will first try a pen and paper proof somehow. It must also use properties of 
+state vectors and seems so difficult...*)
+lemma 
+  shows "(\<Prod>i\<in>{0..n} . (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)"
+proof (induction n) (*can an induction even work?*)
+  show "(\<Prod>i\<in>{0..0} . (\<Sum>j\<in>{k| k::nat. (k<2^(0+1)) \<and> (k mod 2^((Suc 0)-i) < 2^(0-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(0+1)) \<and> i\<le>0 \<and> (k mod 2^((Suc 0)-i) < 2^(0-i))}. (cmod(v $$ (j,0)))\<^sup>2)"
+    by auto
+next
+  fix n
+  assume "(\<Prod>i\<in>{0..n} . (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)"
+  have "i< (Suc n) \<longrightarrow>  {k| k::nat. (k<2^((Suc n)+1)) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}
+        = {k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and> 
+                       (k<2^(n+1)) \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}
+        \<union> {k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and>
+              ((k\<ge>2^(n+1)) \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i)))}" for i by auto
+  then have "i< (Suc n) \<longrightarrow> (\<Prod>i\<in>{0..(Suc n)} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1)) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Prod>i\<in>{0..(Suc n)} . 
+(\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and> 
+                       (k<2^(n+1)) \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}
+        \<union> {k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and>
+              ((k\<ge>2^(n+1)) \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i)))}. (cmod(v $$ (j,0)))\<^sup>2)) " for i sorry
+
+  then have "i< (Suc n) \<longrightarrow> (\<Prod>i\<in>{0..(Suc n)} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1)) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Prod>i\<in>{0..(Suc n)} .
+          ((\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and> 
+                       (k<2^(n+1)) \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2))  
+          +(\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and>
+              ((k\<ge>2^(n+1)) \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i)))}. (cmod(v $$ (j,0)))\<^sup>2))" for i sledgehammer
+
+  have "(\<Prod>i\<in>{0..(Suc n)} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1)) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Prod>i\<in>{0..n} . (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2))
+          * (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((Suc n)-(Suc n)) < 2^(n-(Suc n)))}. (cmod(v $$ (j,0)))\<^sup>2)
+        + (\<Prod>i\<in>{0..(Suc n)} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and>
+              ((k\<ge>2^(n+1)) \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i)))}. (cmod(v $$ (j,0)))\<^sup>2)) " sorry
+  have "(\<Prod>i\<in>{0..n} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1)) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2)) 
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)
+          * (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((Suc n)-(Suc n)) < 2^(n-(Suc n)))}. (cmod(v $$ (j,0)))\<^sup>2)
+        + (\<Prod>i\<in>{0..n} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and>
+              ((k\<ge>2^(n+1)) \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i)))}. (cmod(v $$ (j,0)))\<^sup>2)) " sorry
+  have "(\<Prod>i\<in>{0..n} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))) \<and>
+              ((k\<ge>2^(n+1)) \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i)))}. (cmod(v $$ (j,0)))\<^sup>2))
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)" sorry
+  have "(\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)
+          * (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (k mod 2^((Suc n)-(Suc n)) < 2^(n-(Suc n)))}. (cmod(v $$ (j,0)))\<^sup>2)
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(n+2)) \<and> i\<le>(n+1) \<and> (k mod 2^((Suc (n+1))-i) < 2^((n+1)-i))}. (cmod(v $$ (j,0)))\<^sup>2)" sorry
+  have "(\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> (k mod 2^((Suc n)-i) < 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2)
+      + (\<Sum>j\<in>{k| k i::nat. (k<2^((Suc n)+1)) \<and> i\<le>(Suc n) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i)) \<and> 
+                           (k\<ge>2^(n+1)) \<or> i>n \<or> (k mod 2^((Suc n)-i) \<ge> 2^(n-i))}. (cmod(v $$ (j,0)))\<^sup>2) 
+      = (\<Sum>j\<in>{k| k i::nat. (k<2^((Suc n)+1)) \<and> i\<le>(Suc n) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2)"
+    sorry
+  show "(\<Prod>i\<in>{0..(Suc n)} . (\<Sum>j\<in>{k| k::nat. (k<2^((Suc n)+1)) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2))
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^((Suc n)+1)) \<and> i\<le>(Suc n) \<and> (k mod 2^((Suc (Suc n))-i) < 2^((Suc n)-i))}. (cmod(v $$ (j,0)))\<^sup>2)"
+
+
+
+
 
 
 (*Show that the probability that the first n qubits of a n+1 qubit system are 0 is equal to the 
@@ -1850,15 +1914,6 @@ lemma u5:
   fixes j n::nat
   shows "j mod 2^(n+1) < 2^n \<longrightarrow> j \<notin> {2^n..<2^(n+1)}" 
   by force
-
-value "{(2::nat)^(1-0)+1..2^((1+1)-0)}"
-value "{(2::nat)^(1-1)+1..2^((1+1)-1)}"
-value "2\<notin>{(2::nat)^(1-1)+1..2^((1+1)-1)}"
-value"(2::nat)^(1-1)+1"
-value "(2::nat)\<notin>{(2::nat)^(1-0)+1..2^((1+1)-0)}"
-value "(2::nat)\<notin>{(2::nat)^(1-1)+1..2^((1+1)-1)}"
-
-value "\<forall>i\<in>{0,1}.( (2::nat)\<notin>{(2::nat)^(1-i)+1..2^((1+1)-i)}) " 
 
 lemma measure_if_first_n_qubits_zero_remaining_indices: (*Rename if stays*)
   fixes  k n::nat
