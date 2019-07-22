@@ -1492,7 +1492,14 @@ qed
 abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3  \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if even i
                                          then (\<Sum> k < 2^n. (-1)^(f(k) + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
-                                          else (\<Sum> k < 2^n. (-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) )"
+                                          else  (\<Sum> k < (2::nat)^n.(-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))
+                                                 /(sqrt(2)^n * sqrt(2)^(n+1))))"
+
+lemma (in jozsa) \<psi>\<^sub>3_values:
+  fixes k
+  assumes "i<dim_row \<psi>\<^sub>3"
+  shows "odd i \<longrightarrow> \<psi>\<^sub>3 $$ (i,0) = (\<Sum> k < (2::nat) ^n. (-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n * sqrt(2)^(n+1)))"
+  using assms by auto
 
 
 lemma sum_every_odd_summand_is_zero:
@@ -1844,142 +1851,151 @@ lemma u5:
   shows "j mod 2^(n+1) < 2^n \<longrightarrow> j \<notin> {2^n..<2^(n+1)}" 
   by force
 
-value "(\<forall>i\<in>{0..1}.( (2::nat)\<notin>{2^(1-i)+1..2^((1+1)-i)})) \<and>
-   ((2::nat)\<in>{(0::nat)..<(2::nat)^(1+1)})\<longrightarrow> (2::nat)\<in>{0,1}"
+value "{(2::nat)^(1-0)+1..2^((1+1)-0)}"
+value "{(2::nat)^(1-1)+1..2^((1+1)-1)}"
+value "2\<notin>{(2::nat)^(1-1)+1..2^((1+1)-1)}"
+value"(2::nat)^(1-1)+1"
+value "(2::nat)\<notin>{(2::nat)^(1-0)+1..2^((1+1)-0)}"
+value "(2::nat)\<notin>{(2::nat)^(1-1)+1..2^((1+1)-1)}"
 
-lemma
+value "\<forall>i\<in>{0,1}.( (2::nat)\<notin>{(2::nat)^(1-i)+1..2^((1+1)-i)}) " 
+
+lemma measure_if_first_n_qubits_zero_remaining_indices: (*Rename if stays*)
   fixes  k n::nat
   assumes "n\<ge>1"
-  shows "\<forall>i\<in>{0..n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)}) \<and>
-   (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" 
+  shows "(\<forall>i\<in>{0..n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)})) \<and> (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" 
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  show "\<forall>i\<in>{0..1}.( k\<notin>{2^(1-i)+1..2^((1+1)-i)}) \<and> (k\<in>{0..<2^(1+1)}) \<longrightarrow> k\<in>{0,1}" sorry
-next
- 
-   
+  have "(\<forall>i\<in>{0,1}.(k\<notin>{(2::nat)^(1-i)+1..2^((1+1)-i)})) \<longrightarrow> (k\<notin>{(2::nat)^(1-1)+1..2^((1+1)-0)})" 
+    using set_2 assms by auto
+  moreover have "k\<notin>{(2::nat)^(1-1)+1..2^((1+1)-0)}  \<and> k\<in>{0..<2^(1+1)} \<longrightarrow> k\<in>{0,1}" by auto
+  ultimately show "((\<forall>i\<in>{0..1}.(k\<notin>{2^(1-i)+1..2^((1+1)-i)})) \<and> (k\<in>{0..<2^(1+1)})) \<longrightarrow> k\<in>{0,1}" 
+    using atLeastAtMost_iff by blast
 next
   fix n
-  assume IH:"\<forall>i\<in>{0..<n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)}) \<longrightarrow>
-   (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}"
+  assume IH: "(\<forall>i\<in>{0..n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)})) \<and> (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" 
   and "n\<ge>1"
-  have "\<forall>i\<in>{0..<Suc n}. k \<notin> {2 ^ (Suc n - i)+1..2 ^ (Suc n + 1 - i)} \<longrightarrow>
-        (\<forall>i\<in>{0..<n}. k \<notin> {2 ^ (Suc n - i)+1..2 ^ (Suc n + 1 - i)}) \<and> ( k \<notin> {2 ^ (Suc n - n)..<2 ^ (Suc n + 1 - n)}) "
-  show "\<forall>i\<in>{0..<Suc n}. k \<notin> {2 ^ (Suc n - i)..<2 ^ (Suc n + 1 - i)} \<longrightarrow> k \<in> {0..<2 ^ (Suc n + 1)} \<longrightarrow> k \<in> {0, 1}" 
-
+  show "(\<forall>i\<in>{0..Suc n}. k \<notin> {2 ^ (Suc n - i) + 1..2 ^ (Suc n + 1 - i)}) \<and> k \<in> {0..<2 ^ (Suc n + 1)} \<longrightarrow> k \<in> {0, 1}" 
+  proof
+    assume a0: "(\<forall>i\<in>{0..Suc n}. k \<notin> {2 ^ (Suc n - i) + 1..2 ^ (Suc n + 1 - i)}) \<and> k \<in> {0..<2 ^ (Suc n + 1)}"
+    then have f0:"(\<forall>i\<in>{0..n}. k \<notin> {2 ^ (n - i) + 1..2 ^ (n + 1 - i)})" 
+      using Suc_eq_plus1 Suc_leI atLeastAtMost_iff diff_Suc_Suc zero_le by force
+    then have "(k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" 
+      using IH by auto
+    moreover have "(k>2^(n+1)) \<longrightarrow> k\<in>{0,1}" 
+      by (metis One_nat_def Suc_eq_plus1 Suc_leI a0 add_Suc_shift add_diff_cancel_right' atLeastAtMost_iff 
+          atLeastLessThan_iff le_add2 le_add_same_cancel2 less_imp_le_nat)
+    moreover have "(k=2^(n+1)) \<longrightarrow> k\<in>{0,1}" 
+      using f0
+      by (metis Suc_1 Suc_eq_plus1 Suc_leI atLeastLessThanSuc_atLeastAtMost atLeastLessThan_iff diff_zero le0 
+          lessI power_strict_increasing_iff zero_less_Suc)
+    ultimately show "k\<in>{0,1}" 
+      using a0 
+      by (meson atLeastLessThan_iff nat_neq_iff) 
+  qed
 qed
 
 
-lemma 
-  fixes n::nat
-  assumes "n\<ge>1"
-  shows "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" 
-proof-
-  have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} =
-        {k| k i::nat. (k\<in>{0..<2^(n+1)}) \<and> i\<in>{0..<n} \<and> \<not> select_index (n+1) i k} " by auto
-  then have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}  = {k| k i::nat. (k\<in>{0..<2^(n+1)}) \<and> i\<in>{0..<n} \<and> (k mod 2^((n+1)-i) < 2^(n-i))} "
-    using select_index_def by auto
-  moreover have "(k\<in>{0..<2^(n+1)}) \<and> i\<in>{0..<n} \<longrightarrow> (k mod 2^((n+1)-i) < 2^(n-i)) \<longrightarrow> k\<notin>{2^(n-i)..<2^((n+1)-i)}"
-    for i k::nat using u5[of k "(n-i)"] 
-    by (simp add: mod_if) 
-  have "(\<forall>i\<in>{0..<n}.k\<notin>{2^(n-i)..<2^((n+1)-i)})\<and>(k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" for k::nat sorry 
-      (*induction up to n needed?*)
-  ultimately have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" sorry
+lemma k1 [simp]: (*Give name if stays*)
+  shows "2^n/(sqrt(2)^n * sqrt(2)^(n+1)) = 1/sqrt(2)" 
+proof(induction n)
+  show "2^0/(sqrt(2)^0 * sqrt(2)^(0+1)) = 1/sqrt(2)" by auto
+next
+  fix n
+  assume IH: "2^n/(sqrt(2)^n * sqrt(2)^(n+1)) = 1/sqrt(2)" 
+  have "(sqrt 2 ^ Suc n * sqrt 2 ^ (Suc n + 1)) = (sqrt(2)^n * sqrt(2)^(n+1) * sqrt(2)^2)" 
+    by auto 
+  then have "2 ^ Suc n /(sqrt 2 ^ Suc n * sqrt 2 ^ (Suc n + 1)) = (2 ^ n * 2) /(sqrt(2)^n * sqrt(2)^(n+1) * sqrt(2)^2)"
+    by (metis power_Suc semiring_normalization_rules(7))
+  then show "2 ^ Suc n /(sqrt 2 ^ Suc n * sqrt 2 ^ (Suc n + 1)) = 1/sqrt(2)" 
+    using IH by auto
 qed
 
-
-(* proof (induction n rule: ind_from_1)
-  show "n\<ge>1" using assms by auto
-next
-  have "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} = 
-        {k| k i::nat. (k\<in>{0,1,2,3}) \<and> i<1 \<and> \<not> select_index (1+1) i k} " by auto
-  also have "... = {k| k i::nat. (k\<in>{0,1,2,3}) \<and> i<1 \<and> \<not> select_index 2 i k}" 
-    by (metis one_add_one)
-  also have "... = {k| k i::nat. (k\<in>{0,1,2,3}) \<and> i=0 \<and> \<not> ((i\<le>1) \<and> (k\<le>3) \<and> (k mod 2^(2-i) \<ge> 2^(1-i)))}" 
-    by (simp add: select_index_def)
-  also have "... = {k| k ::nat. (k\<in>{0,1,2,3}) \<and> (k mod 4 < 2)}" 
-    by auto
-  finally have "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} = {k| k ::nat. (k\<in>{0,1,2,3}) \<and> (k mod 4 < (2::nat))}"
-    by auto
-  moreover have "(0 mod 4 < (2::nat))" by simp
-  moreover have "(1 mod 4 < (2::nat))" by simp
-  moreover have "\<not>(2 mod 4 < (2::nat))" by simp
-  moreover have "\<not>(3 mod 4 < (2::nat))" by simp
-  ultimately have "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} 
-      =  {k| k ::nat. (k\<in>{0,1,2,3}) \<and> (k \<in>{0,1})}" 
-    using set_4 
-    by (smt Collect_cong atLeastLessThan_iff mod_less set_2)
-  then show  "{k| k i::nat. (k<2^(1+1)) \<and> i<1 \<and> \<not> select_index (1+1) i k} = {0,1}" by auto
-next
-  fix n 
-  assume IH: "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" 
-     and a0: "n\<ge>1"
-  have "{k| k i::nat. (k<2^(n+2)) \<and> i<(n+1) \<and> \<not> select_index (n+2) i k} = "
-qed*)
-
-
-definition select_index ::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
-"select_index n i j \<equiv> (i\<le>n-1) \<and> (j\<le>2^n - 1) \<and> (j mod 2^(n-i) \<ge> 2^(n-1-i))"
-
-
-
-  declare [[show_types]]
+(*  declare [[show_types]]
   declare [[show_sorts]]
-  declare [[show_consts]]
+  declare [[show_consts]]*)
 
 lemma (in jozsa)
   fixes i::nat 
   assumes "i\<in>{0..<n}"
     and "const 0"
-  shows "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) = 1"
+  shows "prob_first_m_qubits_0' n deutsch_jozsa_algo = 1"
 proof-
-  have "{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} = {0,1}" sorry
-  moreover have "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) =
-        (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
-    using deutsch_jozsa_algo_result_is_state prob_first_m_qubits_0_def by auto 
-  ultimately have "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) =
-        (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
-    by auto
-
-  have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
+  have "(prob_first_m_qubits_0' n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
   proof-
-    have f0: "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod (\<Sum> k < 2^n. (-1)^(nat ((0 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-      using deutsch_jozsa_algo_result const_def assms by auto
+    have "(k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k \<longrightarrow> (\<forall>i\<in>{0..n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)})) \<and> (k\<in>{0..<2^(n+1)})"
+      for k i::nat sorry
+    moreover have "(\<forall>i\<in>{0..n}.( k\<notin>{2^(n-i)+1..2^((n+1)-i)})) \<and> (k\<in>{0..<2^(n+1)}) \<longrightarrow> k\<in>{0,1}" for k::nat
+      using measure_if_first_n_qubits_zero_remaining_indices dim by auto
+    ultimately have "(k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k \<longrightarrow> k\<in>{0,1}"
+      for k i::nat by blast
+    moreover have "Suc 0 < 2 * 2 ^ n" 
+      using dim by (simp add: Suc_lessI)
+    moreover have "\<not> select_index (Suc n) 0 0" 
+      by (simp add: select_index_def)
+    moreover have "\<not> select_index (Suc n) 0 1" 
+      by (smt One_nat_def Suc_eq_plus1 add_diff_cancel_right' calculation(3) diff_is_0_eq' diff_zero dim eq_iff 
+          mod_less nat_power_eq_Suc_0_iff not_less not_less_eq_eq select_index_def)
+    ultimately have "({k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k}) = {0,1}" by auto
+    moreover have  "prob_first_m_qubits_0' n deutsch_jozsa_algo 
+        = (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)" 
+    using deutsch_jozsa_algo_result_is_state prob_first_m_qubits_0'_def by auto 
+    ultimately show "(prob_first_m_qubits_0' n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)" 
+      using prob_first_m_qubits_0'_def by auto
+  qed
+
+  moreover have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
+  proof-
     have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
-      using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def q2 by auto
+      using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
     moreover have " (2::nat) ^ n = card {..<(2::nat) ^ n}" by auto
     ultimately have "(\<Sum> k < (2::nat)^n. (-1)^(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) =  (\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1)))" 
       by auto
-    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-      using f0 sorry
-    then have "(cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =  (cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" sorry
-    then have "(cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =(cmod(1/(sqrt(2))))\<^sup>2 " sorry
-    then show "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" sorry
+    moreover have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(nat ((0 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using deutsch_jozsa_algo_result const_def assms by auto
+    ultimately have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      by metis
+    also have "... = (cmod((2::nat)^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      by auto
+    also have "... = (cmod(1/(sqrt(2))))\<^sup>2 " using k1 by simp
+    also have "... = 1/2" 
+      by (simp add: norm_divide power2_eq_square)
+    finally show "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" by auto
   qed
 
-  have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
+  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
   proof-
-    have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < 2^n. (-1)^(nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+    have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+      using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
+    moreover have " (2::nat) ^ n = card {..<(2::nat) ^ n}" by auto
+    ultimately have "(\<Sum> k < (2::nat)^n. (-1)^(f(k)+1 + nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
+                   = (\<Sum> k < (2::nat)^n.(-1)/(sqrt(2)^n * sqrt(2)^(n+1)))" 
+      using const_def assms by auto
+    (*have "deutsch_jozsa_algo $$ (1, 0)= (\<Sum> k < (2::nat) ^n. (-1)^(f(k) + 1 + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n * sqrt(2)^(n+1)))"
+       using deutsch_jozsa_algo_result \<psi>\<^sub>3_values sorry (*WHY IS THIS NOT WORKING?*)*)
+    moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
       using deutsch_jozsa_algo_result const_def assms sorry
-    have "k<n \<longrightarrow> bin_rep n (1 div 2)!k = 0" for k 
-      using bin_rep_def bin_rep_aux_def bin_rep_index assms  
-      by simp
-    then have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
-      using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def sorry
-    then have "(\<Sum> k < 2^n. (-1)^(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) =  (\<Sum> k < 2^n.(-1)^(0)/(sqrt(2)^n * sqrt(2)^(n+1)))" 
-      sorry
-    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" sorry
-    then have "(cmod(\<Sum> k < 2^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =  (cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" sorry
-    then have "(cmod(2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 =(cmod(1/(sqrt(2))))\<^sup>2 " sorry
-    then show "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" sorry
+    ultimately have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. (-1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+       by metis
+    also have "... = (cmod((2::nat)^n*(-1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      by auto
+    also have "... = (cmod((-1)/(sqrt(2))))\<^sup>2 " using k1 by simp
+    also have "... = 1/2" 
+      by (simp add: norm_divide power2_eq_square)
+    finally show "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" by auto
   qed
-    
-  then have " (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2) = 1/2 + 1/2" sorry
-  then show  "(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) = 1" sorry
+
+  ultimately have "prob_first_m_qubits_0' n deutsch_jozsa_algo = 1/2 + 1/2" by auto
+  then show  "prob_first_m_qubits_0' n deutsch_jozsa_algo = 1" by auto
 qed
 
 
+
+
+
+
+(*
 value "bin_rep 1 (0 div 2)"
 
 
@@ -2012,8 +2028,11 @@ proof-
     then have "(cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2
               =(cmod(\<Sum> k < 2^n. (-1)^( nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
       using const_def assms by auto
+    moreover have "(cmod(\<Sum> k < 2^n. (-1)^( nat ((j div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
+                  = (cmod(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"  
+      using bitwise_inner_prod_with_zero sorry
     moreover have "(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))) = 1/(sqrt(2)^n * sqrt(2)^(n+1))*2^n"
-      sorry
+      
     ultimately have  "(cmod(\<Sum> k < 2^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod ( 2^n*1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 " 
       sorry
     have "(cmod (2^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2 = (cmod (1/(sqrt(2))))\<^sup>2" sorry
@@ -2104,6 +2123,6 @@ theorem (in jozsa) deutsch_jozsa_algo_is_correct:
   shows "\<forall>i\<in>{0..<n}.(prob1 (n+1) deutsch_jozsa_algo i) = 0 \<longrightarrow> is_const"
     and "\<exists>i\<in>{0..<n}.(prob1 (n+1) deutsch_jozsa_algo i) \<noteq> 0 \<longrightarrow> is_balanced"
   sorry
-
+*)
 
 end
