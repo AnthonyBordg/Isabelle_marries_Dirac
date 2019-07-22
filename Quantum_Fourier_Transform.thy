@@ -577,9 +577,10 @@ proof
     fix j assume a0:"j < dim_vec (col_fst (fourier n * |v\<rangle>))"
     then have "j \<in> {0..<2^n}"
       by (simp add: fourier_def)
-    show "qft n v $ j = col_fst (fourier n * |v\<rangle>) $ j"
-      using qft_def qft_no_swap_of_unit_vec[of "v" "n" "i" "n"] fourier_def assms swap_of_qubits
+    then show "qft n v $ j = col_fst (fourier n * |v\<rangle>) $ j"
+      using qft_def qft_no_swap_of_unit_vec[of "v" "n" "i" "n"] fourier_def assms swap_of_qubits qubits_rep
       apply auto
+      apply (auto simp add: ket_vec_def times_mat_def scalar_prod_def)
       sorry
   qed
 qed
