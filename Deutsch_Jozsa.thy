@@ -4,7 +4,7 @@ Authors:
   Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
   Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
 *)
-
+                                                                                  
 theory Deutsch_Jozsa
 imports
   MoreTensor
@@ -17,6 +17,7 @@ HL to AD: I made a comment if I thought the lemma can be transferred*)
 
 
 (*TODO: Take smt out if possible*)
+(*Add type to any -(1::nat)^(...)?*)
 (*Suc n and n+1. Replace all (n+1) with (Suc n) except in top-level lemmas? What about proofs *)
 (*Questions: Put comments on complicated case distinctions?*)
 
@@ -417,7 +418,8 @@ proof-
           jozsa_transform_dim(1) nat_less_le of_nat_add of_nat_mult one_add_one power_add power_one_right)
     moreover have "(1-f(i div 2))  *(1-f(i div 2)) +  f(i div 2) * f(i div 2) = 1" 
       using f_values assms
-      by (metis (no_types, lifting) Nat.minus_nat.diff_0 diff_add_0 diff_add_inverse jozsa_transform_dim(1) less_power_add_imp_div_less mem_Collect_eq mult_eq_if one_power2 power2_eq_square power_one_right) 
+      by (metis (no_types, lifting) Nat.minus_nat.diff_0 diff_add_0 diff_add_inverse jozsa_transform_dim(1) 
+          less_power_add_imp_div_less mem_Collect_eq mult_eq_if one_power2 power2_eq_square power_one_right) 
     ultimately show "(U\<^sub>f * U\<^sub>f) $$ (i,j) = 1\<^sub>m (dim_col U\<^sub>f) $$ (i, j)" 
       by (metis assms(2) a0 index_one_mat(1) of_nat_1)
   next
@@ -546,70 +548,69 @@ qed
 (*Better way then always assuming n\<ge>1? Should all lemmata go into jozsa? But then induction 
 does not work anymore. I suggest to keep it like this*)
 
-text \<open>N-fold application of the tensor product\<close>
-
-fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow>  complex Matrix.mat" (infixr "^\<^sub>\<otimes>" 75) where
-  "A ^\<^sub>\<otimes> (Suc 0) = A"  
-| "A ^\<^sub>\<otimes> (Suc k) =  A \<Otimes> (A ^\<^sub>\<otimes> k)"
+text \<open>N-fold application of the tensor product\<close> 
+fun pow_tensor :: "complex Matrix.mat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("_ \<otimes>\<^bsup>_\<^esup>" 75)  where
+  "A \<otimes>\<^bsup>(Suc 0)\<^esup> = A"  
+| "A \<otimes>\<^bsup>(Suc k)\<^esup> = A \<Otimes> (A \<otimes>\<^bsup>k\<^esup>)"
 
 lemma pow_tensor_1_is_id [simp]:
   fixes A
-  shows "A ^\<^sub>\<otimes> 1 = A"
+  shows "A \<otimes>\<^bsup>1\<^esup> = A"
   using one_mat_def by auto
 
 lemma pow_tensor_n: 
   fixes n
   assumes "n \<ge> 1"
-  shows " A ^\<^sub>\<otimes> (Suc n) = A  \<Otimes>  ( A ^\<^sub>\<otimes> n)" using assms 
+  shows " A \<otimes>\<^bsup>(Suc n)\<^esup> = A  \<Otimes>  ( A \<otimes>\<^bsup>n\<^esup>)" using assms 
   by (metis Deutsch_Jozsa.pow_tensor.simps(2) One_nat_def Suc_le_D)
 
 lemma pow_tensor_dim_row [simp]:
   fixes A n
   assumes "n \<ge> 1"
-  shows "dim_row(A ^\<^sub>\<otimes> n) = (dim_row A)^n"
+  shows "dim_row(A \<otimes>\<^bsup>n\<^esup>) = (dim_row A)^n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto 
 next
-  show "dim_row(A ^\<^sub>\<otimes> 1) = (dim_row A)^1" by simp
+  show "dim_row(A \<otimes>\<^bsup>1\<^esup>) = (dim_row A)^1" by simp
 next
   fix n
-  assume "dim_row(A ^\<^sub>\<otimes> n) = (dim_row A)^n"
-  then show "dim_row(A ^\<^sub>\<otimes> (Suc n)) = (dim_row A)^(Suc n)" 
+  assume "dim_row(A \<otimes>\<^bsup>n\<^esup>) = (dim_row A)^n"
+  then show "dim_row(A \<otimes>\<^bsup>(Suc n)\<^esup>) = (dim_row A)^(Suc n)" 
     by (metis One_nat_def Suc_inject Zero_not_Suc dim_row_tensor_mat pow_tensor.elims power_Suc power_one_right)
 qed
 
 lemma pow_tensor_dim_col [simp]:
   fixes A n
   assumes "n \<ge> 1"
-  shows "dim_col(A ^\<^sub>\<otimes> n) = (dim_col A)^n"
+  shows "dim_col(A \<otimes>\<^bsup>n\<^esup>) = (dim_col A)^n"
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto 
 next
-  show "dim_col(A ^\<^sub>\<otimes> 1) = (dim_col A)^1" by simp
+  show "dim_col(A \<otimes>\<^bsup>1\<^esup>) = (dim_col A)^1" by simp
 next
   fix n
-  assume "dim_col(A ^\<^sub>\<otimes> n) = (dim_col A)^n"
-  then show "dim_col(A ^\<^sub>\<otimes> (Suc n)) = (dim_col A)^(Suc n)" 
+  assume "dim_col(A \<otimes>\<^bsup>n\<^esup>) = (dim_col A)^n"
+  then show "dim_col(A \<otimes>\<^bsup>(Suc n)\<^esup>) = (dim_col A)^(Suc n)" 
     by (metis dim_col_tensor_mat One_nat_def Suc_inject Zero_not_Suc pow_tensor.elims power_Suc power_one_right )
 qed
 
 lemma pow_tensor_values:
   fixes A n i j
   assumes "n \<ge> 1"
-  assumes "i < dim_row ( A \<Otimes> ( A ^\<^sub>\<otimes> n))"
-  and "j < dim_col ( A \<Otimes> ( A ^\<^sub>\<otimes> n))"
-  shows "( A ^\<^sub>\<otimes> (Suc n)) $$ (i, j) = ( A \<Otimes> ( A ^\<^sub>\<otimes> n)) $$ (i, j)"
+  assumes "i < dim_row ( A \<Otimes> ( A \<otimes>\<^bsup>n\<^esup>))"
+  and "j < dim_col ( A \<Otimes> ( A \<otimes>\<^bsup>n\<^esup>))"
+  shows "( A \<otimes>\<^bsup>(Suc n)\<^esup>) $$ (i, j) = ( A \<Otimes> ( A \<otimes>\<^bsup>n\<^esup>)) $$ (i, j)"
   using assms
   by (metis One_nat_def le_0_eq not0_implies_Suc pow_tensor.simps(2))
 
 lemma pow_tensor_mult_distr:
   assumes "n \<ge> 1"
   and "dim_col A = dim_row B" and "0 < dim_row B" and "0 < dim_col B"
-  shows "(A ^\<^sub>\<otimes> (Suc n))*(B ^\<^sub>\<otimes> (Suc n)) = (A * B) \<Otimes> ((A ^\<^sub>\<otimes> n)*(B ^\<^sub>\<otimes> n))" 
+  shows "(A \<otimes>\<^bsup>(Suc n)\<^esup>)*(B \<otimes>\<^bsup>(Suc n)\<^esup>) = (A * B) \<Otimes> ((A \<otimes>\<^bsup>n\<^esup>)*(B \<otimes>\<^bsup>n\<^esup>))" 
 proof -
-  have "(A ^\<^sub>\<otimes> (Suc n))*(B ^\<^sub>\<otimes> (Suc n)) = (A \<Otimes> (A ^\<^sub>\<otimes> n)) * (B  \<Otimes> (B ^\<^sub>\<otimes> n))" 
+  have "(A \<otimes>\<^bsup>(Suc n)\<^esup>)*(B \<otimes>\<^bsup>(Suc n)\<^esup>) = (A \<Otimes> (A \<otimes>\<^bsup>n\<^esup>)) * (B  \<Otimes> (B \<otimes>\<^bsup>n\<^esup>))" 
     using Suc_le_D assms(1) by fastforce
-  then show "(A ^\<^sub>\<otimes> (Suc n))*(B ^\<^sub>\<otimes> (Suc n)) =  (A * B) \<Otimes> ((A ^\<^sub>\<otimes> n)*(B ^\<^sub>\<otimes> n))" 
+  then show "(A \<otimes>\<^bsup>(Suc n)\<^esup>)*(B \<otimes>\<^bsup>(Suc n)\<^esup>) =  (A * B) \<Otimes> ((A \<otimes>\<^bsup>n\<^esup>)*(B \<otimes>\<^bsup>n\<^esup>))" 
     using mult_distr_tensor [of A B "(pow_tensor A n)" "(pow_tensor B n)"] assms
     by auto
 qed
@@ -645,26 +646,25 @@ proof -
     by (simp add: \<open>i div dim_row B = 1\<close>)
 qed
 
-
 lemma pow_tensor_gate:
   fixes A :: "complex Matrix.mat" 
   and n m :: "nat" 
   assumes "gate m A" and "n\<ge>1" 
-  shows "gate (m*n) (A ^\<^sub>\<otimes> n)"
+  shows "gate (m*n) (A \<otimes>\<^bsup>n\<^esup>)"
 proof (induction n rule: ind_from_1)
   show "n \<ge> 1" using assms by auto
 next
-  show "gate (m*1) (A ^\<^sub>\<otimes> 1)" using assms by auto
+  show "gate (m*1) (A \<otimes>\<^bsup>1\<^esup>)" using assms by auto
 next
   fix n
-  assume IH: "gate (m*n) (A ^\<^sub>\<otimes> n)"
+  assume IH: "gate (m*n) (A \<otimes>\<^bsup>n\<^esup>)"
       and a0: "n\<ge>1"
-  then have "A ^\<^sub>\<otimes> (Suc n) = A \<Otimes> (A ^\<^sub>\<otimes> n)" 
+  then have "A \<otimes>\<^bsup>(Suc n)\<^esup> = A \<Otimes> (A \<otimes>\<^bsup>n\<^esup>)" 
     by (simp add: pow_tensor_n)
-  moreover have "gate (m*n+m) (A ^\<^sub>\<otimes> (Suc n))"  
+  moreover have "gate (m*n+m) (A \<otimes>\<^bsup>(Suc n)\<^esup>)"  
     using tensor_gate assms 
     by (simp add: IH add.commute calculation(1))
-  then show "gate (m*(Suc n)) (A ^\<^sub>\<otimes> (Suc n))" 
+  then show "gate (m*(Suc n)) (A \<otimes>\<^bsup>(Suc n)\<^esup>)" 
     by (simp add: add.commute)
 qed
 
@@ -764,55 +764,55 @@ qed
 
 lemma \<psi>\<^sub>1\<^sub>0_tensor_n_is_state:
   assumes "n \<ge> 1"
-  shows "state n ( |zero\<rangle> ^\<^sub>\<otimes> n)"
+  shows "state n ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>)"
 proof (induction n rule: ind_from_1)
   show "n \<ge> 1" using assms by auto
 next
-  show "state 1 ( |zero\<rangle> ^\<^sub>\<otimes> 1)" using ket_zero_is_state by auto
+  show "state 1 ( |zero\<rangle> \<otimes>\<^bsup>1\<^esup>)" using ket_zero_is_state by auto
 next
   fix n
-  assume IH: "state n ( |zero\<rangle> ^\<^sub>\<otimes> n)" and "n\<ge>1"
-  then have "( |zero\<rangle>) ^\<^sub>\<otimes> (Suc n) = ( |zero\<rangle>)  \<Otimes>  ( |zero\<rangle> ^\<^sub>\<otimes> n)" 
+  assume IH: "state n ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>)" and "n\<ge>1"
+  then have "|zero\<rangle> \<otimes>\<^bsup>(Suc n)\<^esup> = |zero\<rangle> \<Otimes> ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>)" 
     using assms pow_tensor_n[of n "|zero\<rangle>" ] by auto
-  then show "state (Suc n) ( |zero\<rangle> ^\<^sub>\<otimes> (Suc n))" 
+  then show "state (Suc n) ( |zero\<rangle> \<otimes>\<^bsup>(Suc n)\<^esup>)" 
     using assms tensor_state IH ket_zero_is_state by fastforce
 qed
 
 lemma H_tensor_n_is_gate:
   assumes "n \<ge> 1"
-  shows "gate n (H ^\<^sub>\<otimes> n)" 
+  shows "gate n (H \<otimes>\<^bsup>n\<^esup>)" 
 proof(induction n rule: ind_from_1)
   show "n \<ge> 1" using assms by auto
 next
-  show "gate 1 (H ^\<^sub>\<otimes> 1)" 
+  show "gate 1 (H \<otimes>\<^bsup>1\<^esup>)" 
     using H_is_gate by auto
 next
   fix n 
-  assume IH: "gate n (H ^\<^sub>\<otimes> n)" and "n \<ge> 1"
-  then have "(H ^\<^sub>\<otimes> (Suc n)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" 
+  assume IH: "gate n (H \<otimes>\<^bsup>n\<^esup>)" and "n \<ge> 1"
+  then have "(H \<otimes>\<^bsup>(Suc n)\<^esup>) = H \<Otimes> (H \<otimes>\<^bsup>n\<^esup>)" 
     using pow_tensor_n[of n H] by auto
-  then show "gate (Suc n) (H ^\<^sub>\<otimes> (Suc n))" 
+  then show "gate (Suc n) (H \<otimes>\<^bsup>(Suc n)\<^esup>)" 
     using assms IH tensor_gate H_is_gate by fastforce
 qed
 
 lemma H_tensor_n_on_zero_tensor_n: 
   assumes "n \<ge> 1"
-  shows "(H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n) = (\<psi>\<^sub>1\<^sub>0 n)"  
+  shows "(H \<otimes>\<^bsup>n\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>) = (\<psi>\<^sub>1\<^sub>0 n)"  
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  have "(H ^\<^sub>\<otimes> 1) * ( |zero\<rangle> ^\<^sub>\<otimes> 1) = H * |zero\<rangle>" by auto
-  show "(H ^\<^sub>\<otimes> 1) * ( |zero\<rangle> ^\<^sub>\<otimes> 1) = (\<psi>\<^sub>1\<^sub>0 1)" using H_on_ket_zero by auto
+  have "(H \<otimes>\<^bsup>1\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>1\<^esup>) = H * |zero\<rangle>" by auto
+  show "(H \<otimes>\<^bsup>1\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>1\<^esup>) = (\<psi>\<^sub>1\<^sub>0 1)" using H_on_ket_zero by auto
 next
   fix n
-  assume a0: "1 \<le> n" and IH: "(H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n) = (\<psi>\<^sub>1\<^sub>0 n)" 
-  then have "(H ^\<^sub>\<otimes> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<otimes> (Suc n)) = (H * |zero\<rangle>) \<Otimes> ((H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n))" 
+  assume a0: "1 \<le> n" and IH: "(H \<otimes>\<^bsup>n\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>) = (\<psi>\<^sub>1\<^sub>0 n)" 
+  then have "(H \<otimes>\<^bsup>(Suc n)\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>(Suc n)\<^esup>) = (H * |zero\<rangle>) \<Otimes> ((H \<otimes>\<^bsup>n\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>))" 
     using pow_tensor_mult_distr[of n "H" "|zero\<rangle>"] a0 ket_vec_def H_def
     by (simp add: H_def)
   also have  "... = (H * |zero\<rangle>) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using IH by auto 
   also have "... = (\<psi>\<^sub>1\<^sub>0 1) \<Otimes> (\<psi>\<^sub>1\<^sub>0 n)" using H_on_ket_zero by auto
   also have "... = (\<psi>\<^sub>1\<^sub>0 (Suc n))" using \<psi>\<^sub>1\<^sub>0_tensor_n a0 by auto
-  finally show "(H ^\<^sub>\<otimes> (Suc n)) * ( |zero\<rangle> ^\<^sub>\<otimes> (Suc n)) = (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
+  finally show "(H \<otimes>\<^bsup>(Suc n)\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>(Suc n)\<^esup>) = (\<psi>\<^sub>1\<^sub>0 (Suc n))" by auto
 qed
 
 lemma \<psi>\<^sub>1\<^sub>0_is_state:
@@ -823,7 +823,6 @@ lemma \<psi>\<^sub>1\<^sub>0_is_state:
 
 abbreviation \<psi>\<^sub>1\<^sub>1:: "complex Matrix.mat" where
 "\<psi>\<^sub>1\<^sub>1 \<equiv> Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else -1/sqrt(2))"
-
 
 lemma H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1: 
   shows "(H * |one\<rangle>) = \<psi>\<^sub>1\<^sub>1"
@@ -885,16 +884,19 @@ lemma \<psi>\<^sub>1_is_state:
   shows "state (n+1) (\<psi>\<^sub>1 n)" 
   using \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1  \<psi>\<^sub>1\<^sub>0_is_state assms  \<psi>\<^sub>1\<^sub>1_is_state assms H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 tensor_state by metis
 
+declare [[show_types]]
+declare [[show_sorts]]
+
 abbreviation (in jozsa) \<psi>\<^sub>2:: "complex Matrix.mat" where
-"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (-(1::nat))^f(i div 2)/(sqrt(2)^(n+1)) 
-                                      else (-(1::nat))^(f(i div 2)+1)/(sqrt(2)^(n+1)))"
+"\<psi>\<^sub>2 \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if (even i) then (-1)^f(i div 2)/(sqrt(2)^(n+1)) 
+                                      else (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1)))"
 
 lemma (in jozsa) \<psi>\<^sub>2_values_even[simp]:
   fixes i j 
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "even i"
-  shows "\<psi>\<^sub>2  $$ (i,j) = (-(1::nat))^f(i div 2)/(sqrt(2)^(n+1))" 
+  shows "\<psi>\<^sub>2  $$ (i,j) = (-1)^f(i div 2)/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
 lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
@@ -902,7 +904,7 @@ lemma (in jozsa) \<psi>\<^sub>2_values_odd[simp]:
   assumes "i < dim_row \<psi>\<^sub>2 "
   and "j < dim_col \<psi>\<^sub>2 "
   and "odd i"
-  shows "\<psi>\<^sub>2  $$ (i,j) = (-(1::nat))^(f(i div 2)+1)/(sqrt(2)^(n+1))" 
+  shows "\<psi>\<^sub>2  $$ (i,j) = (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1))" 
   using assms case_prod_conv by simp
 
 lemma (in jozsa) \<psi>\<^sub>2_values_odd_hidden[simp]:
@@ -981,7 +983,7 @@ next
     also have "... = ( -(1-f(i div 2)) + (f(i div 2)))* 1/(sqrt(2)^(n+1))" 
       by (metis (no_types, hide_lams) mult.right_neutral add_divide_distrib mult_minus1_right 
           of_int_add of_int_of_nat_eq)
-    also have "... = (-(1::nat))^(f(i div 2)+1)/(sqrt(2)^(n+1))" 
+    also have "... = (-1)^(f(i div 2)+1)/(sqrt(2)^(n+1))" 
        using a0 a1 a2 different_representation_of_\<psi>\<^sub>2 by auto
    finally show "(U\<^sub>f * (\<psi>\<^sub>1 n)) $$ (i,j) = \<psi>\<^sub>2 $$ (i,j)" 
       using a0 a1 a2 by auto
@@ -1058,14 +1060,22 @@ proof-
       by (metis (no_types, lifting) mult_nonneg_nonneg sum_nonneg)
 qed
 
-abbreviation tensor_of_H:: "nat \<Rightarrow> complex Matrix.mat" ("H\<^sup>\<otimes>\<^bsup>_\<^esup>") where
+text \<open> @{text "H^\<^sub>\<otimes> n"} is the result of taking the nth tensor product of H \<close>
+
+abbreviation tensor_of_H:: "nat \<Rightarrow> complex Matrix.mat" ("H^\<^sub>\<otimes> _") where
 "tensor_of_H n \<equiv> Matrix.mat (2^n) (2^n) (\<lambda>(i,j).(-1)^(nat(i \<cdot>\<^bsub>n\<^esub> j))/(sqrt(2)^n))"
 
 lemma tensor_of_H_values [simp]:
   fixes n i j:: nat
-  assumes "n \<ge> 1" and "i < dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)" and "j < dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>)"
-  shows "(H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i,j) = (-1)^(nat(i \<cdot>\<^bsub>n\<^esub> j))/(sqrt(2)^n)"
+  assumes "n \<ge> 1" and "i < dim_row (H^\<^sub>\<otimes> n)" and "j < dim_col (H^\<^sub>\<otimes> n)"
+  shows "(H^\<^sub>\<otimes> n) $$ (i,j) = (-1)^(nat(i \<cdot>\<^bsub>n\<^esub> j))/(sqrt(2)^n)"
   using assms by simp
+
+lemma tensor_of_H_dim [simp]:
+  assumes "n \<ge> 1"
+  shows "1 < dim_row (H^\<^sub>\<otimes> n)" 
+  using assms 
+  by (metis One_nat_def Suc_1 dim_row_mat(1) le_trans lessI linorder_not_less one_less_power)
 
 lemma bin_rep_index_0: (*This could go into Binary_Nat but it could also stay here? If its not already there*)
   fixes n:: nat and m:: int
@@ -1175,36 +1185,35 @@ of_nat_power one_add_one power_0 power_add)
     using assms(1) bin_rep_index_0 bitwise_inner_prod_def by simp
 qed
 
-lemma tensor_of_H_next_dim:
+lemma tensor_of_H_fst_pos:
   fixes n i j:: nat
   assumes "i < 2^n \<or> j < 2^n" and "n \<ge> 1" and "i < 2^(n+1) \<and>  j < 2^(n+1)"
-  shows "(H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>) $$ (i,j) = 1/sqrt(2)* ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod 2^n, j mod 2^n))"
+  shows "(H^\<^sub>\<otimes> (Suc n)) $$ (i,j) = 1/sqrt(2)* ((H^\<^sub>\<otimes> n) $$ (i mod 2^n, j mod 2^n))"
 proof-
-  have "(H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>) $$ (i,j) = (-1)^(nat(bip i (Suc n) j))/(sqrt(2)^(Suc n))" 
+  have "(H^\<^sub>\<otimes> (Suc n)) $$ (i,j) = (-1)^(nat(bip i (Suc n) j))/(sqrt(2)^(Suc n))" 
     using assms by simp
   moreover have "(bip i (Suc n) j) = (bip (i mod 2^n) n (j mod 2^n))" 
     using bitwise_inner_prod_fst_el_0 assms by simp
-  moreover have "(H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod 2^n, j mod 2^n) = (-1)^(nat(bip (i mod 2^n) n (j mod 2^n)))/(sqrt(2)^n)" 
+  moreover have "(H^\<^sub>\<otimes> n) $$ (i mod 2^n, j mod 2^n) = (-1)^(nat(bip (i mod 2^n) n (j mod 2^n)))/(sqrt(2)^n)" 
     by simp
   ultimately show ?thesis 
-    using assms bitwise_inner_prod_def
-    by (smt divide_divide_eq_left' left_minus_one_mult_self minus_one_mult_self mult.commute of_real_mult 
-        power_Suc times_divide_eq_right)
+    using assms bitwise_inner_prod_def 
+    by (smt mult.commute mult.right_neutral of_real_1 of_real_divide of_real_power power_Suc times_divide_times_eq)
 qed
 
-lemma Hn_first_factor_is_minus_sqrt_2:
+lemma tensor_of_H_fst_neg:
   fixes n i j:: nat
   assumes "i \<ge> 2^n \<and> j \<ge> 2^n" and "n \<ge> 1" and "i < 2^(n+1) \<and>  j < 2^(n+1)" and "i \<ge> 0 \<and> j \<ge> 0"
-  shows "(H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>) $$ (i,j) = -1/sqrt(2)* ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod 2^n, j mod 2^n)) "
+  shows "(H^\<^sub>\<otimes> (Suc n)) $$ (i,j) = -1/sqrt(2)* ((H^\<^sub>\<otimes> n) $$ (i mod 2^n, j mod 2^n)) "
 proof-
-  have "(H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>) $$ (i,j) = (-1)^(nat(bip i (n+1) j))/(sqrt(2)^(n+1))" 
+  have "(H^\<^sub>\<otimes> (Suc n)) $$ (i,j) = (-1)^(nat(bip i (n+1) j))/(sqrt(2)^(n+1))" 
     using assms by simp
   moreover have "(bip i (n+1) j) = 1 + (bip (i mod 2^n) n (j mod 2^n))" 
     using bitwise_inner_prod_fst_el_is_1 assms by simp
   moreover have "(-1)^(1 + (nat(bip (i mod 2^n) n (j mod 2^n))))/(sqrt(2)^(n+1)) 
                  = -1/sqrt(2) * (-1)^(nat(bip (i mod 2^n) n (j mod 2^n))) /(sqrt(2)^n)" 
     by simp
-  moreover have "(H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod 2^n, j mod 2^n) = (-1)^(nat(bip (i mod 2^n) n (j mod 2^n)))/(sqrt(2)^n)" 
+  moreover have "(H^\<^sub>\<otimes> n) $$ (i mod 2^n, j mod 2^n) = (-1)^(nat(bip (i mod 2^n) n (j mod 2^n)))/(sqrt(2)^n)" 
     by simp
   ultimately show ?thesis
     using assms bitwise_inner_prod_def Nat.Suc_eq_plus1 bitwise_inner_prod_geq_0 
@@ -1237,194 +1246,177 @@ qed
 lemma H_tensor_tensor_of_H:   
   fixes n:: nat
   assumes "n \<ge> 1"
-  shows  "H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup> = H\<^sup>\<otimes>\<^bsup>n+1\<^esup>" 
+  shows  "H \<Otimes> H^\<^sub>\<otimes> n = H^\<^sub>\<otimes> (Suc n)" 
 proof
   fix i j:: nat
-  assume a0: "i < dim_row (H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>)" and a1: "j < dim_col (H\<^sup>\<otimes>\<^bsup>n+1\<^esup>)"
+  assume a0: "i < dim_row (H^\<^sub>\<otimes> (Suc n))" and a1: "j < dim_col (H^\<^sub>\<otimes> (Suc n))"
   then have f0: "i\<in>{0..<2^(n+1)} \<and> j\<in>{0..<2^(n+1)}" by simp
-  then have f1: "(H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i,j) = H $$ (i div (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)), j div (dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>))) 
-                                 * (H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)), j mod (dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>)))"
+  then have f1: "(H \<Otimes> H^\<^sub>\<otimes> n) $$ (i,j) = H $$ (i div (dim_row (H^\<^sub>\<otimes> n)), j div (dim_col (H^\<^sub>\<otimes> n))) 
+                                 * (H^\<^sub>\<otimes> n) $$ (i mod (dim_row (H^\<^sub>\<otimes> n)), j mod (dim_col (H^\<^sub>\<otimes> n)))"
     by (simp add: H_without_scalar_prod)
-  show "(H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i,j) = (H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>) $$ (i,j)"
+  show "(H \<Otimes> H^\<^sub>\<otimes> n) $$ (i,j) = (H^\<^sub>\<otimes> (Suc n)) $$ (i,j)"
   proof (rule disjE) 
     show "(i < 2^n \<or> j < 2^n) \<or> \<not>(i < 2^n \<or> j < 2^n)" by auto
   next
     assume a2: "(i < 2^n \<or> j < 2^n)"
-    then have "(H\<^sup>\<otimes>\<^bsup>n+1\<^esup>) $$ (i,j) = 1/sqrt(2) * ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod 2^n, j mod 2^n))" 
-      using assms a0 a1 f0 tensor_of_H_next_dim
+    then have "(H^\<^sub>\<otimes> (Suc n)) $$ (i,j) = 1/sqrt(2) * ((H^\<^sub>\<otimes> n) $$ (i mod 2^n, j mod 2^n))" 
+      using assms a0 a1 f0 tensor_of_H_fst_pos
       by (metis (mono_tags, lifting) atLeastLessThan_iff )
-    moreover have "H $$ (i div (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)), j div (dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>))) = 1/sqrt(2)"
+    moreover have "H $$ (i div (dim_row (H^\<^sub>\<otimes> n)), j div (dim_col (H^\<^sub>\<otimes> n))) = 1/sqrt(2)"
       using assms a0 a1 f0 H_without_scalar_prod H_values a2 
       by (metis (no_types, lifting) Suc_eq_plus1 dim_col_mat(1) dim_row_mat(1) div_less le_eq_less_or_eq 
-le_numeral_extra(2) less_power_add_imp_div_less plus_1_eq_Suc power_one_right) 
-    ultimately show "(H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i,j) = (H\<^sup>\<otimes>\<^bsup>(n+1)\<^esup>) $$(i,j)" 
+          le_numeral_extra(2) less_power_add_imp_div_less plus_1_eq_Suc power_one_right) 
+    ultimately show "(H \<Otimes> H^\<^sub>\<otimes> n) $$ (i,j) = (H^\<^sub>\<otimes> (Suc n)) $$(i,j)" 
       using f1 by simp
   next 
     assume a2: "\<not>(i < 2^n \<or> j < 2^n)"
     then have "i \<ge> 2^n \<and> j \<ge> 2^n" by simp
-    then have f2:"(H\<^sup>\<otimes>\<^bsup>n+1\<^esup>) $$ (i,j) = -1/sqrt(2)* ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i mod 2^n, j mod 2^n))" 
-      using assms a0 a1 f0 Hn_first_factor_is_minus_sqrt_2 by simp
-    have "i div (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)) =1" and "j div (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)) =1"  
+    then have f2:"(H^\<^sub>\<otimes> (Suc n)) $$ (i,j) = -1/sqrt(2)* ((H^\<^sub>\<otimes> n) $$ (i mod 2^n, j mod 2^n))" 
+      using assms a0 a1 f0 tensor_of_H_fst_neg by simp
+    have "i div (dim_row (H^\<^sub>\<otimes> n)) =1" and "j div (dim_row (H^\<^sub>\<otimes> n)) =1"  
       using a2 assms a0 a1 by auto
-    then have "H $$ (i div (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>)), j div (dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>)))  = -1/sqrt(2)"
-      using assms a0 a1 f0 H_values_right_bottom[of "i div (dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>))" "j div (dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>))"] a2 
+    then have "H $$ (i div (dim_row (H^\<^sub>\<otimes> n)), j div (dim_col (H^\<^sub>\<otimes> n)))  = -1/sqrt(2)"
+      using assms a0 a1 f0 H_values_right_bottom[of "i div (dim_row (H^\<^sub>\<otimes> n))" "j div (dim_col (H^\<^sub>\<otimes> n))"] a2 
       by fastforce
-    then show "(H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i,j) = (H\<^sup>\<otimes>\<^bsup>n+1\<^esup>) $$(i,j)" 
+    then show "(H \<Otimes> H^\<^sub>\<otimes> n) $$ (i,j) = (H^\<^sub>\<otimes> (Suc n)) $$(i,j)" 
       using f1 f2 by simp
   qed
 next
-  show "dim_row (H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>) = dim_row (H\<^sup>\<otimes>\<^bsup>n+1\<^esup>)" 
+  show "dim_row (H \<Otimes> H^\<^sub>\<otimes> n) = dim_row (H^\<^sub>\<otimes> (Suc n))" 
     by (simp add: H_without_scalar_prod) 
 next
-  show "dim_col (H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>) = dim_col (H\<^sup>\<otimes>\<^bsup>n+1\<^esup>)" 
+  show "dim_col (H \<Otimes> H^\<^sub>\<otimes> n) = dim_col (H^\<^sub>\<otimes> (Suc n))" 
     by (simp add: H_without_scalar_prod) 
 qed
+
+text \<open> Show that @{term "H^\<^sub>\<otimes> n"} is indeed equivalent to taking the nth tensor product of H. \<close>
 
 lemma H_tensor_n_is_tensor_of_H:
   fixes n:: nat
   assumes asm:"n \<ge> 1"
-  shows "(H ^\<^sub>\<otimes> n) = H\<^sup>\<otimes>\<^bsup>n\<^esup>"
+  shows "(H \<otimes>\<^bsup>n\<^esup>) = H^\<^sub>\<otimes> n"
 proof (induction n rule: ind_from_1)
   show "n \<ge> 1" using assms by simp
 next
-  show "(H ^\<^sub>\<otimes> 1) = H\<^sup>\<otimes>\<^bsup>1\<^esup>"
+  show "(H \<otimes>\<^bsup>1\<^esup>) = H^\<^sub>\<otimes> 1"
   proof 
-    show f0: "dim_row (H ^\<^sub>\<otimes> 1) = dim_row (H\<^sup>\<otimes>\<^bsup>1\<^esup>)" 
+    show f0: "dim_row (H \<otimes>\<^bsup>1\<^esup>) = dim_row (H^\<^sub>\<otimes> 1)" 
       by (simp add:H_without_scalar_prod) 
-    show f1: "dim_col (H ^\<^sub>\<otimes> 1) = dim_col (H\<^sup>\<otimes>\<^bsup>1\<^esup>)"
+    show f1: "dim_col (H \<otimes>\<^bsup>1\<^esup>) = dim_col (H^\<^sub>\<otimes> 1)"
       by (simp add:H_without_scalar_prod) 
     fix i j:: nat
-    assume a0:"i < dim_row (H\<^sup>\<otimes>\<^bsup>1\<^esup>)" and a1:"j < dim_col (H\<^sup>\<otimes>\<^bsup>1\<^esup>)"
-    then have "H\<^sup>\<otimes>\<^bsup>1\<^esup> $$ (0, 0) = 1/sqrt(2)" 
+    assume a0:"i < dim_row (H^\<^sub>\<otimes> 1)" and a1:"j < dim_col (H^\<^sub>\<otimes> 1)"
+    then have "H^\<^sub>\<otimes> 1 $$ (0, 0) = 1/sqrt(2)" 
        using bitwise_inner_prod_def bin_rep_def by simp 
-    moreover have " H\<^sup>\<otimes>\<^bsup>1\<^esup> $$ (0,1) = 1/sqrt(2)" 
+    moreover have " H^\<^sub>\<otimes> 1 $$ (0,1) = 1/sqrt(2)" 
        using bitwise_inner_prod_def bin_rep_def by simp 
-    moreover have " H\<^sup>\<otimes>\<^bsup>1\<^esup> $$ (1,0) = 1/sqrt(2)" 
+    moreover have " H^\<^sub>\<otimes> 1 $$ (1,0) = 1/sqrt(2)" 
        using bitwise_inner_prod_def bin_rep_def by simp 
-    moreover have " H\<^sup>\<otimes>\<^bsup>1\<^esup> $$ (1,1) = -1/sqrt(2)" 
+    moreover have " H^\<^sub>\<otimes> 1 $$ (1,1) = -1/sqrt(2)" 
        using bitwise_inner_prod_def bin_rep_def by simp 
-     ultimately show "(H ^\<^sub>\<otimes> 1) $$ (i,j) = H\<^sup>\<otimes>\<^bsup>1\<^esup> $$ (i, j)" 
+     ultimately show "(H \<otimes>\<^bsup>1\<^esup>) $$ (i,j) = H^\<^sub>\<otimes> 1 $$ (i, j)" 
        using a0 a1 assms f0 f1 H_values H_values_right_bottom
        by (metis (no_types, lifting) One_nat_def dim_col_mat(1) dim_row_mat(1) less_2_cases 
            pow_tensor_1_is_id power_one_right)
   qed
 next
   fix n:: nat
-  assume IH:"(H ^\<^sub>\<otimes> n) = H\<^sup>\<otimes>\<^bsup>n\<^esup>" and a1:"n \<ge> 1"
-  then have "(H ^\<^sub>\<otimes> (n+1)) = H \<Otimes> (H ^\<^sub>\<otimes> n)" 
+  assume IH:"(H \<otimes>\<^bsup>n\<^esup>) = H^\<^sub>\<otimes> n" and a1:"n \<ge> 1"
+  then have "(H \<otimes>\<^bsup>(Suc n)\<^esup>) = H \<Otimes> (H \<otimes>\<^bsup>n\<^esup>)" 
     using pow_tensor_n Nat.Suc_eq_plus1 by metis
-  also have "... = H \<Otimes> H\<^sup>\<otimes>\<^bsup>n\<^esup>" using IH by simp
-  also have "... = H\<^sup>\<otimes>\<^bsup>n+1\<^esup>" using a1 H_tensor_tensor_of_H by simp
-  finally show "(H ^\<^sub>\<otimes> (Suc n)) = H\<^sup>\<otimes>\<^bsup>Suc n\<^esup>" by simp
+  also have "... = H \<Otimes> (H^\<^sub>\<otimes> n)" using IH by simp
+  also have "... = H^\<^sub>\<otimes> (Suc n)" using a1 H_tensor_tensor_of_H by simp
+  finally show "(H \<otimes>\<^bsup>(Suc n)\<^esup>) = H^\<^sub>\<otimes> (Suc n)" by simp
 qed
 
-(*Change name using new notation*)
-abbreviation  HnId:: "nat \<Rightarrow> complex Matrix.mat" where
-"HnId n \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j).
+text \<open> @{text "HId^\<^sub>\<otimes> 1"} is the result of taking the tensor product of the nth tensor of H and Id 1 \<close>
+
+abbreviation tensor_of_H_tensor_Id:: "nat \<Rightarrow> complex Matrix.mat" ("HId^\<^sub>\<otimes> _") where
+"tensor_of_H_tensor_Id n \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j).
   if (i mod 2 = j mod 2) then (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n) else 0)"
-
-
-abbreviation  HnId':: "nat \<Rightarrow> complex Matrix.mat" where
-"HnId' n \<equiv> Matrix.mat (2^(n+1)) (2^(n+1)) (\<lambda>(i,j).
-  if (even i \<and> even j) then (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n) else
-    (if (odd i \<and> odd j) then (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n) else 0))"
-
-
-lemma u1: 
-  shows "(even i \<and> even j)\<longrightarrow>(i mod 2 = j mod 2)"
-  by simp
-
-lemma u2:
-  shows "(odd i \<and> odd j)\<longrightarrow>(i mod 2 = j mod 2)"
-  by (simp add: mod2_eq_if)
 
 lemma mod_2_is_both_even_or_odd: "((even i \<and> even j) \<or> (odd i \<and> odd j)) \<longleftrightarrow> (i mod 2 = j mod 2)" 
   by (metis dvd_eq_mod_eq_0 odd_iff_mod_2_eq_one)
   
-lemma HnId_values [simp]:
+lemma HId_values [simp]:
   assumes "n \<ge> 1"
-      and "i < dim_row (HnId n)" and "j < dim_col (HnId n)"
-    shows "even i \<and> even j \<longrightarrow> (HnId n) $$ (i,j) = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n)"
-      and "odd i \<and> odd j \<longrightarrow> (HnId n) $$ (i,j) = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n)"
-      and "(i mod 2 = j mod 2) \<longrightarrow> (HnId n) $$ (i,j) = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n)"
-      and "\<not>(i mod 2 = j mod 2) \<longrightarrow> (HnId n) $$ (i,j) = 0"
-  using assms u1 u2 by auto
-
-
+      and "i < dim_row (HId^\<^sub>\<otimes> n)" and "j < dim_col (HId^\<^sub>\<otimes> n)"
+    shows "even i \<and> even j \<longrightarrow> (HId^\<^sub>\<otimes> n) $$ (i,j) = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n)"
+      and "odd i \<and> odd j \<longrightarrow> (HId^\<^sub>\<otimes> n) $$ (i,j) = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n)"
+      and "(i mod 2 = j mod 2) \<longrightarrow> (HId^\<^sub>\<otimes> n) $$ (i,j) = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (j div 2)))/(sqrt(2)^n)"
+      and "\<not>(i mod 2 = j mod 2) \<longrightarrow> (HId^\<^sub>\<otimes> n) $$ (i,j) = 0"
+  using assms mod_2_is_both_even_or_odd by auto
 
 (*Tidy up*)
-lemma tensor_of_H_tensor_Id_is_HnId:
+lemma tensor_of_H_tensor_Id_is_HId:
   assumes "n \<ge> 1"
-  shows "(H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1 = HnId n"
+  shows "(H^\<^sub>\<otimes> n) \<Otimes> Id 1 = HId^\<^sub>\<otimes> n"
 proof
-  show "dim_row ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) = dim_row (HnId n)" 
+  show "dim_row ((H^\<^sub>\<otimes> n) \<Otimes> Id 1) = dim_row (HId^\<^sub>\<otimes> n)" 
     by (simp add: Quantum.Id_def)
 next
-  show "dim_col ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) = dim_col (HnId n)" 
+  show "dim_col ((H^\<^sub>\<otimes> n) \<Otimes> Id 1) = dim_col (HId^\<^sub>\<otimes> n)" 
     by (simp add: Quantum.Id_def)
 next
-  fix i j 
-  assume a0: "i< dim_row (HnId n)" and a1: "j< dim_col (HnId n)"
+  fix i j::nat
+  assume a0: "i< dim_row (HId^\<^sub>\<otimes> n)" and a1: "j< dim_col (HId^\<^sub>\<otimes> n)"
   then have f0: "i < (2^(n+1)) \<and> j < (2^(n+1))" by auto
-  then have f1: "i < dim_row (H\<^sup>\<otimes>\<^bsup>n\<^esup>) * dim_row (Id 1) \<and> j < dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>) * dim_col (Id 1)"   
+  then have f1: "i < dim_row (H^\<^sub>\<otimes> n) * dim_row (Id 1) \<and> j < dim_col (H^\<^sub>\<otimes> n) * dim_col (Id 1)"   
     using Id_def f0 by simp
-  moreover have f2: "dim_col (H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<ge> 0 \<and> dim_col (Id 1) \<ge> 0"  
+  moreover have f2: "dim_col (H^\<^sub>\<otimes> n) \<ge> 0 \<and> dim_col (Id 1) \<ge> 0"  
     using Id_def by auto
-  ultimately have f3: "((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> (Id 1)) $$ (i,j) 
-    = (H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i div (dim_row (Id 1)), j div (dim_col (Id 1))) * (Id 1) $$ (i mod (dim_row (Id 1)), j mod (dim_col (Id 1)))"
+  ultimately have f3: "((H^\<^sub>\<otimes> n) \<Otimes> (Id 1)) $$ (i,j) 
+    = (H^\<^sub>\<otimes> n) $$ (i div (dim_row (Id 1)), j div (dim_col (Id 1))) * (Id 1) $$ (i mod (dim_row (Id 1)), j mod (dim_col (Id 1)))"
     by (simp add: Quantum.Id_def)
-  show "((H\<^sup>\<otimes>\<^bsup>n\<^esup>)\<Otimes>Id 1) $$ (i,j) = (HnId n) $$ (i,j)" 
+  show "((H^\<^sub>\<otimes> n)\<Otimes>Id 1) $$ (i,j) = (HId^\<^sub>\<otimes> n) $$ (i,j)" 
   proof (rule disjE)
     show "(i mod 2 = j mod 2)\<or> \<not> (i mod 2 = j mod 2)" by simp
   next
     assume a2:"(i mod 2 = j mod 2)"
     then have "(Id 1) $$ (i mod (dim_row (Id 1)), j mod (dim_col (Id 1))) = 1" 
       by (simp add: Quantum.Id_def)
-    moreover have "(H\<^sup>\<otimes>\<^bsup>n\<^esup>) $$ (i div (dim_row (Id 1)), j div (dim_col (Id 1))) 
+    moreover have "(H^\<^sub>\<otimes> n) $$ (i div (dim_row (Id 1)), j div (dim_col (Id 1))) 
                     = (-1)^(nat((i div (dim_row (Id 1))) \<cdot>\<^bsub>n\<^esub> (j div (dim_col (Id 1)))))/(sqrt(2)^n)" 
       using tensor_of_H_values assms f1 less_mult_imp_div_less by simp
-    ultimately show "((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) $$ (i,j) = (HnId n) $$ (i,j)" 
+    ultimately show "((H^\<^sub>\<otimes> n) \<Otimes> Id 1) $$ (i,j) = (HId^\<^sub>\<otimes> n) $$ (i,j)" 
       using f3 a2 f0 Id_def 
       by (smt index_mat(1) index_one_mat(2) index_one_mat(3) mult.right_neutral power_one_right prod.simps(2))
   next
     assume a2: "\<not> (i mod 2 = j mod 2)" 
     then have "(Id 1) $$ (i mod (dim_row (Id 1)), j mod (dim_col (Id 1))) = 0" 
       by (simp add: Quantum.Id_def)
-    then show "((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) $$ (i,j) = (HnId n) $$ (i,j)" 
+    then show "((H^\<^sub>\<otimes> n) \<Otimes> Id 1) $$ (i,j) = (HId^\<^sub>\<otimes> n) $$ (i,j)" 
       using f3 a2 f0 by simp
   qed
 qed
 
-
-
-lemma HnId_is_gate:
+lemma HId_is_gate:
   assumes "n\<ge>1"
-  shows "gate (n+1) (HnId n)" 
+  shows "gate (n+1) (HId^\<^sub>\<otimes> n)" 
 proof- 
-  have "HnId n = (H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1 " 
-    using tensor_of_H_tensor_Id_is_HnId assms by auto
+  have "(HId^\<^sub>\<otimes> n) = (H^\<^sub>\<otimes> n) \<Otimes> Id 1 " 
+    using tensor_of_H_tensor_Id_is_HId assms by auto
   moreover have "gate 1 (Id 1)" using id_is_gate by auto
-  moreover have "gate n (H\<^sup>\<otimes>\<^bsup>n\<^esup>)" using H_is_gate pow_tensor_gate[of 1 H n] assms 
+  moreover have "gate n (H^\<^sub>\<otimes> n)" using H_is_gate pow_tensor_gate[of 1 H n] assms 
     by (simp add: H_tensor_n_is_tensor_of_H)
-  ultimately show "gate (n+1) (HnId n)" 
+  ultimately show "gate (n+1) (HId^\<^sub>\<otimes> n)" 
     using tensor_gate by presburger
 qed
 
-
-
-
 abbreviation (in jozsa) \<psi>\<^sub>3:: "complex Matrix.mat" where
 "\<psi>\<^sub>3  \<equiv> Matrix.mat (2^(n+1)) 1 (\<lambda>(i,j). if even i
-                                         then (\<Sum> k < 2^n. (-1)^(f(k) + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
-                                          else  (\<Sum> k < (2::nat)^n.(-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))
+                                         then (\<Sum> k::nat < 2^n. (-1)^(f(k) + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
+                                          else  (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))
                                                  /(sqrt(2)^n * sqrt(2)^(n+1))))"
 
 lemma (in jozsa) \<psi>\<^sub>3_values:
-  fixes k
   assumes "i<dim_row \<psi>\<^sub>3"
-  shows "odd i \<longrightarrow> \<psi>\<^sub>3 $$ (i,0) = (\<Sum> k < (2::nat) ^n. (-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n * sqrt(2)^(n+1)))"
+  shows "odd i \<longrightarrow> \<psi>\<^sub>3 $$ (i,0) = (\<Sum> k::nat < (2::nat) ^n. (-1)^(f(k) + 1 + nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n * sqrt(2)^(n+1)))"
   using assms by auto
 
+lemma (in jozsa) \<psi>\<^sub>3_dim [simp]:
+  shows "1<dim_row \<psi>\<^sub>3" using dim 
+    by (metis Suc_1 add_gr_0 dim_row_mat(1) lessI less_numeral_extra(1) power_0 power_strict_increasing_iff)
 
 lemma sum_every_odd_summand_is_zero:
   fixes n 
@@ -1434,7 +1426,8 @@ lemma sum_every_odd_summand_is_zero:
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  show "\<forall>A::(nat \<Rightarrow>complex).(\<forall>i. i<(2^(1+1)) \<and> odd i \<longrightarrow> A i = 0) \<longrightarrow>(\<Sum>k \<in>{(0::nat)..<(2^(1+1))}. A k) = (\<Sum>k \<in> {(0::nat)..< (2^1)}. A (2*k))"
+  show "\<forall>A::(nat \<Rightarrow>complex).(\<forall>i. i<(2^(1+1)) \<and> odd i \<longrightarrow> A i = 0) 
+        \<longrightarrow>(\<Sum>k \<in>{(0::nat)..<(2^(1+1))}. A k) = (\<Sum>k \<in> {(0::nat)..< (2^1)}. A (2*k))"
   proof(rule allI,rule impI)
     fix A::"(nat \<Rightarrow>complex)"
     assume a0: "(\<forall>i. i<(2^(1+1)) \<and> odd i \<longrightarrow> A i = 0)" 
@@ -1459,7 +1452,8 @@ next
     assume a1: "(\<forall>i. i<(2^((Suc n)+1)) \<and> odd i \<longrightarrow> A i = 0) "
     have IH_1: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) = (\<Sum>k \<in> {(0::nat)..< (2^n)}. A (2*k))" 
       using a1 IH by auto
-    have IH_2: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. (\<lambda>x. A (x+2^(n+1))) k) = (\<Sum>k \<in> {(0::nat)..< (2^n)}. (\<lambda>x. A (x+2^(n+1))) (2*k))" 
+    have IH_2: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. (\<lambda>x. A (x+2^(n+1))) k) = 
+                (\<Sum>k \<in> {(0::nat)..< (2^n)}. (\<lambda>x. A (x+2^(n+1))) (2*k))" 
       using a1 IH by auto
     have "{(0::nat)..<(2^(n+2))} = {(0::nat)..<(2^(n+1))} \<union> {(2^(n+1))..<(2^(n+2))}" by auto
     then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) 
@@ -1489,7 +1483,8 @@ lemma sum_every_even_summand_is_zero:
 proof (induction n rule: ind_from_1)
   show "n\<ge>1" using assms by auto
 next
-  show "\<forall>A::(nat \<Rightarrow>complex).(\<forall>i. i<(2^(1+1)) \<and> even i \<longrightarrow> A i = 0) \<longrightarrow>(\<Sum>k \<in>{(0::nat)..<(2^(1+1))}. A k) = (\<Sum>k \<in> {(0::nat)..< (2^1)}. A (2*k+1))"
+  show "\<forall>A::(nat \<Rightarrow>complex).(\<forall>i. i<(2^(1+1)) \<and> even i \<longrightarrow> A i = 0) 
+        \<longrightarrow> (\<Sum>k \<in>{(0::nat)..<(2^(1+1))}. A k) = (\<Sum>k \<in> {(0::nat)..< (2^1)}. A (2*k+1))"
   proof(rule allI,rule impI)
     fix A::"(nat \<Rightarrow>complex)"
     assume a0: "(\<forall>i. i<(2^(1+1)) \<and> even i \<longrightarrow> A i = 0)" 
@@ -1514,7 +1509,8 @@ next
     assume a1: "(\<forall>i. i<(2^((Suc n)+1)) \<and> even i \<longrightarrow> A i = 0) "
     have IH_1: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. A k) = (\<Sum>k \<in> {(0::nat)..< (2^n)}. A (2*k+1))" 
       using a1 IH by auto
-    have IH_2: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. (\<lambda>x. A (x+2^(n+1))) k) = (\<Sum>k \<in> {(0::nat)..< (2^n)}. (\<lambda>x. A (x+2^(n+1))) (2*k+1))" 
+    have IH_2: "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. (\<lambda>x. A (x+2^(n+1))) k) 
+              = (\<Sum>k \<in> {(0::nat)..< (2^n)}. (\<lambda>x. A (x+2^(n+1))) (2*k+1))" 
       using a1 IH by auto
     have "{(0::nat)..<(2^(n+2))} = {(0::nat)..<(2^(n+1))} \<union> {(2^(n+1))..<(2^(n+2))}" by auto
     then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+2))}. A k) 
@@ -1539,144 +1535,141 @@ qed
 
 (*Tidy up proof*)
 lemma (in jozsa) hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3:
-  shows "((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) * \<psi>\<^sub>2 = \<psi>\<^sub>3"
+  shows "((H^\<^sub>\<otimes> n) \<Otimes> Id 1) * \<psi>\<^sub>2 = \<psi>\<^sub>3"
 proof
   fix i j
   assume a0:"i< dim_row \<psi>\<^sub>3" and a1:"j<dim_col \<psi>\<^sub>3" 
   then have f0: "i < (2^(n+1)) \<and> j = 0" by auto
-  have f1: "((HnId n)* \<psi>\<^sub>2) $$ (i,j) 
-                = (\<Sum>k<(2^(n+1)). ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)))" 
+  have f1: "((HId^\<^sub>\<otimes> n)* \<psi>\<^sub>2) $$ (i,j) 
+                = (\<Sum>k<(2^(n+1)). ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)))" 
     using a1 f0 by (simp add: atLeast0LessThan)
-  show "(((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)"
+  show "(((H^\<^sub>\<otimes> n) \<Otimes> Id 1) * \<psi>\<^sub>2) $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)"
   proof(rule disjE)
     show "even i \<or> odd i" by auto
   next
     assume a2: "even i"
-    have "(\<not>(i mod 2 = k mod 2) \<and> k<dim_col (HnId n)) \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
+    have "(\<not>(i mod 2 = k mod 2) \<and> k<dim_col (HId^\<^sub>\<otimes> n)) \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
       for k using f0 by auto
-    then have "k<(2^(n+1)) \<and> odd k \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
+    then have "k<(2^(n+1)) \<and> odd k \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
       for k using a2 mod_2_is_both_even_or_odd f0
       by (metis (no_types, lifting) dim_col_mat(1))
-    then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)))
-              = (\<Sum>k \<in> {(0::nat)..< (2^n)}. ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j)))" 
+    then have "(\<Sum>k \<in> {(0::nat)..<(2^(n+1))}. ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)))
+             = (\<Sum>k \<in> {(0::nat)..< (2^n)}. ((HId^\<^sub>\<otimes> n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j)))" 
       using sum_every_odd_summand_is_zero dim by auto
-    moreover have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
+    moreover have "(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
                   =  (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)))" 
     proof-{
       have "(even k \<and> k<dim_row \<psi>\<^sub>2) \<longrightarrow> (\<psi>\<^sub>2 $$ (k,j)) = ((-1)^f(k div 2))/(sqrt(2)^(n+1)) "
         for k using a0 a1 by auto
-      then have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
-               = (\<Sum> k < 2^n. ((HnId n) $$ (i,2*k)) *((-1)^f((2*k) div 2))/(sqrt(2)^(n+1)))" 
+      then have "(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
+               = (\<Sum> k < 2^n. ((HId^\<^sub>\<otimes> n) $$ (i,2*k)) *((-1)^f((2*k) div 2))/(sqrt(2)^(n+1)))" 
         by auto
-      moreover have "(even k \<and> k<dim_col (HnId n))
-                 \<longrightarrow> ((HnId n) $$ (i,k))  = (-1)^ (nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  (k div 2)))/(sqrt(2)^n) " for k
+      moreover have "(even k \<and> k<dim_col (HId^\<^sub>\<otimes> n))
+                 \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k))  = (-1)^ (nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  (k div 2)))/(sqrt(2)^n) " for k
         using a2 a0 a1 by auto
-      ultimately have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
-                  =  (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  ((2*k) div 2)))/(sqrt(2)^n) *((-1)^f((2*k) div 2))/(sqrt(2)^(n+1)))" 
+      ultimately have "(\<Sum> k < 2^n. ((HId^\<^sub>\<otimes> n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
+                     = (\<Sum> k < 2^n. (-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  ((2*k) div 2)))/(sqrt(2)^n) * 
+                                   ((-1)^f((2*k) div 2))/(sqrt(2)^(n+1)))" 
       by auto
-      then show "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
+      then show "(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k)) * (\<psi>\<^sub>2 $$ (2*k,j))) 
                   =  (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)))" 
         by auto}
     qed
-    ultimately have "((HnId n)* \<psi>\<^sub>2) $$ (i,j) = (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)))" 
+    ultimately have "((HId^\<^sub>\<otimes> n)* \<psi>\<^sub>2) $$ (i,j) = (\<Sum> k::nat < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n) 
+                                                        * ((-1)^f(k))/(sqrt(2)^(n+1)))" 
       using f1 by (metis atLeast0LessThan) 
     moreover have "(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n) *((-1)^f(k))/(sqrt(2)^(n+1)) = 
-                  (-1)^(f(k)+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k)))/((sqrt(2)^n)*(sqrt(2)^(n+1)))" for k 
+                  (-1)^(f(k)+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k)))/((sqrt(2)^n)*(sqrt(2)^(n+1)))" for k::nat 
       by (simp add: power_add)
-    ultimately have "((HnId n)* \<psi>\<^sub>2) $$ (i,j) = (\<Sum> k < 2^n.(-1)^(f(k)+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k)))/((sqrt(2)^n)*(sqrt(2)^(n+1))))" 
-      by (smt sum.cong)
+    ultimately have "((HId^\<^sub>\<otimes> n)* \<psi>\<^sub>2) $$ (i,j) 
+= (\<Sum> k::nat < 2^n.(-1)^(f(k)+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k)))/((sqrt(2)^n)*(sqrt(2)^(n+1))))" 
+      using sum.cong by smt 
     moreover have "\<psi>\<^sub>3 $$ (i,j) = (\<Sum> k < 2^n. (-1)^(f(k) +  nat ((i div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1)))" 
       using a0 a1 a2 by auto
-    ultimately show "(((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1)* \<psi>\<^sub>2) $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)" 
-      using tensor_of_H_tensor_Id_is_HnId dim by auto
+    ultimately show "(((H^\<^sub>\<otimes> n) \<Otimes> Id 1)* \<psi>\<^sub>2) $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)" 
+      using tensor_of_H_tensor_Id_is_HId dim by auto
   next
     assume a2: "odd i"
-    have "(\<not>(i mod 2 = k mod 2) \<and> k<dim_col (HnId n)) \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
+    have "(\<not>(i mod 2 = k mod 2) \<and> k<dim_col (HId^\<^sub>\<otimes> n)) \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
       for k using f0 by auto
-    then have "k<(2^(n+1)) \<and> even k \<longrightarrow> ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
+    then have "k<(2^(n+1)) \<and> even k \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)) = 0" 
       for k using a2 mod_2_is_both_even_or_odd f0
       by (metis (no_types, lifting) dim_col_mat(1))
-    then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. ((HnId n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)))
-              = (\<Sum>k \<in> {(0::nat)..< (2^n)}. ((HnId n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j)))" 
+    then have "(\<Sum>k \<in>{(0::nat)..<(2^(n+1))}. ((HId^\<^sub>\<otimes> n) $$ (i,k)) * (\<psi>\<^sub>2 $$ (k,j)))
+              = (\<Sum>k \<in> {(0::nat)..< (2^n)}. ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j)))" 
       using sum_every_even_summand_is_zero dim by auto
-    moreover have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
+    moreover have "(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
                   =  (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n) *((-1)^(f(k)+1))/(sqrt(2)^(n+1)))" 
     proof-{
       have "(odd k \<and> k<dim_row \<psi>\<^sub>2) \<longrightarrow> (\<psi>\<^sub>2 $$ (k,j)) = ((-1)^(f(k div 2)+1))/(sqrt(2)^(n+1)) "
         for k using a0 a1 a2 by auto
-      then have f2:"(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
-               = (\<Sum> k < 2^n. ((HnId n) $$ (i,2*k+1)) * ((-1)^(f((2*k+1) div 2)+1))/(sqrt(2)^(n+1)))" 
+      then have f2:"(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
+               = (\<Sum> k < 2^n. ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1)) * ((-1)^(f((2*k+1) div 2)+1))/(sqrt(2)^(n+1)))" 
         by auto
-      have "i<dim_row (HnId n)" 
+      have "i<dim_row (HId^\<^sub>\<otimes> n)" 
         using f0 a2 mod_2_is_both_even_or_odd by auto
-      then have "((i mod 2 = k mod 2) \<and> k<dim_col (HnId n) )
-                 \<longrightarrow> ((HnId n) $$ (i,k))  = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (k div 2)))/(sqrt(2)^n) " for k
-        using a2 a0 a1 f0 dim HnId_values 
+      then have "((i mod 2 = k mod 2) \<and> k<dim_col (HId^\<^sub>\<otimes> n) )
+                 \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k))  = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (k div 2)))/(sqrt(2)^n) " for k
+        using a2 a0 a1 f0 dim HId_values 
         by auto
-      moreover have "odd k \<longrightarrow> (i mod 2 = k mod 2)" for k using a2 u2 by auto
-      ultimately have "(odd k \<and> k<dim_col (HnId n) )
-                 \<longrightarrow> ((HnId n) $$ (i,k))  = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (k div 2)))/(sqrt(2)^n) " for k
+      moreover have "odd k \<longrightarrow> (i mod 2 = k mod 2)" for k using a2 mod_2_is_both_even_or_odd by auto
+      ultimately have "(odd k \<and> k<dim_col (HId^\<^sub>\<otimes> n) )
+                 \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,k))  = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> (k div 2)))/(sqrt(2)^n) " for k
         by auto
-      then have "(k<(2^n) ) \<longrightarrow> ((HnId n) $$ (i,2*k+1))  = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> ((2*k+1) div 2)))/(sqrt(2)^n) " for k
+      then have "(k<(2^n) ) \<longrightarrow> ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1))  = (-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> ((2*k+1) div 2)))/(sqrt(2)^n) " for k
         by auto
-      then have "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
-                  = (\<Sum> k < 2^n.(-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> ((2*k+1) div 2)))/(sqrt(2)^n) *  ((-1)^(f((2*k+1) div 2)+1))/(sqrt(2)^(n+1)))" 
+      then have "(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
+                  = (\<Sum> k < 2^n.(-1)^(nat((i div 2) \<cdot>\<^bsub>n\<^esub> ((2*k+1) div 2)))/(sqrt(2)^n) 
+                             * ((-1)^(f((2*k+1) div 2)+1))/(sqrt(2)^(n+1)))" 
         using f2 by auto
-      then show "(\<Sum>k<(2^n). ((HnId n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
+      then show "(\<Sum>k<(2^n). ((HId^\<^sub>\<otimes> n) $$ (i,2*k+1)) * (\<psi>\<^sub>2 $$ (2*k+1,j))) 
                   =   (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n) *((-1)^(f(k)+1))/(sqrt(2)^(n+1)))" by auto
         }
     qed
-    ultimately have "((HnId n)* \<psi>\<^sub>2) $$ (i,j) = (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n) 
+    ultimately have "((HId^\<^sub>\<otimes> n)* \<psi>\<^sub>2) $$ (i,j) = (\<Sum> k < 2^n.(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n) 
                 *((-1)^(f(k)+1))/(sqrt(2)^(n+1)))" 
       using f1 by (metis atLeast0LessThan) 
     moreover have "(-1)^(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k))/(sqrt(2)^n) *((-1)^(f(k)+1))/(sqrt(2)^(n+1)) = 
                   (-1)^(f(k)+1+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k)))/((sqrt(2)^n)*(sqrt(2)^(n+1)))" for k 
       by (simp add: power_add)
-    ultimately have "((HnId n)* \<psi>\<^sub>2) $$ (i,j) = (\<Sum> k < 2^n.(-1)^(f(k)+1+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k)))/((sqrt(2)^n)*(sqrt(2)^(n+1))))" 
+    ultimately have "((HId^\<^sub>\<otimes> n)* \<psi>\<^sub>2) $$ (i,j) 
+                    =(\<Sum> k < 2^n.(-1)^(f(k)+1+(nat ((i div 2) \<cdot>\<^bsub>n\<^esub> k)))/((sqrt(2)^n)*(sqrt(2)^(n+1))))" 
       by (smt sum.cong) 
-    then show "(((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1)* \<psi>\<^sub>2) $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)" 
-      using tensor_of_H_tensor_Id_is_HnId dim a2 a0 a1 by auto
+    then show "(((H^\<^sub>\<otimes> n) \<Otimes> Id 1)* \<psi>\<^sub>2) $$ (i,j) = \<psi>\<^sub>3 $$ (i,j)" 
+      using tensor_of_H_tensor_Id_is_HId dim a2 a0 a1 by auto
   qed
 next
-  show "dim_row (((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1)* \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3"  
-    using tensor_of_H_tensor_Id_is_HnId dim by auto
+  show "dim_row (((H^\<^sub>\<otimes> n) \<Otimes> Id 1)* \<psi>\<^sub>2) = dim_row \<psi>\<^sub>3"  
+    using tensor_of_H_tensor_Id_is_HId dim by auto
 next
-  show "dim_col (((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1)* \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3" 
-    using tensor_of_H_tensor_Id_is_HnId dim by auto
+  show "dim_col (((H^\<^sub>\<otimes> n) \<Otimes> Id 1)* \<psi>\<^sub>2) = dim_col \<psi>\<^sub>3" 
+    using tensor_of_H_tensor_Id_is_HId dim by auto
 qed
-
-
 
 lemma (in jozsa) \<psi>\<^sub>3_is_state:
   shows "state (n+1) \<psi>\<^sub>3"
 proof-
-  have "((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) * \<psi>\<^sub>2 = \<psi>\<^sub>3" 
+  have "((H^\<^sub>\<otimes> n) \<Otimes> Id 1) * \<psi>\<^sub>2 = \<psi>\<^sub>3" 
     using hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3 by auto
-  moreover have "gate (n+1) ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1)" 
-    using tensor_of_H_tensor_Id_is_HnId HnId_is_gate dim by auto
+  moreover have "gate (n+1) ((H^\<^sub>\<otimes> n) \<Otimes> Id 1)" 
+    using tensor_of_H_tensor_Id_is_HId HId_is_gate dim by auto
   moreover have "state (n+1) \<psi>\<^sub>2" using \<psi>\<^sub>2_is_state by auto
   ultimately show "state (n+1) \<psi>\<^sub>3"
     using gate_on_state_is_state dim 
     by (metis (no_types, lifting))
 qed
 
+definition (in jozsa) jozsa_algo:: "complex Matrix.mat" where 
+"jozsa_algo \<equiv> ((H \<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) * (U\<^sub>f * (((H \<otimes>\<^bsup>n\<^esup>) * ( |zero\<rangle> \<otimes>\<^bsup>n\<^esup>)) \<Otimes> (H * |one\<rangle>)))"
 
+lemma (in jozsa) jozsa_algo_result [simp]: 
+  shows "jozsa_algo = \<psi>\<^sub>3" 
+  using jozsa_algo_def H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 H_tensor_n_on_zero_tensor_n \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1
+  jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3 dim H_tensor_n_is_tensor_of_H by auto
 
-definition (in jozsa) deutsch_jozsa_algo:: "complex Matrix.mat" where 
-"deutsch_jozsa_algo \<equiv> ((H\<^sup>\<otimes>\<^bsup>n\<^esup>) \<Otimes> Id 1) * (U\<^sub>f * (((H ^\<^sub>\<otimes> n) * ( |zero\<rangle> ^\<^sub>\<otimes> n)) \<Otimes> (H * |one\<rangle>)))"
-
-
-lemma (in jozsa) deutsch_jozsa_algo_result [simp]: 
-  shows "deutsch_jozsa_algo = \<psi>\<^sub>3" 
-  using deutsch_jozsa_algo_def H_on_ket_one_is_\<psi>\<^sub>1\<^sub>1 H_tensor_n_on_zero_tensor_n \<psi>\<^sub>1\<^sub>0_tensor_\<psi>\<^sub>1\<^sub>1_is_\<psi>\<^sub>1
-  jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 hadamard_gate_tensor_n_times_\<psi>\<^sub>2_is_\<psi>\<^sub>3 dim  by auto
-
-
-lemma (in jozsa) deutsch_jozsa_algo_result_is_state: 
-  shows "state (n+1) deutsch_jozsa_algo" 
+lemma (in jozsa) jozsa_algo_result_is_state: 
+  shows "state (n+1) jozsa_algo" 
   using \<psi>\<^sub>3_is_state by simp
-
-
 
 
 text \<open>Measurement\<close>
@@ -1694,10 +1687,8 @@ a 1 at spot i=\{0,...,n\}.\<close>
 
 definition prob_first_n_qubits_0 ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> real" where
 "prob_first_n_qubits_0 n v \<equiv>
-  if state (n+1) v then \<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
-
-
-
+  if state (n+1) v then \<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)}. (cmod(v $$ (j,0)))\<^sup>2 
+  else undefined"
 
 text \<open> Then, show that the set of indices is indeed {0,1}. \<close>
 
@@ -1723,19 +1714,21 @@ next
       using IH by auto
     moreover have "(k>2^(n+1)) \<longrightarrow> k \<in> {0,1}" 
       using a0 
-      by (metis One_nat_def Suc_eq_plus1 add_Suc_shift add_diff_cancel_right' atLeastLessThan_iff le_numeral_extra(3) less_imp_le_nat zero_less_Suc)
+      by (metis One_nat_def Suc_eq_plus1 add_Suc_shift add_diff_cancel_right' atLeastLessThan_iff le_numeral_extra(3) 
+          less_imp_le_nat zero_less_Suc)
     moreover have "(k=2^(n+1)) \<longrightarrow> k \<in> {0,1}" 
       using f0 
-      by (metis Suc_eq_plus1 a0 atLeastLessThanSuc_atLeastAtMost atLeastLessThan_iff diff_is_0_eq diff_self_eq_0 diff_zero zero_less_Suc)
+      by (metis Suc_eq_plus1 a0 atLeastLessThanSuc_atLeastAtMost atLeastLessThan_iff diff_is_0_eq diff_self_eq_0 
+          diff_zero zero_less_Suc)
     ultimately show "k \<in> {0,1}" 
       using a0 
       by (meson atLeastLessThan_iff nat_neq_iff) 
   qed
 qed
 
-(*This could easily be generalized, just replace deutsch_jozsa_algo with v and assume it is a state*)
+(*This could easily be generalized, just replace jozsa_algo with v and assume it is a state*)
 lemma (in jozsa) prob_first_n_qubits_0_deutsch_joza_algo: 
-  shows "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+  shows "(prob_first_n_qubits_0 n jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)"
 proof-
   have "((k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)) \<longrightarrow> k \<in> {0,1}" for k ::nat 
   proof 
@@ -1758,10 +1751,10 @@ proof-
     by (smt One_nat_def Suc_eq_plus1 add_diff_cancel_right' atLeastLessThan_iff diff_is_0_eq eq_iff mod_less 
         nat_power_eq_Suc_0_iff not_less not_less_eq_eq one_le_numeral one_le_power)
   ultimately have "{k| k::nat. (k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)} = {0,1}" by auto
-  moreover have  "prob_first_n_qubits_0 n deutsch_jozsa_algo 
-        = (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)" 
-    using deutsch_jozsa_algo_result_is_state prob_first_n_qubits_0_def by auto
-  ultimately show "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)" 
+  moreover have  "prob_first_n_qubits_0 n jozsa_algo 
+        = (\<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)" 
+    using jozsa_algo_result_is_state prob_first_n_qubits_0_def by auto
+  ultimately show "(prob_first_n_qubits_0 n jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)" 
       using prob_first_n_qubits_0_def by auto
 qed
 
@@ -1800,18 +1793,18 @@ Shorter name*)
 lemma sum_n_summands_one_or_minus_one_le_n:
   fixes n::nat
     and f::"nat\<Rightarrow>nat"
-  shows "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<le> n "
+  shows "(\<Sum> k::nat\<in>({0..< n}). (-1)^(f(k))) \<le> n "
 proof(induction n)
-  show "(\<Sum>k = 0..<0. (- int 1) ^ (f (k))) \<le> int 0" by simp
+  show "(\<Sum>k = 0..<0. (-1) ^ (f (k))) \<le> int 0" by simp
 next
   fix n
-  assume IH: "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<le> n "
-  have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) = 
-        (\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(n))" by auto
-  then have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<le> n +  (-(1::nat))^(f(n))" using IH by auto
-  moreover have " (-(1::nat))^(f(n)) = 1 \<or>  (-(1::nat))^(f(n)) = -1" 
+  assume IH: "(\<Sum> k::nat\<in>({0..< n}). (-1)^(f(k))) \<le> n "
+  have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-1)^(f(k))) = 
+        (\<Sum> k::nat\<in>({0..< n}). (-1)^(f(k))) + (-1)^(f(n))" by auto
+  then have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-1)^(f(k))) \<le> n +  (-1)^(f(n))" using IH by auto
+  moreover have "(-(1::nat))^(f(n)) = 1 \<or> (-(1::nat))^(f(n)) = -1" 
     by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<le> (Suc n)" by linarith
+  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-1)^(f(k))) \<le> (Suc n)" by auto
 qed
 
 (*Might not be needed anymore if so delete it. Could help to keep smt away for other proofs. 
@@ -1819,36 +1812,36 @@ Shorter name*)
 lemma sum_n_summands_one_or_minus_one_ge_minus_n:
   fixes n::nat
     and f::"nat\<Rightarrow>nat"
-  shows "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<ge> -n "
+  shows "(\<Sum> k::nat\<in>({0..< n}). (-1)^(f(k))) \<ge> -n "
 proof(induction n)
-  show "(\<Sum>k = 0..<0. (- int 1) ^ (f (k))) \<ge> - int 0" by simp
+  show "(\<Sum>k = 0..<0. (-1) ^ (f (k))) \<ge> - int 0" by simp
 next
   fix n
-  assume IH: "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<ge> -n"
-  have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) = 
-        (\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(n))" by auto
-  then have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<ge> -n +  (-(1::nat))^(f(n))" using IH by auto
-  moreover have " (-(1::nat))^(f(n)) = 1 \<or>  (-(1::nat))^(f(n)) = -1" 
+  assume IH: "(\<Sum> k::nat\<in>({0..< n}). (-1)^(f(k))) \<ge> -n"
+  have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-1)^(f(k))) = 
+        (\<Sum> k::nat\<in>({0..< n}). (-1)^(f(k))) + (-1)^(f(n))" by auto
+  then have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-1)^(f(k))) \<ge> -n +  (-1)^(f(n))" using IH by auto
+  moreover have "(-(1::nat))^(f(n)) = 1 \<or> (-(1::nat))^(f(n)) = -1" 
     by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<ge> -(Suc n)" by linarith
+  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-1)^(f(k))) \<ge> -(Suc n)" by auto
 qed
  
 lemma sum_n_summands_one_or_minus: 
   fixes F::"nat\<Rightarrow>nat" (*I renamed this because f suggested that it was jozsa's f function but it might also be f(k)+1*)
     and A::"nat set"
   assumes "finite A" 
-  shows "(\<Sum> k \<in> A. (-(1::nat))^(F(k))) \<le> card A " 
-  and "(\<Sum> k \<in> A. (-(1::nat))^(F(k))) \<ge> -card A " 
+  shows "(\<Sum> k \<in> A. (-1)^(F(k))) \<le> card A " 
+  and "(\<Sum> k \<in> A. (-1)^(F(k))) \<ge> -card A " 
 proof-
   have "k \<in> A\<longrightarrow> (-(1::nat))^(F(k)) = 1 \<or>  (-(1::nat))^(F(k)) = -1" for k
     by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  then show "(\<Sum> k \<in> A. (-(1::nat))^(F(k))) \<le> card A " 
+  then show "(\<Sum> k \<in> A. (-1)^(F(k))) \<le> card A " 
     using assms 
     by (smt card_eq_sum int_ops(2) int_sum sum_mono)
 next
   have "k \<in> A\<longrightarrow> (-(1::nat))^(F(k)) = 1 \<or>  (-(1::nat))^(F(k)) = -1" for k
     by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  then show  "(\<Sum> k \<in> A. (-(1::nat))^(F(k))) \<ge> -card A " 
+  then show  "(\<Sum> k \<in> A. (-1)^(F(k))) \<ge> -card A " 
     using assms    
     by (smt card_eq_sum of_nat_1 of_nat_sum sum_mono sum_negf)
 qed
@@ -1857,22 +1850,22 @@ qed
 lemma const_has_max_value:
   fixes F::"nat\<Rightarrow>nat" (*I renamed this because f suggested that it was jozsa's f function but it might also be f(k)+1*)
   assumes "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 0) \<or> (\<forall>x\<in>{i::nat. i < 2^n}. F x = 1)"
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-1)^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
 proof(rule disjE)
   show "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 0) \<or> (\<forall>x\<in>{i::nat. i < 2^n}. F x = 1)" using assms by simp
 next
   assume "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 0)"
-  then have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. 1))\<^sup>2" by auto
+  then have "(cmod (\<Sum> k < (2::nat)^n. (-1)^(F(k))))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. 1))\<^sup>2" by auto
   also have "... = (cmod ((2::nat)^n))\<^sup>2" by auto
   also have "... = ((2::nat)^n)\<^sup>2" by (simp add: norm_power)
-  finally show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
+  finally show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
     by (simp add: power_even_eq)
 next 
   assume "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 1)" 
-  then have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. -1))\<^sup>2" by auto
+  then have "(cmod (\<Sum> k < (2::nat)^n. (-1)^(F(k))))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. -1))\<^sup>2" by auto
   also have "... = (cmod (- ((2::nat)^n)))\<^sup>2" by auto
   also have "... = ((2::nat)^n)\<^sup>2" by (simp add: norm_power)
-  finally show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
+  finally show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
     by (simp add: power_even_eq)
 qed
 
@@ -1905,11 +1898,11 @@ lemma cmod_square_eq[simp]:
 lemma cmod_sum_divide_distrib:
   fixes a::real
   assumes "a\<ge>0" 
-  shows "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 = ((cmod (\<Sum> k::nat < n.(-(1::nat))^(f(k))))/a)\<^sup>2"
+  shows "(cmod(\<Sum> k::nat < n.(-1)^(f(k))/a))\<^sup>2 = ((cmod (\<Sum> k::nat < n.(-1)^(f(k))))/a)\<^sup>2"
 proof-
-  have "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 = (cmod ((\<Sum> k::nat < n.(-(1::nat))^(f(k)))/complex_of_real a))\<^sup>2" 
+  have "(cmod(\<Sum> k::nat < n.(-1)^(f(k))/a))\<^sup>2 = (cmod ((\<Sum> k::nat < n.(-1)^(f(k)))/complex_of_real a))\<^sup>2" 
     by (simp add: sum_divide_distrib)
-  then show "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 = ((cmod (\<Sum> k::nat < n.(-(1::nat))^(f(k))))/a)\<^sup>2" 
+  then show "(cmod(\<Sum> k::nat < n.(-1)^(f(k))/a))\<^sup>2 = ((cmod (\<Sum> k::nat < n.(-1)^(f(k))))/a)\<^sup>2" 
     by (simp add: assms norm_divide)
 qed
 
@@ -1936,100 +1929,96 @@ lemma add_limits_max_value: (*Name add_limits sounds wrong like max limit of bot
 shows "a=n "
   using assms by auto
 
-
-
 text \<open>The function is constant iff the first n qubits are 0\<close>
 
 text \<open>If the function is constant then the probability that the first n qubits are 0 is 1.\<close>
 
 (*NAMING! PROB0 is not really right refers to Quantum.prob0. Rename*)
-lemma (in jozsa) prob0_deutsch_jozsa_algo_const_0:
+lemma (in jozsa) prob0_jozsa_algo_const_0:
   assumes "const 0"
-  shows "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1"
+  shows "prob_first_n_qubits_0 n jozsa_algo = 1"
 proof-
-  have "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+  have "(prob_first_n_qubits_0 n jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)"
     using prob_first_n_qubits_0_deutsch_joza_algo by auto
-  moreover have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
+  moreover have "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
   proof-
     have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
       using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto 
-    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-      using deutsch_jozsa_algo_result const_def assms by auto
+    then have "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      using jozsa_algo_result const_def assms by auto
     also have "... = (cmod((2::nat)^n/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"  by auto
     also have "... = (cmod(1/(sqrt(2))))\<^sup>2 "  using sqrt_2_to_n_times_sqrt_2_n_plus_one by simp
     also have "... = 1/2" by (simp add: norm_divide power2_eq_square)
-    finally show "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" by auto
+    finally show "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" by auto
   qed
 
-  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
+  moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
   proof-
-    have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+    have "k < 2^n\<longrightarrow>(nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
       using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
-    then have "k < 2^n\<longrightarrow>f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k) = 1" for k::nat 
+    then have "k < 2^n\<longrightarrow>f(k)+ 1 + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k) = 1" for k::nat 
       using const_def assms by auto
-    moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-      using deutsch_jozsa_algo_result const_def assms \<psi>\<^sub>3_values (*FIND OUT WHY THIS IS NOT DONE VIA AUTO*)
-      by (smt dim_row_mat(1) even_add even_mult_iff even_power lessI odd_one one_add_one plus_1_eq_Suc 
-          power_0 power_add power_one_right power_strict_increasing_iff sum.cong)
-    ultimately have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. (-1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+    moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 
+    = (cmod (\<Sum> k::nat < (2::nat)^n. (-1)^(f(k)+ 1 + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using jozsa_algo_result const_def assms \<psi>\<^sub>3_values \<psi>\<^sub>3_dim by auto
+    ultimately have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. (-1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
      by (smt lessThan_iff power_one_right sum.cong) (*TODO:Next proof does not use smt here but is more confusing, review both*)
       also have "... = (cmod((2::nat)^n*(-1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
       by auto
     also have "... = (cmod((-1)/(sqrt(2))))\<^sup>2 " using sqrt_2_to_n_times_sqrt_2_n_plus_one by simp
     also have "... = 1/2" 
       by (simp add: norm_divide power2_eq_square)
-    finally show "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" by auto
+    finally show "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" by auto
   qed
 
-  ultimately have "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1/2 + 1/2" by auto
-  then show  "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1" by auto
+  ultimately have "prob_first_n_qubits_0 n jozsa_algo = 1/2 + 1/2" by auto
+  then show  "prob_first_n_qubits_0 n jozsa_algo = 1" by auto
 qed
 
 
-lemma (in jozsa) prob0_deutsch_jozsa_algo_const_1:
+lemma (in jozsa) prob0_jozsa_algo_const_1:
   assumes "const 1"
-  shows "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1"
+  shows "prob_first_n_qubits_0 n jozsa_algo = 1"
 proof-
-  have "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+  have "(prob_first_n_qubits_0 n jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)"
     using prob_first_n_qubits_0_deutsch_joza_algo by auto
-  moreover have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
+  moreover have "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = 1/2"
   proof-
      have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
       using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto 
-    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-      using deutsch_jozsa_algo_result const_def assms by auto
+    then have "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      using jozsa_algo_result const_def assms by auto
     also have "... = (cmod((2::nat)^n*(-1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
       by auto
     also have "... = (cmod((-1)/(sqrt(2))))\<^sup>2 " using sqrt_2_to_n_times_sqrt_2_n_plus_one by simp
     also have "... = 1/2" 
       by (simp add: norm_divide power2_eq_square)
-    finally show "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" by auto
+    finally show "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = 1/2" by auto
   qed
 
-  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
+  moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = 1/2"
   proof-
     have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
       using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
     moreover have " (2::nat) ^ n = card {..<(2::nat) ^ n}" by auto
-    ultimately have "(\<Sum> k < (2::nat)^n. (-1)^(f(k)+1 + nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
+    ultimately have "(\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1 + nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))) 
                    = (\<Sum> k < (2::nat)^n. 1/(sqrt(2)^n * sqrt(2)^(n+1)))" 
       using const_def assms by auto
-    moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-      using deutsch_jozsa_algo_result const_def assms \<psi>\<^sub>3_values 
-      by (smt dim_row_mat(1) even_add even_mult_iff even_power lessI odd_one one_add_one plus_1_eq_Suc 
-          power_0 power_add power_one_right power_strict_increasing_iff sum.cong)
-    ultimately have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+    moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 
+    = (cmod (\<Sum> k::nat < (2::nat)^n. (-(1::nat))^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using jozsa_algo_result const_def assms \<psi>\<^sub>3_values \<psi>\<^sub>3_dim by auto
+    ultimately have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. 1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
        by metis
     also have "... = (cmod((2::nat)^n*1/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
       by auto
     also have "... = (cmod(1/(sqrt(2))))\<^sup>2 " using sqrt_2_to_n_times_sqrt_2_n_plus_one by simp
     also have "... = 1/2" 
       by (simp add: norm_divide power2_eq_square)
-    finally show "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" by auto
+    finally show "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = 1/2" by auto
   qed
 
-  ultimately have "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1/2 + 1/2" by auto
-  then show  "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1" by auto
+  ultimately have "prob_first_n_qubits_0 n jozsa_algo = 1/2 + 1/2" by auto
+  then show  "prob_first_n_qubits_0 n jozsa_algo = 1" by auto
 qed
 
 
@@ -2047,7 +2036,8 @@ proof-
   moreover have g2: "(\<exists>y\<in>{i::nat. i < 2^n}. f y = 0)" using assms const_def f_values by auto
   ultimately have g3: "\<exists>x \<in>{i::nat. i < 2^n}.\<exists>y \<in>{i::nat. i < 2^n}. (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0" 
     by fastforce
-  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y \<longrightarrow> (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0 
+  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y 
+                \<longrightarrow> (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0 
                 \<longrightarrow> (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
   proof(rule impI, rule impI)
     {fix x y
@@ -2064,20 +2054,22 @@ proof-
       by (smt DiffI empty_iff finite_Diff finite_atLeastLessThan insert_iff)
 
     have "(({0..< (2::nat)^n}-{x})-{y}) = ({0..< (2::nat)^n}-{x,y})" by blast
-    then have f2: "(\<Sum> k \<in>  {0..< (2::nat)^n}. (-(1::nat))^(f(k))) = (\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) "
+    then have f2: "(\<Sum> k \<in>  {0..< (2::nat)^n}. (-(1::nat))^(f(k))) 
+                 = (\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) "
       using f0 f1 a1 by auto
     have "finite ({0..<2 ^ n} - {x, y})" by auto
-    moreover have "finite ({0..<2 ^ n} - {x, y}) \<longrightarrow> (\<Sum>k \<in> {0..<2 ^ n} - {x, y}. (- int 1) ^ f k) \<le> int (card ({0..<2 ^ n} - {x, y}))"
-      using sum_n_summands_one_or_minus by blast
+    moreover have "finite ({0..<2 ^ n} - {x, y}) 
+                   \<longrightarrow> (\<Sum>k \<in> {0..<2 ^ n} - {x, y}. (-(1::nat)) ^ f k) \<le> int (card ({0..<2 ^ n} - {x, y}))"
+      using sum_n_summands_one_or_minus by auto
     moreover have "int (card ({0..<2 ^ n} - {x, y})) = ((2::nat)^n-2) " using a0 by auto
     ultimately have "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) \<le> ((2::nat)^n-2)" 
       by linarith
     then have f3: "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) < ((2::nat)^n)" 
       by (smt diff_less of_nat_less_iff pos2 zero_less_power)
-    have "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) \<ge> -((2::nat)^n-2)" 
+    have "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-1)^(f(k))) \<ge> -((2::nat)^n-2)" 
       using sum_n_summands_one_or_minus a0 
       by (metis \<open>finite ({0..<2 ^ n} - {x, y})\<close> \<open>int (card ({0..<2 ^ n} - {x, y})) = int (2 ^ n - 2)\<close>)
-    then have f4: "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) > - ((2::nat)^n)" 
+    then have f4: "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-1)^(f(k))) > - ((2::nat)^n)" 
       by (smt diff_less of_nat_less_iff pos2 zero_less_power) 
     have f5: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) < (2::nat)^n" 
        using f3 f4 cmod_smaller_n[of "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)))" "(2::nat)^n"] by auto
@@ -2103,7 +2095,8 @@ proof-
   moreover have g2: "(\<exists>x\<in>{i::nat. i < 2^n}. f x = 0)" using assms const_def f_values by auto
   ultimately have g3: "\<exists>x \<in>{i::nat. i < 2^n}.\<exists>y \<in>{i::nat. i < 2^n}. (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0" 
     by fastforce
-  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y \<longrightarrow> (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0 
+  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y 
+                \<longrightarrow> (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0 
                 \<longrightarrow> (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
   proof(rule impI, rule impI)
     {fix x y
@@ -2115,25 +2108,27 @@ proof-
       by (simp add: a0 sum_diff1) 
     moreover have "y \<in>{0..< 2^n}" using a0 by auto
     then have f1:"(\<Sum> k \<in> ({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) = 
-                     (\<Sum> k \<in> (({0..< (2::nat)^n}-{x})-{y}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1)"
+                  (\<Sum> k \<in> (({0..< (2::nat)^n}-{x})-{y}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1)"
       using a0 sum_diff1 
       by (smt DiffI empty_iff finite_Diff finite_atLeastLessThan insert_iff)
 
     have "(({0..< (2::nat)^n}-{x})-{y}) = ({0..< (2::nat)^n}-{x,y})" by blast
-    then have f2: "(\<Sum> k \<in>  {0..< (2::nat)^n}. (-(1::nat))^(f(k)+1)) = (\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) "
+    then have f2: "(\<Sum> k \<in>  {0..< (2::nat)^n}. (-(1::nat))^(f(k)+1)) 
+                 = (\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) "
       using f0 f1 a1 by auto
     have "finite ({0..<2 ^ n} - {x, y})" by auto
-    moreover have "finite ({0..<2 ^ n} - {x, y}) \<longrightarrow> (\<Sum>k \<in> {0..<2 ^ n} - {x, y}. (- int 1) ^ (f k +1)) \<le> int (card ({0..<2 ^ n} - {x, y}))"
+    moreover have "finite ({0..<2 ^ n} - {x, y}) 
+              \<longrightarrow> (\<Sum>k \<in> {0..<2 ^ n} - {x, y}. (- int 1) ^ (f k +1)) \<le> int (card ({0..<2 ^ n} - {x, y}))"
       using sum_n_summands_one_or_minus[of "({0..<2 ^ n} - {x, y})" "\<lambda>k.(f k +1)"] by auto
     moreover have "int (card ({0..<2 ^ n} - {x, y})) = ((2::nat)^n-2) " using a0 by auto
     ultimately have "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) \<le> ((2::nat)^n-2)" 
       by linarith
     then have f3: "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) < ((2::nat)^n)" 
       by (smt diff_less of_nat_less_iff pos2 zero_less_power)
-    have "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) \<ge> -((2::nat)^n-2)" 
+    have "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-1)^(f(k)+1)) \<ge> -((2::nat)^n-2)" 
       using sum_n_summands_one_or_minus a0 
       by (metis \<open>finite ({0..<2 ^ n} - {x, y})\<close> \<open>int (card ({0..<2 ^ n} - {x, y})) = int (2 ^ n - 2)\<close>)
-    then have f4: "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) > - ((2::nat)^n)" 
+    then have f4: "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-1)^(f(k)+1)) > - ((2::nat)^n)" 
       by (smt diff_less of_nat_less_iff pos2 zero_less_power) 
     have f5: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)+1))) < (2::nat)^n" 
        using f3 f4 cmod_smaller_n[of "(\<Sum> k \<in> ({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1))" "(2::nat)^n"] by auto
@@ -2152,10 +2147,10 @@ proof-
 
 
 
-lemma (in jozsa) f_const_has_max_value: (*use proofs from prob0_deutsch_jozsa_algo_const_0 and prob0_deutsch_jozsa_algo_const_1*)
+lemma (in jozsa) f_const_has_max_value: (*use proofs from prob0_jozsa_algo_const_0 and prob0_jozsa_algo_const_1*)
   assumes "const 0 \<or> const 1"
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2  = (2::nat)^(2*n)" 
-  and "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2  = (2::nat)^(2*n)" 
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2  = (2::nat)^(2*n)" 
+  and "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2  = (2::nat)^(2*n)" 
   using const_has_max_value[of n "\<lambda>k. f(k)"] const_has_max_value[of n "\<lambda>k. f(k)+1"] const_def assms 
   by auto
 
@@ -2164,58 +2159,57 @@ lemma (in jozsa) f_const_has_max_value: (*use proofs from prob0_deutsch_jozsa_al
 (*Other possibility generalize it and put it into general section*)
 (*Better name"*)
 lemma (in jozsa) prob_first_n_qubits_0_limit:
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
-    and "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)"  
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+    and "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)"  
 proof-
-  show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+  show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
   proof(rule disjE)
     show "(const 0 \<or> const 1) \<or> (\<not> const 0 \<and> \<not> const 1)" by auto
   next
     assume "const 0 \<or> const 1" 
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
       using f_const_has_max_value by auto
   next
     assume "(\<not> const 0 \<and> \<not> const 1)"
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
       using not_const_cannot_have_max_value1 by auto
   qed
 next
-  show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
+  show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
   proof(rule disjE)
     show "(const 0 \<or> const 1) \<or> (\<not> const 0 \<and> \<not> const 1)" by auto
   next
     assume "const 0 \<or> const 1" 
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
       using f_const_has_max_value by auto
   next
     assume "(\<not> const 0 \<and> \<not> const 1)"
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
       using not_const_cannot_have_max_value2 by auto
   qed
 qed
 
 
-lemma (in jozsa) const_prob0_deutsch_jozsa_algo:
-  assumes "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1"
+lemma (in jozsa) const_prob0_jozsa_algo:
+  assumes "prob_first_n_qubits_0 n jozsa_algo = 1"
   shows "const 0 \<or> const 1"
 proof-
-  have f0: "(\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2) = 1"
+  have f0: "(\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2) = 1"
     using prob_first_n_qubits_0_deutsch_joza_algo assms by auto
   have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
     using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto 
-  then have f1: "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-    using deutsch_jozsa_algo_result const_def assms by auto
-  have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+  then have f1: "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+    using jozsa_algo_result const_def assms by auto
+  have "k < 2^n\<longrightarrow>(nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
     using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
-  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-    using deutsch_jozsa_algo_result const_def assms \<psi>\<^sub>3_values 
-    by (smt dim_row_mat(1) even_add even_mult_iff even_power lessI odd_one one_add_one plus_1_eq_Suc 
-          power_0 power_add power_one_right power_strict_increasing_iff sum.cong)
-  ultimately have f2: "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+  moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 
+               = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ 1 + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using jozsa_algo_result const_def assms \<psi>\<^sub>3_values \<psi>\<^sub>3_dim by auto
+  ultimately have f2: "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 
+                     = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ 1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
     by auto   
-
   have f3: "1= (cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
-        + (cmod (\<Sum> k::nat < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+        + (cmod (\<Sum> k::nat < (2::nat)^n. (-1)^(f(k)+ 1)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
     using f0 f1 f2 by auto 
   also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) /(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2
                  + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))) /(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2"
@@ -2234,13 +2228,13 @@ proof-
                  + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2)" 
     by auto
   moreover have "((2::nat)^(2*n+1)) = 2^(2*n) + 2^(2*n)" by auto
-  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> 2^(2*n)" 
+  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2 \<le> 2^(2*n)" 
     using prob_first_n_qubits_0_limit by auto 
-  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> 2^(2*n)" 
+  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2 \<le> 2^(2*n)" 
     using prob_first_n_qubits_0_limit by auto 
   ultimately have "2^(2*n) = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)))))\<^sup>2" 
-    using add_limits_max_value[of "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2" "2^(2*n)"
-                "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2" "2^(2*n)"] by auto
+    using add_limits_max_value[of "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k))))\<^sup>2" "2^(2*n)"
+                "(cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+1)))\<^sup>2" "2^(2*n)"] by auto
   then show "const 0 \<or> const 1" using sum_n_summands_one_or_minus not_const_cannot_have_max_value1 by auto
 qed
 
@@ -2258,9 +2252,6 @@ qed
 
 
  
-
-declare [[show_types]]
-declare [[show_sorts]]
 
 
 
@@ -2283,17 +2274,17 @@ lemma (in jozsa) balanced_pos_and_neg_terms_cancel_out:
 proof-
   have "\<And>A B . A \<subseteq> {i::nat. i < (2::nat)^n} \<and> B \<subseteq> {i::nat. i < (2::nat)^n}
              \<and> card A = ((2::nat)^(n-1)) \<and> card B = ((2::nat)^(n-1))  
-             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = (1::nat))
+             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = 1)
         \<longrightarrow> (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))) = 0"
   proof
   fix A B::"nat set"
   assume a0: "A \<subseteq> {i::nat. i < (2::nat)^n} \<and> B \<subseteq> {i::nat. i < (2::nat)^n}
              \<and> card A = ((2::nat)^(n-1)) \<and> card B = ((2::nat)^(n-1))  
-             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = (1::nat))" 
+             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = 1)" 
   have f0b: " A \<inter> B = {}" using is_balanced_inter a0 by auto 
   then have f0: "{0..<(2::nat)^n} = A \<union> B" using is_balanced_union a0 by auto
-  have f1: "(\<Sum> k \<in> A. (-(1::nat))^(f(k))) = ((2::nat)^(n-1))" using a0 by simp
-  have f2: "(\<Sum> k \<in> B. (-(1::nat))^(f(k))) = -((2::nat)^(n-1))" using a0 by simp
+  have f1: "(\<Sum> k \<in> A. (-1)^(f(k))) = ((2::nat)^(n-1))" using a0 by simp
+  have f2: "(\<Sum> k \<in> B. (-1)^(f(k))) = -((2::nat)^(n-1))" using a0 by simp
   have f3: "(\<Sum> k \<in> {0..<(2::nat)^n}. (-(1::nat))^(f(k))) =
             (\<Sum> k \<in> A. (-(1::nat))^(f(k))) 
           + (\<Sum> k \<in> B. (-(1::nat))^(f(k)))" 
@@ -2318,17 +2309,17 @@ lemma (in jozsa) balanced_pos_and_neg_terms_cancel_out':
 proof-
   have "\<And>A B . A \<subseteq> {i::nat. i < (2::nat)^n} \<and> B \<subseteq> {i::nat. i < (2::nat)^n}
              \<and> card A = ((2::nat)^(n-1)) \<and> card B = ((2::nat)^(n-1))  
-             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = (1::nat))
+             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = 1)
         \<longrightarrow> (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)) = 0"
   proof
   fix A B::"nat set"
   assume a0: "A \<subseteq> {i::nat. i < (2::nat)^n} \<and> B \<subseteq> {i::nat. i < (2::nat)^n}
              \<and> card A = ((2::nat)^(n-1)) \<and> card B = ((2::nat)^(n-1))  
-             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = (1::nat))" 
+             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = 1)" 
   have f0b: " A \<inter> B = {}" using is_balanced_inter a0 by auto 
   then have f0: "{0..<(2::nat)^n} = A \<union> B" using is_balanced_union a0 by auto
-  have f1: "(\<Sum> k \<in> A. (-(1::nat))^(f(k)+1)) = -((2::nat)^(n-1))" using a0 by simp
-  have f2: "(\<Sum> k \<in> B. (-(1::nat))^(f(k)+1)) = ((2::nat)^(n-1))" using a0 by simp
+  have f1: "(\<Sum> k \<in> A. (-1)^(f(k)+1)) = -((2::nat)^(n-1))" using a0 by simp
+  have f2: "(\<Sum> k \<in> B. (-1)^(f(k)+1)) = ((2::nat)^(n-1))" using a0 by simp
   have f3: "(\<Sum> k \<in> {0..<(2::nat)^n}. (-(1::nat))^(f(k)+1)) =
             (\<Sum> k \<in> A. (-(1::nat))^(f(k)+1)) 
           + (\<Sum> k \<in> B. (-(1::nat))^(f(k)+1))" 
@@ -2339,74 +2330,67 @@ proof-
 qed
   moreover have "\<exists>A B. A \<subseteq> {i::nat. i < (2::nat)^n} \<and> B \<subseteq> {i::nat. i < (2::nat)^n}
              \<and> card A = ((2::nat)^(n-1)) \<and> card B = ((2::nat)^(n-1))  
-             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = (1::nat))" 
+             \<and> (\<forall>(x::nat) \<in> A. f(x) = (0::nat))  \<and> (\<forall>(x::nat) \<in> B. f(x) = 1)" 
     using assms is_balanced_def by blast
   ultimately show "(\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)) = 0" 
     by auto
 qed
 
-
-
-
 (*Tidy up*)
-lemma (in jozsa) prob0_deutsch_jozsa_algo_balanced:
+lemma (in jozsa) prob0_jozsa_algo_balanced:
 assumes "is_balanced"
-  shows "prob_first_n_qubits_0 n deutsch_jozsa_algo = 0"
+  shows "prob_first_n_qubits_0 n jozsa_algo = 0"
 proof-
-  have "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
+  have "(prob_first_n_qubits_0 n jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)"
     using prob_first_n_qubits_0_deutsch_joza_algo by auto
 
-  moreover have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 0"
+  moreover have "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = 0"
   proof-
-     have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+     have "k < 2^n\<longrightarrow>(nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
       using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
-    then have "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. (-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-      using deutsch_jozsa_algo_result assms \<psi>\<^sub>3_values by auto
+    then have "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. (-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+      using jozsa_algo_result assms \<psi>\<^sub>3_values by auto
     also have "... = (cmod(\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)))/(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2" 
-      using sum_divide_distrib_cmod[of "\<lambda>k.(-1)^(f(k))" "(sqrt(2)^n * sqrt(2)^(n+1))" "2^n" ] by auto
+      using sum_divide_distrib_cmod[of "\<lambda>k.(-(1::nat))^(f(k))" "(sqrt(2)^n * sqrt(2)^(n+1))" "2^n" ] by auto
     also have "... = (cmod ((0::int)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
       using balanced_pos_and_neg_terms_cancel_out assms 
       by (simp add: bob_fun_axioms)
     also have "... = 0" by simp
-    finally show "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = 0" by auto
+    finally show "(cmod(jozsa_algo $$ (0,0)))\<^sup>2 = 0" by auto
   qed
 
-  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 0" 
+  moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = 0" 
   proof-
      have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
        using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
-    moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-      using deutsch_jozsa_algo_result const_def assms \<psi>\<^sub>3_values (*FIND OUT WHY THIS IS NOT DONE VIA AUTO*)
-      by (smt dim_row_mat(1) even_add even_mult_iff even_power lessI odd_one one_add_one plus_1_eq_Suc 
-          power_0 power_add power_one_right power_strict_increasing_iff sum.cong)
-    ultimately have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-       by (smt add.right_neutral lessThan_iff sum.cong)
+     moreover have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 
+     = (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+      using jozsa_algo_result const_def assms \<psi>\<^sub>3_values \<psi>\<^sub>3_dim by auto
+    ultimately have "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 
+    = (cmod(\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+       by auto
     also have "... = (cmod(\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1))/(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2" 
-      using sum_divide_distrib_cmod[of "\<lambda>k.(-1)^(f(k)+1)" "(sqrt(2)^n * sqrt(2)^(n+1))" "2^n" ] by auto
+      using sum_divide_distrib_cmod[of "\<lambda>k.(-(1::nat))^(f(k)+1)" "(sqrt(2)^n * sqrt(2)^(n+1))" "2^n" ] by auto
     also have "... = (cmod ((0::int)/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
       using balanced_pos_and_neg_terms_cancel_out' assms 
       by (simp add: bob_fun_axioms)
     also have "... = 0" by simp
-    finally show "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = 0" by auto
+    finally show "(cmod(jozsa_algo $$ (1,0)))\<^sup>2 = 0" by auto
   qed
 
-  ultimately have "prob_first_n_qubits_0 n deutsch_jozsa_algo = 0 + 0" by auto
-  then show  "prob_first_n_qubits_0 n deutsch_jozsa_algo = 0" by auto
+  ultimately have "prob_first_n_qubits_0 n jozsa_algo = 0 + 0" by auto
+  then show  "prob_first_n_qubits_0 n jozsa_algo = 0" by auto
 qed
-
-
 
 text \<open>If the probability that the first n qubits are 0 is 0 then the function is balanced\<close>
 
-(*HL To AD: This is cheated to the maximum. I haven't attempted to prove it any other way since I 
-was not sure if this is okay or not.*)
-lemma (in jozsa) balanced_prob0_deutsch_jozsa_algo:
-  assumes "prob_first_n_qubits_0 n deutsch_jozsa_algo = 0"
+lemma (in jozsa) balanced_prob0_jozsa_algo:
+  assumes "prob_first_n_qubits_0 n jozsa_algo = 0"
   shows "is_balanced"
 proof-
   have "is_const \<or> is_balanced" using const_or_balanced by auto
-  moreover have "is_const \<longrightarrow> \<not> prob_first_n_qubits_0 n deutsch_jozsa_algo = 0"
-    using is_const_def prob0_deutsch_jozsa_algo_const_0 prob0_deutsch_jozsa_algo_const_1 by auto
+  moreover have "is_const \<longrightarrow> \<not> prob_first_n_qubits_0 n jozsa_algo = 0"
+    using is_const_def prob0_jozsa_algo_const_0 prob0_jozsa_algo_const_1 by auto
   ultimately show "is_balanced" 
     using assms by blast
 qed
@@ -2414,68 +2398,32 @@ qed
 
 text \<open>Correctness of the algorithm\<close>
 
-definition (in jozsa) deutsch_jozsa_algo_eval:: "real" where
-"deutsch_jozsa_algo_eval \<equiv> prob_first_n_qubits_0 n deutsch_jozsa_algo"
+definition (in jozsa) jozsa_algo_eval:: "real" where
+"jozsa_algo_eval \<equiv> prob_first_n_qubits_0 n jozsa_algo"
 
 
 (*Both directions are more than needed. Could be removed, but I think its nice*)
-theorem (in jozsa) deutsch_jozsa_algo_is_correct:
-  shows "deutsch_jozsa_algo_eval = 1 \<longleftrightarrow> is_const " 
-    and "deutsch_jozsa_algo_eval = 0 \<longleftrightarrow> is_balanced " 
-  using prob0_deutsch_jozsa_algo_const_1 prob0_deutsch_jozsa_algo_const_0 const_def deutsch_jozsa_algo_eval_def
-        const_prob0_deutsch_jozsa_algo is_const_def balanced_prob0_deutsch_jozsa_algo prob0_deutsch_jozsa_algo_balanced 
+theorem (in jozsa) jozsa_algo_is_correct:
+  shows "jozsa_algo_eval = 1 \<longleftrightarrow> is_const " 
+    and "jozsa_algo_eval = 0 \<longleftrightarrow> is_balanced " 
+  using prob0_jozsa_algo_const_1 prob0_jozsa_algo_const_0 const_def jozsa_algo_eval_def
+        const_prob0_jozsa_algo is_const_def balanced_prob0_jozsa_algo prob0_jozsa_algo_balanced 
   by auto
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (*---------------------------------------------------------------------------------------------------*)
-(*HL to AB: I want to show that the probability that the first n qubits of deutsch_jozsa_algo are 0 
+(*HL to AB: I want to show that the probability that the first n qubits of jozsa_algo are 0 
 is 
 
-(prob_first_m_qubits_0 (n+1) deutsch_jozsa_algo n) 
-= (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
-= (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)
+(prob_first_m_qubits_0 (n+1) jozsa_algo n) 
+= (\<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)
+= (\<Sum>j\<in>{0,1}. (cmod(jozsa_algo $$ (j,0)))\<^sup>2)
 
 Intuitively this makes sense to me. We search all indices where this n indices are 0. But the proof that
 {k| k i::nat. (k<2^(n+1)) \<and> i<n \<and> \<not> select_index (n+1) i k} is the right set to choose from is hard.
 
-First, I tried to give the probability for (prob0 (n+1) deutsch_jozsa_algo i) for each i<n (see below) but that 
+First, I tried to give the probability for (prob0 (n+1) jozsa_algo i) for each i<n (see below) but that 
 was very hard. 
 *)
 
@@ -2498,7 +2446,7 @@ definition prob_first_m_qubits_0 ::"nat \<Rightarrow> complex Matrix.mat \<Right
   if state n v then \<Sum>j\<in>{k| k i::nat. (k<2^n) \<and> i<m \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
 
 (*Rather take this one for now (if proven use it without definition just as a fact)*)
-(*PUT IN deutsch_jozsa_algo INSTEAD OF V*)
+(*PUT IN jozsa_algo INSTEAD OF V*)
 definition prob_first_m_qubits_0' ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> real" where
 "prob_first_m_qubits_0' n v \<equiv>
   if state (n+1) v then \<Sum>j\<in>{k| k i::nat. (k<2^(n+1)) \<and> i\<le>n \<and> \<not> select_index (n+1) i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
