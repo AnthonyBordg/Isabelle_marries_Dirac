@@ -1761,14 +1761,25 @@ lemma (in jozsa) deutsch_jozsa_algo_result_is_state:
 
 text \<open>Measurement\<close>
 
-(*Tidied up version were the measurement is defined as a definition. Look below after the line of ----
-for the proofs that have to be finished. Below might be errors in the definitions. Hint: Put this section as a comment*)
+(*Tidied up version where the measurement of n qubits in a n+1 qubit system is defined as a definition. 
+Look below after the line of ---- for the proofs that have to be finished. Below might be errors in 
+the definitions. Hint: Put this section as a comment*)
 
+(*This could be easily generalized and put into another theory. It would be better not to have it as 
+a definition (rather prove that (\<Prod>i\<in>{0..n} . prob0 (n+1) v i) is this sum) but this seems pretty hard.*)
+
+text \<open> We want to determine the probability that the first n qubits of an n+1 qubit system 
+are 0. For this we need to find the indices of the states of the computational basis whose labels do not have 
+a 1 at spot i=\{0,...,n\}.\<close>
 
 definition prob_first_n_qubits_0 ::"nat \<Rightarrow> complex Matrix.mat \<Rightarrow> real" where
 "prob_first_n_qubits_0 n v \<equiv>
   if state (n+1) v then \<Sum>j\<in>{k| k::nat. (k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
 
+
+
+
+text \<open> Then, show that the set of indices is indeed {0,1}. \<close>
 
 lemma measure_if_first_n_qubits_zero_remaining_indices: (*Rename if stays*)
   fixes  k n::nat
@@ -1802,8 +1813,8 @@ next
   qed
 qed
 
-
-lemma (in jozsa) prob_first_n_qubits_0_deutsch_joza_algo: (*This could easily be generalized, just replace deutsch_jozsa_algo with v*)
+(*This could easily be generalized, just replace deutsch_jozsa_algo with v and assume it is a state*)
+lemma (in jozsa) prob_first_n_qubits_0_deutsch_joza_algo: 
   shows "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
 proof-
   have "((k<2^(n+1)) \<and> (\<forall>i\<in>{0..<n}. \<not> select_index (n+1) i k)) \<longrightarrow> k\<in>{0,1}" for k ::nat 
@@ -1834,9 +1845,8 @@ proof-
       using prob_first_n_qubits_0_def by auto
 qed
 
-
-
-
+text \<open>General lemmata needed for the probability proofs\<close>
+(*Tidy up all proofs*)
 
 lemma bitwise_inner_prod_with_zero:
   assumes "k<2^n"
@@ -1848,7 +1858,6 @@ proof-
                 =  nat (\<Sum>j\<in>{0..<n}. 0 * (bin_rep n k)!j)" by (simp add: bin_rep_index)
   ultimately show "(nat (0 \<cdot>\<^bsub>n\<^esub>  k)) = 0" by auto
 qed
-
 
 lemma sqrt_2_to_n_times_sqrt_2_n_plus_one [simp]: (*Give better name sqrt_2_different_representation ?*)
   shows "2^n/(sqrt(2)^n * sqrt(2)^(n+1)) = 1/sqrt(2)" 
@@ -1866,6 +1875,154 @@ next
 qed
 
 
+(*Might not be needed anymore if so delete it. Could help to keep smt away for other proofs. 
+Shorter name*)
+lemma sum_n_summands_one_or_minus_one_le_n:
+  fixes n::nat
+    and f::"nat\<Rightarrow>nat"
+  shows "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<le> n "
+proof(induction n)
+  show "(\<Sum>k = 0..<0. (- int 1) ^ (f (k))) \<le> int 0" by simp
+next
+  fix n
+  assume IH: "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<le> n "
+  have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) = 
+        (\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(n))" by auto
+  then have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<le> n +  (-(1::nat))^(f(n))" using IH by auto
+  moreover have " (-(1::nat))^(f(n)) = 1 \<or>  (-(1::nat))^(f(n)) = -1" 
+    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
+  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<le> (Suc n)" by linarith
+qed
+
+(*Might not be needed anymore if so delete it. Could help to keep smt away for other proofs. 
+Shorter name*)
+lemma sum_n_summands_one_or_minus_one_ge_minus_n:
+  fixes n::nat
+    and f::"nat\<Rightarrow>nat"
+  shows "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<ge> -n "
+proof(induction n)
+  show "(\<Sum>k = 0..<0. (- int 1) ^ (f (k))) \<ge> - int 0" by simp
+next
+  fix n
+  assume IH: "(\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) \<ge> -n"
+  have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) = 
+        (\<Sum> k::nat\<in>({0..< n}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(n))" by auto
+  then have "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<ge> -n +  (-(1::nat))^(f(n))" using IH by auto
+  moreover have " (-(1::nat))^(f(n)) = 1 \<or>  (-(1::nat))^(f(n)) = -1" 
+    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
+  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc n)}). (-(1::nat))^(f(k))) \<ge> -(Suc n)" by linarith
+qed
+ 
+lemma sum_n_summands_one_or_minus: 
+  fixes F::"nat\<Rightarrow>nat" (*I renamed this because f suggested that it was jozsa's f function but it might also be f(k)+1*)
+    and A::"nat set"
+  assumes "finite A" 
+  shows "(\<Sum> k\<in>A. (-(1::nat))^(F(k))) \<le> card A " 
+  and "(\<Sum> k\<in>A. (-(1::nat))^(F(k))) \<ge> -card A " 
+proof-
+  have "k\<in>A\<longrightarrow> (-(1::nat))^(F(k)) = 1 \<or>  (-(1::nat))^(F(k)) = -1" for k
+    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
+  then show "(\<Sum> k\<in>A. (-(1::nat))^(F(k))) \<le> card A " 
+    using assms 
+    by (smt card_eq_sum int_ops(2) int_sum sum_mono)
+next
+  have "k\<in>A\<longrightarrow> (-(1::nat))^(F(k)) = 1 \<or>  (-(1::nat))^(F(k)) = -1" for k
+    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
+  then show  "(\<Sum> k\<in>A. (-(1::nat))^(F(k))) \<ge> -card A " 
+    using assms    
+    by (smt card_eq_sum of_nat_1 of_nat_sum sum_mono sum_negf)
+qed
+
+
+lemma const_has_max_value:
+  fixes F::"nat\<Rightarrow>nat" (*I renamed this because f suggested that it was jozsa's f function but it might also be f(k)+1*)
+  assumes "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 0) \<or> (\<forall>x\<in>{i::nat. i < 2^n}. F x = 1)"
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
+proof(rule disjE)
+  show "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 0) \<or> (\<forall>x\<in>{i::nat. i < 2^n}. F x = 1)" using assms by simp
+next
+  assume "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 0)"
+  then have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. 1))\<^sup>2" by auto
+  also have "... = (cmod ((2::nat)^n))\<^sup>2" by auto
+  also have "... = ((2::nat)^n)\<^sup>2" by (simp add: norm_power)
+  finally show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
+    by (simp add: power_even_eq)
+next 
+  assume "(\<forall>x\<in>{i::nat. i < 2^n}. F x = 1)" 
+  then have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. -1))\<^sup>2" by auto
+  also have "... = (cmod (- ((2::nat)^n)))\<^sup>2" by auto
+  also have "... = ((2::nat)^n)\<^sup>2" by (simp add: norm_power)
+  finally show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(F(k))))\<^sup>2  = (2::nat)^(2*n)" 
+    by (simp add: power_even_eq)
+qed
+
+lemma cmod_smaller_n:
+  fixes a n::int
+  assumes "a < n"
+      and "a > -n"
+  shows "(cmod a) < n" 
+  using assms(1) assms(2) by auto
+
+lemma square_smaller_n:
+  fixes a n::real
+  assumes "a < n" and "a > -n" 
+  shows "a\<^sup>2 < n\<^sup>2"
+  by (smt assms(1) assms(2) real_le_rsqrt real_sqrt_abs)
+
+
+lemma cmod_square_real[simp]: (*Maybe this could be useful*)
+  fixes n::real
+  shows "(cmod (n))\<^sup>2 = n\<^sup>2" by auto
+
+lemma cmod_square_eq[simp]:
+  fixes a b::real
+  assumes "a=b"
+  shows "(cmod(a))\<^sup>2 = (cmod(b))\<^sup>2 "
+  by (simp add: assms)
+
+
+(*Only keep one of the next two lemmata*)
+lemma cmod_sum_divide_distrib:
+  fixes a::real
+  assumes "a\<ge>0" 
+  shows "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 = ((cmod (\<Sum> k::nat < n.(-(1::nat))^(f(k))))/a)\<^sup>2"
+proof-
+  have "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 = (cmod ((\<Sum> k::nat < n.(-(1::nat))^(f(k)))/complex_of_real a))\<^sup>2" 
+    by (simp add: sum_divide_distrib)
+  then show "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 = ((cmod (\<Sum> k::nat < n.(-(1::nat))^(f(k))))/a)\<^sup>2" 
+    by (simp add: assms norm_divide)
+qed
+
+
+lemma sum_divide_distrib_cmod:
+  fixes n::nat
+    and F::"nat\<Rightarrow>int"
+    and a::real
+  shows "(cmod(complex_of_real(\<Sum>k::nat<n. (F k) / a)))\<^sup>2 = (cmod (\<Sum>k::nat<n. (F k)) / a)\<^sup>2"
+proof-
+  have "(complex_of_real(\<Sum>k::nat<n. (F k) / a)) = (\<Sum>k::nat<n. (F k) / a)" by blast
+  then have "(cmod(complex_of_real(\<Sum>k::nat<n. (F k) / a)))\<^sup>2 = (cmod((\<Sum>k::nat<n. (F k) / a)))\<^sup>2"
+    by blast
+  moreover have "(\<Sum>k::nat<n. (F k) / a) = (\<Sum>k::nat<n. (F k))/ a" 
+    by (simp add: sum_divide_distrib)
+  ultimately show "(cmod(complex_of_real(\<Sum>k::nat<n. (F k) / a)))\<^sup>2 = (cmod (\<Sum>k::nat<n. (F k)) / a)\<^sup>2" 
+    by (metis norm_of_real of_real_of_int_eq power2_abs power_divide)
+qed
+
+lemma add_limits_max_value: (*Name add_limits sounds wrong like max limit of both*)
+  fixes a b n m::real 
+  assumes "a\<le>n" and "b\<le>m"
+  and "n+m = a + b "
+shows "a=n "
+  using assms by auto
+
+
+
+text \<open>The function is constant iff the first n qubits are 0\<close>
+
+text \<open>If the function is constant then the probability that the first n qubits are 0 is 1.\<close>
+
+(*NAMING! PROB0 is not really right refers to Quantum.prob0. Rename*)
 lemma (in jozsa) prob0_deutsch_jozsa_algo_const_0:
   assumes "const 0"
   shows "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1"
@@ -1907,355 +2064,6 @@ proof-
   ultimately have "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1/2 + 1/2" by auto
   then show  "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1" by auto
 qed
-
-
-
-lemma t1a:
-  fixes m::nat
-    and f::"nat\<Rightarrow>nat"
-  shows "(\<Sum> k::nat\<in>({0..< m}). (-(1::nat))^(f(k))) \<le> m "
-proof(induction m)
-  show "(\<Sum>k = 0..<0. (- int 1) ^ (f (k))) \<le> int 0" by simp
-next
-  fix m
-  assume IH: "(\<Sum> k::nat\<in>({0..< m}). (-(1::nat))^(f(k))) \<le> m "
-  have "(\<Sum> k::nat\<in>({0..< (Suc m)}). (-(1::nat))^(f(k))) = 
-        (\<Sum> k::nat\<in>({0..< m}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(m))" by auto
-  then have "(\<Sum> k::nat\<in>({0..< (Suc m)}). (-(1::nat))^(f(k))) \<le> m +  (-(1::nat))^(f(m))" using IH by auto
-  moreover have " (-(1::nat))^(f(m)) = 1 \<or>  (-(1::nat))^(f(m)) = -1" 
-    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc m)}). (-(1::nat))^(f(k))) \<le> (Suc m)" by linarith
-qed
-
-lemma t1b:
-  fixes m::nat
-    and f::"nat\<Rightarrow>nat"
-  shows "(\<Sum> k::nat\<in>({0..< m}). (-(1::nat))^(f(k))) \<ge> -m "
-proof(induction m)
-  show "(\<Sum>k = 0..<0. (- int 1) ^ (f (k))) \<ge> - int 0" by simp
-next
-  fix m
-  assume IH: "(\<Sum> k::nat\<in>({0..< m}). (-(1::nat))^(f(k))) \<ge> -m "
-  have "(\<Sum> k::nat\<in>({0..< (Suc m)}). (-(1::nat))^(f(k))) = 
-        (\<Sum> k::nat\<in>({0..< m}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(m))" by auto
-  then have "(\<Sum> k::nat\<in>({0..< (Suc m)}). (-(1::nat))^(f(k))) \<ge> -m +  (-(1::nat))^(f(m))" using IH by auto
-  moreover have " (-(1::nat))^(f(m)) = 1 \<or>  (-(1::nat))^(f(m)) = -1" 
-    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  ultimately show "(\<Sum> k::nat\<in>({0..< (Suc m)}). (-(1::nat))^(f(k))) \<ge> -(Suc m)" by linarith
-qed
-
-lemma (in jozsa) t1:
-  shows "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k)))\<^sup>2 \<le> (2::nat)^(2*n)" 
-    and "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k)+1))\<^sup>2 \<le> (2::nat)^(2*n)" 
-proof-
-  have "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k))) \<le> (2::nat)^n " 
-    using t1a[of "\<lambda>k. (f(k))" "(2::nat)^n"] by auto
-  moreover have  "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k))) \<ge> - ((2::nat)^n) " 
-    using t1b[of "(2::nat)^n" "\<lambda>k. (f(k))"] by auto
-  moreover have "((2::nat)^n)\<^sup>2 = (2::nat)^(2*n) " 
-    by (simp add: power_even_eq)
-  ultimately show "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k)))\<^sup>2 \<le> (2::nat)^(2*n)" 
-    by (smt of_nat_power power2_minus power_mono)
-next
-  have "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k)+1)) \<le> (2::nat)^n " 
-    using t1a[of "\<lambda>k. (f(k)+1)" "(2::nat)^n"] by auto
-  moreover have  "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k)+1)) \<ge> - ((2::nat)^n) " 
-    using t1b[of "(2::nat)^n" "\<lambda>k. (f(k)+1)"] by auto
-  moreover have "((2::nat)^n)\<^sup>2 = (2::nat)^(2*n) " 
-    by (simp add: power_even_eq)
-  ultimately show "(\<Sum> k::nat\<in>({0..< (2::nat)^n}). (-(1::nat))^(f(k)+1))\<^sup>2 \<le> (2::nat)^(2*n)" 
-    by (smt of_nat_power power2_minus power_mono)
-qed
-
-
-
-   
-
-
-
-
-(*Tidy up*)
-lemma t2:
-  fixes f::"nat\<Rightarrow>nat"
-    and A::"nat set"
-  assumes "finite A" 
-  shows "(\<Sum> k\<in>A. (-(1::nat))^(f(k))) \<le> card A " 
-  and "(\<Sum> k\<in>A. (-(1::nat))^(f(k))) \<ge> -card A " 
-proof-
-  have "k\<in>A\<longrightarrow> (-(1::nat))^(f(k)) = 1 \<or>  (-(1::nat))^(f(k)) = -1" for k
-    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  then show "(\<Sum> k\<in>A. (-(1::nat))^(f(k))) \<le> card A " 
-    using assms 
-    by (smt card_eq_sum int_ops(2) int_sum sum_mono)
-next
-  have "k\<in>A\<longrightarrow> (-(1::nat))^(f(k)) = 1 \<or>  (-(1::nat))^(f(k)) = -1" for k
-    by (metis int_ops(2) neg_one_even_power neg_one_odd_power)
-  then show  "(\<Sum> k\<in>A. (-(1::nat))^(f(k))) \<ge> -card A " 
-    using assms    
-    by (smt card_eq_sum of_nat_1 of_nat_sum sum_mono sum_negf)
-qed
-
-
-lemma t3a:
-  fixes a n::int
-  assumes "a < n"
-      and "a > -n"
-  shows "(cmod a) < n" 
-  using assms(1) assms(2) by auto
-
-lemma 
-  fixes a::int
-  shows "cmod a \<ge> 0"
-  by auto
-
-lemma t3b:
-  fixes a n::real
-  assumes "a < n" and "a > -n" 
-  shows "a\<^sup>2 < n\<^sup>2"
-  by (smt assms(1) assms(2) real_le_rsqrt real_sqrt_abs)
-
-
-lemma (in jozsa) t3:
-  assumes "\<not> const 0" and "\<not> const 1"
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
-proof-
-  have g1: "(\<exists>x\<in>{i::nat. i < 2^n}. f x = 1)" using assms const_def f_values by auto
-  moreover have g2: "(\<exists>y\<in>{i::nat. i < 2^n}. f y = 0)" using assms const_def f_values by auto
-  ultimately have g3: "\<exists>x \<in>{i::nat. i < 2^n}.\<exists>y \<in>{i::nat. i < 2^n}. (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0" 
-    by fastforce
-  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y \<longrightarrow> (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0 
-                \<longrightarrow> (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
-  proof(rule impI, rule impI)
-    {fix x y
-    assume a0: "x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y "
-    assume a1: "(-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0"
-    then have "x \<in>{0..< 2^n}" using a0 by auto
-    then have f0: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k))) = 
-               (\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(x))"
-      by (simp add: a0 sum_diff1) 
-    moreover have "y \<in>{0..< 2^n}" using a0 by auto
-    then have f1:"(\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(x)) = 
-                     (\<Sum> k\<in>(({0..< (2::nat)^n}-{x})-{y}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(x)) + (-(1::nat))^(f(y))"
-      using a0 sum_diff1 
-      by (smt DiffI empty_iff finite_Diff finite_atLeastLessThan insert_iff)
-
-    have "(({0..< (2::nat)^n}-{x})-{y}) = ({0..< (2::nat)^n}-{x,y})" by blast
-    then have f2: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k))) = (\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) "
-      using f0 f1 a1 by auto
-    have "finite ({0..<2 ^ n} - {x, y})" by auto
-    moreover have "finite ({0..<2 ^ n} - {x, y}) \<longrightarrow> (\<Sum>k\<in>{0..<2 ^ n} - {x, y}. (- int 1) ^ f k) \<le> int (card ({0..<2 ^ n} - {x, y}))"
-      using t2 by blast
-    moreover have "int (card ({0..<2 ^ n} - {x, y})) = ((2::nat)^n-2) " using a0 by auto
-    ultimately have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) \<le> ((2::nat)^n-2)" 
-      by linarith
-    then have f3: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) < ((2::nat)^n)" 
-      by (smt diff_less of_nat_less_iff pos2 zero_less_power)
-    have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) \<ge> -((2::nat)^n-2)" 
-      using t2 a0 
-      by (metis \<open>finite ({0..<2 ^ n} - {x, y})\<close> \<open>int (card ({0..<2 ^ n} - {x, y})) = int (2 ^ n - 2)\<close>)
-    then have f4: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) > - ((2::nat)^n)" 
-      by (smt diff_less of_nat_less_iff pos2 zero_less_power) 
-    have f5: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) < (2::nat)^n" 
-       using f3 f4 t3a[of "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)))" "(2::nat)^n"] by auto
-    have "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) \<ge> 0" by auto
-    then have f6: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) > - ((2::nat)^n)" 
-      using dim by (smt int_zle_neg of_int_less_0_iff power_eq_0_iff zero_neq_numeral)
-    show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
-      using t3b[of "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))" "(2::nat)^n"] f5 f6 t3b f2
-      by (metis lessThan_atLeast0 of_int_minus of_int_of_nat_eq of_nat_power_eq_of_nat_cancel_iff power_even_eq)  
-  }qed
-  ultimately show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
-    using g1 g2 g3 g4 
-    by (smt of_nat_1 power_0 power_one_right)
-qed
-
-
-lemma (in jozsa) t3b:
-  assumes "\<not> const 0" and "\<not> const 1"
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
-proof-
-  have g1: "(\<exists>y\<in>{i::nat. i < 2^n}. f y = 1)" using assms const_def f_values by auto
-  moreover have g2: "(\<exists>x\<in>{i::nat. i < 2^n}. f x = 0)" using assms const_def f_values by auto
-  ultimately have g3: "\<exists>x \<in>{i::nat. i < 2^n}.\<exists>y \<in>{i::nat. i < 2^n}. (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0" 
-    by fastforce
-  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y \<longrightarrow> (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0 
-                \<longrightarrow> (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
-  proof(rule impI, rule impI)
-    {fix x y
-    assume a0: "x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y "
-    assume a1: "(-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0"
-    then have "x \<in>{0..< 2^n}" using a0 by auto
-    then have f0: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k)+1)) = 
-               (\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1)"
-      by (simp add: a0 sum_diff1) 
-    moreover have "y \<in>{0..< 2^n}" using a0 by auto
-    then have f1:"(\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) = 
-                     (\<Sum> k\<in>(({0..< (2::nat)^n}-{x})-{y}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1)"
-      using a0 sum_diff1 
-      by (smt DiffI empty_iff finite_Diff finite_atLeastLessThan insert_iff)
-
-    have "(({0..< (2::nat)^n}-{x})-{y}) = ({0..< (2::nat)^n}-{x,y})" by blast
-    then have f2: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k)+1)) = (\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) "
-      using f0 f1 a1 by auto
-    have "finite ({0..<2 ^ n} - {x, y})" by auto
-    moreover have "finite ({0..<2 ^ n} - {x, y}) \<longrightarrow> (\<Sum>k\<in>{0..<2 ^ n} - {x, y}. (- int 1) ^ (f k +1)) \<le> int (card ({0..<2 ^ n} - {x, y}))"
-      using t2[of "({0..<2 ^ n} - {x, y})" "\<lambda>k.(f k +1)"] by auto
-    moreover have "int (card ({0..<2 ^ n} - {x, y})) = ((2::nat)^n-2) " using a0 by auto
-    ultimately have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) \<le> ((2::nat)^n-2)" 
-      by linarith
-    then have f3: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) < ((2::nat)^n)" 
-      by (smt diff_less of_nat_less_iff pos2 zero_less_power)
-    have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) \<ge> -((2::nat)^n-2)" 
-      using t2 a0 
-      by (metis \<open>finite ({0..<2 ^ n} - {x, y})\<close> \<open>int (card ({0..<2 ^ n} - {x, y})) = int (2 ^ n - 2)\<close>)
-    then have f4: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) > - ((2::nat)^n)" 
-      by (smt diff_less of_nat_less_iff pos2 zero_less_power) 
-    have f5: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)+1))) < (2::nat)^n" 
-       using f3 f4 t3a[of "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1))" "(2::nat)^n"] by auto
-    have "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) \<ge> 0" by auto
-    then have f6: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)+1))) > - ((2::nat)^n)" 
-      using dim 
-      by (smt norm_ge_zero of_int_less_0_iff of_nat_0_less_iff pos2 zero_less_power)
-    show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
-      using t3b[of "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))" "(2::nat)^n"] f5 f6 t3b f2
-      by (metis lessThan_atLeast0 of_int_minus of_int_of_nat_eq of_nat_power_eq_of_nat_cancel_iff power_even_eq)  
-  }qed
-  ultimately show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
-    using g1 g2 g3 g4 
-    by (smt One_nat_def add.right_neutral add_Suc_right of_nat_1 one_add_one power2_minus power_one power_one_right)
-  qed
-
-lemma (in jozsa) t4: (*use proofs from prob0_deutsch_jozsa_algo_const_0 and prob0_deutsch_jozsa_algo_const_1*)
-  assumes "const 0 \<or> const 1"
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2  = (2::nat)^(2*n)" 
-  and "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2  = (2::nat)^(2*n)" 
-  sorry
-
-
-
-(*Could shorten this with apply statement using case distinction?*)
-lemma (in jozsa) t7:
-  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
-    and "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
-proof-
-  show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
-  proof(rule disjE)
-    show "(const 0 \<or> const 1) \<or> (\<not> const 0 \<and> \<not> const 1)" by auto
-  next
-    assume "const 0 \<or> const 1" 
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" using t4 by auto
-  next
-    assume "(\<not> const 0 \<and> \<not> const 1)"
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
-      using t3 by auto
-  qed
-next
-  show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
-  proof(rule disjE)
-    show "(const 0 \<or> const 1) \<or> (\<not> const 0 \<and> \<not> const 1)" by auto
-  next
-    assume "const 0 \<or> const 1" 
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" using t4 by auto
-  next
-    assume "(\<not> const 0 \<and> \<not> const 1)"
-    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
-      using t3b by auto
-  qed
-qed
-
-
-lemma t5:
-  fixes a b n m::real 
-  assumes "a\<le>n" and "b\<le>m"
-  and "n+m = a + b "
-shows "a=n "
-  using assms(1) assms(2) assms(3) by auto
-
-
-  declare [[show_types]]
-  declare [[show_sorts]]
-
-lemma h4[simp]:
-  fixes a b::real
-  assumes "a=b"
-  shows "(cmod(a))\<^sup>2 = (cmod(b))\<^sup>2 "
-  by (simp add: assms)
-
-lemma h5:
-  fixes a::real
-  shows "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 
-    = (cmod ((\<Sum> k::nat < n.(-(1::nat))^(f(k)))/complex_of_real ( (a)))  )\<^sup>2" 
-  by (simp add: sum_divide_distrib)
-
-
-lemma h6:
-  fixes a::real
-  assumes "a\<ge>0" 
-  shows "(cmod(\<Sum> k::nat < n.(-(1::nat))^(f(k))/a))\<^sup>2 
-    = ((cmod (\<Sum> k::nat < n.(-(1::nat))^(f(k))))/a)\<^sup>2" 
-  using h5   
-  by (simp add: norm_divide power_divide)
-
-
-lemma (in jozsa) const_prob0_deutsch_jozsa_algo:
-  assumes "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1"
-  shows "const 0 \<or> const 1"
-proof-
-  have f0: "(\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2) = 1"
-    using prob_first_n_qubits_0_deutsch_joza_algo assms by auto
-  have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
-    using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto 
-  then have f1: "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-    using deutsch_jozsa_algo_result const_def assms by auto
-  have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
-    using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
-  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-    using deutsch_jozsa_algo_result const_def assms \<psi>\<^sub>3_values 
-    by (smt dim_row_mat(1) even_add even_mult_iff even_power lessI odd_one one_add_one plus_1_eq_Suc 
-          power_0 power_add power_one_right power_strict_increasing_iff sum.cong)
-  ultimately have f2: "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
-    by auto   
-
-  have f3: "1= (cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
-        + (cmod (\<Sum> k::nat < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
-    using f0 f1 f2 by auto 
-  also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) /(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2
-                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))) /(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2"
-    using h6[of "(sqrt(2)^n * sqrt(2)^(n+1))" "\<lambda>k. f(k)" "(2::nat)^n"] 
-          h6[of "(sqrt(2)^n * sqrt(2)^(n+1))" "\<lambda>k. f(k)+1" "(2::nat)^n"] by auto
-  also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) )\<^sup>2 /((sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2
-                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2  /((sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2"
-    by (simp add: power_divide)
-  also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) )\<^sup>2 /(2^(2*n+1))
-                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2  /(2^(2*n+1))"
-    by (smt left_add_twice power2_eq_square power_add power_mult_distrib real_sqrt_pow2)
-  also have "... = (((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) )\<^sup>2 
-                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2)/(2^(2*n+1)) "
-    by (simp add: add_divide_distrib)
-  finally have "((2::nat)^(2*n+1)) = (((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)))))\<^sup>2 
-                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2)" 
-    by auto
-  moreover have "((2::nat)^(2*n+1)) = 2^(2*n) + 2^(2*n)" by auto
-  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> 2^(2*n)" 
-    using t7 by auto 
-  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> 2^(2*n)" 
-    using t7 by auto 
-  ultimately have "2^(2*n) = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)))))\<^sup>2" 
-    using t5[of "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2" "2^(2*n)"
-                "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2" "2^(2*n)"] by auto
-  then show "const 0 \<or> const 1" using t2 t3 by auto
-qed
-
-
-
-
-
-
-
-
-
-
-
 
 
 lemma (in jozsa) prob0_deutsch_jozsa_algo_const_1:
@@ -2305,9 +2113,240 @@ proof-
 qed
 
 
-  declare [[show_types]]
-  declare [[show_sorts]]
 
+text \<open>If the probability that the first n qubits are 0 is 1 then the function is constant\<close>
+(*Tidy up all proofs*)
+
+
+(*It would be possible to generalize the next two (put them out of jozsa) like done with the next lemma*)
+lemma (in jozsa) not_const_cannot_have_max_value1:
+  assumes "\<not> const 0" and "\<not> const 1"
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
+proof-
+  have g1: "(\<exists>x\<in>{i::nat. i < 2^n}. f x = 1)" using assms const_def f_values by auto
+  moreover have g2: "(\<exists>y\<in>{i::nat. i < 2^n}. f y = 0)" using assms const_def f_values by auto
+  ultimately have g3: "\<exists>x \<in>{i::nat. i < 2^n}.\<exists>y \<in>{i::nat. i < 2^n}. (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0" 
+    by fastforce
+  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y \<longrightarrow> (-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0 
+                \<longrightarrow> (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
+  proof(rule impI, rule impI)
+    {fix x y
+    assume a0: "x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y "
+    assume a1: "(-(1::nat))^(f(x)) + (-(1::nat))^(f(y)) = 0"
+    then have "x \<in>{0..< 2^n}" using a0 by auto
+    then have f0: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k))) = 
+               (\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(x))"
+      by (simp add: a0 sum_diff1) 
+    moreover have "y \<in>{0..< 2^n}" using a0 by auto
+    then have f1:"(\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(x)) = 
+                     (\<Sum> k\<in>(({0..< (2::nat)^n}-{x})-{y}). (-(1::nat))^(f(k))) + (-(1::nat))^(f(x)) + (-(1::nat))^(f(y))"
+      using a0 sum_diff1 
+      by (smt DiffI empty_iff finite_Diff finite_atLeastLessThan insert_iff)
+
+    have "(({0..< (2::nat)^n}-{x})-{y}) = ({0..< (2::nat)^n}-{x,y})" by blast
+    then have f2: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k))) = (\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) "
+      using f0 f1 a1 by auto
+    have "finite ({0..<2 ^ n} - {x, y})" by auto
+    moreover have "finite ({0..<2 ^ n} - {x, y}) \<longrightarrow> (\<Sum>k\<in>{0..<2 ^ n} - {x, y}. (- int 1) ^ f k) \<le> int (card ({0..<2 ^ n} - {x, y}))"
+      using sum_n_summands_one_or_minus by blast
+    moreover have "int (card ({0..<2 ^ n} - {x, y})) = ((2::nat)^n-2) " using a0 by auto
+    ultimately have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) \<le> ((2::nat)^n-2)" 
+      by linarith
+    then have f3: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) < ((2::nat)^n)" 
+      by (smt diff_less of_nat_less_iff pos2 zero_less_power)
+    have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) \<ge> -((2::nat)^n-2)" 
+      using sum_n_summands_one_or_minus a0 
+      by (metis \<open>finite ({0..<2 ^ n} - {x, y})\<close> \<open>int (card ({0..<2 ^ n} - {x, y})) = int (2 ^ n - 2)\<close>)
+    then have f4: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k))) > - ((2::nat)^n)" 
+      by (smt diff_less of_nat_less_iff pos2 zero_less_power) 
+    have f5: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) < (2::nat)^n" 
+       using f3 f4 cmod_smaller_n[of "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)))" "(2::nat)^n"] by auto
+    have "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) \<ge> 0" by auto
+    then have f6: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) > - ((2::nat)^n)" 
+      using dim by (smt int_zle_neg of_int_less_0_iff power_eq_0_iff zero_neq_numeral)
+    show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
+      using f5 f6 square_smaller_n f2
+      by (metis lessThan_atLeast0 of_int_minus of_int_of_nat_eq of_nat_power_eq_of_nat_cancel_iff power_even_eq)  
+  }qed
+  ultimately show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 < (2::nat)^(2*n)" 
+    using g1 g2 g3 g4 
+    by (smt of_nat_1 power_0 power_one_right)
+qed
+
+
+
+lemma (in jozsa) not_const_cannot_have_max_value2:
+  assumes "\<not> const 0" and "\<not> const 1"
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
+proof-
+  have g1: "(\<exists>y\<in>{i::nat. i < 2^n}. f y = 1)" using assms const_def f_values by auto
+  moreover have g2: "(\<exists>x\<in>{i::nat. i < 2^n}. f x = 0)" using assms const_def f_values by auto
+  ultimately have g3: "\<exists>x \<in>{i::nat. i < 2^n}.\<exists>y \<in>{i::nat. i < 2^n}. (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0" 
+    by fastforce
+  moreover have g4: "\<And> x y. x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y \<longrightarrow> (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0 
+                \<longrightarrow> (cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
+  proof(rule impI, rule impI)
+    {fix x y
+    assume a0: "x \<in>{i::nat. i < 2^n} \<and> y \<in>{i::nat. i < 2^n} \<and> x\<noteq>y "
+    assume a1: "(-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1) = 0"
+    then have "x \<in>{0..< 2^n}" using a0 by auto
+    then have f0: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k)+1)) = 
+               (\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1)"
+      by (simp add: a0 sum_diff1) 
+    moreover have "y \<in>{0..< 2^n}" using a0 by auto
+    then have f1:"(\<Sum> k\<in>({0..< (2::nat)^n}-{x}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) = 
+                     (\<Sum> k\<in>(({0..< (2::nat)^n}-{x})-{y}). (-(1::nat))^(f(k)+1)) + (-(1::nat))^(f(x)+1) + (-(1::nat))^(f(y)+1)"
+      using a0 sum_diff1 
+      by (smt DiffI empty_iff finite_Diff finite_atLeastLessThan insert_iff)
+
+    have "(({0..< (2::nat)^n}-{x})-{y}) = ({0..< (2::nat)^n}-{x,y})" by blast
+    then have f2: "(\<Sum> k\<in> {0..< (2::nat)^n}. (-(1::nat))^(f(k)+1)) = (\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) "
+      using f0 f1 a1 by auto
+    have "finite ({0..<2 ^ n} - {x, y})" by auto
+    moreover have "finite ({0..<2 ^ n} - {x, y}) \<longrightarrow> (\<Sum>k\<in>{0..<2 ^ n} - {x, y}. (- int 1) ^ (f k +1)) \<le> int (card ({0..<2 ^ n} - {x, y}))"
+      using sum_n_summands_one_or_minus[of "({0..<2 ^ n} - {x, y})" "\<lambda>k.(f k +1)"] by auto
+    moreover have "int (card ({0..<2 ^ n} - {x, y})) = ((2::nat)^n-2) " using a0 by auto
+    ultimately have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) \<le> ((2::nat)^n-2)" 
+      by linarith
+    then have f3: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) < ((2::nat)^n)" 
+      by (smt diff_less of_nat_less_iff pos2 zero_less_power)
+    have "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) \<ge> -((2::nat)^n-2)" 
+      using sum_n_summands_one_or_minus a0 
+      by (metis \<open>finite ({0..<2 ^ n} - {x, y})\<close> \<open>int (card ({0..<2 ^ n} - {x, y})) = int (2 ^ n - 2)\<close>)
+    then have f4: "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1)) > - ((2::nat)^n)" 
+      by (smt diff_less of_nat_less_iff pos2 zero_less_power) 
+    have f5: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)+1))) < (2::nat)^n" 
+       using f3 f4 cmod_smaller_n[of "(\<Sum> k\<in>({0..< (2::nat)^n}-{x,y}). (-(1::nat))^(f(k)+1))" "(2::nat)^n"] by auto
+    have "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)))) \<ge> 0" by auto
+    then have f6: "(cmod (\<Sum> k \<in>({0..< (2::nat)^n}-{x,y}).(-(1::nat))^(f(k)+1))) > - ((2::nat)^n)" 
+      using dim 
+      by (smt norm_ge_zero of_int_less_0_iff of_nat_0_less_iff pos2 zero_less_power)
+    show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
+      using f5 f6 square_smaller_n f2
+      by (metis lessThan_atLeast0 of_int_minus of_int_of_nat_eq of_nat_power_eq_of_nat_cancel_iff power_even_eq)  
+  }qed
+  ultimately show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 < (2::nat)^(2*n)" 
+    using g1 g2 g3 g4 
+    by (smt One_nat_def add.right_neutral add_Suc_right of_nat_1 one_add_one power2_minus power_one power_one_right)
+  qed
+
+
+
+lemma (in jozsa) f_const_has_max_value: (*use proofs from prob0_deutsch_jozsa_algo_const_0 and prob0_deutsch_jozsa_algo_const_1*)
+  assumes "const 0 \<or> const 1"
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2  = (2::nat)^(2*n)" 
+  and "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2  = (2::nat)^(2*n)" 
+  using const_has_max_value[of n "\<lambda>k. f(k)"] const_has_max_value[of n "\<lambda>k. f(k)+1"] const_def assms 
+  by auto
+
+
+(*Could shorten this with apply statement using case distinction?*)
+(*Other possibility generalize it and put it into general section*)
+(*Better name"*)
+lemma (in jozsa) prob_first_n_qubits_0_limit:
+  shows "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+    and "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)"  
+proof-
+  show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+  proof(rule disjE)
+    show "(const 0 \<or> const 1) \<or> (\<not> const 0 \<and> \<not> const 1)" by auto
+  next
+    assume "const 0 \<or> const 1" 
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+      using f_const_has_max_value by auto
+  next
+    assume "(\<not> const 0 \<and> \<not> const 1)"
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> (2::nat)^(2*n)" 
+      using not_const_cannot_have_max_value1 by auto
+  qed
+next
+  show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
+  proof(rule disjE)
+    show "(const 0 \<or> const 1) \<or> (\<not> const 0 \<and> \<not> const 1)" by auto
+  next
+    assume "const 0 \<or> const 1" 
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
+      using f_const_has_max_value by auto
+  next
+    assume "(\<not> const 0 \<and> \<not> const 1)"
+    then show "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> (2::nat)^(2*n)" 
+      using not_const_cannot_have_max_value2 by auto
+  qed
+qed
+
+
+lemma (in jozsa) const_prob0_deutsch_jozsa_algo:
+  assumes "prob_first_n_qubits_0 n deutsch_jozsa_algo = 1"
+  shows "const 0 \<or> const 1"
+proof-
+  have f0: "(\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2) = 1"
+    using prob_first_n_qubits_0_deutsch_joza_algo assms by auto
+  have "k < 2^n\<longrightarrow>(nat (((0::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+    using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto 
+  then have f1: "(cmod(deutsch_jozsa_algo $$ (0,0)))\<^sup>2 = (cmod(\<Sum> k < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+    using deutsch_jozsa_algo_result const_def assms by auto
+  have "k < 2^n\<longrightarrow>(nat (((1::nat) div 2) \<cdot>\<^bsub>n\<^esub>  k)) = 0" for k::nat
+    using bin_rep_def bin_rep_aux_def bitwise_inner_prod_def bitwise_inner_prod_with_zero by auto
+  moreover have "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat) + nat ((1 div 2) \<cdot>\<^bsub>n\<^esub>  k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+    using deutsch_jozsa_algo_result const_def assms \<psi>\<^sub>3_values 
+    by (smt dim_row_mat(1) even_add even_mult_iff even_power lessI odd_one one_add_one plus_1_eq_Suc 
+          power_0 power_add power_one_right power_strict_increasing_iff sum.cong)
+  ultimately have f2: "(cmod(deutsch_jozsa_algo $$ (1,0)))\<^sup>2 = (cmod (\<Sum> k < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2"
+    by auto   
+
+  have f3: "1= (cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2
+        + (cmod (\<Sum> k::nat < (2::nat)^n. (-1)^(f(k)+ (1::nat))/(sqrt(2)^n * sqrt(2)^(n+1))))\<^sup>2" 
+    using f0 f1 f2 by auto 
+  also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) /(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2
+                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))) /(sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2"
+    using cmod_sum_divide_distrib[of "(sqrt(2)^n * sqrt(2)^(n+1))" "\<lambda>k. f(k)" "(2::nat)^n"] 
+          cmod_sum_divide_distrib[of "(sqrt(2)^n * sqrt(2)^(n+1))" "\<lambda>k. f(k)+1" "(2::nat)^n"] by auto
+  also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) )\<^sup>2 /((sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2
+                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2  /((sqrt(2)^n * sqrt(2)^(n+1)))\<^sup>2"
+    by (simp add: power_divide)
+  also have "... = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) )\<^sup>2 /(2^(2*n+1))
+                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2  /(2^(2*n+1))"
+    by (smt left_add_twice power2_eq_square power_add power_mult_distrib real_sqrt_pow2)
+  also have "... = (((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k))) ) )\<^sup>2 
+                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2)/(2^(2*n+1)) "
+    by (simp add: add_divide_distrib)
+  finally have "((2::nat)^(2*n+1)) = (((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)))))\<^sup>2 
+                 + ((cmod(\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)+1))))\<^sup>2)" 
+    by auto
+  moreover have "((2::nat)^(2*n+1)) = 2^(2*n) + 2^(2*n)" by auto
+  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2 \<le> 2^(2*n)" 
+    using prob_first_n_qubits_0_limit by auto 
+  moreover have "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2 \<le> 2^(2*n)" 
+    using prob_first_n_qubits_0_limit by auto 
+  ultimately have "2^(2*n) = ((cmod (\<Sum> k::nat < (2::nat)^n.(-1)^(f(k)))))\<^sup>2" 
+    using add_limits_max_value[of "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k))))\<^sup>2" "2^(2*n)"
+                "(cmod (\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)))\<^sup>2" "2^(2*n)"] by auto
+  then show "const 0 \<or> const 1" using sum_n_summands_one_or_minus not_const_cannot_have_max_value1 by auto
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+declare [[show_types]]
+declare [[show_sorts]]
+
+
+
+text \<open>The function is balanced iff the at least one qubit of the first n qubits is not zero\<close>
+
+text \<open>If the function is balanced then the probability that the first n qubits are 0 is 0.\<close>
 
 lemma sum_union_disjoint_finite_set:
   fixes C::"nat set"
@@ -2352,6 +2391,7 @@ qed
 qed
 
 (*Tidy up*)
+
 lemma (in jozsa) balanced_pos_and_neg_terms_cancel_out':
   assumes "is_balanced \<and> bob_fun f n" 
   shows "(\<Sum> k < (2::nat)^n. (-(1::nat))^(f(k)+1)) = 0"
@@ -2387,27 +2427,10 @@ qed
 
 
 
-lemma sum_divide_distrib_cmod:
-  fixes n::nat
-    and F::"nat\<Rightarrow>int"
-    and a::real
-  shows "(cmod(complex_of_real(\<Sum>k::nat<n. (F k) / a)))\<^sup>2 = (cmod (\<Sum>k::nat<n. (F k)) / a)\<^sup>2"
-proof-
-  have "(complex_of_real(\<Sum>k::nat<n. (F k) / a)) = (\<Sum>k::nat<n. (F k) / a)" by blast
-  then have "(cmod(complex_of_real(\<Sum>k::nat<n. (F k) / a)))\<^sup>2 = (cmod((\<Sum>k::nat<n. (F k) / a)))\<^sup>2"
-    by blast
-  moreover have "(\<Sum>k::nat<n. (F k) / a) = (\<Sum>k::nat<n. (F k))/ a" 
-    by (simp add: sum_divide_distrib)
-  ultimately show "(cmod(complex_of_real(\<Sum>k::nat<n. (F k) / a)))\<^sup>2 = (cmod (\<Sum>k::nat<n. (F k)) / a)\<^sup>2" 
-    by (metis norm_of_real of_real_of_int_eq power2_abs power_divide)
-qed
-
 
 (*Tidy up*)
 lemma (in jozsa) prob0_deutsch_jozsa_algo_balanced:
-  fixes i::nat 
-  assumes "i\<in>{0..<n}"
-    and "is_balanced  \<and> bob_fun f n"
+assumes "is_balanced"
   shows "prob_first_n_qubits_0 n deutsch_jozsa_algo = 0"
 proof-
   have "(prob_first_n_qubits_0 n deutsch_jozsa_algo) = (\<Sum>j\<in>{0,1}. (cmod(deutsch_jozsa_algo $$ (j,0)))\<^sup>2)"
@@ -2450,16 +2473,52 @@ proof-
 qed
 
 
-definition (in jozsa) deutsch_jozsa_algo_eval:: "real" where 
+
+text \<open>If the probability that the first n qubits are 0 is 0 then the function is balanced\<close>
+
+(*HL To AD: This is cheated to the maximum. I haven't attempted to prove it any other way since I 
+was not sure if this is okay or not.*)
+lemma (in jozsa) balanced_prob0_deutsch_jozsa_algo:
+  assumes "prob_first_n_qubits_0 n deutsch_jozsa_algo = 0"
+  shows "is_balanced"
+proof-
+  have "is_const \<or> is_balanced" using const_or_balanced by auto
+  moreover have "is_const \<longrightarrow> \<not> prob_first_n_qubits_0 n deutsch_jozsa_algo = 0"
+    using is_const_def prob0_deutsch_jozsa_algo_const_0 prob0_deutsch_jozsa_algo_const_1 by auto
+  ultimately show "is_balanced" 
+    using assms by blast
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+text \<open>Correctness of the algorithm\<close>
+
+definition (in jozsa) deutsch_jozsa_algo_eval:: "real" where
 "deutsch_jozsa_algo_eval \<equiv> prob_first_n_qubits_0 n deutsch_jozsa_algo"
 
 
 (*Both directions are more than needed. Could be removed, but I think its nice*)
 theorem (in jozsa) deutsch_jozsa_algo_is_correct:
   shows "deutsch_jozsa_algo_eval = 1 \<longleftrightarrow> is_const " 
+    and "deutsch_jozsa_algo_eval = 0 \<longleftrightarrow> is_balanced " 
   using prob0_deutsch_jozsa_algo_const_1 prob0_deutsch_jozsa_algo_const_0 const_def deutsch_jozsa_algo_eval_def
-        const_prob0_deutsch_jozsa_algo is_const_def by auto
-
+        const_prob0_deutsch_jozsa_algo is_const_def balanced_prob0_deutsch_jozsa_algo prob0_deutsch_jozsa_algo_balanced 
+  by auto
 
 
 
