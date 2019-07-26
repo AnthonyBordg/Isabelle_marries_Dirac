@@ -1666,7 +1666,7 @@ text \<open>Measurement\<close>
 Look below after the line of ---- for the proof attempts of the correspondence between measuring each qubit
 on its own and measuring the first n qubits at once.*)
 
-(*This could be easily generalized and put into another theory. It would be better not to have it as 
+(*This could be easily generalized and put into another theory. It would be better not to have it only as 
 a definition (rather prove that (\<Prod>i\<in>{0..n} . prob0 (n+1) v i) is this sum) but this seems pretty hard.*)
 
 text \<open> We want to determine the probability that the first n qubits of an n+1 qubit system 
