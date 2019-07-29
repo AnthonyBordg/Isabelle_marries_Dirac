@@ -16,7 +16,7 @@ primrec bin_rep_aux:: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 | "bin_rep_aux (Suc n) m = m div 2^n # bin_rep_aux n (m mod 2^n)"
 
 lemma length_of_bin_rep_aux:
-  fixes n:: nat and m:: nat
+  fixes n m:: nat
   assumes "m < 2^n"
   shows "length (bin_rep_aux n m) = n+1" 
   using assms
@@ -31,12 +31,12 @@ next
 qed
 
 lemma bin_rep_aux_neq_nil:
-  fixes n:: nat and m:: nat
+  fixes n m:: nat
   shows "bin_rep_aux n m \<noteq> []" 
   using bin_rep_aux.simps by (metis list.distinct(1) old.nat.exhaust)
 
 lemma last_of_bin_rep_aux:
-  fixes n:: nat and m:: nat 
+  fixes n m:: nat 
   assumes "m < 2^n" and "m \<ge> 0"
   shows "last (bin_rep_aux n m) = 0"
   using assms
@@ -53,13 +53,13 @@ and "m \<ge> 0"
 qed
 
 lemma mod_mod_power_cancel:
-  fixes m n:: nat and p:: nat
+  fixes m n p:: nat
   assumes "m \<le> n"
   shows "p mod 2^n mod 2^m = p mod 2^m" 
   using assms by (simp add: dvd_power_le mod_mod_cancel)
     
 lemma bin_rep_aux_index:
-  fixes n i:: nat and m:: nat
+  fixes n m i:: nat
   assumes "n \<ge> 1" and "m < 2^n" and "m \<ge> 0" and "i \<le> n"
   shows "bin_rep_aux n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
   using assms
@@ -107,7 +107,7 @@ and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n" and a3:"m \<ge> 0"
 qed
 
 lemma bin_rep_aux_coeff:
-  fixes n i:: nat and m:: nat
+  fixes n m i:: nat
   assumes "m < 2^n" and "i \<le> n" and "m \<ge> 0"
   shows "bin_rep_aux n m ! i = 0 \<or> bin_rep_aux n m ! i = 1"
   using assms
@@ -128,9 +128,7 @@ and a1:"m < 2^Suc n" and a2:"i \<le> Suc n" and a3:"m \<ge> 0"
     ultimately have "bin_rep_aux (Suc n) m ! i = 0 \<or> bin_rep_aux (Suc n) m ! i = 1" if "i\<ge>1"
       using that a0[of "m mod 2^n" "i-1"] a2 by simp
     moreover have "m div 2^n = 0 \<or> m div 2^n = 1" 
-      using a1 a3 less_mult_imp_div_less
-      by (smt Euclidean_Division.pos_mod_sign cancel_div_mod_rules(2) mult_minus_right 
-nonzero_mult_div_cancel_right pos_imp_zdiv_nonneg_iff power.simps(2) zdiv_mono1)
+      using a1 a3 less_mult_imp_div_less by(simp add: less_2_cases)
     ultimately show ?thesis by (simp add: nth_Cons')
   qed
 qed
@@ -139,19 +137,19 @@ definition bin_rep:: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "bin_rep n m = butlast (bin_rep_aux n m)"
 
 lemma length_of_bin_rep:
-  fixes n:: nat and m:: nat
+  fixes n m:: nat
   assumes "m < 2^n"
   shows "length (bin_rep n m) = n"
   using assms length_of_bin_rep_aux bin_rep_def by simp
 
 lemma bin_rep_coeff:
-  fixes n i:: nat and m:: nat
+  fixes n m i:: nat
   assumes "m < 2^n" and "i < n" and "m \<ge> 0"
   shows "bin_rep n m ! i = 0 \<or> bin_rep n m ! i = 1" 
   using assms bin_rep_def bin_rep_aux_coeff length_of_bin_rep by(simp add: nth_butlast)
 
 lemma bin_rep_index:
-  fixes n i:: nat and m:: nat
+  fixes n m i:: nat
   assumes "n \<ge> 1" and "m < 2^n" and "i < n" and "m \<ge> 0"
   shows "bin_rep n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
 proof-
@@ -163,7 +161,7 @@ proof-
 qed
 
 lemma bin_rep_eq:
-  fixes n:: nat and m:: nat 
+  fixes n m:: nat 
   assumes "n \<ge> 1" and "m \<ge> 0" and "m < 2^n" and "m \<ge> 0"
   shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"
 proof-
