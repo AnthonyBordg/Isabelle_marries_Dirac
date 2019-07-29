@@ -8,7 +8,7 @@ Authors:
 theory Entanglement
 imports
   Quantum
-  MoreTensor
+  More_Tensor
 begin
 
 

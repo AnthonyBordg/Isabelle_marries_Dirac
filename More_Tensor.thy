@@ -5,7 +5,7 @@ Authors:
   Yijun He, University of Cambridge, yh403@cam.ac.uk 
 *)
 
-theory MoreTensor
+theory More_Tensor
 imports
   Quantum
   Tensor
