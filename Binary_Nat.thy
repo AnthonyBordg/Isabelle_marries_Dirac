@@ -1,4 +1,8 @@
-(* Author: Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk *)
+(* 
+Authors: 
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk 
+  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+*)
 
 theory Binary_Nat
 imports
@@ -7,12 +11,12 @@ imports
   Basics
 begin 
 
-primrec bin_rep_aux:: "nat \<Rightarrow> int \<Rightarrow> int list" where
+primrec bin_rep_aux:: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
   "bin_rep_aux 0 m = [m]"
 | "bin_rep_aux (Suc n) m = m div 2^n # bin_rep_aux n (m mod 2^n)"
 
 lemma length_of_bin_rep_aux:
-  fixes n:: nat and m:: int
+  fixes n:: nat and m:: nat
   assumes "m < 2^n"
   shows "length (bin_rep_aux n m) = n+1" 
   using assms
@@ -27,12 +31,12 @@ next
 qed
 
 lemma bin_rep_aux_neq_nil:
-  fixes n:: nat and m:: int
+  fixes n:: nat and m:: nat
   shows "bin_rep_aux n m \<noteq> []" 
   using bin_rep_aux.simps by (metis list.distinct(1) old.nat.exhaust)
 
 lemma last_of_bin_rep_aux:
-  fixes n:: nat and m:: int 
+  fixes n:: nat and m:: nat 
   assumes "m < 2^n" and "m \<ge> 0"
   shows "last (bin_rep_aux n m) = 0"
   using assms
@@ -49,13 +53,13 @@ and "m \<ge> 0"
 qed
 
 lemma mod_mod_power_cancel:
-  fixes m n:: nat and p:: int
+  fixes m n:: nat and p:: nat
   assumes "m \<le> n"
   shows "p mod 2^n mod 2^m = p mod 2^m" 
   using assms by (simp add: dvd_power_le mod_mod_cancel)
     
 lemma bin_rep_aux_index:
-  fixes n i:: nat and m:: int
+  fixes n i:: nat and m:: nat
   assumes "n \<ge> 1" and "m < 2^n" and "m \<ge> 0" and "i \<le> n"
   shows "bin_rep_aux n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
   using assms
@@ -103,7 +107,7 @@ and a1:"m < 2^(Suc n)" and a2:"i \<le> Suc n" and a3:"m \<ge> 0"
 qed
 
 lemma bin_rep_aux_coeff:
-  fixes n i:: nat and m:: int
+  fixes n i:: nat and m:: nat
   assumes "m < 2^n" and "i \<le> n" and "m \<ge> 0"
   shows "bin_rep_aux n m ! i = 0 \<or> bin_rep_aux n m ! i = 1"
   using assms
@@ -131,23 +135,23 @@ nonzero_mult_div_cancel_right pos_imp_zdiv_nonneg_iff power.simps(2) zdiv_mono1)
   qed
 qed
 
-definition bin_rep:: "nat \<Rightarrow> int \<Rightarrow> int list" where
+definition bin_rep:: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "bin_rep n m = butlast (bin_rep_aux n m)"
 
 lemma length_of_bin_rep:
-  fixes n:: nat and m:: int
+  fixes n:: nat and m:: nat
   assumes "m < 2^n"
   shows "length (bin_rep n m) = n"
   using assms length_of_bin_rep_aux bin_rep_def by simp
 
 lemma bin_rep_coeff:
-  fixes n i:: nat and m:: int
+  fixes n i:: nat and m:: nat
   assumes "m < 2^n" and "i < n" and "m \<ge> 0"
   shows "bin_rep n m ! i = 0 \<or> bin_rep n m ! i = 1" 
   using assms bin_rep_def bin_rep_aux_coeff length_of_bin_rep by(simp add: nth_butlast)
 
 lemma bin_rep_index:
-  fixes n i:: nat and m:: int
+  fixes n i:: nat and m:: nat
   assumes "n \<ge> 1" and "m < 2^n" and "i < n" and "m \<ge> 0"
   shows "bin_rep n m ! i = (m mod 2^(n-i)) div 2^(n-1-i)"
 proof-
@@ -159,7 +163,7 @@ proof-
 qed
 
 lemma bin_rep_eq:
-  fixes n:: nat and m:: int 
+  fixes n:: nat and m:: nat 
   assumes "n \<ge> 1" and "m \<ge> 0" and "m < 2^n" and "m \<ge> 0"
   shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"
 proof-
@@ -170,28 +174,32 @@ proof-
       using assms bin_rep_index by simp
     moreover have "\<dots> = m mod 2^(n-i) - m mod 2^(n-i) mod 2^(n-1-i)"
       by (simp add: minus_mod_eq_div_mult)
-    moreover have "\<dots> = m mod 2^(n-i) - m mod 2^(n-1-i)" 
+    moreover have "\<dots> = int(m mod 2^(n-i)) - m mod 2^(n-i) mod 2^(n-1-i)" 
+      using mod_less_eq_dividend of_nat_diff by blast
+    moreover have "\<dots> = int(m mod 2^(n-i)) - m mod 2^(n-1-i)" 
       using mod_mod_power_cancel[of "n-1-i" "n-i"] by (simp add: dvd_power_le mod_mod_cancel)
-    ultimately have "bin_rep n m ! i * 2^(n-1-i) = m mod 2^(n-i) - m mod 2^(n-1-i)" by simp
+    ultimately have "bin_rep n m ! i * 2^(n-1-i) = int (m mod 2^(n-i)) - m mod 2^(n-1-i)" 
+      by presburger
   }
-  then have f0:"(\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i)) = (\<Sum>i<n. m mod 2^(n-i) - m mod 2^(n-1-i))" by simp
+  then have f0:"(\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i)) = (\<Sum>i<n. int (m mod 2^(n-i)) - m mod 2^(n-1-i))" 
+    by auto
   thus ?thesis
   proof-
-    have "(\<Sum>i<n. m mod 2^(n - i) - m mod 2^(n - 1 - i)) = 
-(\<Sum>i<n. m mod 2^(n - i)) - (\<Sum>i<n. m mod 2^(n - 1 - i))"
-      using sum_subtractf[of "\<lambda>i. m mod 2^(n-i)" "\<lambda>i. m mod 2^(n-1-i)" "{..<n}"] by simp
-    moreover have "\<dots> = m mod 2^n + (\<Sum>i\<in>{1..<n}. m mod 2^(n-i)) - (\<Sum>i<n-1. m mod 2^(n-1-i))
-- m mod 2^0" 
-      using sum.atLeast_Suc_atMost sum.lessThan_Suc assms(1)
+     have "(\<Sum>i<n. int ((m::nat) mod 2^(n - i)) - (m mod 2^(n - 1 - i))) = 
+          (\<Sum>i<n. ( m mod 2^(n - i))) -  (\<Sum>i<n. int (m mod 2^(n - 1 - i)))" 
+      using sum_subtractf[of "(\<lambda>i. (m mod 2^(n-i)))::nat\<Rightarrow>nat" "(\<lambda>i. (m mod 2^(n-1-i)))::nat\<Rightarrow>nat" "{..<(n::nat)}"] 
+      by auto
+    moreover have "\<dots> = m mod 2^n + (\<Sum>i\<in>{1..<n}. (m mod 2^(n-i))) - (\<Sum>i<n-1. int (m mod 2^(n-1-i)))- m mod 2^0" 
+      using sum.atLeast_Suc_atMost sum.lessThan_Suc assms(1) 
       by (smt One_nat_def Suc_le_eq diff_self_eq_0 le_add_diff_inverse lessThan_atLeast0 minus_nat.diff_0 
-plus_1_eq_Suc sum.atLeast_Suc_lessThan)
-    moreover have "\<dots> = m mod 2^n + (\<Sum>i<n-1. m mod 2^(n-i-1)) - (\<Sum>i<n-1. m mod 2^(n-1-i)) - m mod 2^0" 
+          plus_1_eq_Suc sum.atLeast_Suc_lessThan)
+    moreover have "\<dots> = m mod 2^n + (\<Sum>i<n-1. m mod 2^(n-i-1)) - (\<Sum>i<n-1. int ( m mod 2^(n-1-i))) - m mod 2^0" 
       apply (auto simp add: sum_of_index_diff[of "\<lambda>i. m mod 2 ^ (n - 1 - i)" "1" "n-1"])
       by (smt One_nat_def assms(1) le_add_diff_inverse lessThan_atLeast0 plus_1_eq_Suc sum.cong sum.shift_bounds_Suc_ivl)
     moreover have "\<dots> = m mod 2^n - m mod 2^0" by simp
-    ultimately show ?thesis 
-      using assms(3) f0
-      by (metis assms(2) diff_zero mod_by_1 power_0 unique_euclidean_semiring_numeral_class.mod_less)
+    moreover have "\<dots> = m" using assms by auto
+    ultimately show "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"
+      using assms f0 by linarith
   qed
 qed
 
