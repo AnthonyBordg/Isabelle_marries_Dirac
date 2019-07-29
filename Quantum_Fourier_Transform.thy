@@ -607,8 +607,26 @@ proof
   qed
 qed
 
+lemma qft_of_smult_unit_vec:
+  fixes n i::"nat" and a::"complex"
+  assumes "i < 2^n"
+  shows "qft n (a \<cdot>\<^sub>v unit_vec (2^n) i) = fourier n * |a \<cdot>\<^sub>v unit_vec (2^n) i\<rangle>"
+  sorry
+
+lemma finsum_times_mat_distrib:
+  fixes n i::"nat" and vs::"nat \<Rightarrow> complex Matrix.vec" and A::"complex Matrix.mat"
+  assumes "\<forall>k. k<n \<Longrightarrow> dim_vec (vs k) = dim_col A" and "i<dim_col A"
+  shows "(\<Sum>k<n. (A*|vs k\<rangle>) $ i) = (A*|finsum_vec TYPE(complex) n (\<lambda>k. vs k) {0..<n}\<rangle>) $ i"
+  sorry
+
+lemma finsum_qft_distrib:
+  fixes n m i::"nat" and vs::"nat \<Rightarrow> complex Matrix.vec" and A::"complex Matrix.mat"
+  assumes "\<forall>k<n. dim_vec (vs k) = 2^m" and "i<2^m"
+  shows "(\<Sum>k<n. (qft m (vs k)) $ i) = (qft m (finsum_vec TYPE(complex) n (\<lambda>k. vs k) {0..<n})) $ i"
+  sorry
+
 theorem qft_fourier: 
-  fixes v::"complex Matrix.vec"
+  fixes n::"nat" and v::"complex Matrix.vec"
   assumes "dim_vec v = 2^n"
   shows "qft n v = fourier n * |v\<rangle>"
 proof
@@ -617,11 +635,15 @@ proof
   show "\<And>i. i < dim_vec (col_fst (fourier n * |v\<rangle>)) \<Longrightarrow> qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
   proof-
     fix i assume "i < dim_vec (col_fst (fourier n * |v\<rangle>))"
-    then have "i \<in> {0..<2^n}"
-      by (simp add: fourier_def)
-    show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
-      apply (auto simp add: qft_def fourier_def SWAP_def qft_no_swap_def qft_single_qbit_def)
-      sorry
+    then have c0:"i < 2^n" by (simp add: fourier_def)
+    then have "qft n v $ i = (\<Sum>k<2^n. (qft n (v $ k \<cdot>\<^sub>v unit_vec (2^n) k)) $ i)"
+      using sum_of_unit_vec[of "v" "2^n"] assms finsum_qft_distrib[of "2^n" "\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec (2^n) k" "n" "i"] by auto
+    moreover have "col_fst (fourier n * |v\<rangle>) $ i = (\<Sum>k<2^n. (fourier n * |v $ k \<cdot>\<^sub>v unit_vec (2^n) k\<rangle>) $ i)"
+      using sum_of_unit_vec[of "v" "2^n"] assms c0 finsum_times_mat_distrib[of "2^n" "\<lambda>k. v $ k \<cdot>\<^sub>v unit_vec (2^n) k" "n" "fourier n" "i"] fourier_def
+      by auto
+    ultimately show "qft n v $ i = col_fst (fourier n * |v\<rangle>) $ i"
+      using qft_of_smult_unit_vec
+      by auto
   qed
 qed
 
