@@ -543,9 +543,9 @@ proof-
 semiring_normalization_rules(7))
   ultimately have "2^(n-1-i) \<le> m mod 2^(n-i) \<Longrightarrow> int(m mod 2^(n-i) div 2^(n-1-i)) = 1" by simp 
   thus ?thesis 
-    using bin_rep_index select_index_def assms
-    by (smt One_nat_def Suc_diff_1 Suc_leI Suc_le_mono div_greater_zero_iff int_nat_eq less_imp_of_nat_less 
-nat_2 nat_int of_nat_0_less_iff of_nat_power one_add_one plus_1_eq_Suc zdiv_int zmod_int)
+    using bin_rep_index select_index_def assms bin_rep_eq
+    by (smt div_less le0 le_eq_less_or_eq less_imp_of_nat_less linorder_neqE_nat mod_le_divisor nat_int 
+of_nat_1_eq_iff of_nat_diff one_le_power one_mod_two_eq_one power_eq_0_iff)
 qed
 
 lemma swap_of_qubits:
