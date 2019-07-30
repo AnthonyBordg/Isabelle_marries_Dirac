@@ -1,8 +1,8 @@
 chapter "Isabelle_marries_Dirac"
 
-session "Isabelle_marries_Dirac" (AFP) = "Jordan_Normal_Form" +
+session "Isabelle_marries_Dirac" = "Jordan_Normal_Form" +
   description
-    "A Certified Library of Quantum Computing."
+    "A library of formalized quantum computation"
   sessions
     Matrix_Tensor
     VectorSpace
