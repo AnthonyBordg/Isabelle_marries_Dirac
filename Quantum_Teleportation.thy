@@ -7,7 +7,7 @@ Authors:
 
 theory Quantum_Teleportation
 imports 
-  MoreTensor
+  More_Tensor
   Basics
 begin
 

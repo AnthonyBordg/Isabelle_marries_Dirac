@@ -7,7 +7,7 @@ Authors:
 
 theory Deutsch
 imports
-  MoreTensor
+  More_Tensor
 begin
 
 (*Important: Isabelle build will require the package amsmath in root*)
