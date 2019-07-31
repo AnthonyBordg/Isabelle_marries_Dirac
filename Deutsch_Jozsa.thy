@@ -6,7 +6,7 @@ Authors:
                                                                                   
 theory Deutsch_Jozsa
 imports                           
-  MoreTensor
+  More_Tensor
   Binary_Nat
 begin
 
