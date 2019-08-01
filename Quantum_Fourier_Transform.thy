@@ -2,7 +2,7 @@ theory Quantum_Fourier_Transform
 imports
   Quantum
   Tensor
-  MoreTensor
+  More_Tensor
   Binary_Nat
   FFT.FFT
 begin
