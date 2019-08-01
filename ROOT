@@ -17,4 +17,3 @@ session "Isabelle_marries_Dirac" (AFP) = "Jordan_Normal_Form" +
     Quantum
     Quantum_Teleportation
     Tensor
-
