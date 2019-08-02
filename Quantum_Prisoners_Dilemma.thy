@@ -53,10 +53,10 @@ locale restricted_strategic_space = prisoner+
     and \<psi>\<^sub>A:: "real" 
     and \<theta>\<^sub>B:: "real"
     and \<psi>\<^sub>B:: "real"
-  assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> 2*\<pi>"
-      and "0 \<le> \<psi>\<^sub>A \<and> \<psi>\<^sub>A \<le> 2*\<pi>"
-      and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> 2*\<pi>"
-      and "0 \<le> \<psi>\<^sub>B \<and> \<psi>\<^sub>B \<le> 2*\<pi>"
+  assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> 2*pi"
+      and "0 \<le> \<psi>\<^sub>A \<and> \<psi>\<^sub>A \<le> 2*pi"
+      and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> 2*pi"
+      and "0 \<le> \<psi>\<^sub>B \<and> \<psi>\<^sub>B \<le> 2*pi"
 
 abbreviation (in restricted_strategic_space) U\<^sub>A :: "complex Matrix.mat" where
 "U\<^sub>A \<equiv>  mat_of_cols_list 2 [[(exp(\<i>*\<psi>\<^sub>A))*cos(\<theta>\<^sub>A/2), sin (\<theta>\<^sub>A/2)],
@@ -196,14 +196,21 @@ definition (in restricted_strategic_space) alice_payoff ::"real" where
 definition (in restricted_strategic_space)bob_payoff ::"real" where
 "bob_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 0*(prob01 \<psi>\<^sub>f) + 5*(prob10 \<psi>\<^sub>f)"
 
-lemma cos_pi_div_2: "cos(\<pi>/2) = 0" sorry
+lemma select_index_2_0: "{x. select_index 2 0 x} = {2,3}"
+  using select_index_def by auto
+lemma select_index_2_0_inv: "{x. x < 4 \<and> \<not> select_index 2 0 x} = {0,1}"
+  using select_index_def by auto
+lemma select_index_2_1: "{x. select_index 2 1 x} = {1,3}"
+  using select_index_def by auto
+lemma select_index_2_1_inv: "{x. x < 4 \<and> \<not> select_index 2 0 x} = {0,2}"
+  using select_index_def by auto
 
 lemma (in restricted_strategic_space) classical_case:
   assumes "\<gamma> = 0"
-  shows "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = \<pi> \<and> \<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = \<pi> \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+  shows "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
 proof-
   show ?thesis
-    using alice_payoff_def bob_payoff_def apply auto
+    using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def apply auto
     sorry
 qed
 
