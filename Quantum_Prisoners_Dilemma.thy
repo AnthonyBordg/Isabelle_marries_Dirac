@@ -17,10 +17,10 @@ locale prisoner =
 (*I am not sure at all that J can be expressed like this. There are papers where it sounds as if this 
 there are just some restrictions on J and that's all*)
 abbreviation (in prisoner) J :: "complex Matrix.mat" where
-"J \<equiv>  mat_of_cols_list 4 [[cos(\<gamma>/2),0,0,\<i>*sin(\<gamma>/2)],
-                           [0,cos(\<gamma>/2),-\<i>*sin(\<gamma>/2),0],
-                           [0,-\<i>*sin(\<gamma>/2),cos(\<gamma>/2),0],
-                           [\<i>*sin(\<gamma>/2),0,0,cos(\<gamma>/2)]]"
+"J \<equiv> mat_of_cols_list 4 [[cos(\<gamma>/2),0,0,\<i>*sin(\<gamma>/2)],
+                          [0,cos(\<gamma>/2),-\<i>*sin(\<gamma>/2),0],
+                          [0,-\<i>*sin(\<gamma>/2),cos(\<gamma>/2),0],
+                          [\<i>*sin(\<gamma>/2),0,0,cos(\<gamma>/2)]]"
 
 abbreviation (in prisoner) \<psi>\<^sub>1 :: "complex Matrix.mat" where
 "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[cos(\<gamma>/2),0,0,\<i>*sin(\<gamma>/2)]]"
@@ -28,8 +28,7 @@ abbreviation (in prisoner) \<psi>\<^sub>1 :: "complex Matrix.mat" where
 lemma (in prisoner) 
   shows "J*|unit_vec 4 0\<rangle> = \<psi>\<^sub>1"
 proof
-  fix i j
-  assume "i < dim_row \<psi>\<^sub>1" and "j < dim_col \<psi>\<^sub>1"
+  fix i j assume "i < dim_row \<psi>\<^sub>1" and "j < dim_col \<psi>\<^sub>1"
   then have f0: "i\<in>{0,1,2,3} \<and> j=0" using mat_of_cols_list_def by auto       
   then have  "(J*|unit_vec 4 0\<rangle>) $$ (i,j) = (\<Sum>k<4. (J $$ (i,k)) * ( |unit_vec 4 0\<rangle> $$ (k,j)))" 
     using mat_of_cols_list_def ket_vec_def 
@@ -47,6 +46,7 @@ next
     using mat_of_cols_list_def  
     by (simp add: ket_vec_def)
 qed
+
 
 locale restricted_strategic_space = prisoner+
   fixes \<theta>\<^sub>A:: "real"
@@ -68,19 +68,20 @@ abbreviation (in restricted_strategic_space) U\<^sub>B :: "complex Matrix.mat" w
 
 abbreviation (in restricted_strategic_space) \<psi>\<^sub>2 :: "complex Matrix.mat" where
 "\<psi>\<^sub>2 \<equiv> mat_of_cols_list 4 [[exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
-                           exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) + cos(\<gamma>/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
-                           -sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
+                           exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
+                           sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
                            -sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)]]"
 
 abbreviation (in restricted_strategic_space) U\<^sub>A\<^sub>B :: "complex Matrix.mat" where
-"U\<^sub>A\<^sub>B \<equiv> mat_of_cols_list 4 [[exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2),
-                            sin(\<theta>\<^sub>A/2)*exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2)],
-                           [exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*-sin(\<theta>\<^sub>B/2), exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2),
-                            sin(\<theta>\<^sub>A/2)*-sin(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>A/2)*exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2)],
-                           [-sin(\<theta>\<^sub>A/2)*exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), -sin(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2),
-                            exp(-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2),exp(-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2)],
-                           [-sin(\<theta>\<^sub>A/2)*-sin(\<theta>\<^sub>B/2), -sin(\<theta>\<^sub>A/2)*exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2),
-                            exp(-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*-sin(\<theta>\<^sub>B/2),exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2)*exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2)]]"
+"U\<^sub>A\<^sub>B \<equiv> mat_of_cols_list 4 [[exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2),
+                            sin(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2)],
+                           [exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2), exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2),
+                            sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2)],
+                           [-sin(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), -sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2),
+                            exp(-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), exp(-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2)],
+                           [-sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2), -sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2),
+                            exp(-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2), exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2)]]"
+
 
 lemma two_div_two [simp]: 
   shows "2 div Suc (Suc 0) = 1" by auto
@@ -94,19 +95,23 @@ lemma three_mod_two [simp]:
 lemma (in restricted_strategic_space) U\<^sub>A_tensor_U\<^sub>B:
   shows "(U\<^sub>A \<Otimes> U\<^sub>B) = U\<^sub>A\<^sub>B"
 proof
-  fix i j
-  assume a0: "i<dim_row U\<^sub>A\<^sub>B" and a1: "j<dim_col U\<^sub>A\<^sub>B"
-  then have f0: "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" using mat_of_cols_list_def by auto  
-  then have "i < dim_row U\<^sub>A * dim_row U\<^sub>B" and "j < dim_col U\<^sub>A * dim_col U\<^sub>B"
-        and "dim_col U\<^sub>A > 0" and "dim_col U\<^sub>B > 0" using mat_of_cols_list_def by auto
-  then have "(U\<^sub>A \<Otimes> U\<^sub>B) $$ (i,j) = U\<^sub>A $$ (i div (dim_row U\<^sub>B), j div (dim_col U\<^sub>B)) * U\<^sub>B $$ (i mod (dim_row U\<^sub>B), j mod (dim_col U\<^sub>B))"
-    by auto
-  then show "(U\<^sub>A \<Otimes> U\<^sub>B) $$ (i,j) = U\<^sub>A\<^sub>B $$ (i,j)" using f0 mat_of_cols_list_def by auto
+  fix i j assume a0: "i<dim_row U\<^sub>A\<^sub>B" and a1: "j<dim_col U\<^sub>A\<^sub>B"
+  then have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}"
+    using mat_of_cols_list_def by auto
+  then show "(U\<^sub>A \<Otimes> U\<^sub>B) $$ (i,j) = U\<^sub>A\<^sub>B $$ (i,j)"
+    using mat_of_cols_list_def by auto
 next
   show "dim_row (U\<^sub>A \<Otimes> U\<^sub>B) = dim_row U\<^sub>A\<^sub>B" using mat_of_cols_list_def by auto
 next
   show "dim_col (U\<^sub>A \<Otimes> U\<^sub>B) = dim_col U\<^sub>A\<^sub>B" using mat_of_cols_list_def by auto
 qed
+
+lemma set_sub_4: "{..<4::nat} = {0,1,2,3}" by auto
+
+lemma sum_4: 
+  fixes f::"nat \<Rightarrow> complex"
+  shows "(\<Sum>k<4::nat. f(k)) = f(0::nat)+f(1)+f(2)+f(3)"
+  using set_sub_4 by auto
 
 lemma (in restricted_strategic_space)
   shows "(U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1 = \<psi>\<^sub>2"
@@ -115,20 +120,31 @@ proof
   assume "i < dim_row \<psi>\<^sub>2" and "j < dim_col \<psi>\<^sub>2"
   then have "i\<in>{0,1,2,3} \<and> j=0" using mat_of_cols_list_def by auto 
   then show "((U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1) $$(i,j) = \<psi>\<^sub>2 $$(i,j)" 
-    using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B sorry
+    using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B sum_4 by auto
 next
   show "dim_row ((U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" using mat_of_cols_list_def by auto  
 next
   show "dim_col ((U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1) = dim_col \<psi>\<^sub>2" using mat_of_cols_list_def by auto  
 qed
 
-lemma 
-"J\<^sup>\<dagger> =  mat_of_cols_list 4 [[cos(\<gamma>/2),0,0,-\<i>*sin(\<gamma>/2)],
-                           [0,cos(\<gamma>/2),\<i>*sin(\<gamma>/2),0],
-                           [0,\<i>*sin(\<gamma>/2),cos(\<gamma>/2),0],
-                           [-\<i>*sin(\<gamma>/2),0,0,cos(\<gamma>/2)]]"
-  using mat_of_cols_list_def hermite_cnj_def sorry
+abbreviation (in prisoner) J_cnj :: "complex Matrix.mat" where
+"J_cnj \<equiv> mat_of_cols_list 4 [[cos(\<gamma>/2),0,0,-\<i>*sin(\<gamma>/2)],
+                             [0,cos(\<gamma>/2),\<i>*sin(\<gamma>/2),0],
+                             [0,\<i>*sin(\<gamma>/2),cos(\<gamma>/2),0],
+                             [-\<i>*sin(\<gamma>/2),0,0,cos(\<gamma>/2)]]"
 
+lemma (in prisoner) hermite_cnj_of_J [simp]:
+  shows "J\<^sup>\<dagger> = J_cnj"
+proof
+  fix i j assume "i < dim_row J_cnj" and "j < dim_col J_cnj"
+  then have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" using mat_of_cols_list_def by auto
+  then show "J\<^sup>\<dagger> $$ (i,j) = J_cnj $$ (i,j)"
+    using mat_of_cols_list_def hermite_cnj_def by auto
+next
+  show "dim_row (J\<^sup>\<dagger>) = dim_row J_cnj" using mat_of_cols_list_def by auto
+next
+  show "dim_col (J\<^sup>\<dagger>) = dim_col J_cnj" using mat_of_cols_list_def by auto
+qed
 
 abbreviation (in restricted_strategic_space) \<psi>\<^sub>f :: "complex Matrix.mat" where
 "\<psi>\<^sub>f \<equiv> mat_of_cols_list 4 [[
@@ -146,15 +162,13 @@ cos(\<gamma>/2) * (exp (\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<th
 ]]"
 
 
-
 lemma (in restricted_strategic_space)
   shows "(J\<^sup>\<dagger>)*\<psi>\<^sub>2 = \<psi>\<^sub>f"
 proof
-  fix i j
-  assume "i < dim_row \<psi>\<^sub>f" and "j < dim_col \<psi>\<^sub>f"
+  fix i j assume "i < dim_row \<psi>\<^sub>f" and "j < dim_col \<psi>\<^sub>f"
   then have "i\<in>{0,1,2,3} \<and> j=0" using mat_of_cols_list_def by auto 
   then show "((J\<^sup>\<dagger>)*\<psi>\<^sub>2) $$(i,j) = \<psi>\<^sub>f $$(i,j)" 
-    using mat_of_cols_list_def
+    using mat_of_cols_list_def sum_4 hermite_cnj_of_J apply auto
     sorry
 next
   show "dim_row ((J\<^sup>\<dagger>)*\<psi>\<^sub>2) = dim_row \<psi>\<^sub>f" using mat_of_cols_list_def by auto  
