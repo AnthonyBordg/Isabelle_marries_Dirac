@@ -70,7 +70,7 @@ abbreviation (in restricted_strategic_space) \<psi>\<^sub>2 :: "complex Matrix.m
 "\<psi>\<^sub>2 \<equiv> mat_of_cols_list 4 [[exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
                            exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
                            sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
-                           -sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)]]"
+                           sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)]]"
 
 abbreviation (in restricted_strategic_space) U\<^sub>A\<^sub>B :: "complex Matrix.mat" where
 "U\<^sub>A\<^sub>B \<equiv> mat_of_cols_list 4 [[exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2), exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2),
@@ -151,11 +151,11 @@ abbreviation (in restricted_strategic_space) \<psi>\<^sub>f :: "complex Matrix.m
 cos(\<gamma>/2) * (exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 + (-\<i>*sin(\<gamma>/2)) * (-sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
-cos(\<gamma>/2) * (exp (\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) + cos(\<gamma>/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
-+ (\<i>*sin(\<gamma>/2)) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
+cos(\<gamma>/2) * (exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
++ (\<i>*sin(\<gamma>/2)) * (sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
-(\<i>*sin(\<gamma>/2)) * (exp (\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) + cos(\<gamma>/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
-+ cos(\<gamma>/2) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
+(\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
++ cos(\<gamma>/2) * (sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) - exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
 (-\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
 + cos(\<gamma>/2) * (-sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
@@ -168,8 +168,7 @@ proof
   fix i j assume "i < dim_row \<psi>\<^sub>f" and "j < dim_col \<psi>\<^sub>f"
   then have "i\<in>{0,1,2,3} \<and> j=0" using mat_of_cols_list_def by auto 
   then show "((J\<^sup>\<dagger>)*\<psi>\<^sub>2) $$(i,j) = \<psi>\<^sub>f $$(i,j)" 
-    using mat_of_cols_list_def sum_4 hermite_cnj_of_J apply auto
-    sorry
+    using mat_of_cols_list_def sum_4 hermite_cnj_of_J by auto
 next
   show "dim_row ((J\<^sup>\<dagger>)*\<psi>\<^sub>2) = dim_row \<psi>\<^sub>f" using mat_of_cols_list_def by auto  
 next
@@ -177,9 +176,8 @@ next
 qed 
 
 
-
 abbreviation (in restricted_strategic_space) prob00 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob00 v \<equiv> (prob0 2 v 0) * (prob0 2 v 1)" (*Do I need to use post_meas0 here? Does not seem to make a difference*)
+"prob00 v \<equiv> (prob0 2 v 0) * (prob0 2 v 1)"
 
 abbreviation (in restricted_strategic_space) prob01 :: "complex Matrix.mat \<Rightarrow> real" where
 "prob01 v \<equiv> (prob0 2 v 0) * (prob1 2 v 1)"
@@ -198,27 +196,14 @@ definition (in restricted_strategic_space) alice_payoff ::"real" where
 definition (in restricted_strategic_space)bob_payoff ::"real" where
 "bob_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 0*(prob01 \<psi>\<^sub>f) + 5*(prob10 \<psi>\<^sub>f)"
 
-
+lemma cos_pi_div_2: "cos(\<pi>/2) = 0" sorry
 
 lemma (in restricted_strategic_space) classical_case:
   assumes "\<gamma> = 0"
   shows "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = \<pi> \<and> \<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = \<pi> \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
 proof-
-  have "\<psi>\<^sub>f = mat_of_cols_list 4 [[
-sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)
-+ (-\<i>*sin(\<gamma>/2)) * (-sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2)  ),
-
-cos(\<gamma>/2) * (exp (\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) + cos(\<gamma>/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
-+ (\<i>*sin(\<gamma>/2)) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
-
-(\<i>*sin(\<gamma>/2)) * (exp (\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) + cos(\<gamma>/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
-+ cos(\<gamma>/2) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
-
-(-\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
-+ cos(\<gamma>/2) * (-sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<psi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<psi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
-]]" 
-    sorry
   show ?thesis
+    using alice_payoff_def bob_payoff_def apply auto
     sorry
 qed
 
