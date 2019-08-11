@@ -193,25 +193,42 @@ definition (in restricted_strategic_space) alice_payoff ::"real" where
 "alice_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 5*(prob01 \<psi>\<^sub>f) + 0*(prob10 \<psi>\<^sub>f)"
 
 
-definition (in restricted_strategic_space)bob_payoff ::"real" where
+definition (in restricted_strategic_space) bob_payoff ::"real" where
 "bob_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 0*(prob01 \<psi>\<^sub>f) + 5*(prob10 \<psi>\<^sub>f)"
 
 lemma select_index_2_0: "{x. select_index 2 0 x} = {2,3}"
   using select_index_def by auto
 lemma select_index_2_0_inv: "{x. x < 4 \<and> \<not> select_index 2 0 x} = {0,1}"
   using select_index_def by auto
-lemma select_index_2_1: "{x. select_index 2 1 x} = {1,3}"
-  using select_index_def by auto
-lemma select_index_2_1_inv: "{x. x < 4 \<and> \<not> select_index 2 0 x} = {0,2}"
-  using select_index_def by auto
+lemma select_index_2_1: "{x. select_index 2 (Suc 0) x} = {1,3}"
+proof
+  show "{1, 3} \<subseteq> {x. select_index 2 (Suc 0) x}" using select_index_def by auto
+  show "{x. select_index 2 (Suc 0) x} \<subseteq> {1, 3}"
+  proof
+    fix x assume "x \<in> {x. select_index 2 (Suc 0) x}"
+    then have "x \<in> {0,1,2,3} \<and> x mod 2 \<ge> 1" using select_index_def by auto
+    then show "x \<in> {1,3}" by auto
+  qed
+qed
+lemma select_index_2_1_inv: "{x. x < 4 \<and> \<not> select_index 2 (Suc 0) x} = {0,2}"
+  using select_index_def select_index_2_1 by auto
+
+lemma cos_sin_sq_eq_1: 
+  "complex_of_real (cos (\<gamma>/2)) * complex_of_real (cos (\<gamma>/2)) -
+   \<i>*complex_of_real (sin (\<gamma>/2)) * (\<i>*complex_of_real (sin (\<gamma>/2))) = 1"
+  apply (auto simp add: algebra_simps)
+  by (metis of_real_add of_real_hom.hom_one of_real_mult sin_cos_squared_add3)
+
+lemma unit_vec_4_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). [[0, 0, 0, 1]] ! j ! i))"
+  using state_def cpx_vec_length_def set_sub_4 by auto
 
 lemma (in restricted_strategic_space) classical_case:
   assumes "\<gamma> = 0"
   shows "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
 proof-
   show ?thesis
-    using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def apply auto
-    sorry
+    using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def cos_sin_sq_eq_1 unit_vec_4_is_state
+    by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 qed
 
 end
