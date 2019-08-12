@@ -513,11 +513,17 @@ next
          (\<lambda>j. (if j<m then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
                       else (if select_index n j i then 1 else 0)))"
     by simp
-  show "qft_no_swap n (Suc m) v = qubits n 
+  then have "\<And>t. t \<le> (n-m)-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = qubits n 
+         (\<lambda>j. (if j\<le>m then sqrt(1/2) else (if select_index n j i then 0 else 1)))
+         (\<lambda>j. (if j<m then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
+               else (if j=m then (root (2^(n-m))^(\<Sum>l<(t+1). (2^(n-m-l))*(if select_index n (l+m) i then 1 else 0))*sqrt(1/2))
+                     else (if select_index n j i then 1 else 0))))"
+    sorry
+  then show "qft_no_swap n (Suc m) v = qubits n 
          (\<lambda>j. (if j<(Suc m) then sqrt(1/2) else (if select_index n j i then 0 else 1)))
          (\<lambda>j. (if j<(Suc m) then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
                       else (if select_index n j i then 1 else 0)))"
-    using qft_no_swap_def
+    using qft_no_swap_def apply auto
     sorry
 qed
 

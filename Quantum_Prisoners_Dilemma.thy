@@ -274,13 +274,13 @@ lemma exp_of_half_pi:
   fixes x
   assumes "x = pi/2"
   shows "exp (\<i> * complex_of_real x) = \<i>"
-  sorry
+  using assms cis_conv_exp cis_pi_half by fastforce
 
 lemma exp_of_minus_half_pi: 
   fixes x
   assumes "x = pi/2"
   shows "exp (-(\<i> * complex_of_real x)) = -\<i>"
-  sorry
+  using assms cis_conv_exp cis_minus_pi_half by fastforce
 
 lemma (in restricted_strategic_space) quantum_case:
   assumes "\<gamma> = pi/2"
@@ -289,18 +289,16 @@ lemma (in restricted_strategic_space) quantum_case:
         cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 
-lemma rearranged_sin_cos_squared_add:
-  "cmod(\<i>*complex_of_real (sin x) * (complex_of_real (sin y) * \<i> * \<i> * complex_of_real (sin x)) +
-        complex_of_real (cos x) * (complex_of_real (sin y) * \<i> * complex_of_real (cos x))) = sin y"
-  sorry
-
 lemma (in restricted_strategic_space) quantum_alice_optimal:
   assumes "\<gamma> = pi/2"
   shows "\<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff \<le> 3"
+proof
+  assume asm:"\<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0"
+  show "alice_payoff \<le> 3"
   using alice_payoff_def prob0_def prob1_def mat_of_cols_list_def sin_cos_squared_add_cpx
         cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
-        rearranged_sin_cos_squared_add
   apply (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
   sorry
+qed
 
 end
