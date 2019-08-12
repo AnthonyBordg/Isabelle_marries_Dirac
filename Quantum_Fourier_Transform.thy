@@ -7,7 +7,7 @@ imports
   FFT.FFT
 begin
 
-declare [[show_types = true]]
+(* declare [[show_types = true]] *)
 
 lemma root_unit_length [simp]:
   fixes "n":: nat
@@ -481,15 +481,15 @@ lemma qft_no_swap_of_unit_vec:
   fixes v::"complex Matrix.vec"
   assumes "v = unit_vec (2^n) i" and "i < 2^n"
   shows "m \<le> n \<Longrightarrow> qft_no_swap n m v = qubits n 
-         (\<lambda>j. (if j<m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
-         (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+j) i then 1 else 0)) 
-                      else (if select_index n j i then 1 else 0))*(sqrt(1/2)^m))"
+         (\<lambda>j. (if j<m then sqrt(1/2) else (if select_index n j i then 0 else 1)))
+         (\<lambda>j. (if j<m then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
+                      else (if select_index n j i then 1 else 0)))"
 proof (induction m)
   case 0
   define w where d0:"w = qubits n 
-         (\<lambda>j. (if j<0 then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^0))
-         (\<lambda>j. (if j<0 then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+j) i then 1 else 0)) 
-                      else (if select_index n j i then 1 else 0))*(sqrt(1/2)^0))"
+         (\<lambda>j. (if j<0 then sqrt(1/2) else (if select_index n j i then 0 else 1)))
+         (\<lambda>j. (if j<0 then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
+                      else (if select_index n j i then 1 else 0)))"
   have "qft_no_swap n 0 v = w"
   proof
     show "dim_vec (qft_no_swap n 0 v) = dim_vec w"
@@ -509,22 +509,15 @@ proof (induction m)
 next
   case c0:(Suc m)
   then have c1:"qft_no_swap n m v = qubits n 
-               (\<lambda>j. (if j<m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
-               (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+j) i then 1 else 0)) 
-                            else (if select_index n j i then 1 else 0))*(sqrt(1/2)^m))"
+         (\<lambda>j. (if j<m then sqrt(1/2) else (if select_index n j i then 0 else 1)))
+         (\<lambda>j. (if j<m then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
+                      else (if select_index n j i then 1 else 0)))"
     by simp
-  have "t \<le> n-m-1 \<Longrightarrow> qft_single_qbit n m t (qft_no_swap n m v) = qubits n 
-        (\<lambda>j. (if j\<le>m then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^m))
-        (\<lambda>j. (if j<m then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0)) 
-                     else (if j=m then (root (2^(n-m)))^(\<Sum>l<t+1. (2^(n-m-l))*(if select_index n (l+m) i then 1 else 0)) 
-                                  else(if select_index n j i then 1 else 0)))*(sqrt(1/2)^m))"
-    sorry
-  moreover have "n-(Suc m)+1 = n-m" using c0 by auto
-  ultimately show "qft_no_swap n (Suc m) v = qubits n 
-                   (\<lambda>j. (if j<(Suc m) then 1 else (if select_index n j i then 0 else 1))*(sqrt(1/2)^(Suc m)))
-                   (\<lambda>j. (if j<(Suc m) then root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l)) * (if select_index n (l+j) i then 1 else 0)) 
-                                else (if select_index n j i then 1 else 0))*(sqrt(1/2)^(Suc m)))"
-    using qft_no_swap_def qubits_def
+  show "qft_no_swap n (Suc m) v = qubits n 
+         (\<lambda>j. (if j<(Suc m) then sqrt(1/2) else (if select_index n j i then 0 else 1)))
+         (\<lambda>j. (if j<(Suc m) then (root (2^(n-j))^(\<Sum>l<(n-j). (2^(n-j-l))*(if select_index n (l+j) i then 1 else 0))*sqrt(1/2)) 
+                      else (if select_index n j i then 1 else 0)))"
+    using qft_no_swap_def
     sorry
 qed
 

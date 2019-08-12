@@ -190,11 +190,11 @@ abbreviation (in restricted_strategic_space) prob11 :: "complex Matrix.mat \<Rig
 
 
 definition (in restricted_strategic_space) alice_payoff ::"real" where
-"alice_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 5*(prob01 \<psi>\<^sub>f) + 0*(prob10 \<psi>\<^sub>f)"
+"alice_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 0*(prob01 \<psi>\<^sub>f) + 5*(prob10 \<psi>\<^sub>f)"
 
 
 definition (in restricted_strategic_space) bob_payoff ::"real" where
-"bob_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 0*(prob01 \<psi>\<^sub>f) + 5*(prob10 \<psi>\<^sub>f)"
+"bob_payoff \<equiv> 3*(prob00 \<psi>\<^sub>f) + 1*(prob11 \<psi>\<^sub>f) + 5*(prob01 \<psi>\<^sub>f) + 0*(prob10 \<psi>\<^sub>f)"
 
 lemma select_index_2_0: "{x. select_index 2 0 x} = {2,3}"
   using select_index_def by auto
@@ -213,22 +213,94 @@ qed
 lemma select_index_2_1_inv: "{x. x < 4 \<and> \<not> select_index 2 (Suc 0) x} = {0,2}"
   using select_index_def select_index_2_1 by auto
 
-lemma cos_sin_sq_eq_1: 
+lemma cos_sin_squared_add_cpx: 
   "complex_of_real (cos (\<gamma>/2)) * complex_of_real (cos (\<gamma>/2)) -
    \<i>*complex_of_real (sin (\<gamma>/2)) * (\<i>*complex_of_real (sin (\<gamma>/2))) = 1"
   apply (auto simp add: algebra_simps)
   by (metis of_real_add of_real_hom.hom_one of_real_mult sin_cos_squared_add3)
 
+lemma sin_cos_squared_add_cpx:
+  "\<i>*complex_of_real (sin (\<gamma> / 2)) * (\<i>*complex_of_real (sin (\<gamma> / 2))) -
+   complex_of_real (cos (\<gamma> / 2)) * complex_of_real (cos (\<gamma> / 2)) = -1"
+  apply (auto simp add: algebra_simps)
+  by (metis of_real_add of_real_hom.hom_one of_real_mult sin_cos_squared_add3)
+
 lemma unit_vec_4_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). [[0, 0, 0, 1]] ! j ! i))"
-  using state_def cpx_vec_length_def set_sub_4 by auto
+  using state_def cpx_vec_length_def by (auto simp add: set_sub_4)
+
+lemma minus_unit_vec_4_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). [[- 1, 0, 0, 0]] ! j ! i))"
+  using state_def cpx_vec_length_def by (auto simp add: set_sub_4)
 
 lemma (in restricted_strategic_space) classical_case:
   assumes "\<gamma> = 0"
   shows "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
-proof-
-  show ?thesis
-    using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def cos_sin_sq_eq_1 unit_vec_4_is_state
-    by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
-qed
+  using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def cos_sin_squared_add_cpx 
+        unit_vec_4_is_state
+  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+
+lemma cmod_squared_of_rotated_real:
+  fixes x y
+  shows "(cmod (exp (\<i>*complex_of_real y) * complex_of_real x))\<^sup>2 = x\<^sup>2"
+  by (simp add: norm_mult)
+
+lemma sin_squared_le_one:
+  fixes x::real
+  shows "(sin x)\<^sup>2 \<le> 1"
+  using abs_sin_le_one abs_square_le_1 by blast
+
+lemma alice_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). 
+[[0, exp (\<i>*complex_of_real \<psi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A / 2)), 0, complex_of_real (sin (\<theta>\<^sub>A / 2))]] ! j ! i))"
+  using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_sub_4)
+
+lemma bob_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). 
+[[0, 0, exp (\<i>*complex_of_real \<psi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B / 2)), complex_of_real (sin (\<theta>\<^sub>B / 2))]] ! j ! i))"
+  using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_sub_4)
+
+lemma (in restricted_strategic_space) classical_alice_optimal:
+  assumes "\<gamma> = 0" and "\<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
+  shows "alice_payoff \<le> 1"
+  using alice_payoff_def prob0_def prob1_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
+        sin_squared_le_one alice_vec_is_state
+  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+
+lemma (in restricted_strategic_space) classical_bob_optimal:
+  assumes "\<gamma> = 0" and "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi"
+  shows "bob_payoff \<le> 1"
+  using bob_payoff_def prob0_def prob1_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
+        sin_squared_le_one bob_vec_is_state
+  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+
+lemma exp_of_half_pi: 
+  fixes x
+  assumes "x = pi/2"
+  shows "exp (\<i> * complex_of_real x) = \<i>"
+  sorry
+
+lemma exp_of_minus_half_pi: 
+  fixes x
+  assumes "x = pi/2"
+  shows "exp (-(\<i> * complex_of_real x)) = -\<i>"
+  sorry
+
+lemma (in restricted_strategic_space) quantum_case:
+  assumes "\<gamma> = pi/2"
+  shows "\<psi>\<^sub>A = pi*(1/2) \<and> \<theta>\<^sub>A = 0 \<and> \<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
+  using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def sin_cos_squared_add_cpx
+        cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
+  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+
+lemma rearranged_sin_cos_squared_add:
+  "cmod(\<i>*complex_of_real (sin x) * (complex_of_real (sin y) * \<i> * \<i> * complex_of_real (sin x)) +
+        complex_of_real (cos x) * (complex_of_real (sin y) * \<i> * complex_of_real (cos x))) = sin y"
+  sorry
+
+lemma (in restricted_strategic_space) quantum_alice_optimal:
+  assumes "\<gamma> = pi/2"
+  shows "\<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff \<le> 3"
+  using alice_payoff_def prob0_def prob1_def mat_of_cols_list_def sin_cos_squared_add_cpx
+        cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
+        rearranged_sin_cos_squared_add
+  apply (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  sorry
 
 end
