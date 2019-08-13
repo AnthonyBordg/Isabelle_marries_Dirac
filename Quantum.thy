@@ -995,15 +995,12 @@ of qubit i has the outcome 1.
 \<close>
 
 definition prob1 ::"nat \<Rightarrow> complex mat \<Rightarrow> nat \<Rightarrow> real" where
-"prob1 n v i \<equiv> 
-  if state n v then \<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
+"prob1 n v i \<equiv> \<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2"
 
 definition prob0 ::"nat \<Rightarrow> complex mat \<Rightarrow> nat \<Rightarrow> real" where
-"prob0 n v i \<equiv>
-  if state n v then \<Sum>j\<in>{k| k::nat. (k<2^n) \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2 else undefined"
+"prob0 n v i \<equiv> \<Sum>j\<in>{k| k::nat. (k<2^n) \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2"
 
 lemma
-  assumes "state n v"
   shows prob1_geq_zero:"prob1 n v i \<ge> 0" and prob0_geq_zero:"prob0 n v i \<ge> 0" 
 proof -
   have "(\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2) \<ge> 
@@ -1011,26 +1008,26 @@ proof -
     by (simp add: sum_nonneg)
   then have "(\<Sum>j\<in>{k| k::nat. select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2) \<ge> 0" by simp
   thus "prob1 n v i \<ge> 0"
-    using assms prob1_def by simp
+    using prob1_def by simp
 next
   have "(\<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2) \<ge> 
            (\<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (0::real))"
     by (simp add: sum_nonneg)
   then have "(\<Sum>j\<in>{k| k::nat. (k < 2 ^ n) \<and> \<not> select_index n i k}. (cmod(v $$ (j,0)))\<^sup>2) \<ge> 0" by simp
   thus "prob0 n v i \<ge> 0"
-    using assms prob0_def by simp
+    using prob0_def by simp
 qed
 
 lemma prob_sum_is_one [simp]:
-  assumes a:"state n v"
+  assumes "state n v"
   shows "prob1 n v i + prob0 n v i = 1"
 proof-
   have "prob1 n v i + prob0 n v i = (\<Sum>j\<in>{0..<2^n::nat}. (cmod(v $$ (j,0)))\<^sup>2)"
-    using prob1_def prob0_def a outcomes_sum by simp
+    using prob1_def prob0_def outcomes_sum by simp
   also have "\<dots> = \<parallel>col v 0\<parallel>\<^sup>2"
-    using cpx_vec_length_def a state_def atLeast0LessThan by fastforce
+    using cpx_vec_length_def assms state_def atLeast0LessThan by fastforce
   finally show ?thesis 
-    using a state_def by simp
+    using assms state_def by simp
 qed
 
 lemma
@@ -1084,7 +1081,7 @@ lemma smult_vec_length_bis [simp]:
   using assms smult_ket_vec smult_vec_length ket_vec_col by metis
 
 lemma post_meas0_is_state [simp]:
-  assumes a1:"state n v" and a2:"prob0 n v i \<noteq> 0"
+  assumes "state n v" and "prob0 n v i \<noteq> 0"
   shows "state n (post_meas0 n v i)" 
 proof -
   have "(\<Sum>j\<in>{0..<2^n::nat}. (cmod (if \<not> select_index n i j then v $$ (j,0) else 0))\<^sup>2) = 
@@ -1093,15 +1090,14 @@ proof -
     using outcomes_sum[of "\<lambda>j. (cmod (if \<not> select_index n i j then v $$ (j,0) else 0))\<^sup>2" n i] by simp
   moreover have "(\<Sum>j\<in>{k| k::nat. (k<2^n) \<and> \<not> select_index n i k}. (cmod (if \<not> select_index n i j then v $$ (j,0) else 0))\<^sup>2) = 
            prob0 n v i"
-    by(simp add: prob0_def a1)
+    by(simp add: prob0_def)
   ultimately have "\<parallel>vec (2 ^ n) (\<lambda>j. if \<not> select_index n i j then v $$ (j,0) else 0)\<parallel> = sqrt(prob0 n v i)"
     using lessThan_atLeast0 by (simp add: cpx_vec_length_def)
   moreover have "\<parallel>col (complex_of_real (1/sqrt (prob0 n v i)) \<cdot>\<^sub>m |vec (2^n) (\<lambda>j. if \<not> select_index n i j then v $$ (j,0) else 0)\<rangle>) 0\<parallel> = 
            (1/sqrt (prob0 n v i)) * \<parallel>vec (2^n) (\<lambda>j. if \<not> select_index n i j then v $$ (j,0) else 0)\<parallel>"
-    using  a1 a2 prob0_geq_zero smult_vec_length_bis
-    by (metis (no_types, lifting) real_sqrt_ge_0_iff zero_le_divide_1_iff)
+    using prob0_geq_zero smult_vec_length_bis by(metis (no_types, lifting) real_sqrt_ge_0_iff zero_le_divide_1_iff)
   ultimately show ?thesis
-    using state_def post_meas0_def by (simp add: ket_vec_def post_meas0_def a2)
+    using state_def post_meas0_def by (simp add: ket_vec_def post_meas0_def assms(2))
 qed
 
 text \<open>Below we give the new state of a n-qubits system after a measurement of the ith qubit gave 1.\<close>
@@ -1116,7 +1112,7 @@ Note that a division by 0 never occurs. Indeed, if @{text "sqrt(prob1 n v i)"} w
 \<close> 
 
 lemma post_meas_1_is_state [simp]:
-  assumes a1:"state n v" and a2:"prob1 n v i \<noteq> 0"
+  assumes "state n v" and "prob1 n v i \<noteq> 0"
   shows "state n (post_meas1 n v i)"
 proof -
   have "(\<Sum>j\<in>{0..<2^n::nat}. (cmod (if select_index n i j then v $$ (j,0) else 0))\<^sup>2) = 
@@ -1124,15 +1120,15 @@ proof -
            (\<Sum>j\<in>{k| k::nat. (k<2^n) \<and> \<not> select_index n i k}. (cmod (if select_index n i j then v $$ (j,0) else 0))\<^sup>2)"
     using outcomes_sum[of "\<lambda>j. (cmod (if select_index n i j then v $$ (j,0) else 0))\<^sup>2" n i] by simp
   then have "\<parallel>vec (2^n) (\<lambda>j. if select_index n i j then v $$ (j,0) else 0)\<parallel> = sqrt(prob1 n v i)"
-    using lessThan_atLeast0 by (simp add: cpx_vec_length_def prob1_def a1)
+    using lessThan_atLeast0 by (simp add: cpx_vec_length_def prob1_def)
   moreover have "\<parallel>col(complex_of_real (1/sqrt (prob1 n v i)) \<cdot>\<^sub>m |vec (2^n) (\<lambda>j. if select_index n i j then v $$ (j,0) else 0)\<rangle>) 0\<parallel> = 
            (1/sqrt(prob1 n v i)) * \<parallel>vec (2^n) (\<lambda>j. if select_index n i j then v $$ (j,0) else 0)\<parallel>"
-    using a1 prob1_geq_zero smult_vec_length_bis
+    using prob1_geq_zero smult_vec_length_bis
     by (metis (no_types, lifting) real_sqrt_ge_0_iff zero_le_divide_1_iff)
   ultimately have "\<parallel>col(complex_of_real (1/sqrt (prob1 n v i)) \<cdot>\<^sub>m |vec (2^n) (\<lambda>j. if select_index n i j then v $$ (j,0) else 0)\<rangle>) 0\<parallel>
 = (1/sqrt(prob1 n v i)) * sqrt(prob1 n v i)" by simp
   thus ?thesis
-    using state_def post_meas1_def by (simp add: ket_vec_def post_meas1_def a2)
+    using state_def post_meas1_def by (simp add: ket_vec_def post_meas1_def assms(2))
 qed
 
 text \<open>
