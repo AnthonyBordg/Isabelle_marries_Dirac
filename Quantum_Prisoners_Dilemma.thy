@@ -177,16 +177,16 @@ qed
 
 
 abbreviation (in restricted_strategic_space) prob00 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob00 v \<equiv> (prob0 2 v 0) * (prob0 2 v 1)"
+"prob00 v \<equiv> if state 2 v then (cmod (v $$ (0, 0)))\<^sup>2 else undefined"
 
 abbreviation (in restricted_strategic_space) prob01 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob01 v \<equiv> (prob0 2 v 0) * (prob1 2 v 1)"
+"prob01 v \<equiv> if state 2 v then (cmod (v $$ (1, 0)))\<^sup>2 else undefined"
 
 abbreviation (in restricted_strategic_space) prob10 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob10 v \<equiv> (prob1 2 v 0) * (prob0 2 v 1)"
+"prob10 v \<equiv> if state 2 v then (cmod (v $$ (2, 0)))\<^sup>2 else undefined"
 
 abbreviation (in restricted_strategic_space) prob11 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob11 v \<equiv> (prob1 2 v 0) * (prob1 2 v 1)"
+"prob11 v \<equiv> if state 2 v then (cmod (v $$ (3, 0)))\<^sup>2 else undefined"
 
 
 definition (in restricted_strategic_space) alice_payoff ::"real" where
@@ -234,7 +234,7 @@ lemma minus_unit_vec_4_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j)
 lemma (in restricted_strategic_space) classical_case:
   assumes "\<gamma> = 0"
   shows "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
-  using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def cos_sin_squared_add_cpx 
+  using alice_payoff_def bob_payoff_def mat_of_cols_list_def cos_sin_squared_add_cpx 
         unit_vec_4_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 
@@ -248,6 +248,11 @@ lemma sin_squared_le_one:
   shows "(sin x)\<^sup>2 \<le> 1"
   using abs_sin_le_one abs_square_le_1 by blast
 
+lemma cos_squared_le_one:
+  fixes x::real
+  shows "(cos x)\<^sup>2 \<le> 1"
+  using abs_cos_le_one abs_square_le_1 by blast
+
 lemma alice_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). 
 [[0, exp (\<i>*complex_of_real \<psi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A / 2)), 0, complex_of_real (sin (\<theta>\<^sub>A / 2))]] ! j ! i))"
   using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_sub_4)
@@ -259,14 +264,14 @@ lemma bob_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j).
 lemma (in restricted_strategic_space) classical_alice_optimal:
   assumes "\<gamma> = 0" and "\<psi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
   shows "alice_payoff \<le> 1"
-  using alice_payoff_def prob0_def prob1_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
+  using alice_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
         sin_squared_le_one alice_vec_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 
 lemma (in restricted_strategic_space) classical_bob_optimal:
   assumes "\<gamma> = 0" and "\<psi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi"
   shows "bob_payoff \<le> 1"
-  using bob_payoff_def prob0_def prob1_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
+  using bob_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
         sin_squared_le_one bob_vec_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 
@@ -282,23 +287,200 @@ lemma exp_of_minus_half_pi:
   shows "exp (-(\<i> * complex_of_real x)) = -\<i>"
   using assms cis_conv_exp cis_minus_pi_half by fastforce
 
+lemma sin_of_quarter_pi:
+  fixes x
+  assumes "x = pi/2"
+  shows "sin (x/2) = (sqrt 2)/2"
+  by (auto simp add: assms sin_45)
+
+lemma cos_of_quarter_pi:
+  fixes x
+  assumes "x = pi/2"
+  shows "cos (x/2) = (sqrt 2)/2"
+  by (auto simp add: assms cos_45)
+
+lemma exp_of_real:
+  fixes x::real
+  shows "exp (\<i> * x) = cos x + \<i> * (sin x)"
+proof
+  show "Re (exp (\<i> * x)) = Re ((cos x) + \<i> * (sin x))"
+    using Re_exp by simp
+  show "Im (exp (\<i> * x)) = Im ((cos x) + \<i> * (sin x))"
+    using Im_exp by simp
+qed
+
+lemma exp_of_real_inv:
+  fixes x::real
+  shows "exp (-(\<i> * x)) = cos x - \<i> * (sin x)"
+proof
+  show "Re (exp (-(\<i> * x))) = Re ((cos x) - \<i> * (sin x))"
+    using Re_exp by simp
+  show "Im (exp (-(\<i> * x))) = Im ((cos x) - \<i> * (sin x))"
+    using Im_exp by simp
+qed
+
+lemma exp_to_sin:
+  fixes x::real
+  shows "exp (\<i> * x) - exp (-(\<i> * x)) = 2*\<i>*(sin x)"
+  using exp_of_real exp_of_real_inv by simp
+
+lemma exp_to_cos:
+  fixes x::real
+  shows "exp (\<i> * x) + exp (-(\<i> * x)) = 2*(cos x)"
+  using exp_of_real exp_of_real_inv by simp
+
+
+lemma cmod_real_prod_squared: 
+  fixes x y::real
+  shows "(cmod (complex_of_real x * complex_of_real y))\<^sup>2 = x\<^sup>2 * y\<^sup>2"
+  by (simp add: norm_mult power_mult_distrib)
+
+lemma alice_reward_simp:
+  fixes x y::real
+  shows "3 * (cmod (complex_of_real (sin x) * complex_of_real (cos y)))\<^sup>2 +
+         (cmod (complex_of_real (cos x) * complex_of_real (cos y)))\<^sup>2 = 
+         2 * (sin x)\<^sup>2 * (cos y)\<^sup>2 + (cos y)\<^sup>2"
+proof-
+  have "3 * (sin x)\<^sup>2 * (cos y)\<^sup>2 + (cos x)\<^sup>2 * (cos y)\<^sup>2 = 
+        (2 * (sin x)\<^sup>2 * (cos y)\<^sup>2) + ((sin x)\<^sup>2 + (cos x)\<^sup>2) * (cos y)\<^sup>2" 
+    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
+  then show ?thesis
+    by (simp add: cmod_real_prod_squared power_mult_distrib)
+qed
+
+lemma alice_reward_le_3: 
+  fixes x y::real
+  shows "2 * (sin x)\<^sup>2 * (cos y)\<^sup>2 + (cos y)\<^sup>2 \<le> 3"
+proof-
+  have "(sin x)\<^sup>2 * (cos y)\<^sup>2 \<le> 1" by (simp add: sin_squared_le_one cos_squared_le_one mult_le_one)
+  then have "2 * (sin x)\<^sup>2 * (cos y)\<^sup>2 \<le> 2" by simp
+  moreover have "(cos y)\<^sup>2 \<le> 1" using cos_squared_le_one[of "y"] by simp
+  ultimately show ?thesis by simp
+qed
+
+lemma sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * complex_of_real (sqrt 2) = 2"
+  by (metis dbl_def dbl_simps(5) mult_2_right of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
+
+lemma hidden_sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * (complex_of_real (sqrt 2) * x) / 4 = x/2"
+  using sqrt_two_squared_cpx by (auto simp add: algebra_simps)
+
 lemma (in restricted_strategic_space) quantum_case:
   assumes "\<gamma> = pi/2"
   shows "\<psi>\<^sub>A = pi*(1/2) \<and> \<theta>\<^sub>A = 0 \<and> \<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
-  using alice_payoff_def bob_payoff_def prob0_def prob1_def mat_of_cols_list_def sin_cos_squared_add_cpx
+  using alice_payoff_def bob_payoff_def mat_of_cols_list_def sin_cos_squared_add_cpx
         cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+
+lemma alice_quantum_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). 
+[[-(complex_of_real (sin \<psi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A / 2))), 
+  -complex_of_real (sin (\<theta>\<^sub>A / 2)), 
+  0, 
+  complex_of_real (cos \<psi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A / 2))]] ! j ! i))"
+proof-
+  have "(sin \<psi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A / 2))\<^sup>2 + ((sin (\<theta>\<^sub>A / 2))\<^sup>2 + (cos \<psi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A / 2))\<^sup>2) =
+        ((sin \<psi>\<^sub>A)\<^sup>2 + (cos \<psi>\<^sub>A)\<^sup>2) * (cos (\<theta>\<^sub>A / 2))\<^sup>2 + (sin (\<theta>\<^sub>A / 2))\<^sup>2"
+    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
+  then show ?thesis
+    using state_def cpx_vec_length_def cmod_real_prod_squared sin_cos_squared_add 
+    by (auto simp add: set_sub_4)
+qed
+
+lemma bob_quantum_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i, j). 
+[[-(complex_of_real (sin \<psi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A / 2))), 
+  0, 
+  -complex_of_real (sin (\<theta>\<^sub>A / 2)), 
+  complex_of_real (cos \<psi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A / 2))]] ! j ! i))"
+proof-
+  have "(sin \<psi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A / 2))\<^sup>2 + ((sin (\<theta>\<^sub>A / 2))\<^sup>2 + (cos \<psi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A / 2))\<^sup>2) =
+        ((sin \<psi>\<^sub>A)\<^sup>2 + (cos \<psi>\<^sub>A)\<^sup>2) * (cos (\<theta>\<^sub>A / 2))\<^sup>2 + (sin (\<theta>\<^sub>A / 2))\<^sup>2"
+    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
+  then show ?thesis
+    using state_def cpx_vec_length_def cmod_real_prod_squared sin_cos_squared_add 
+    by (auto simp add: set_sub_4)
+qed
 
 lemma (in restricted_strategic_space) quantum_alice_optimal:
   assumes "\<gamma> = pi/2"
   shows "\<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff \<le> 3"
 proof
   assume asm:"\<psi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0"
-  show "alice_payoff \<le> 3"
-  using alice_payoff_def prob0_def prob1_def mat_of_cols_list_def sin_cos_squared_add_cpx
-        cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
-  apply (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
-  sorry
+  have "\<psi>\<^sub>f $$ (0,0) = -(sin \<psi>\<^sub>A) * (cos (\<theta>\<^sub>A/2))"
+  proof-
+    have "\<psi>\<^sub>f $$ (0,0) = \<i> * (sqrt 2/2) * (sqrt 2/2) * (cos (\<theta>\<^sub>A/2)) * exp (\<i> * \<psi>\<^sub>A) +
+                        \<i> * (sqrt 2/2) * (sqrt 2/2) * (cos (\<theta>\<^sub>A/2)) * -exp (-(\<i> * \<psi>\<^sub>A))"
+      using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi
+      by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+    then have "\<psi>\<^sub>f $$ (0,0) = \<i> * (sqrt 2/2) * (sqrt 2/2) * (cos (\<theta>\<^sub>A/2)) * (exp (\<i> * \<psi>\<^sub>A) - exp (-(\<i> * \<psi>\<^sub>A)))"
+      by (auto simp add: algebra_simps)
+    then have "\<psi>\<^sub>f $$ (0,0) = \<i> * (cos (\<theta>\<^sub>A/2)) * (1/2) * (exp (\<i> * \<psi>\<^sub>A) - exp (-(\<i> * \<psi>\<^sub>A)))"
+      using sqrt_two_squared_cpx by (auto simp add: algebra_simps)
+    then show ?thesis
+      using exp_to_sin by (simp add: algebra_simps)
+  qed
+  moreover have "\<psi>\<^sub>f $$ (1,0) = -(sin (\<theta>\<^sub>A/2))"
+    using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi sqrt_two_squared_cpx
+    by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"])
+  moreover have "\<psi>\<^sub>f $$ (2,0) = 0"
+    using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi sqrt_two_squared_cpx
+    by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (3,0) = (cos \<psi>\<^sub>A) * (cos (\<theta>\<^sub>A/2))"
+  proof-
+    have "\<psi>\<^sub>f $$ (3,0) = exp (\<i> * \<psi>\<^sub>A) * (cos (\<theta>\<^sub>A / 2)) * (sqrt 2/2) * (sqrt 2/2) +
+                        exp (- (\<i> * \<psi>\<^sub>A)) * (cos (\<theta>\<^sub>A / 2)) * (sqrt 2/2) * (sqrt 2/2)"
+      using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi
+      by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+    then have "\<psi>\<^sub>f $$ (3,0) = (exp (\<i> * \<psi>\<^sub>A) + exp (-(\<i> * \<psi>\<^sub>A))) * (cos (\<theta>\<^sub>A/2)) * (sqrt 2/2) * (sqrt 2/2)"
+      by (auto simp add: algebra_simps)
+    then have "\<psi>\<^sub>f $$ (3,0) = (exp (\<i> * \<psi>\<^sub>A) + exp (-(\<i> * \<psi>\<^sub>A))) * (cos (\<theta>\<^sub>A/2)) * (1/2)"
+      using sqrt_two_squared_cpx hidden_sqrt_two_squared_cpx by (auto simp add: algebra_simps)
+    then show ?thesis
+      using exp_to_cos by (simp add: algebra_simps)
+  qed
+  ultimately show "alice_payoff \<le> 3"
+  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state alice_reward_simp alice_reward_le_3 
+  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+qed
+
+lemma (in restricted_strategic_space) quantum_bob_optimal:
+  assumes "\<gamma> = pi/2"
+  shows "\<psi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> 3"
+proof
+  assume asm:"\<psi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0"
+  have "\<psi>\<^sub>f $$ (0,0) = -(sin \<psi>\<^sub>B) * (cos (\<theta>\<^sub>B/2))"
+  proof-
+    have "\<psi>\<^sub>f $$ (0,0) = \<i> * (sqrt 2/2) * (sqrt 2/2) * (cos (\<theta>\<^sub>B/2)) * exp (\<i> * \<psi>\<^sub>B) +
+                        \<i> * (sqrt 2/2) * (sqrt 2/2) * (cos (\<theta>\<^sub>B/2)) * -exp (-(\<i> * \<psi>\<^sub>B))"
+      using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi
+      by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+    then have "\<psi>\<^sub>f $$ (0,0) = \<i> * (sqrt 2/2) * (sqrt 2/2) * (cos (\<theta>\<^sub>B/2)) * (exp (\<i> * \<psi>\<^sub>B) - exp (-(\<i> * \<psi>\<^sub>B)))"
+      by (auto simp add: algebra_simps)
+    then have "\<psi>\<^sub>f $$ (0,0) = \<i> * (cos (\<theta>\<^sub>B/2)) * (1/2) * (exp (\<i> * \<psi>\<^sub>B) - exp (-(\<i> * \<psi>\<^sub>B)))"
+      using sqrt_two_squared_cpx by (auto simp add: algebra_simps)
+    then show ?thesis
+      using exp_to_sin by (simp add: algebra_simps)
+  qed
+  moreover have "\<psi>\<^sub>f $$ (1,0) = 0"
+    using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi sqrt_two_squared_cpx
+    by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (2,0) = -(sin (\<theta>\<^sub>B/2))"
+    using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi sqrt_two_squared_cpx
+    by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (3,0) = (cos \<psi>\<^sub>B) * (cos (\<theta>\<^sub>B/2))"
+  proof-
+    have "\<psi>\<^sub>f $$ (3,0) = exp (\<i> * \<psi>\<^sub>B) * (cos (\<theta>\<^sub>B / 2)) * (sqrt 2/2) * (sqrt 2/2) +
+                        exp (- (\<i> * \<psi>\<^sub>B)) * (cos (\<theta>\<^sub>B / 2)) * (sqrt 2/2) * (sqrt 2/2)"
+      using mat_of_cols_list_def asm assms exp_of_half_pi exp_of_minus_half_pi
+      by (auto simp add: sin_of_quarter_pi[of "\<gamma>"] cos_of_quarter_pi[of "\<gamma>"] algebra_simps)
+    then have "\<psi>\<^sub>f $$ (3,0) = (exp (\<i> * \<psi>\<^sub>B) + exp (-(\<i> * \<psi>\<^sub>B))) * (cos (\<theta>\<^sub>B/2)) * (sqrt 2/2) * (sqrt 2/2)"
+      by (auto simp add: algebra_simps)
+    then have "\<psi>\<^sub>f $$ (3,0) = (exp (\<i> * \<psi>\<^sub>B) + exp (-(\<i> * \<psi>\<^sub>B))) * (cos (\<theta>\<^sub>B/2)) * (1/2)"
+      using sqrt_two_squared_cpx hidden_sqrt_two_squared_cpx by (auto simp add: algebra_simps)
+    then show ?thesis
+      using exp_to_cos by (simp add: algebra_simps)
+  qed
+  ultimately show "bob_payoff \<le> 3"
+  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state alice_reward_simp alice_reward_le_3 
+  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 qed
 
 end
