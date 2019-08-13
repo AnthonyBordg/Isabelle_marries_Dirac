@@ -335,7 +335,7 @@ lemma cmod_real_prod_squared:
   shows "(cmod (complex_of_real x * complex_of_real y))\<^sup>2 = x\<^sup>2 * y\<^sup>2"
   by (simp add: norm_mult power_mult_distrib)
 
-lemma alice_reward_simp:
+lemma quantum_reward_simp:
   fixes x y::real
   shows "3 * (cmod (complex_of_real (sin x) * complex_of_real (cos y)))\<^sup>2 +
          (cmod (complex_of_real (cos x) * complex_of_real (cos y)))\<^sup>2 = 
@@ -348,7 +348,7 @@ proof-
     by (simp add: cmod_real_prod_squared power_mult_distrib)
 qed
 
-lemma alice_reward_le_3: 
+lemma quantum_reward_le_3: 
   fixes x y::real
   shows "2 * (sin x)\<^sup>2 * (cos y)\<^sup>2 + (cos y)\<^sup>2 \<le> 3"
 proof-
@@ -437,7 +437,7 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "alice_payoff \<le> 3"
-  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state alice_reward_simp alice_reward_le_3 
+  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state quantum_reward_simp quantum_reward_le_3 
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 qed
 
@@ -479,7 +479,7 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "bob_payoff \<le> 3"
-  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state alice_reward_simp alice_reward_le_3 
+  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state quantum_reward_simp quantum_reward_le_3 
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 qed
 
