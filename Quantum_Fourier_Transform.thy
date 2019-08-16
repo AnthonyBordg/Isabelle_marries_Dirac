@@ -255,6 +255,7 @@ proof-
 qed
 
 
+(*Could go into generic mult function would be more confusing to understand though*)
 fun(in qft)pow_SWAP_front:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("fSWAP _ _" 75)  where
   "(fSWAP (Suc 0) t) = SWAP_all (Suc 0) t"  
 | "(fSWAP (Suc k) t) = (fSWAP k (t+1)) * (SWAP_all k t)"
@@ -365,7 +366,7 @@ proof-
 qed
 
 
-(*Needs some assumptions abount bin_rep_values. Should already use j probably*)
+(*Needs some assumptions abount bin_rep_values. Should already use j probably?*)
 lemma(in qft) app_CR_Id:
  assumes "length xs = k" and "k\<ge>1" and "k<n" and "m>k"
      and "dim_row v = 2"  and "dim_col v = 1"
@@ -376,36 +377,64 @@ lemma(in qft) app_CR_Id:
 proof-
   have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
         ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> (Id m * ((pw xs k) \<Otimes>(pw ys (m-k))))" sorry
-  then have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
+  then have f0: "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
         ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> ((pw xs k) \<Otimes>(pw ys (m-k)))" sorry
   show "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
   proof(rule disjE)
     show "v = zero \<or> v = one" using assms by auto
   next
-    assume "v = zero"
+    assume a0: "v = zero"
     then have "((bin_rep n j_dec)!(k+1)) = 1" using assms by auto
-    then have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
-               ((qr (k+1)) \<Otimes> v) \<Otimes> ((pw xs k) \<Otimes>(pw ys (m-k)))" 
-      using app_controlled_phase_shift_zero[of k] assms qr_def[of k] qr_def[of "k+1"] sorry
+    moreover have "(CR (k+2))*((qr k) \<Otimes> v) = qr (k+1) \<Otimes> v" 
+      using app_controlled_phase_shift_zero[of k] assms qr_def[of k] qr_def[of "k+1"] a0 sorry
+        (*Shouldn't be a problem if app_controlled_phase... is rewritten with qr_def*)
+    ultimately show "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
+               (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))" using f0 tensor_mat_is_assoc by auto
      
+  next
+    assume a0: "v = one"
+    then have "((bin_rep n j_dec)!(k+1)) = 0" using assms by auto
+    moreover have "(CR (k+2))*((qr k) \<Otimes> v) = qr (k+1) \<Otimes> v" 
+      using app_controlled_phase_shift_zero[of k] assms qr_def[of k] qr_def[of "k+1"] a0 sorry
+        (*Shouldn't be a problem if app_controlled_phase... is rewritten with qr_def*)
+    ultimately show "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
+               (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))" using f0 tensor_mat_is_assoc by auto
+  qed
+qed
 
-lemma(in qft) app_controlled_phase_shift_zero:
-  fixes r::nat
-  assumes "r < n" and "((bin_rep n j_dec)!(r+1)) = 1"
-  defines "v \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 r))) * 1/sqrt(2)))"
-      and "w \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 (r+1)))) * 1/sqrt(2)))"
-  shows "(CR (r+2)) * (v \<Otimes> |zero\<rangle>) = w \<Otimes> |zero\<rangle>"
+
+lemma (in qft) 
+  assumes "(fSWAP k t) * A = B" and "gate (k+t+2) (fSWAP k t)"
+  shows "(fSWAP k t)\<^sup>\<dagger> * B = A" 
+  oops
 
 
+(*Maybe possible to work with transpose here otw just prove this too*)
 lemma(in qft) 
+  assumes "length xs = k" and "k\<ge>1" and "m>k"
+    and  "dim_row v = 2"  and "dim_col v = 1"
   shows "(Id 1 \<Otimes> ((fSWAP k t)\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
   = (qr (k+1)) \<Otimes> (pw xs k)\<Otimes> v \<Otimes>(pw ys (m-k))"
   sorry
 
+
+
 (*k is the index of the qubit that should be added to the binary fraction. c is the current qubit *)
-definition(in qft) app_CR::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("R\<^sub>_ _" 75) where
+definition(in qft) app_CR::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR\<^sub>_ _" 75) where
 "app_CR k c \<equiv> (Id c) \<Otimes> ((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) *(CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k)))) "
 
+
+
+(*Could go into generic mult function would be more confusing to understand though*)
+(*c is the current qubit *)
+fun(in qft) app_all_CR:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("aCR _ _" 75) where
+  "(aCR c (Suc (Suc 0))) = app_CR (n+1-c) c"  
+| "(aCR c (Suc k)) = (fSWAP c k) * (app_CR (n+2-(Suc k)) c)"
+
+
+(*Apply the H gate to the current qubit then apply R_2 to R_(n-c)*)
+definition(in qft) all_gates_on_single_qubit:: "nat \<Rightarrow> complex Matrix.mat" ("G _" 75)  where
+ "G c =  * (Id c \<Otimes> H \<Otimes> Id (n-c))"  
 
 value "[k . k<-[(0::nat),1]]"
 (*How does list comprehension work?*)
