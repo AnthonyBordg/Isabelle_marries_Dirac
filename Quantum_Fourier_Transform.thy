@@ -202,10 +202,14 @@ lemma(in qft) app_fSWAP:
   assumes "k\<ge>1"
   shows "\<forall>xs ys. length xs = k \<longrightarrow> (fSWAP k (m-k)) * ((pw xs k) \<Otimes> v \<Otimes>(pw ys (m-k))) = v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))"
 proof(rule ind_from_1[of k])
+  show "k\<ge>1" using assms by auto
+next
+  show "\<forall>xs ys. length xs = 1 \<longrightarrow> (fSWAP 1 (m-1)) * ((pw xs 1) \<Otimes> v \<Otimes>(pw ys (m-1))) = v \<Otimes> (pw xs 1) \<Otimes> (pw ys (m-1))" sorry
+next
   fix k::nat
   assume a0: "k\<ge>1"
   assume IH: "\<forall>xs ys. length xs = k \<longrightarrow> (fSWAP k (m-k)) * ((pw xs k) \<Otimes> v \<Otimes>(pw ys (m-k))) = v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))"
-  have "\<forall>xs ys. length xs = (Suc k) \<longrightarrow> (fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = v \<Otimes> (pw xs (Suc k)) \<Otimes> (pw ys (m-(Suc k)))"
+  show "\<forall>xs ys. length xs = (Suc k) \<longrightarrow> (fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = v \<Otimes> (pw xs (Suc k)) \<Otimes> (pw ys (m-(Suc k)))"
   proof(rule allI, rule allI, rule impI)
     fix xs ys::"complex Matrix.mat list"
     assume a1: "length xs = (Suc k)"
@@ -230,7 +234,7 @@ proof(rule ind_from_1[of k])
     then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                      (fSWAP k (m-(Suc k)+1)) * ((pw (tl xs) k) \<Otimes> v \<Otimes> ((hd xs) \<Otimes> (pw ys (m-(Suc k)))))" sorry
     moreover have "(hd xs) \<Otimes> (pw ys (m-(Suc k))) = (pw (ys@[(hd xs)]) (m-(Suc k)+1))" 
-      using pow_tensor_app_left[of "(hd xs)" "ys" "m-(Suc k)"] by auto
+      using pow_tensor_app_left sorry
     ultimately have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                      (fSWAP k (m-(Suc k)+1)) * ((pw (tl xs) k) \<Otimes> v \<Otimes> (pw (ys@[(hd xs)]) (m-(Suc k)+1)))" by auto
     then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
@@ -244,17 +248,18 @@ proof(rule ind_from_1[of k])
       sorry
     then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                v \<Otimes> (pw (tl xs) k) \<Otimes> ((hd xs) \<Otimes> (pw (ys) (m-k-1)))"
-      using pow_tensor_app_left[of "(hd xs)" "ys" "m-k-1"] by auto
+      using pow_tensor_app_left sorry
     then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                v \<Otimes> ((pw (tl xs) k) \<Otimes> (hd xs)) \<Otimes> (pw (ys) (m-k-1))" 
       using tensor_mat_is_assoc by auto 
     then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                v \<Otimes> (pw ((hd xs)#(tl xs)) (k+1)) \<Otimes> (pw ys (m-k-1))" 
-       using pow_tensor_app_right[of "(tl xs)" "k" "hd xs"] by auto 
+       using pow_tensor_app_right  sorry
   then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                v \<Otimes> (pw xs (k+1)) \<Otimes> (pw ys (m-k-1))"  sorry 
-  then have "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
+  then show "(fSWAP (Suc k) (m-(Suc k))) * ((pw xs (Suc k)) \<Otimes> v \<Otimes>(pw ys (m-(Suc k)))) = 
                v \<Otimes> (pw xs (Suc k)) \<Otimes> (pw ys (m-(Suc k)))"  sorry
+  qed
 qed
 
 (*Not quite sure if its not bf 0 (k-1) or something else but general idea should work*)
@@ -265,26 +270,28 @@ all qubits of j. *)
 
 
 lemma(in qft)
-  shows "(Id 1 \<Otimes> (fSWAP (Suc k) t)) * 
+  assumes "length xs =k" and "k\<ge>1"
+  shows "(Id 1 \<Otimes> (fSWAP k t)) * 
   ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2))) \<Otimes> (pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))
 = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 k)) * 1/sqrt(2)) ) \<Otimes> v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))"
   sorry
 
-
 (*Needs some assumptions abount bin_rep_values. Should already use j probably*)
 lemma(in qft) 
+  assumes "k < n" and "k\<ge>1" and "((bin_rep n j_dec)!(k+1)) = 1 \<or> ((bin_rep n j_dec)!(k+1)) = 0" (*Can be eliminated*)
   shows "(CR k * Id m) * 
-         ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+   ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
 =  (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 (k+1))) * 1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
 sorry
 
 lemma(in qft) 
-  shows "(Id 1 \<Otimes> ((fSWAP (Suc k) t)\<^sup>\<dagger>)) * ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+  shows "(Id 1 \<Otimes> ((fSWAP k t)\<^sup>\<dagger>)) * ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 (k+1))))*1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
   = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 (k+1))) * 1/sqrt(2))) \<Otimes> (pw xs k)\<Otimes> v \<Otimes>(pw ys (m-k))"
   sorry
 
-definition(in qft) app_CR::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("R\<^sub>_ _ _" 75) where
-"app_CR k t m \<equiv> (Id 1 \<Otimes> ((fSWAP (Suc k) t)\<^sup>\<dagger>)) *(CR k * Id m) * (Id 1 \<Otimes> (fSWAP (Suc k) t)) "
+(*k is the index of the qubit that should be added to the binary fraction. c is the current qubit *)
+definition(in qft) app_CR::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("R\<^sub>_ _" 75) where
+"app_CR k c \<equiv> (Id c) \<Otimes> ((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) *(CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k)))) "
 
 (*Make this more general, this will appear in the induction showing what the result of applying all necessary Ri is*)
 lemma(in qft)
