@@ -47,6 +47,18 @@ fun pow_tensor_list :: "((complex Matrix.mat) list) \<Rightarrow> nat \<Rightarr
 
 (*Missing: result is gate, state,... Easy to proof*)
 
+(*Could also be generalized*)
+lemma pow_tensor_list_dim_col:
+  assumes "\<forall>x \<in> set xs. dim_col x = 1" and "length xs = k"
+  shows "dim_col (pw xs k) = 1"
+  sorry
+
+lemma pow_tensor_list_dim_row:
+  assumes "\<forall>x \<in> set xs. dim_row x = m"  and "length xs = k"
+  shows "dim_row (pw xs k) = m^k"
+  sorry
+
+
 lemma pow_tensor_app_left:
   fixes k::nat
   and x::"complex Matrix.mat" and xs::"complex Matrix.mat list"
@@ -62,9 +74,9 @@ lemma pow_tensor_app_right:
   sorry
 
 definition(in qft) j_to_tensor_prod :: "complex Matrix.mat" ("[j]" 75) where (*Find better abbrev*)
-"[j] = pow_tensor_list (j_to_list n) n"
+"[j] = pow_tensor_list (rev (j_to_list n)) n"
 
-(*Added rev on a whim look into it*)
+(*Might not be needed*)
 definition(in qft) j_to_tensor_prod_rest :: "nat\<Rightarrow>complex Matrix.mat" ("[j] _" 75) where (*Not good to overload?*)
 "[j] k = pow_tensor_list (rev (j_to_list k)) k"
 
@@ -104,7 +116,7 @@ proof-
                  = (exp (2*pi*\<i>*(bf 0 (r+1))))" by auto
 qed
 
-(*I did this proof adhoc there is certainly a much nicer one*)
+(*I did this proof ad hoc there is certainly a much nicer one*)
 lemma(in qft) app_controlled_phase_shift_zero:
   fixes r::nat
   assumes "r < n" and "((bin_rep n j_dec)!(r+1)) = 1"
@@ -164,6 +176,7 @@ lemma(in qft) app_controlled_phase_shift_one:
        = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp (complex_of_real (2*pi)*\<i>*(bf 0 r))*1/sqrt(2))) \<Otimes> |one\<rangle>"
   sorry
 
+
 (*The idea is to apply the controlled R gate only to the tensor product of two single qubits. The first qubit is 
 already at the current position. This is the qubit we want to apply the R_j gate too. The second qubit is "hidden" 
 in the unit vector (which is just a tensor product of single qubit where the qubit at position j is the one we need). 
@@ -176,25 +189,81 @@ definition(in qft) SWAP :: "complex Matrix.mat" where
                                 (if i=2 \<and> j=1 then 1 else 
                                 (if i=3 \<and> j=3 then 1 else 0))))"
 
-lemma 
+lemma(in qft) app_SWAP:
   assumes "dim_row v = 2" and "dim_col v = 1"
       and "dim_row w = 2" and "dim_col w = 1"
   shows "SWAP * (v \<Otimes> w) = w \<Otimes> v"
   sorry
 
+
 definition(in qft) SWAP_all :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
-"SWAP_all k t \<equiv>  (Id k) \<Otimes> SWAP \<Otimes> (Id t)"
+"SWAP_all k t \<equiv> (Id k) \<Otimes> SWAP \<Otimes> (Id t)"
+
+lemma(in qft) SWAP_all_dim:
+  shows "dim_row (SWAP_all k t) = 2^(k+2+t)"
+    and "dim_col (SWAP_all k t) = 2^(k+2+t)"    
+proof -
+  show "dim_row (SWAP_all k t) = 2 ^ (k + 2 + t)"
+    by (simp add: Id_def SWAP_all_def SWAP_def power_add)
+next
+  show "dim_col (SWAP_all k t) = 2^(k+2+t)"
+    by (simp add: Id_def SWAP_all_def SWAP_def power_add)
+qed
 
 
 lemma(in qft) app_SWAP_all:
+  assumes "dim_row v = 2" and "dim_row w = 2" 
+      and "dim_col v = 1" and "dim_col w = 1" 
+      and "length xs = k" and "length ys = t"
+      and "\<forall>x \<in> set xs. dim_row x = 2" and "\<forall>y \<in> set ys. dim_row y = 2"
+      and "\<forall>x \<in> set xs. dim_col x = 1" and "\<forall>y \<in> set ys. dim_col y = 1"
   shows "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) = ((pw xs k) \<Otimes> w \<Otimes> v \<Otimes> (pw ys t))"
-  sorry
-
+proof-
+  have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) = ((Id k) \<Otimes> SWAP \<Otimes> (Id t)) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t))"
+    using SWAP_all_def by auto
+  then have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) = ((Id k) \<Otimes> (SWAP \<Otimes> (Id t))) * ((pw xs k) \<Otimes> (v \<Otimes> w \<Otimes> (pw ys t)))"
+    using tensor_mat_is_assoc by auto
+  moreover have "dim_col (Id k) = dim_row (pw xs k)" 
+    using Id_def pow_tensor_list_dim_row[of xs 2 k] assms by auto 
+  moreover have "dim_col (SWAP \<Otimes> (Id t)) = dim_row (v \<Otimes> w \<Otimes> (pw ys t))" 
+    using Id_def assms pow_tensor_list_dim_row[of ys 2 t] by (simp add: SWAP_def)
+  moreover have "dim_col (Id k) > 0" and "dim_col (SWAP \<Otimes> (Id t)) > 0" and
+                "dim_col (pw xs k) > 0" and "dim_col (v \<Otimes> w \<Otimes> (pw ys t)) > 0" 
+    apply (auto simp: Id_def SWAP_def assms pow_tensor_list_dim_col[of xs k] pow_tensor_list_dim_col[of ys t]).
+  ultimately have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) =
+              ((Id k)*(pw xs k)) \<Otimes> ((SWAP \<Otimes> (Id t)) * (v \<Otimes> w \<Otimes> (pw ys t)))"
+    using mult_distr_tensor by auto
+  then have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) =
+             ((pw xs k)) \<Otimes> ((SWAP \<Otimes> (Id t)) * (v \<Otimes> w \<Otimes> (pw ys t)))" 
+    using Id_def \<open>dim_col (Id k) = dim_row (pw xs k)\<close> by auto
+  moreover have "dim_col SWAP = dim_row (v \<Otimes> w)" using assms by (simp add: SWAP_def)
+  moreover have "dim_col (Id t) = dim_row (pw ys t)" using Id_def pow_tensor_list_dim_row[of ys t] assms 
+    by (metis index_one_mat(3) pow_tensor_list_dim_row)
+  moreover have "dim_col SWAP > 0" and "dim_col (v \<Otimes> w) > 0" and "dim_col (Id t) > 0" and "dim_col (pw ys t) > 0" 
+       apply (auto simp: SWAP_def assms Id_def pow_tensor_list_dim_col[of ys t]).
+  ultimately have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) =
+                   ((pw xs k)) \<Otimes> ((SWAP * (v \<Otimes> w)) \<Otimes> ((Id t) * (pw ys t)))" 
+    using mult_distr_tensor by auto
+  then have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) =
+                   ((pw xs k)) \<Otimes> ((SWAP * (v \<Otimes> w)) \<Otimes> (pw ys t))" 
+    using Id_def \<open>dim_col (Id t) = dim_row (pw ys t)\<close> by auto
+  then have "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) =
+                   ((pw xs k)) \<Otimes> ((w \<Otimes> v) \<Otimes> (pw ys t))" 
+    using assms app_SWAP by auto
+  then show "(SWAP_all k t) * ((pw xs k) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) = ((pw xs k) \<Otimes> w \<Otimes> v \<Otimes> (pw ys t))"
+    using tensor_mat_is_assoc by auto
+qed
 
 
 fun(in qft)pow_SWAP_front:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("fSWAP _ _" 75)  where
   "(fSWAP (Suc 0) t) = SWAP_all (Suc 0) t"  
 | "(fSWAP (Suc k) t) = (fSWAP k (t+1)) * (SWAP_all k t)"
+
+lemma(in qft) pow_SWAP_front_dim:
+  assumes "k\<ge>1" 
+  shows "dim_row (fSWAP k t) = 2^(k+2+t)"
+  and "dim_col (fSWAP k t) = 2^(k+2+t)" sorry
+
 
 declare[[show_types]]
 lemma(in qft) app_fSWAP:
@@ -268,48 +337,92 @@ qed
 (*These are sometimes to specific and need to be generalized with current qubit and swapping target qubit. So they work on 
 all qubits of j. *)
 
+(*Find appropriate name*)
+definition(in qft) qr::"nat \<Rightarrow> complex Matrix.mat" where 
+"qr k \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2)))"
 
-lemma(in qft)
-  assumes "length xs =k" and "k\<ge>1"
-  shows "(Id 1 \<Otimes> (fSWAP k t)) * 
-  ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2))) \<Otimes> (pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))
-= (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 k)) * 1/sqrt(2)) ) \<Otimes> v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))"
-  sorry
+lemma(in qft) app_Id_fSWAP:
+  assumes "length xs = k" and "k\<ge>1" and "m>k"
+    and  "dim_row v = 2"  and "dim_col v = 1"
+  shows "(Id 1 \<Otimes> (fSWAP k (m-k))) * ((qr k) \<Otimes> (pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))
+= (qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))"
+proof-
+  have "dim_col (Id 1) = dim_row (qr k)" by (simp add: Id_def qr_def)
+  moreover have "dim_col (fSWAP k (m-k)) = dim_row ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))" 
+    using pow_SWAP_front_dim assms pow_tensor_list_dim_row[of xs k] pow_tensor_list_dim_row[of ys "m-k"] tensor_mat_is_assoc 
+    by (smt app_fSWAP dim_row_tensor_mat index_mult_mat(2) mult.commute)
+  moreover have "dim_col (Id 1) > 0" and "dim_col (qr k) > 0" and "dim_col (fSWAP k (m-k)) > 0"
+            and "dim_col ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))) > 0" sorry
+  ultimately have "((Id 1) \<Otimes> (fSWAP k (m-k))) * ((qr k) \<Otimes> ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))))
+           = ((Id 1) * (qr k)) \<Otimes> ((fSWAP k (m-k)) * ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))))" 
+    using mult_distr_tensor by auto
+  then have "((Id 1) \<Otimes> (fSWAP k (m-k))) * ((qr k) \<Otimes> ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))))
+           = ((qr k) \<Otimes> (fSWAP k (m-k)) * ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))))" 
+    using Id_def qr_def by simp
+  then show "(Id 1 \<Otimes> (fSWAP k (m-k))) * ((qr k) \<Otimes> (pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))
+           = (qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))" 
+    using app_fSWAP assms tensor_mat_is_assoc by auto
+qed
+
 
 (*Needs some assumptions abount bin_rep_values. Should already use j probably*)
-lemma(in qft) 
-  assumes "k < n" and "k\<ge>1" and "((bin_rep n j_dec)!(k+1)) = 1 \<or> ((bin_rep n j_dec)!(k+1)) = 0" (*Can be eliminated*)
-  shows "(CR k * Id m) * 
-   ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 k)))*1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
-=  (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 (k+1))) * 1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
-sorry
+lemma(in qft) app_CR_Id:
+ assumes "length xs = k" and "k\<ge>1" and "k<n" and "m>k"
+     and "dim_row v = 2"  and "dim_col v = 1"
+     and "v = zero \<or> v = one"
+     and "v = zero \<longrightarrow> ((bin_rep n j_dec)!(k+1)) = 1"
+     and "v = one \<longrightarrow>  ((bin_rep n j_dec)!(k+1)) = 0" 
+  shows "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
+proof-
+  have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
+        ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> (Id m * ((pw xs k) \<Otimes>(pw ys (m-k))))" sorry
+  then have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
+        ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> ((pw xs k) \<Otimes>(pw ys (m-k)))" sorry
+  show "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
+  proof(rule disjE)
+    show "v = zero \<or> v = one" using assms by auto
+  next
+    assume "v = zero"
+    then have "((bin_rep n j_dec)!(k+1)) = 1" using assms by auto
+    then have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
+               ((qr (k+1)) \<Otimes> v) \<Otimes> ((pw xs k) \<Otimes>(pw ys (m-k)))" 
+      using app_controlled_phase_shift_zero[of k] assms qr_def[of k] qr_def[of "k+1"] sorry
+     
+
+lemma(in qft) app_controlled_phase_shift_zero:
+  fixes r::nat
+  assumes "r < n" and "((bin_rep n j_dec)!(r+1)) = 1"
+  defines "v \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 r))) * 1/sqrt(2)))"
+      and "w \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 (r+1)))) * 1/sqrt(2)))"
+  shows "(CR (r+2)) * (v \<Otimes> |zero\<rangle>) = w \<Otimes> |zero\<rangle>"
+
 
 lemma(in qft) 
-  shows "(Id 1 \<Otimes> ((fSWAP k t)\<^sup>\<dagger>)) * ((Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else (exp (complex_of_real (2*pi)*\<i>*(bf 0 (k+1))))*1/sqrt(2))) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
-  = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 (k+1))) * 1/sqrt(2))) \<Otimes> (pw xs k)\<Otimes> v \<Otimes>(pw ys (m-k))"
+  shows "(Id 1 \<Otimes> ((fSWAP k t)\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+  = (qr (k+1)) \<Otimes> (pw xs k)\<Otimes> v \<Otimes>(pw ys (m-k))"
   sorry
 
 (*k is the index of the qubit that should be added to the binary fraction. c is the current qubit *)
 definition(in qft) app_CR::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("R\<^sub>_ _" 75) where
 "app_CR k c \<equiv> (Id c) \<Otimes> ((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) *(CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k)))) "
 
+
+value "[k . k<-[(0::nat),1]]"
+(*How does list comprehension work?*)
+(*Might need to rev this*)
+abbreviation(in qft) \<psi>\<^sub>1 where 
+  "\<psi>\<^sub>1 \<equiv> pow_tensor_list [qr (nat k). k<-[1..n] ] n"
+
+
+
+
+
+
 (*Make this more general, this will appear in the induction showing what the result of applying all necessary Ri is*)
 lemma(in qft)
   shows "(R\<^sub>m (n-m) (n-k)) * (H \<Otimes> Id (n-k)) * ([j] k) 
 = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp(complex_of_real (2*pi)*\<i>*(bf 0 (k+1))) * 1/sqrt(2))) \<Otimes> ([j] (k-1))"
   sorry
-
-value "[k<-[0,1].true]"
-(*How does list comprehension work?*)
-(*Might need to rev this*)
-abbreviation(in qft) \<psi>\<^sub>1 where "\<psi>\<^sub>1 \<equiv> pow_tensor_list [\<forall>k\<in>{1..n}.(Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) else exp (complex_of_real (2*pi)*\<i>*(bf 0 k))*1/sqrt(2) ))] n"
-
-
-
-
-
-
-
 
 (*Will not be needed anymore*)
 (*Gives the unit vector corresponding to |j\<^sub>sj\<^sub>s\<^sub>+\<^sub>1,..,j\<^sub>n> for given s. *)
