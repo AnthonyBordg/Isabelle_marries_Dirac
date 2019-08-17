@@ -407,6 +407,25 @@ next
     using qubits_def by simp
 qed
 
+lemma cong_qubits:
+  fixes n1 n2::nat and f1 g1 f2 g2::"nat \<Rightarrow> complex"
+  assumes "n1 = n2" and "\<And>i. i < n1 \<Longrightarrow> f1(i) = f2(i) \<and> g1(i) = g2(i)"
+  shows "qubits n1 f1 g1 = qubits n2 f2 g2"
+proof
+  show "dim_row (qubits n1 f1 g1) = dim_row (qubits n2 f2 g2)" using dim_row_qubits assms(1) by simp
+  show "dim_col (qubits n1 f1 g1) = dim_col (qubits n2 f2 g2)" by simp
+  show "\<And>i j. i < dim_row (qubits n2 f2 g2) \<Longrightarrow> j < dim_col (qubits n2 f2 g2) \<Longrightarrow> 
+        qubits n1 f1 g1 $$ (i, j) = qubits n2 f2 g2 $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row (qubits n2 f2 g2)" and "j < dim_col (qubits n2 f2 g2)"
+    moreover have "\<And>x. x \<in> {..<n2} \<Longrightarrow> (if select_index n2 x i then g1 x else f1 x) =
+                                        (if select_index n2 x i then g2 x else f2 x)"
+      using assms by simp
+    ultimately show "qubits n1 f1 g1 $$ (i, j) = qubits n2 f2 g2 $$ (i, j)"
+      using qubits_rep assms ket_vec_def prod.cong by auto
+  qed
+qed
+
 lemma tensor_with_qubits_0:
   fixes f g:: "nat \<Rightarrow> complex" and M:: "complex Matrix.mat"
   shows "M \<Otimes> (qubits 0 f g) = M"
