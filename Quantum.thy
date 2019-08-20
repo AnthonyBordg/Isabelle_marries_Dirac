@@ -863,6 +863,12 @@ proof-
     using assms(3) H_without_scalar_prod by(smt One_nat_def index_mat(1) less_2_cases old.prod.case)
 qed
 
+lemma H_values_right_bottom:
+  fixes i j:: nat
+  assumes "i = 1 \<and> j = 1"
+  shows "H $$ (i,j) = - 1/sqrt 2"     
+  using assms by (simp add: H_without_scalar_prod)
+
 text \<open>The controlled-NOT gate\<close>
 
 definition CNOT ::"complex mat" where
