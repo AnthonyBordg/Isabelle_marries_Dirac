@@ -850,6 +850,19 @@ lemma H_is_gate [simp]:
   apply(simp add: H_def)
   done
 
+lemma H_values:
+  fixes i j:: nat
+  assumes "i < dim_row H" and "j < dim_col H" and "i \<noteq> 1 \<or> j \<noteq> 1" 
+  shows "H $$ (i,j) = 1/sqrt 2"
+proof-
+  have "i < 2"
+    using assms(1) by (simp add: H_without_scalar_prod less_2_cases)
+  moreover have "j < 2"
+    using assms(2) by (simp add: H_without_scalar_prod less_2_cases)
+  ultimately show ?thesis 
+    using assms(3) H_without_scalar_prod by(smt One_nat_def index_mat(1) less_2_cases old.prod.case)
+qed
+
 text \<open>The controlled-NOT gate\<close>
 
 definition CNOT ::"complex mat" where
