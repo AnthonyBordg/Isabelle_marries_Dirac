@@ -10,6 +10,7 @@ imports
   Jordan_Normal_Form.Matrix
   "HOL-Library.Nonpos_Ints"
   Basics
+  Binary_Nat
 begin
 
 section \<open>Qubits and Quantum Gates\<close>
@@ -1001,6 +1002,76 @@ lemma bell_11_index [simp]:
     "|\<beta>\<^sub>1\<^sub>1\<rangle> $$ (3,0) = 0"
      apply (auto simp: bell11_def ket_vec_def)
   done
+
+
+subsection \<open>The Bitwise Inner Product\<close> (* contribution by Hanna Lachnitt *)
+
+definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where 
+"bitwise_inner_prod n i j = (\<Sum>k\<in>{0..<n}. (bin_rep n i) ! k * (bin_rep n j) ! k)"
+
+abbreviation bip:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("_ \<cdot>\<^bsub>_\<^esub>  _") where
+"bip i n j \<equiv> bitwise_inner_prod n i j"
+
+lemma bitwise_inner_prod_fst_el_0: 
+  assumes "i < 2^n \<or> j < 2^n" 
+  shows "(i \<cdot>\<^bsub>Suc n\<^esub> j) = (i mod 2^n) \<cdot>\<^bsub>n\<^esub> (j mod 2^n)" 
+proof-
+  have "bip i (Suc n) j = (\<Sum>k\<in>{0..<(Suc n)}. (bin_rep (Suc n) i) ! k * (bin_rep (Suc n) j) ! k)" 
+    using bitwise_inner_prod_def by simp
+  also have "... = bin_rep (Suc n) i ! 0 * bin_rep (Suc n) j ! 0 + 
+             (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
+    by (simp add: sum.atLeast_Suc_lessThan)
+  also have "... = (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
+    using bin_rep_index_0[of i n] bin_rep_index_0[of j n] assms by auto
+  also have "... = (\<Sum>k\<in>{0..<n}. bin_rep (Suc n) i !(k+1) * bin_rep (Suc n) j ! (k+1))" 
+     using sum.shift_bounds_Suc_ivl[of "\<lambda>k. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k" "0" "n"] 
+     by (metis (no_types, lifting) One_nat_def add.commute plus_1_eq_Suc sum.cong)
+  finally have "bip i (Suc n) j = (\<Sum>k\<in>{0..<n}. bin_rep (Suc n) i ! (k+1) * bin_rep (Suc n) j ! (k+1))" 
+    by simp
+  moreover have "k\<in>{0..n} \<longrightarrow> bin_rep (Suc n) i ! (k+1) = bin_rep n (i mod 2^n) ! k" for k
+    using bin_rep_def by (simp add: bin_rep_aux_neq_nil)
+  moreover have "k\<in>{0..n} \<longrightarrow> bin_rep (Suc n) j !(k+1) = bin_rep n (j mod 2^n) ! k" for k 
+    using bin_rep_def by (simp add: bin_rep_aux_neq_nil)
+  ultimately show ?thesis
+    using assms bin_rep_index_0 bitwise_inner_prod_def by simp
+qed
+
+lemma bitwise_inner_prod_fst_el_is_1:
+  fixes n i j:: nat
+  assumes "i \<ge> 2^n \<and> j \<ge> 2^n" and "i < 2^(n+1) \<and> j < 2^(n+1)"
+  shows "(i \<cdot>\<^bsub>(n+1)\<^esub> j) = 1 + ((i mod 2^n) \<cdot>\<^bsub>n\<^esub> (j mod 2^n))" 
+proof-
+  have "bip i (Suc n) j = (\<Sum>k\<in>{0..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)" 
+    using bitwise_inner_prod_def by simp
+  also have "... = bin_rep (Suc n) i ! 0 * bin_rep (Suc n) j ! 0 + 
+            (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
+    by (simp add: sum.atLeast_Suc_lessThan)
+  also have "... = 1 + (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
+    using bin_rep_index_0_geq[of n i] bin_rep_index_0_geq[of n j] assms by simp
+  also have "... = 1 + (\<Sum>k \<in> {0..<n}. bin_rep (Suc n) i ! (k+1) * bin_rep (Suc n) j ! (k+1))" 
+    using sum.shift_bounds_Suc_ivl[of "\<lambda>k. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k" "0" "n"] 
+    by (metis (no_types, lifting) One_nat_def Suc_eq_plus1 sum.cong)
+  finally have f0:"bip i (Suc n) j = 1 + (\<Sum>k\<in>{0..<n}. bin_rep (Suc n) i ! (k+1) * bin_rep (Suc n) j ! (k+1))"
+    by simp
+  moreover have "k\<in>{0..n} \<longrightarrow> bin_rep (Suc n) i ! (k+1) = bin_rep n (i mod 2^n) ! k
+\<and> bin_rep (Suc n) j ! (k+1) = bin_rep n (j mod 2^n) ! k" for k
+    using bin_rep_def by(metis Suc_eq_plus1 bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
+  ultimately show ?thesis
+    using bitwise_inner_prod_def by simp
+qed
+
+lemma bitwise_inner_prod_with_zero:
+  assumes "m < 2^n"
+  shows "(0 \<cdot>\<^bsub>n\<^esub>  m) = 0" 
+proof-
+  have "(0 \<cdot>\<^bsub>n\<^esub>  m) = (\<Sum>j\<in>{0..<n}. bin_rep n 0 ! j * bin_rep n m ! j)" 
+    using bitwise_inner_prod_def by simp
+  moreover have "(\<Sum>j\<in>{0..<n}. bin_rep n 0 ! j * bin_rep n m ! j) 
+               = (\<Sum>j\<in>{0..<n}. 0 * (bin_rep n m) ! j)"
+    by (simp add: bin_rep_index)
+  ultimately show "?thesis" 
+    by simp
+qed
 
 
 (*
