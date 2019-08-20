@@ -225,4 +225,19 @@ one_less_numeral_iff power_strict_increasing semiring_norm(76))
     by simp
 qed
 
+lemma bin_rep_index_0_geq:
+  fixes n m:: nat
+  assumes "m \<ge> 2^n" and "m < 2^(n+1)"
+  shows "bin_rep (n+1) m ! 0 = 1"
+proof-
+  have "bin_rep (Suc n) m =  butlast (bin_rep_aux (Suc n) m)" 
+    using bin_rep_def by simp
+  moreover have "\<dots> = butlast (1 # (bin_rep_aux n (m mod 2^n)))" 
+    using assms bin_rep_aux_def by simp
+  moreover have "\<dots> = 1 # butlast (bin_rep_aux n (m mod 2^n))"
+    by (simp add: bin_rep_aux_neq_nil)
+  ultimately show ?thesis
+    by (simp add: bin_rep_aux_neq_nil)
+qed
+
 end
