@@ -913,13 +913,7 @@ proof-
   moreover have "bip i (n+1) j = 1 + bip (i mod 2^n) n (j mod 2^n)" 
     using bitwise_inner_prod_fst_el_is_1 assms by simp
   ultimately show ?thesis by simp
-qed
-
-lemma H_values_right_bottom: (* This should go in Quantum.thy *)
-  fixes i j:: nat
-  assumes "i = 1 \<and> j = 1"
-  shows "H $$ (i,j) = - 1/sqrt 2"     
-  using assms by (simp add: H_without_scalar_prod) 
+qed 
 
 lemma H_tensor_iter_tensor_of_H:   
   fixes n:: nat
