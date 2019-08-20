@@ -818,14 +818,6 @@ lemma (in jozsa) \<psi>\<^sub>2_is_state:
   shows "state (n+1) \<psi>\<^sub>2" 
   using jozsa_transform_times_\<psi>\<^sub>1_is_\<psi>\<^sub>2 jozsa_transform_is_gate \<psi>\<^sub>1_is_state dim gate_on_state_is_state by fastforce
 
-text "Bitwise inner product"
-
-definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where 
-"bitwise_inner_prod n i j = (\<Sum>k\<in>{0..<n}. (bin_rep n i) ! k * (bin_rep n j) ! k)"
-
-abbreviation bip:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("_ \<cdot>\<^bsub>_\<^esub>  _") where
-"bip i n j \<equiv> bitwise_inner_prod n i j"
-
 text \<open>@{text "H^\<^sub>\<otimes> n"} is the result of taking the nth tensor product of H\<close>
 
 abbreviation iter_tensor_of_H_rep:: "nat \<Rightarrow> complex Matrix.mat" ("H^\<^sub>\<otimes> _") where
@@ -841,54 +833,6 @@ lemma dim_row_of_iter_tensor_of_H [simp]:
   assumes "n \<ge> 1"
   shows "1 < dim_row (H^\<^sub>\<otimes> n)" 
   using assms by(metis One_nat_def Suc_1 dim_row_mat(1) le_trans lessI linorder_not_less one_less_power)
-
-lemma bitwise_inner_prod_fst_el_0: 
-  assumes "i < 2^n \<or> j < 2^n" 
-  shows "(i \<cdot>\<^bsub>Suc n\<^esub> j) = (i mod 2^n) \<cdot>\<^bsub>n\<^esub> (j mod 2^n)" 
-proof-
-  have "bip i (Suc n) j = (\<Sum>k\<in>{0..<(Suc n)}. (bin_rep (Suc n) i) ! k * (bin_rep (Suc n) j) ! k)" 
-    using bitwise_inner_prod_def by simp
-  also have "... = bin_rep (Suc n) i ! 0 * bin_rep (Suc n) j ! 0 + 
-             (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
-    by (simp add: sum.atLeast_Suc_lessThan)
-  also have "... = (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
-    using bin_rep_index_0[of i n] bin_rep_index_0[of j n] assms by auto
-  also have "... = (\<Sum>k\<in>{0..<n}. bin_rep (Suc n) i !(k+1) * bin_rep (Suc n) j ! (k+1))" 
-     using sum.shift_bounds_Suc_ivl[of "\<lambda>k. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k" "0" "n"] 
-     by (metis (no_types, lifting) One_nat_def add.commute plus_1_eq_Suc sum.cong)
-  finally have "bip i (Suc n) j = (\<Sum>k\<in>{0..<n}. bin_rep (Suc n) i ! (k+1) * bin_rep (Suc n) j ! (k+1))" 
-    by simp
-  moreover have "k\<in>{0..n} \<longrightarrow> bin_rep (Suc n) i ! (k+1) = bin_rep n (i mod 2^n) ! k" for k
-    using bin_rep_def by (simp add: bin_rep_aux_neq_nil)
-  moreover have "k\<in>{0..n} \<longrightarrow> bin_rep (Suc n) j !(k+1) = bin_rep n (j mod 2^n) ! k" for k 
-    using bin_rep_def by (simp add: bin_rep_aux_neq_nil)
-  ultimately show ?thesis
-    using assms bin_rep_index_0 bitwise_inner_prod_def by simp
-qed
-
-lemma bitwise_inner_prod_fst_el_is_1:
-  fixes n i j:: nat
-  assumes "i \<ge> 2^n \<and> j \<ge> 2^n" and "i < 2^(n+1) \<and> j < 2^(n+1)"
-  shows "(i \<cdot>\<^bsub>(n+1)\<^esub> j) = 1 + ((i mod 2^n) \<cdot>\<^bsub>n\<^esub> (j mod 2^n))" 
-proof-
-  have "bip i (Suc n) j = (\<Sum>k\<in>{0..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)" 
-    using bitwise_inner_prod_def by simp
-  also have "... = bin_rep (Suc n) i ! 0 * bin_rep (Suc n) j ! 0 + 
-            (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
-    by (simp add: sum.atLeast_Suc_lessThan)
-  also have "... = 1 + (\<Sum>k\<in>{1..<(Suc n)}. bin_rep (Suc n) i ! k * bin_rep (Suc n) j ! k)"
-    using bin_rep_index_0_geq[of n i] bin_rep_index_0_geq[of n j] assms by simp
-  also have "... = 1 + (\<Sum>k \<in> {0..<n}. bin_rep (Suc n) i ! (k+1) * bin_rep (Suc n) j ! (k+1))" 
-    using sum.shift_bounds_Suc_ivl[of "\<lambda>k. (bin_rep (Suc n) i)!k * (bin_rep (Suc n) j)!k" "0" "n"] 
-    by (metis (no_types, lifting) One_nat_def Suc_eq_plus1 sum.cong)
-  finally have f0:"bip i (Suc n) j = 1 + (\<Sum>k\<in>{0..<n}. bin_rep (Suc n) i ! (k+1) * bin_rep (Suc n) j ! (k+1))"
-    by simp
-  moreover have "k\<in>{0..n} \<longrightarrow> bin_rep (Suc n) i ! (k+1) = bin_rep n (i mod 2^n) ! k
-\<and> bin_rep (Suc n) j ! (k+1) = bin_rep n (j mod 2^n) ! k" for k
-    using bin_rep_def by(metis Suc_eq_plus1 bin_rep_aux.simps(2) bin_rep_aux_neq_nil butlast.simps(2) nth_Cons_Suc)
-  ultimately show ?thesis
-    using bitwise_inner_prod_def by simp
-qed
 
 lemma iter_tensor_of_H_fst_pos:
   fixes n i j:: nat
@@ -1356,19 +1300,6 @@ lemma (in jozsa) prob0_fst_qubits_of_jozsa_algo:
   using prob0_fst_qubits_eq by simp
 
 text \<open>General lemmata required to compute probabilities.\<close>
-
-lemma bitwise_inner_prod_with_zero:
-  assumes "m < 2^n"
-  shows "(0 \<cdot>\<^bsub>n\<^esub>  m) = 0" 
-proof-
-  have "(0 \<cdot>\<^bsub>n\<^esub>  m) = (\<Sum>j\<in>{0..<n}. bin_rep n 0 ! j * bin_rep n m ! j)" 
-    using bitwise_inner_prod_def by simp
-  moreover have "(\<Sum>j\<in>{0..<n}. bin_rep n 0 ! j * bin_rep n m ! j) 
-               = (\<Sum>j\<in>{0..<n}. 0 * (bin_rep n m) ! j)"
-    by (simp add: bin_rep_index)
-  ultimately show "?thesis" 
-    by simp
-qed
 
 lemma aux_comp_with_sqrt2:
   shows "(sqrt 2)^n * (sqrt 2)^n = 2^n"
