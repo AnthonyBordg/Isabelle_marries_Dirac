@@ -11,9 +11,6 @@ imports
   Binary_Nat
 begin
 
-(*There will probably be some lemmas going into Basic (maybe even Quantum or Tensor) in here, 
-I will transfer them when I am sure they are actually needed
-HL to AB: I made a comment if I thought the lemma can be transferred*)
 
 section \<open>The Deutsch-Jozsa Algorithm\<close>
 
@@ -128,8 +125,6 @@ lemma (in jozsa) jozsa_transform_coeff [simp]:
   and "j \<ge> 1 \<and> i = j - 1 \<and> even i \<longrightarrow> U\<^sub>f $$ (i,j) = f (i div 2)" 
   using jozsa_transform_def assms by auto
 
-(*HL to AB:*)
-(*Should this be a lemma on its own? could easily be integrated in main lemma (U\<^sub>f_mult_without_empty_summands_even)*)
 lemma (in jozsa) U\<^sub>f_mult_without_empty_summands_sum_even:
   fixes i j A
   assumes "i < dim_row U\<^sub>f" and "j < dim_col A" and "even i" and "dim_col U\<^sub>f = dim_row A"
@@ -450,9 +445,6 @@ next
     thus ?thesis by (simp add: adjoint_of_jozsa_transform unitary_def)
   qed
 qed
-
-(*Better way then always assuming n\<ge>1? Should all lemmata go into jozsa? But then induction 
-does not work anymore. I suggest to keep it like this*)
 
 text \<open>N-fold application of the tensor product\<close>
 
@@ -849,30 +841,6 @@ lemma dim_row_of_iter_tensor_of_H [simp]:
   assumes "n \<ge> 1"
   shows "1 < dim_row (H^\<^sub>\<otimes> n)" 
   using assms by(metis One_nat_def Suc_1 dim_row_mat(1) le_trans lessI linorder_not_less one_less_power)
-
-lemma bin_rep_index_0: (* This should go into Binary_Nat *)
-  fixes n m:: nat
-  assumes "m < 2^n" and "k > n"
-  shows "(bin_rep k m) ! 0 = 0"
-proof-
-  have "m < 2^(k-1)" 
-    using assms by(smt Suc_diff_1 Suc_leI gr0I le_trans less_or_eq_imp_le linorder_neqE_nat not_less 
-one_less_numeral_iff power_strict_increasing semiring_norm(76))
-  then have f:"m div 2^(k-1) = 0" 
-    by auto
-  have "k \<ge> 1" 
-    using assms(2) by simp
-  moreover have "bin_rep_aux k m = (m div 2^(k-1)) # (bin_rep_aux (k-1) (m mod 2^(k-1)))"
-    using bin_rep_aux.simps(2) by(metis Suc_diff_1 assms(2) diff_0_eq_0 neq0_conv zero_less_diff)
-  moreover have "bin_rep k m = butlast ((m div 2^(k-1)) # (bin_rep_aux (k-1) (m mod 2^(k-1))))" 
-    using bin_rep_def by (simp add: calculation(2))
-  moreover have "\<dots> = butlast (0 # (bin_rep_aux (k-1) (m mod 2^(k-1))))" 
-    using f by simp
-  moreover have "\<dots> = 0 # butlast (bin_rep_aux (k-1) (m mod 2^(k-1)))" 
-    by(simp add: bin_rep_aux_neq_nil)
-  ultimately show ?thesis 
-    by simp
-qed
 
 lemma bitwise_inner_prod_fst_el_0: 
   assumes "i < 2^n \<or> j < 2^n" 
