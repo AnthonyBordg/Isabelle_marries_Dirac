@@ -866,21 +866,6 @@ proof-
     using assms bin_rep_index_0 bitwise_inner_prod_def by simp
 qed
 
-lemma bin_rep_index_0_geq:  (* This should go in Binary_Nat *)
-  fixes n m:: nat
-  assumes "m \<ge> 2^n" and "m < 2^(n+1)"
-  shows "bin_rep (n+1) m ! 0 = 1"
-proof-
-  have "bin_rep (Suc n) m =  butlast (bin_rep_aux (Suc n) m)" 
-    using bin_rep_def by simp
-  moreover have "\<dots> = butlast (1 # (bin_rep_aux n (m mod 2^n)))" 
-    using assms bin_rep_aux_def by simp
-  moreover have "\<dots> = 1 # butlast (bin_rep_aux n (m mod 2^n))"
-    by (simp add: bin_rep_aux_neq_nil)
-  ultimately show ?thesis
-    by (simp add: bin_rep_aux_neq_nil)
-qed
-
 lemma bitwise_inner_prod_fst_el_is_1:
   fixes n i j:: nat
   assumes "i \<ge> 2^n \<and> j \<ge> 2^n" and "i < 2^(n+1) \<and> j < 2^(n+1)"
