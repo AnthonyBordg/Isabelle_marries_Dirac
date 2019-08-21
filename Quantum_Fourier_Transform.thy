@@ -53,10 +53,41 @@ definition(in qft) j_to_tensor_prod :: "nat\<Rightarrow>nat\<Rightarrow>nat\<Rig
 
 (*Missing: result is gate, state,... Easy to proof*)
 
+(*Could be generalized but is only used in this form*)
 lemma pow_tensor_list_dim_col:
-  assumes "length xs = k"
-  shows "(\<forall>x \<in> set xs. dim_col x = 1) \<longrightarrow> dim_col (pw xs k) = 1" 
-  sorry
+  assumes "length xs = k" and "(\<forall>x \<in> set xs. dim_col x = 1)"
+  shows "dim_col (pw xs k) = 1" 
+proof-
+  have "length xs = k \<longrightarrow> (\<forall>x \<in> set xs. dim_col x = 1) \<longrightarrow> dim_col (pw xs k) = 1"
+  proof(induction k arbitrary: xs)
+    fix xs
+    show "length xs = 0 \<longrightarrow> (\<forall>x \<in> set xs. dim_col x = 1) \<longrightarrow> dim_col (pw xs 0) = 1" 
+      using Id_def one_mat_def by auto
+  next
+    fix k xs
+    assume IH: "length xs = k \<longrightarrow> (\<forall>x \<in> set xs. dim_col x = 1) \<longrightarrow> dim_col (pw xs k) = 1" for xs
+    show "length xs = (Suc k) \<longrightarrow> (\<forall>x \<in> set xs. dim_col x = 1) \<longrightarrow> dim_col (pw xs (Suc k)) = 1"
+    proof(rule impI, rule impI)
+      assume a0: "length xs = (Suc k)" and a1: "(\<forall>x \<in> set xs. dim_col x = 1)"
+      then have "\<exists>x. xs = x # tl xs" using a0 by (metis length_Suc_conv list.sel(3))
+      moreover have "xs = x # tl xs \<longrightarrow> dim_col (pw xs (Suc k)) = 1" for x
+      proof
+        assume a2: "xs = x # tl xs"
+        moreover have f1: "length (tl xs) = k" using a0 by force
+        moreover have "tl xs = [] \<longrightarrow> dim_col (x \<Otimes> pw tl xs k) = dim_col (pw xs Suc k)" 
+          using IH a2 f1 by auto 
+        ultimately have "dim_col (pw xs (Suc k)) = dim_col (x \<Otimes> (pw (tl xs) k))" using pow_tensor_list.simps 
+          using f1 a2 by metis
+        then have "dim_col (pw xs (Suc k)) = 1 * dim_col ((pw (tl xs) k))" 
+          using a0 a1 a2 by (metis dim_col_tensor_mat list.set_intros(1))
+        then show "dim_col (pw xs (Suc k)) = 1" using IH a0 a1 f1 a2
+          by (metis list.discI list.set_sel(2) mult.left_neutral)
+      qed
+      ultimately show "dim_col (pw xs (Suc k)) = 1" by blast
+    qed
+  qed
+  then show ?thesis using assms by auto
+qed
 
 lemma pow_tensor_list_dim_row:
   assumes "length xs = k" and "(\<forall>x \<in> set xs. dim_row x = m)"
@@ -81,7 +112,7 @@ proof-
         moreover have "tl xs = [] \<longrightarrow> dim_row (x \<Otimes> pw tl xs k) = dim_row (pw xs Suc k)" 
           using IH a2 f1 by auto 
         ultimately have "dim_row (pw xs (Suc k)) = dim_row (x \<Otimes> (pw (tl xs) k))" using pow_tensor_list.simps 
-          using f1 a2 by (metis (full_types) pow_tensor_list.simps)
+          using f1 a2 by metis
         then have "dim_row (pw xs (Suc k)) = m * dim_row ((pw (tl xs) k))" 
           using a1 a2 by (metis dim_row_tensor_mat list.set_intros(1))
         then show "dim_row (pw xs (Suc k)) = m^(Suc k)" 
@@ -151,7 +182,7 @@ lemma pow_tensor_app_right:
   shows "x \<Otimes> (pw xs k) = pw (x#xs) (k+1)" 
   using Suc_le_D assms(1) by force
 
-lemma temp1:
+lemma decomp_unit_vec_zero:
   fixes k::nat
   assumes "k>1" and "m<2^(k-1)"
   shows "|unit_vec (2^k) m\<rangle> = zero \<Otimes> |unit_vec (2^(k-1)) m\<rangle>"
@@ -211,7 +242,7 @@ next
   show " dim_col |unit_vec (2 ^ k) m\<rangle> = dim_col (Quantum_Fourier_Transform.zero \<Otimes> |unit_vec (2 ^ (k - 1)) m\<rangle>)" sorry
 qed
 
-lemma temp2:
+lemma decomp_unit_vec_oen:
   fixes k::nat
   assumes "k>1"
   shows "m\<ge>2^(k-1) \<and> m<2^k \<longrightarrow> |unit_vec (2^k) m\<rangle> = one \<Otimes> |unit_vec (2^(k-1)) (m mod 2)\<rangle>"
@@ -454,7 +485,6 @@ proof-
 qed
 
 (*Could go into generic mult function would be more confusing to understand though*)
-
 (*Takes a the position k of a qubit that should be swapped to the front and the number of remaining qubits t. If the 
 qubit is already at the front the Id matrix is applied*)
 fun(in qft)pow_SWAP_front:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("fSWAP _ _" 75)  where
@@ -464,6 +494,14 @@ fun(in qft)pow_SWAP_front:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.
 lemma(in qft) pow_SWAP_front_dim:
   shows "dim_row (fSWAP k t) = 2^(k+2+t)"
   and "dim_col (fSWAP k t) = 2^(k+2+t)" sorry
+
+lemma(in qft) pow_SWAP_front_hermite_cnj_dim:
+  shows "dim_row (fSWAP k t)\<^sup>\<dagger> = 2^(k+2+t)"
+  and "dim_col (fSWAP k t)\<^sup>\<dagger> = 2^(k+2+t)" sorry
+
+lemma(in qft) pow_SWAP_front_gate:
+  shows "gate (k+2+t) (fSWAP k t)" sorry
+
 
 lemma(in qft) aux_app_fSWAP:
   fixes k m::nat 
@@ -524,6 +562,7 @@ next
   qed
 qed
 
+(*Rename to full name*)
 lemma(in qft) app_fSWAP:
   fixes k m::nat 
   assumes "m>k" and "dim_row v = 2" and "dim_col v = 1" 
@@ -531,10 +570,7 @@ lemma(in qft) app_fSWAP:
       and "(\<forall>x \<in> set xs. dim_col x = 1)" and "(\<forall>y \<in> set ys. dim_col y = 1)" 
       and "length xs = k" and "length ys = m-k"
     shows "(fSWAP k (m-k)) * ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))) = v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))" 
-  using aux_app_fSWAP assms by auto
-
-
-
+  using aux_app_fSWAP assms by simp
 
 lemma(in qft) app_Id_fSWAP:
   assumes "m>k" 
@@ -563,17 +599,19 @@ proof-
 qed
 
 
-(*Needs some assumptions abount bin_rep_values. Should already use j probably?*)
+(*Needs some assumptions about bin_rep_values. Should already use j probably?*)
 lemma(in qft) app_CR_Id:
- assumes "length xs = k" and "k\<ge>1" and "k<n" and "m>k"
+ assumes "length xs = k" and "k\<ge>1" and "k<n" and "m\<ge>k"
      and "dim_row v = 2"  and "dim_col v = 1"
      and "v = zero \<or> v = one"
      and "v = zero \<longrightarrow> ((bin_rep n j_dec)!(k+1)) = 1"
      and "v = one \<longrightarrow>  ((bin_rep n j_dec)!(k+1)) = 0" 
-  shows "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
-proof-
+   shows "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw ys (m-k))) = (qr (k+1)) \<Otimes> v \<Otimes>(pw ys (m-k))" sorry
+
+(*proof-
   have "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
-        ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> (Id m * ((pw xs k) \<Otimes>(pw ys (m-k))))" sorry
+        ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> (Id m * ((pw xs k) \<Otimes>(pw ys (m-k))))" 
+  sorry
   then have f0: "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
         ((CR (k+2))*((qr k) \<Otimes> v)) \<Otimes> ((pw xs k) \<Otimes>(pw ys (m-k)))" sorry
   show "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"
@@ -597,47 +635,101 @@ proof-
     ultimately show "(CR (k+2) \<Otimes> Id m) * ((qr k) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 
                (qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))" using f0 tensor_mat_is_assoc by auto
   qed
+qed*)
+
+(*May be written without pw?*)
+lemma (in qft) app_pow_SWAP_front:
+  assumes "(fSWAP k t) * A = B" 
+    and "dim_row A = 2^(k+t+2)" and "dim_col A = 1"
+    and "dim_row B = 2^(k+t+2)" and "dim_col B = 1"
+  shows "(fSWAP k t)\<^sup>\<dagger> * B = A" 
+proof-
+  have "(fSWAP k t)\<^sup>\<dagger> * ((fSWAP k t) * A) = (fSWAP k t)\<^sup>\<dagger> * B" using assms arg_cong by auto
+  then have "((fSWAP k t)\<^sup>\<dagger> * (fSWAP k t)) * A = (fSWAP k t)\<^sup>\<dagger> * B" 
+    using assoc_mult_mat[of "(fSWAP k t)\<^sup>\<dagger>" "2^(k+t+2)" "2^(k+t+2)" "(fSWAP k t)" "2^(k+t+2)" A 1]  
+    by (simp add: assms carrier_matI pow_SWAP_front_hermite_cnj_dim pow_SWAP_front_dim)
+  then have "(1\<^sub>m (2^(k+t+2))) * A = (fSWAP k t)\<^sup>\<dagger> * B" 
+    using assms gate.unitary unitary_def pow_SWAP_front_hermite_cnj_dim pow_SWAP_front_gate 
+    by (metis hermite_cnj_dim_row index_mult_mat(2) pow_SWAP_front_dim(1))
+  then show "(fSWAP k t)\<^sup>\<dagger> * B = A" by (simp add: assms(2))
 qed
 
-
-lemma (in qft) 
-  assumes "(fSWAP k t) * A = B" and "gate (k+t+2) (fSWAP k t)"
-  shows "(fSWAP k t)\<^sup>\<dagger> * B = A" 
-  oops
-
-
-(*Maybe possible to work with transpose here otw just prove this too*)
-lemma(in qft) 
-  assumes "length xs = k" and "k\<ge>1" and "m>k"
-    and  "dim_row v = 2"  and "dim_col v = 1"
-  shows "(Id 1 \<Otimes> ((fSWAP k t)\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+(*May be written without pw?*)
+lemma(in qft) app_pow_SWAP_front_herm_cnj:
+  assumes "m>k"
+      and "dim_row v = 2" and "dim_col v = 1" 
+      and "(\<forall>x \<in> set xs. dim_row x = 2)" and "(\<forall>y \<in> set ys. dim_row y = 2)"
+      and "(\<forall>x \<in> set xs. dim_col x = 1)" and "(\<forall>y \<in> set ys. dim_col y = 1)" 
+      and "length xs = k" and "length ys = m-k"
+    and "dim_row v = 2"  and "dim_col v = 1"
+  shows "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
   = (qr (k+1)) \<Otimes> (pw xs k)\<Otimes> v \<Otimes>(pw ys (m-k))"
-  sorry
-
+proof-
+  have "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+  = (Id 1 * (qr (k+1))) \<Otimes> (((fSWAP k (m-k))\<^sup>\<dagger>) * (v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))))"
+    using Id_def qr_def pow_tensor_list_dim_row pow_tensor_list_dim_col pow_SWAP_front_dim assms 
+          mult_distr_tensor[of "Id 1" "(fSWAP k (m-k))\<^sup>\<dagger>" "(qr (k+1))" " v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))"] 
+    sorry
+  then have "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+  = (qr (k+1)) \<Otimes> (((fSWAP k (m-k))\<^sup>\<dagger>) * (v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))))"
+    using Id_def qr_def by auto
+  moreover have "(fSWAP k (m-k)) * ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))) = v \<Otimes> (pw xs k) \<Otimes> (pw ys (m-k))"  
+    using app_fSWAP assms by auto
+  moreover have "dim_row ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))) = 2^(k+(m-k)+2)" 
+            and "dim_col ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))) = 1"
+            and "dim_row (v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 2^(k+(m-k)+2)" 
+            and "dim_col (v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))) = 1"
+            sorry
+  ultimately have "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+  = (qr (k+1)) \<Otimes> ((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))"
+    using app_pow_SWAP_front[of k "(m-k)" "((pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k)))" "v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k))" ] assms 
+    by auto
+  then show "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((qr (k+1)) \<Otimes> v \<Otimes> (pw xs k) \<Otimes>(pw ys (m-k)))
+  = (qr (k+1)) \<Otimes> (pw xs k) \<Otimes> v \<Otimes> (pw ys (m-k))" using tensor_mat_is_assoc by auto
+qed
 
 
 (*k is the index of the qubit that should be added to the binary fraction. c is the current qubit *)
 definition(in qft) app_CR::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR\<^sub>_ _" 75) where
 "app_CR k c \<equiv> (Id c) \<Otimes> ((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) *(CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k)))) "
 
-
+lemma(in qft)
+  assumes "dim_row v = c" and "dim_col v = 1"
+      and "dim_row w = 2^(n-c-1)" and "dim_col v = 1"
+    shows "(appCR k c) * (v \<Otimes> (qr (k+1)) \<Otimes> w) = (v \<Otimes> (qr (k+2)) \<Otimes> w)"
+proof-
+  have "(appCR k c) * (v \<Otimes> (qr (k+1)) \<Otimes> w) = 
+  ((Id c) \<Otimes> ((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) * (CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k))))) 
+  * (v \<Otimes> (qr (k+1)) \<Otimes> w)" using app_CR_def 
+    by (metis Quantum.Id_def add_eq_self_zero index_one_mat(2) mult_2 nat.simps(3) nat_1_add_1 plus_1_eq_Suc plus_nat.add_0 pow_SWAP_front.simps(1) power2_eq_square power_one_right qft.pow_SWAP_front_dim(1) qft_axioms semiring_normalization_rules(24))
+  then have "(appCR k c) * (v \<Otimes> (qr (k+1)) \<Otimes> w) = 
+  ((Id c) * v) \<Otimes> (((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) * (CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k)))) * ((qr (k+1)) \<Otimes> w))"
+    using Id_def assms sorry
+  then have "(appCR k c) * (v \<Otimes> (qr (k+1)) \<Otimes> w) = 
+   v \<Otimes> (((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) * (CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k)))) * ((qr (k+1)) \<Otimes> w))"
+    sorry
+  then have "(appCR k c) * (v \<Otimes> (qr (k+1)) \<Otimes> w) = 
+   v \<Otimes> ((Id 1 \<Otimes> ((fSWAP k (n-c-k))\<^sup>\<dagger>)) * (CR k * Id (n-c)) * (Id 1 \<Otimes> (fSWAP k (n-c-k))) * ((qr (k+1)) \<Otimes> w))"
+     sorry
+  show "(appCR k c) * (v \<Otimes> (qr (k+1)) \<Otimes> w) = (v \<Otimes> (qr (k+2)) \<Otimes> w)" sorry
+qed
 
 (*Could go into generic mult function would be more confusing to understand though*)
-(*c is the current qubit *)
+(*c is the current qubit k=(n-c) ensures that R_2 to R_(n-c+1) are applied to the qubit with the 
+special case for c=n that nothing is applied.  *)
 fun(in qft) app_all_CR:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("aCR _ _" 75) where
-  "(aCR c (Suc (Suc 0))) = app_CR (n+1-c) c"  
-| "(aCR c (Suc k)) = (fSWAP c k) * (app_CR (n+2-(Suc k)) c)"
-
+  "(aCR c 0) = (Id n)"  
+| "(aCR c (Suc k)) = (app_CR (2+k) c) * (aCR c k)"
 
 (*Apply the H gate to the current qubit then apply R_2 to R_(n-c)*)
 definition(in qft) all_gates_on_single_qubit:: "nat \<Rightarrow> complex Matrix.mat" ("G _" 75)  where
- "G c = (Id c \<Otimes> aCR c (n-c)) * (Id c \<Otimes> H \<Otimes> Id (n-c))"  
+ "G c = (Id (c-1) \<Otimes> aCR c (n-c)) * (Id (c-1) \<Otimes> H \<Otimes> Id (n-c))"  
 
 lemma(in qft) o1: 
   fixes k::nat
   assumes "k<n"
-  shows "(G k) * ((pow_tensor_list [qr (nat i). i<-[1..k]] k) \<Otimes> (j\<Otimes> k (n-k))) 
-      = ((pow_tensor_list [qr (nat i). i<-[1..(k+1)]] (k+1)) \<Otimes> (j\<Otimes> k (n-k-1)))"
+  shows "(G k) * ((pw [qr (nat i). i<-[1..k]] k) \<Otimes> (j\<Otimes> k (n-k) j_dec n)) 
+      = ((pw [qr (nat i). i<-[1..(k+1)]] (k+1)) \<Otimes> (j\<Otimes> k (n-k-1) j_dec n))"
   sorry
 
 
@@ -650,35 +742,34 @@ value "[k . k<-[(0::nat),1]]"
 (*How does list comprehension work?*)
 (*Might need to rev this*)
 abbreviation(in qft) \<psi>\<^sub>1 where 
-  "\<psi>\<^sub>1 \<equiv> pow_tensor_list [qr (nat k). k<-[1..n] ] n"
+  "\<psi>\<^sub>1 \<equiv> pw [qr (nat k). k<-[1..n] ] n"
 
 (*Application of all R gates on a current qubit k*)
 
 
-lemma(in qft) o1_end: 
-  fixes k::nat
-  assumes "k<n"
-  shows "(G k) * ((pow_tensor_list [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) 1)) 
-      = (pow_tensor_list [qr (nat i). i<-[1..n]] n) "
-  sorry
-
-
 lemma(in qft) o2: 
   assumes "k<n"
-  shows "(pow_mult [G (nat i). i<-[1..k]] k) * (j\<Otimes> 0 n)
-      = ((pow_tensor_list [qr (nat i). i<-[1..k]] k) \<Otimes> (j\<Otimes> k (n-k)))" 
+  shows "(pm [G (nat i). i<-[1..k]] k) * (j\<Otimes> 1 n j_dec n)
+      = ((pw [qr (nat i). i<-[1..k]] k) \<Otimes> (j\<Otimes> k (n-k) j_dec n))" 
   sorry
 
-lemma(in qft) o2_end: 
-  shows "(pow_mult [G (nat i). i<-[1..n]] n) * (j\<Otimes> 0 n)
-      = (pow_tensor_list [qr (nat i). i<-[1..n]] n)" 
-  sorry (*Use o2 until only one member left than show it manually k=n-1*)
-
 theorem(in qft)
-  shows "(pow_mult [G (nat k). k<-[1..n]] n) * (j\<Otimes> 0 n) = \<psi>\<^sub>1"
-  sorry (*using o2 k=n*)
-
-
+  shows "(pm [G (nat k). k<-[1..n]] n) * (j\<Otimes> 1 n j_dec n) = \<psi>\<^sub>1"
+proof-
+  have "(pm [G (nat i). i<-[1..(n-1)]] (n-1)) * (j\<Otimes> 1 n j_dec n)
+      = ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))" using o2 sorry
+  have "(pm [G (nat k). k<-[1..n]] n) = G n * (pm [G (nat i). i<-[1..(n-1)]] (n-1))" sorry
+  have "G n * ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))
+= (Id (n-1) \<Otimes> aCR n 0) * (Id (n-1) \<Otimes> H \<Otimes> Id 0)* ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))"
+    sorry
+ have "G n * ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))
+= (Id (n-1) \<Otimes> aCR n 0) * ( (pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (H * (j\<Otimes> (n-1) (n-(n-1)) j_dec n)) )" sorry
+ have "G n * ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))
+= ( (pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (aCR n 0 * H * (j\<Otimes> (n-1) (n-(n-1)) j_dec n)) )" sorry
+ have "G n * ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))
+= (pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (qr n)" sorry
+ have "G n * ((pw [qr (nat i). i<-[1..(n-1)]] (n-1)) \<Otimes> (j\<Otimes> (n-1) (n-(n-1)) j_dec n))
+= (pw [qr (nat i). i<-[1..n]] n)" sorry
 
 
 
