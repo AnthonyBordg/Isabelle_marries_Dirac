@@ -34,11 +34,11 @@ abbreviation one where "one \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=1 the
 (*---------------Transform j into a tensor product of single qubits ------------------------------*)
 (*------------------------------------------------------------------------------------------------*)
 
-(*Gives back a part of j starting at (s+1) being (k+1) qubits long
-E.g. $|01011\rangle$, s=1 and k=2 transforms to $[1,0,1]*)
+(*Gives back a part of j starting at s being k qubits long
+E.g. $|01011\rangle$, s=1 and k=3 transforms to $[1,0,1]*)
 primrec(in qft) j_to_list_bound :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat list" where
-"j_to_list_bound s 0 j m = (if (bin_rep m j)!s = 0 then [zero] else [one])" |
-"j_to_list_bound s (Suc k) j m = (if (bin_rep m j)!((Suc k)+s) = 0 then zero else one) # (j_to_list_bound s k j m)"
+"j_to_list_bound s 0 j m = []" |
+"j_to_list_bound s (Suc k) j m = (if (bin_rep m j)!(k+s) = 0 then zero else one) # (j_to_list_bound s k j m)"
 
 (*TODO: Would exchanging the arguments help with induction problem?*) (*TODO: delete second argument?*)
 (*Takes a list and the number of elements in this list and gives out the tensor product of the elements*)
@@ -49,9 +49,13 @@ fun pow_tensor_list :: "((complex Matrix.mat) list) \<Rightarrow> nat \<Rightarr
 (*gives back a part of j as tensor product of single qubits s is the start and t the number of bits
 I.e. $|j_1,...,j_n\rangle$ and s=2 and t=3 gives $|j_2,j_3,j_4\rangle$ *)
 definition(in qft) j_to_tensor_prod :: "nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>complex Matrix.mat" ("j\<Otimes> _ _ _ _" 75) where 
-"(j\<Otimes> s t j m) = pw (j_to_list_bound (s-1) (t-1) j m) (s+t-1)"
+"(j\<Otimes> s t j m) = pw (j_to_list_bound s t j m) t"
 
 (*Missing: result is gate, state,... Easy to proof*)
+
+lemma(in qft) j_to_tensor_prod_length_0[simp]:
+  shows "(j\<Otimes> s 0 j m) = (Id 0)"    
+  by (simp add: j_to_tensor_prod_def)
 
 (*Could be generalized but is only used in this form*)
 lemma pow_tensor_list_dim_col:
@@ -204,7 +208,7 @@ lemma pow_tensor_app_right:
 
 lemma decomp_unit_vec_zero:
   fixes k::nat
-  assumes "k>1" and "m<2^(k-1)"
+  assumes "m<2^(k-1)"
   shows "|unit_vec (2^k) m\<rangle> = zero \<Otimes> |unit_vec (2^(k-1)) m\<rangle>" 
 proof
   fix i j::nat
@@ -262,9 +266,9 @@ next
   show " dim_col |unit_vec (2 ^ k) m\<rangle> = dim_col (Quantum_Fourier_Transform.zero \<Otimes> |unit_vec (2 ^ (k - 1)) m\<rangle>)" sorry
 qed
 
-lemma decomp_unit_vec_oen:
+lemma decomp_unit_vec_one:
   fixes k::nat
-  assumes "k>1" and "m\<ge>2^(k-1) \<and> m<2^k"
+  assumes "m\<ge>2^(k-1) \<and> m<2^k"
   shows " |unit_vec (2^k) m\<rangle> = one \<Otimes> |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>"
 proof
   fix i j::nat
@@ -331,56 +335,43 @@ qed
 
 lemma(in qft) j_as_unit:
   fixes k j m::nat
-  assumes "k\<ge>1"
   shows "(j\<Otimes> 1 k j m) = |unit_vec (2^k) (j mod 2^k)\<rangle>"
-proof(rule ind_from_1[of k])
-  show "k\<ge>1" using assms by auto
+proof(induction k)
+  show "(j\<Otimes> 1 0 j m) = |unit_vec (2^0) (j mod 2^0)\<rangle>"
+    using j_to_tensor_prod_def Id_def ket_vec_def by auto
 next
-  have "(bin_rep m j)!0 = 0 \<longrightarrow> (j\<Otimes> 1 1 j m) = zero"
-    using pow_tensor_list.simps j_to_tensor_prod_def by auto
-  moreover have "(bin_rep m j)!0 = 1 \<longrightarrow> (j\<Otimes> 1 1 j m) = one"
-    using pow_tensor_list.simps j_to_tensor_prod_def by auto
-  moreover have "(bin_rep m j)!0 = 0 \<longrightarrow> j mod 2^1 = 0" sorry 
-  moreover have "(bin_rep m j)!0 = 1 \<longrightarrow> j mod 2^1 = 1" sorry 
-  moreover have "|unit_vec (2^1) 0\<rangle> = zero" sorry
-  moreover have "|unit_vec (2^1) 1\<rangle> = one" sorry
-  ultimately show "(j\<Otimes> 1 1 j m) = |unit_vec (2^1) (j mod 2^1)\<rangle>"
-    using ket_vec_def unit_vec_def sorry
-next
-  fix k::nat
-  assume a0: "k\<ge>1"
-     and IH: "(j\<Otimes> 1 k j m) = |unit_vec (2^k) (j mod 2^k)\<rangle>"
-  have f0: "(j\<Otimes> 1 (Suc k) j m) = pw (j_to_list_bound 0 k j m) (Suc k)" 
-    using j_to_tensor_prod_def a0 by auto
+  fix k
+  assume IH: "(j\<Otimes> 1 k j m) = |unit_vec (2^k) (j mod 2^k)\<rangle>"
   show "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) (j mod 2^(Suc k))\<rangle>"
   proof(rule disjE)
-    show "(bin_rep m j)!k = 0 \<or> (bin_rep m j)!k = 1" sorry
+    show "(bin_rep m j)!(k+1) = 0 \<or> (bin_rep m j)!(k+1) = 1" sorry
   next
-    assume a1: "(bin_rep m j)!k = 0"
-    then have "bin_rep m j ! (Suc (k - 1)) = 0"
-      by (metis (no_types) One_nat_def Suc_diff_le a1 a0 diff_Suc_Suc minus_nat.diff_0)
-    then have "j_to_list_bound 0 (Suc (k - 1)) j m = zero # j_to_list_bound 0 (k - 1) j m" 
-      using j_to_list_bound.simps by auto
-    then have "(j_to_list_bound 0 k j m) = zero # (j_to_list_bound 0 (k-1) j m)" 
-      using j_to_list_bound.simps f0 a0     
-      by (metis (no_types) One_nat_def Suc_diff_le a0 diff_Suc_Suc minus_nat.diff_0)
-    then have "(j\<Otimes> 1 (Suc k) j m) = pw (zero # (j_to_list_bound 0 (k-1) j m)) (Suc k)" 
-      using f0 by auto 
-    then have "(j\<Otimes> 1 (Suc k) j m) = zero \<Otimes> (pw (j_to_list_bound 0 (k-1) j m) k)" 
-      using pow_tensor_list.simps a0 by (metis le_add_diff_inverse plus_1_eq_Suc)
-    then have "(j\<Otimes> 1 (Suc k) j m) = zero \<Otimes> (j\<Otimes> 1 k j m)" 
-      using j_to_tensor_prod_def a0 by auto
-    then have "(j\<Otimes> 1 (Suc k) j m) = zero \<Otimes> |unit_vec (2^k) (j mod 2^k)\<rangle>" 
-      using IH by auto
-    then have "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(k+1)) (j mod 2^k)\<rangle>" using temp1 sorry
-    moreover have "j < 2^k" sorry 
-    moreover have "j mod 2^k = j mod 2^(k-1)" sorry
-    ultimately show "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) (j mod 2^(Suc k))\<rangle>" sorry
+    assume a0: "(bin_rep m j)!(k+1) = 0"
+    then have "(j\<Otimes> 1 (Suc k) j m) = pw (zero # j_to_list_bound 1 k j m) (Suc k)"
+      using j_to_list_bound_def j_to_tensor_prod_def by auto
+    then have "(j\<Otimes> 1 (Suc k) j m) = zero \<Otimes> pw (j_to_list_bound 1 k j m) k" by auto
+    then have "(j\<Otimes> 1 (Suc k) j m) = zero \<Otimes> (j\<Otimes> 1 k j m)" by (simp add: j_to_tensor_prod_def)
+    then have "(j\<Otimes> 1 (Suc k) j m) = zero \<Otimes> |unit_vec (2^k) (j mod 2^k)\<rangle>" using IH by auto
+    then have "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) (j mod 2^k)\<rangle>" 
+      using decomp_unit_vec_zero[of "(j mod 2^k)" "k+1"] by auto
+    moreover have "(j mod 2^(Suc k)) = (j mod 2^k)" using a0 sorry
+    ultimately show "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) (j mod 2^(Suc k))\<rangle>" 
+      by auto
   next
-    assume a1: "(bin_rep m j)!k = 1"
-    then show "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) (j mod 2^(Suc k))\<rangle>" sorry
+    assume a0: "(bin_rep m j)!(k+1) = 1"
+    then have "(j\<Otimes> 1 (Suc k) j m) = pw (one # j_to_list_bound 1 k j m) (Suc k)"
+      using j_to_list_bound_def j_to_tensor_prod_def by auto
+    then have "(j\<Otimes> 1 (Suc k) j m) = one \<Otimes> pw (j_to_list_bound 1 k j m) k" by auto
+    then have "(j\<Otimes> 1 (Suc k) j m) = one \<Otimes> (j\<Otimes> 1 k j m)" by (simp add: j_to_tensor_prod_def)
+    then have "(j\<Otimes> 1 (Suc k) j m) = one \<Otimes> |unit_vec (2^k) (j mod 2^k)\<rangle>" using IH by auto
+    moreover have "j\<ge>2^k \<and> j<2^(Suc k)" sorry
+    ultimately have "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) j \<rangle>" 
+      using decomp_unit_vec_one[of "k+1" "j"] by auto
+    moreover have "j = j mod 2^(Suc k)" sorry
+    ultimately show "(j\<Otimes> 1 (Suc k) j m) = |unit_vec (2^(Suc k)) (j mod 2^(Suc k))\<rangle>" by auto
   qed
 qed
+
 
 lemma(in qft) j_dec_as_unit:
   shows "(j\<Otimes> 1 n j_dec n) = |unit_vec (2^n) j_dec\<rangle>"
@@ -388,7 +379,7 @@ proof-
   have "(j\<Otimes> 1 n j_dec n) = |unit_vec (2^n) (j_dec mod 2^n)\<rangle>" using dim j_as_unit by auto
   moreover have "j_dec mod 2^n = j_dec" using dom by auto
   ultimately show ?thesis by auto
-qed
+qed 
 
 
 (*------------------------------------------------------------------------------------------------*)
