@@ -201,5 +201,43 @@ proof-
   qed
 qed
 
+lemma bin_rep_index_0:
+  fixes n m:: nat
+  assumes "m < 2^n" and "k > n"
+  shows "(bin_rep k m) ! 0 = 0"
+proof-
+  have "m < 2^(k-1)" 
+    using assms by(smt Suc_diff_1 Suc_leI gr0I le_trans less_or_eq_imp_le linorder_neqE_nat not_less 
+one_less_numeral_iff power_strict_increasing semiring_norm(76))
+  then have f:"m div 2^(k-1) = 0" 
+    by auto
+  have "k \<ge> 1" 
+    using assms(2) by simp
+  moreover have "bin_rep_aux k m = (m div 2^(k-1)) # (bin_rep_aux (k-1) (m mod 2^(k-1)))"
+    using bin_rep_aux.simps(2) by(metis Suc_diff_1 assms(2) diff_0_eq_0 neq0_conv zero_less_diff)
+  moreover have "bin_rep k m = butlast ((m div 2^(k-1)) # (bin_rep_aux (k-1) (m mod 2^(k-1))))" 
+    using bin_rep_def by (simp add: calculation(2))
+  moreover have "\<dots> = butlast (0 # (bin_rep_aux (k-1) (m mod 2^(k-1))))" 
+    using f by simp
+  moreover have "\<dots> = 0 # butlast (bin_rep_aux (k-1) (m mod 2^(k-1)))" 
+    by(simp add: bin_rep_aux_neq_nil)
+  ultimately show ?thesis 
+    by simp
+qed
+
+lemma bin_rep_index_0_geq:
+  fixes n m:: nat
+  assumes "m \<ge> 2^n" and "m < 2^(n+1)"
+  shows "bin_rep (n+1) m ! 0 = 1"
+proof-
+  have "bin_rep (Suc n) m =  butlast (bin_rep_aux (Suc n) m)" 
+    using bin_rep_def by simp
+  moreover have "\<dots> = butlast (1 # (bin_rep_aux n (m mod 2^n)))" 
+    using assms bin_rep_aux_def by simp
+  moreover have "\<dots> = 1 # butlast (bin_rep_aux n (m mod 2^n))"
+    by (simp add: bin_rep_aux_neq_nil)
+  ultimately show ?thesis
+    by (simp add: bin_rep_aux_neq_nil)
+qed
 
 end
