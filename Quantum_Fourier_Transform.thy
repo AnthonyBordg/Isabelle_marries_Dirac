@@ -5,11 +5,17 @@ imports
   Basics
 begin
 
-
+(*A lot of the proofs are ad hoc and by no means perfect. Feel free to revise them. Since the approach 
+was a bit risky my tactic was to first try out what could be achieved with it*)
 (*There might be some errors later on (esp. false indices) as I revised the file and this changed a lot 
 of definitions.*)
 (*There might be a lot of lemmas be able to be written without pw. But I am not sure at this point so I 
 will leave them in at first.*)
+(*It might be nice to change all assumptions of the form
+   "(\<forall>x \<in> set xs. dim_row x = 2)" and "(\<forall>y \<in> set ys. dim_row y = 2)"
+ into "(\<forall>x \<in> set xs. x =zero \<or> x=one)" 
+*)
+
 
 (*Just for convenience*)
 locale qft =
@@ -92,11 +98,12 @@ definition j_to_tensor_prod :: "nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>
 (*Missing: result is gate, state,... Easy to proof*)
 
 lemma j_to_list_bound_one [simp]:
-  shows "j_to_list_bound s 1 m j = [(if (bin_rep m j)!(s-1) = 0 then zero else one)]" sorry
+  shows "j_to_list_bound s 1 m j = [(if (bin_rep m j)!(s-1) = 0 then zero else one)]" by simp
 
 lemma pow_tensor_list_one [simp]:
   assumes "xs = []" 
-  shows "(pw (Cons x xs) 1) = x" sorry
+  shows "(pw (Cons x xs) 1) = x" 
+  by (simp add: Id_right_tensor assms)
 
 lemma j_to_tensor_prod_length_0[simp]:
   shows "(j\<Otimes> s 0 j m) = (Id 0)"    
@@ -210,6 +217,11 @@ proof-
   then show ?thesis using assms by auto
 qed
 
+lemma pow_tensor_list_dim_col':
+  assumes "length xs = k" and "(\<forall>x \<in> set xs. x = zero \<or> x=one)"
+  shows "dim_col (pw xs k) = 1" 
+  sorry
+
 lemma pow_tensor_list_dim_row:
   assumes "length xs = k" and "(\<forall>x \<in> set xs. dim_row x = m)"
   shows "dim_row (pw xs k) = m^k"
@@ -244,6 +256,11 @@ proof-
   qed
   then show ?thesis using assms by auto
 qed
+
+lemma pow_tensor_list_dim_row':
+  assumes "length xs = k" and "(\<forall>x \<in> set xs. x = zero \<or> x=one)"
+  shows "dim_row (pw xs k) = 2^k"
+  sorry
 
 lemma pow_tensor_app_left:
   fixes k::nat and x::"complex Matrix.mat" 
@@ -540,10 +557,12 @@ qed
 (*-------------------------------Controlled phase gate CR ----------------------------------------*)
 (*------------------------------------------------------------------------------------------------*)
 
-(*Might need to add n and j*)
 definition binary_fraction::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex" ("bf _ _") where
 "binary_fraction l k m j \<equiv> (\<Sum>i\<in>{l..k}. ((bin_rep m j)!i) /2^(i-l+1) )"
 
+(*k is not the index of the control qubit but of the distance between the current and the control qubit
+e.g. if the current qubit is the first qubit CR\<^sub>2 should be applied to the first and second qubit, if 
+the current qubit is n-1 CR\<^sub>2 should be applied to the n-1th qubit and the nth qubit. *)
 definition controlled_phase_shift:: " nat \<Rightarrow> complex Matrix.mat" ("CR _") where
 "CR k \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). if i = j then (if i = 2 then (exp (2*pi*\<i>*1/2^k)) else 1) else 0)"
 
@@ -573,14 +592,29 @@ proof-
     by (simp add: mult.commute)
   moreover have "2*pi*\<i>*((bf (s-1) (r-1) m jd)+((bin_rep m jd)!r)/2^(r-(s-1)+1)) = 2*pi*\<i>*(bf (s-1) r m jd)"
   proof-
-    have "(bf (s-1) (r-1) m jd)+((bin_rep m jd)!r)/2^(r-(s-1)+1) 
+    have "s-1 < (r-1)+1" using assms by auto
+    moreover have "finite {(s-1)..(r-1)}" and "finite {r}" and "{(s-1)..(r-1)}\<inter>{r} = {}" 
+         and "{(s-1)..(r-1)} \<union> {r} = {(s-1)..r}" using assms by auto
+    ultimately have "(\<Sum>i\<in>{(s-1)..(r-1)}. ((bin_rep m jd)!i) /2^(i-(s-1)+1)) 
+                   + ((bin_rep m jd)!((r-1)+1))/2^(((r-1)+1)-(s-1)+1)
+                  = (\<Sum>i\<in>{(s-1)..r}. ((bin_rep m jd)!i) /2^(i-(s-1)+1))" 
+      using sum_Un 
+      by (smt add.right_neutral add_Suc_right assms(1) assms(3) atLeastatMost_empty atLeastatMost_empty_iff le_trans less_imp_le_nat ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc sum.cl_ivl_Suc)
+    moreover have "((bin_rep m jd)!((r-1)+1))/2^(((r-1)+1)-(s-1)+1) = ((bin_rep m jd)!r)/2^(r-(s-1)+1)" 
+      using assms(1) assms(3) by auto
+    ultimately have "(\<Sum>i\<in>{(s-1)..(r-1)}. ((bin_rep m jd)!i) /2^(i-(s-1)+1)) 
+                   + ((bin_rep m jd)!r)/2^(r-(s-1)+1)
+                   = (\<Sum>i\<in>{(s-1)..r}. ((bin_rep m jd)!i) /2^(i-(s-1)+1))"  
+      by auto
+    moreover have "(bf (s-1) (r-1) m jd)+((bin_rep m jd)!r)/2^(r-(s-1)+1) 
         = (\<Sum>i\<in>{(s-1)..(r-1)}. ((bin_rep m jd)!i) /2^(i-(s-1)+1)) + ((bin_rep m jd)!r)/2^(r-(s-1)+1)"
       using binary_fraction_def by auto
-    moreover have "s-1 < r" using assms by auto
-    moreover have "(\<Sum>i\<in>{(s-1)..(r-1)}. ((bin_rep m jd)!i) /2^(i-(s-1)+1)) + ((bin_rep m jd)!r)/2^(r-(s-1)+1)
-                  = (\<Sum>i\<in>{(s-1)..r}. ((bin_rep m jd)!i) /2^(i-(s-1)+1))" using assms calculation(2) sorry
+    ultimately have "(bf (s-1) (r-1) m jd)+((bin_rep m jd)!r)/2^(r-(s-1)+1)  
+                   = (\<Sum>i\<in>{(s-1)..r}. ((bin_rep m jd)!i) /2^(i-(s-1)+1))"  
+      by presburger
     moreover have "(\<Sum>i\<in>{(s-1)..r}. ((bin_rep m jd)!i) /2^(i-(s-1)+1)) = bf (s-1) r m jd" using binary_fraction_def by auto
-    ultimately show ?thesis by presburger
+    ultimately show ?thesis 
+      by presburger
   qed
   ultimately show "(exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (r-1) m jd))) * (exp (2*pi*\<i>*((bin_rep m jd)!r)/2^(r-(s-1)+1)))
                   = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) r m jd)))" by auto
@@ -588,99 +622,110 @@ qed
 
 (*TODO: broke down with new def of qr should be fixable quite easy, show 2^(r-(s-1)+1) = 2^(r-s+2)*)
 (*I did this proof ad hoc there is certainly a much nicer one*)
+
+(*E.g. for 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>1\<^sup>j\<^sup>2|1\<rangle> one has s=1 and r=2. Then, CR (2-1+2) = CR 3 is applied and 
+1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>1\<^sup>j\<^sup>2\<^sup>j\<^sup>3|1\<rangle> is obtained.*)
 lemma app_controlled_phase_shift_zero:
   fixes s r m jd::nat
-  assumes "r < n" and "s\<le>r" and "((bin_rep m jd)!(r+1)) = 1"
-  shows "(CR (r+2)) * ((qr s r m jd) \<Otimes> zero) = (qr s (r+1) m jd) \<Otimes> zero"
+  assumes "r < m" and "s\<le>r" and "((bin_rep m jd)!r) = 1" and "r\<ge>1" and "s\<ge>1"
+  shows "(CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero) = (qr s (r+1) m jd) \<Otimes> zero"
 proof
   fix i j::nat
   assume "i < Matrix.dim_row ((qr s (r+1) m jd) \<Otimes> zero)" and "j < Matrix.dim_col ((qr s (r+1) m jd) \<Otimes> zero)" 
   then have f0: "i<4 \<and> j=0" using ket_vec_def qr_def  by auto
-  then have "((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
-           = (\<Sum>k\<in>{0,1,2,3}. ((CR (r+2)) $$ (i,k)) * (((qr s r m jd) \<Otimes> zero) $$ (k,j)))" 
+  then have "((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
+           = (\<Sum>k\<in>{0,1,2,3}. ((CR (r-s+2)) $$ (i,k)) * (((qr s r m jd) \<Otimes> zero) $$ (k,j)))" 
     using f0 ket_vec_def qr_def set_4 atLeast0LessThan controlled_phase_shift_def by auto
-  then have f1: "((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
-           = ((CR (r+2)) $$ (i,0)) * (1::complex)/sqrt(2)
-           + ((CR (r+2)) $$ (i,2)) * exp (complex_of_real (2*pi) *\<i>*(bf (s-1) (r-1) m jd))*1/sqrt(2)" 
+  then have f1: "((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
+           = ((CR (r-s+2)) $$ (i,0)) * (1::complex)/sqrt(2)
+           + ((CR (r-s+2)) $$ (i,2)) * exp (complex_of_real (2*pi) *\<i>*(bf (s-1) (r-1) m jd))*1/sqrt(2)" 
     using f0 ket_vec_def qr_def by auto
-  moreover have "i=0 \<longrightarrow> ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = 1/sqrt(2)"
+  moreover have "i=0 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = 1/sqrt(2)"
     using controlled_phase_shift_def f1 by auto 
   moreover have "i=0 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> zero) $$ (i,j) = 1/sqrt(2)" 
     using qr_def ket_vec_def f0 by auto
-  moreover have "i=1 \<longrightarrow> ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = 0"
+  moreover have "i=1 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = 0"
     using controlled_phase_shift_def f1 by auto 
   moreover have "i=1 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> zero) $$ (i,j) = 0" 
     using qr_def ket_vec_def f0 by auto
-  moreover have "i=2 \<longrightarrow> ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
+  moreover have "i=2 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
            = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) r m jd))) *1/sqrt(2)" 
   proof-
-   have "i=2 \<longrightarrow> ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
-           = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (r-1) m jd))) * (exp (complex_of_real (2*pi)*\<i>*1/2^(r+2))) * 1/sqrt(2)" 
+   have "i=2 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
+           = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (r-1) m jd))) * (exp (complex_of_real (2*pi)*\<i>*1/2^(r-s+2))) * 1/sqrt(2)" 
      using controlled_phase_shift_def f1 by auto
-   moreover have "exp (complex_of_real (2*pi)*\<i>*1/2^(r+2)*(bin_rep m jd)!(r+1)) 
-                 = exp (complex_of_real (2*pi)*\<i>*1/2^(r+2)) " using assms by auto
-   ultimately show "i=2 \<longrightarrow> ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
-           = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) r m jd))) * 1/sqrt(2)" using exp_mult assms sorry
+   moreover have "exp (complex_of_real (2*pi)*\<i>*1/2^(r-s+2)*(bin_rep m jd)!r) 
+                 = exp (complex_of_real (2*pi)*\<i>*1/2^(r-s+2)) " using assms by auto
+   moreover have "exp (complex_of_real (2*pi)*\<i>*1/2^(r-s+2)) 
+                 = exp (complex_of_real (2*pi)*\<i>*1/2^(r-(s-1)+1))" using assms 
+     using Nat.add_diff_assoc2 Nat.diff_diff_right Suc_eq_plus1 add_2_eq_Suc' by presburger
+   moreover have "(exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (r-1) m jd))) * (exp (2*pi*\<i>*((bin_rep m jd)!r)/2^(r-(s-1)+1)))
+        = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) r m jd)))" using exp_mult assms by blast
+   ultimately show "i=2 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) 
+           = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) r m jd))) * 1/sqrt(2)" using assms by auto
  qed
   moreover have "i=2 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> zero) $$ (i,j) = exp (complex_of_real (2*pi)*\<i>*(bf (s-1) r m jd))*1/sqrt(2)" 
     using qr_def ket_vec_def f0 by auto
-  moreover have "i=3 \<longrightarrow> ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = 0"
+  moreover have "i=3 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = 0"
     using controlled_phase_shift_def f1 by auto 
   moreover have "i=3 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> zero) $$ (i,j) = 0" 
     using qr_def ket_vec_def f0 by auto
   moreover have "i\<in>{0,1,2,3}" using f0 by auto
-  ultimately show "((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = ((qr s (r+1) m jd) \<Otimes> zero) $$ (i,j)" 
+  ultimately show "((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) $$ (i,j) = ((qr s (r+1) m jd) \<Otimes> zero) $$ (i,j)" 
     using f0 ket_vec_def qr_def by (smt set_four)
 next
-  show "dim_row ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) = dim_row ((qr s (r+1) m jd) \<Otimes> zero)" 
+  show "dim_row ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) = dim_row ((qr s (r+1) m jd) \<Otimes> zero)" 
     by (simp add: controlled_phase_shift_def ket_vec_def qr_def)
 next
-  show "dim_col ((CR (r+2)) * ((qr s r m jd) \<Otimes> zero)) = dim_col ((qr s (r+1) m jd) \<Otimes> zero)"
+  show "dim_col ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> zero)) = dim_col ((qr s (r+1) m jd) \<Otimes> zero)"
     using ket_vec_def controlled_phase_shift_def qr_def by auto
 qed
 
 lemma app_controlled_phase_shift_one: 
   fixes s r m jd::nat
-  assumes "r < n" and "((bin_rep m jd)!(r+1)) = 0"
-  shows"(CR (r+2)) * ((qr s r m jd) \<Otimes> one) = (qr s (r+1) m jd) \<Otimes> one" sorry
-(*proof
+  assumes "r < n" and "s\<le>r" and "((bin_rep m jd)!r) = 0" and "r\<ge>1" and "s\<ge>1"
+  shows"(CR (r-s+2)) * ((qr s r m jd) \<Otimes> one) = (qr s (r+1) m jd) \<Otimes> one" 
+proof
   fix i j::nat
-  assume "i < Matrix.dim_row ((qr s (r+1) m jd) \<Otimes> one)" and "j < Matrix.dim_col ((qr (r+1) m jd) \<Otimes> one)" 
+  assume "i < Matrix.dim_row ((qr s (r+1) m jd) \<Otimes> one)" and "j < Matrix.dim_col ((qr s (r+1) m jd) \<Otimes> one)" 
   then have f0: "i<4 \<and> j=0" using ket_vec_def qr_def  by auto
-  then have "((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j) 
-           = (\<Sum>k\<in>{0,1,2,3}. ((CR (r+2)) $$ (i,k)) * (((qr r m jd) \<Otimes> one) $$ (k,j)))" 
-    using f0 ket_vec_def qr_def set_4 atLeast0LessThan controlled_phase_shift_def by auto
-  then have f1: "((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j) 
-           = ((CR (r+2)) $$ (i,1)) * (1::complex)/sqrt(2)
-           + ((CR (r+2)) $$ (i,3)) * exp (complex_of_real (2*pi) *\<i>*(bf 0 r m jd))*1/sqrt(2)" 
-    using f0 ket_vec_def qr_def by auto
-  moreover have "i=0 \<longrightarrow> ((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j) = 0"
+  then have "((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) 
+           = (\<Sum>k\<in>{0,1,2,3}. ((CR (r-s+2)) $$ (i,k)) * (((qr s r m jd) \<Otimes> one) $$ (k,j)))" 
+    using f0 qr_def set_4 atLeast0LessThan controlled_phase_shift_def by auto
+  then have f1: "((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) 
+           = ((CR (r-s+2)) $$ (i,1)) * (1::complex)/sqrt(2)
+           + ((CR (r-s+2)) $$ (i,3)) * exp (complex_of_real (2*pi) *\<i>*(bf (s-1) (r-1) m jd))*1/sqrt(2)" 
+    using f0 qr_def one_def by auto
+  moreover have "i=0 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) = 0"
     using controlled_phase_shift_def f1 by auto 
-  moreover have "i=0 \<longrightarrow> ((qr (r+1) m jd) \<Otimes> one) $$ (i,j) = 0" 
+  moreover have "i=0 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> one) $$ (i,j) = 0" 
     using qr_def ket_vec_def f0 by auto
-  moreover have "i=1 \<longrightarrow> ((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j) = 1/sqrt(2)"
+  moreover have "i=1 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) = 1/sqrt(2)"
     using controlled_phase_shift_def f1 by auto 
-  moreover have "i=1 \<longrightarrow> ((qr (r+1) m jd) \<Otimes> one) $$ (i,j) = 1/sqrt(2)" 
+  moreover have "i=1 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> one) $$ (i,j) = 1/sqrt(2)" 
     using qr_def ket_vec_def f0 by auto
-  moreover have "i=2 \<longrightarrow> ((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j)  = 0" 
+  moreover have "i=2 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) = 0"   
     using controlled_phase_shift_def f1 by auto
-  moreover have "i=2 \<longrightarrow> ((qr (r+1) m jd) \<Otimes> one) $$ (i,j) = 0" 
+  moreover have "i=2 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> one) $$ (i,j) = 0" 
     using qr_def ket_vec_def f0 by auto
-  moreover have "i=3 \<longrightarrow> ((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j) = (exp (complex_of_real (2*pi)*\<i>*(bf 0 (r+1) m jd))) *1/sqrt(2)"
+  moreover have "i=3 \<longrightarrow> ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) 
+      = (exp (complex_of_real (2*pi)*\<i>*(bf 0 (r+1) m jd))) *1/sqrt(2)"
     sorry
-  moreover have "i=3 \<longrightarrow> ((qr (r+1) m jd) \<Otimes> one) $$ (i,j) = (exp (complex_of_real (2*pi)*\<i>*(bf 0 (r+1) m jd))) *1/sqrt(2)" 
-    using qr_def ket_vec_def f0 by auto
+  moreover have "i=3 \<longrightarrow> ((qr s (r+1) m jd) \<Otimes> one) $$ (i,j) = (exp (complex_of_real (2*pi)*\<i>*(bf 0 (r+1) m jd))) *1/sqrt(2)" 
+    using qr_def ket_vec_def f0 sorry
   moreover have "i\<in>{0,1,2,3}" using f0 by auto
-  ultimately show "((CR (r+2)) * ((qr r m jd) \<Otimes> one)) $$ (i,j) = ((qr (r+1) m jd) \<Otimes> one) $$ (i,j)" 
+  ultimately show "((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) $$ (i,j) = ((qr s (r+1) m jd) \<Otimes> one) $$ (i,j)" 
     using f0 ket_vec_def qr_def by (smt set_four)
 next
-  show "dim_row ((CR (r+2)) * ((qr r m jd) \<Otimes> one)) = dim_row ((qr (r+1) m jd) \<Otimes> one)" 
+  show "dim_row ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) = dim_row ((qr s (r+1) m jd) \<Otimes> one)" 
     by (simp add: controlled_phase_shift_def ket_vec_def qr_def)
 next
-  show "dim_col ((CR (r+2)) * ((qr r m jd) \<Otimes> one)) = dim_col ((qr (r+1) m jd) \<Otimes> one)"
+  show "dim_col ((CR (r-s+2)) * ((qr s r m jd) \<Otimes> one)) = dim_col ((qr s (r+1) m jd) \<Otimes> one)"
     using ket_vec_def controlled_phase_shift_def qr_def by auto
 qed
-*)
+
+
+
 
 (*------------------------------------------------------------------------------------------------*)
 (*-----------------------------------------Swapping------ ----------------------------------------*)
@@ -749,8 +794,8 @@ qed
 (*If I replace the pw xs k with A I am not sure what happens in the corner cases
 Might still be possible! Corner case is just A=(Id 0)?*)
 lemma app_SWAP_all:
-  assumes "dim_row v = 2" and "dim_row w = 2" 
-      and "dim_col v = 1" and "dim_col w = 1" 
+  assumes "dim_row v = 2" and "dim_col v = 1"  
+      and "dim_row w = 2" and "dim_col w = 1" 
       and "length xs = k" and "length ys = t"
       and "\<forall>x \<in> set xs. dim_row x = 2" and "\<forall>y \<in> set ys. dim_row y = 2"
       and "\<forall>x \<in> set xs. dim_col x = 1" and "\<forall>y \<in> set ys. dim_col y = 1"
@@ -837,7 +882,13 @@ proof-
   then show "dim_row (fSWAP k t) = 2^(k+t)" and "dim_col (fSWAP k t) = 2^(k+t)"  by auto
 qed
 
- 
+lemma SWAP_front_dim2:
+ fixes k m::nat
+ assumes "k\<ge>1" and "m\<ge>k"
+ shows "dim_row (fSWAP k (m-k)) = 2^m" and "dim_col (fSWAP k (m-k)) = 2^m" 
+  using SWAP_front_dim(1) assms(1) assms(2) apply auto[1]
+  using SWAP_front_dim(2) assms(1) assms(2) by auto
+
 lemma SWAP_unitary:
   assumes "k\<ge>1"
   shows "unitary (fSWAP k t)" sorry
@@ -931,6 +982,20 @@ lemma app_fSWAP:
     shows "(fSWAP k (m-k)) * ((pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
   using aux_app_fSWAP assms by simp
 
+lemma[simp]:
+  fixes m k::nat
+  assumes "m>k" and "k\<ge>1"
+  shows "(2::nat) ^ (k - Suc 0) * 2 * 2 ^ (m - k) = 2^m"
+  by (metis One_nat_def assms(1) assms(2) le_add_diff_inverse less_or_eq_imp_le not_less_eq_eq power_add power_commutes power_eq_if)
+
+
+lemma[simp]:
+  fixes m k::nat
+  assumes "m>k" and "k\<ge>1"
+  shows "(2::nat) ^ (m - Suc 0) = 2 ^ (k - Suc 0) * 2 ^ (m - k)"
+  by (smt Nat.add_diff_assoc One_nat_def Suc_diff_Suc Suc_leI add_Suc_shift add_diff_cancel_left' assms(1) assms(2) plus_1_eq_Suc power_add zero_less_diff)
+
+
 (*The current qubit should not be altered by the swapping *)
 lemma app_Id_fSWAP:
   assumes "k\<ge>1" and "m>k" 
@@ -943,11 +1008,15 @@ lemma app_Id_fSWAP:
 proof-
   have "dim_col (Id 1) = dim_row (qr c k m j)" by (simp add: Id_def qr_def)
   moreover have "dim_col (fSWAP k (m-k)) = dim_row ((pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" 
-    using SWAP_front_dim assms pow_tensor_list_dim_row[of xs "(k-1)"] pow_tensor_list_dim_row[of ys "m-k"] 
-          tensor_mat_is_assoc sorry
+    using SWAP_front_dim2 assms pow_tensor_list_dim_row[of xs "(k-1)" "2"] pow_tensor_list_dim_row[of ys "m-k" "2"] 
+          tensor_mat_is_assoc by auto
   moreover have "dim_col (Id 1) > 0" and "dim_col (qr c k m j) > 0" and "dim_col (fSWAP k (m-k)) > 0"
             and "dim_col ((pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) > 0" 
-       apply (auto simp: Id_def assms qr_def) sorry
+       apply (auto simp: Id_def assms qr_def ) 
+       using SWAP_front_dim2 assms(1) apply auto[1] 
+       apply (simp add: assms(2) less_imp_le_nat)
+       apply (simp add: assms(7) assms(9) pow_tensor_list_dim_col)
+       by (simp add: assms(10) assms(8) pow_tensor_list_dim_col)
   ultimately have "((Id 1) \<Otimes> (fSWAP k (m-k))) * ((qr c k m j) \<Otimes> ((pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))))
            = ((Id 1) * (qr c k m j)) \<Otimes> ((fSWAP k (m-k)) * ((pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))))" 
     using mult_distr_tensor by auto
@@ -959,44 +1028,54 @@ proof-
     using app_fSWAP assms tensor_mat_is_assoc by auto
 qed
 
-
 (*Change m-k not needed here*)
 (*Needs some assumptions about bin_rep_values.*)
 lemma CR_on_all_Id:
- assumes "length xs = k" and "k\<ge>1" and "k<m" and "m\<ge>k" and "c\<le>k"
+  fixes k c m j::nat
+  assumes "k\<ge>1" and "k<m" and "c\<le>k" and "c\<ge>1"
      and "dim_row v = 2"  and "dim_col v = 1"
      and "v = zero \<or> v = one"
-     and "v = zero \<longrightarrow> ((bin_rep m j)!(k+1)) = 1"
-     and "v = one \<longrightarrow>  ((bin_rep m j)!(k+1)) = 0" 
-     and "length ys = m-k"
-     and "\<forall>y \<in> set ys. dim_row y = 2" and "\<forall>y \<in> set ys. dim_col y = 1"
-   shows "(CR (k+2) \<Otimes> Id (m-k)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw ys (m-k))) = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw ys (m-k))" 
+     and "v = zero \<longrightarrow> ((bin_rep m j)!k) = 1"
+     and "v = one \<longrightarrow>  ((bin_rep m j)!k) = 0" 
+     and "length ys = m-k" and "length xs = k-1"
+     and "\<forall>y \<in> set xs. dim_row y = 2" and "\<forall>y \<in> set xs. dim_col y = 1" 
+     and "\<forall>y \<in> set ys. dim_row y = 2" and "\<forall>y \<in> set ys. dim_col y = 1" 
+   shows "(CR (k-c+2) \<Otimes> Id (m-1)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
 proof-
-  have "dim_col (CR (k+2)) = dim_row ((qr c k m j) \<Otimes> v)" 
-    using controlled_phase_shift_def qr_def assms by auto
-  moreover have "dim_col (Id (m-k)) = dim_row ((pw ys (m-k)))" 
-    using Id_def pow_tensor_list_dim_row[of ys "m-k" "2"] assms by auto
-  moreover have "dim_col (CR (k+2)) > 0" 
+  have "(CR (k-c+2) \<Otimes> Id (m-1)) * ((qr c k m j) \<Otimes> v \<Otimes> ((pw xs (k-1)) \<Otimes> (pw ys (m-k)))) = 
+        (CR (k-c+2) * ((qr c k m j) \<Otimes> v)) \<Otimes> (Id (m-1) * ((pw xs (k-1)) \<Otimes> (pw ys (m-k))))" 
+  proof-
+    have "dim_col (CR (k-c+2)) = dim_row ((qr c k m j) \<Otimes> v)" 
+      using controlled_phase_shift_def qr_def assms by auto
+    moreover have "dim_col (Id (m-1)) = dim_row ((pw xs (k-1)) \<Otimes> (pw ys (m-k)))" 
+      using Id_def pow_tensor_list_dim_row[of xs "k-1" "2"] pow_tensor_list_dim_row[of ys "m-k" "2"] assms by auto
+    moreover have "dim_col (CR (k-c+2)) > 0" 
             and "dim_col ((qr c k m j) \<Otimes> v) > 0" 
-            and "dim_col (Id (m-k)) > 0" 
-            and "dim_col ((pw ys (m-k))) > 0" 
-    using controlled_phase_shift_def qr_def Id_def qr_def pow_tensor_list_dim_col[of ys "m-k"] assms by auto
-  ultimately have "(CR (k+2) \<Otimes> Id (m-k)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw ys (m-k))) = 
-        (CR (k+2) * ((qr c k m j) \<Otimes> v)) \<Otimes> (Id (m-k) * (pw ys (m-k)))" 
-    using mult_distr_tensor by auto
-  then have f0: "(CR (k+2) \<Otimes> Id (m-k)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw ys (m-k))) = 
-        (CR (k+2) * ((qr c k m j) \<Otimes> v)) \<Otimes>  (pw ys (m-k))" 
-    using Quantum.Id_def \<open>dim_col (Quantum.Id (m - k)) = dim_row (pw ys m - k)\<close> by auto
-  show "(CR (k+2) \<Otimes> Id (m-k)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw ys (m-k))) = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw ys (m-k))" 
+            and "dim_col (Id (m-1)) > 0" 
+            and "dim_col ((pw xs (k-1)) \<Otimes> (pw ys (m-k))) > 0" 
+      using controlled_phase_shift_def qr_def Id_def qr_def pow_tensor_list_dim_col[of ys "m-k"] 
+          pow_tensor_list_dim_col[of xs "k-1"] assms 
+      by auto
+    ultimately show ?thesis 
+      using mult_distr_tensor by auto
+  qed
+  then have f0: "(CR (k-c+2) \<Otimes> Id (m-1)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) = 
+        (CR (k-c+2) * ((qr c k m j) \<Otimes> v)) \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
+    using Id_mult_left[of "((pw xs (k-1)) \<Otimes> (pw ys (m-k)))" "m-1"] Id_def pow_tensor_list_dim_row[of xs "k-1" "2"] 
+          pow_tensor_list_dim_row[of ys "m-k" "2"] assms sorry
+  show "(CR (k-c+2) \<Otimes> Id (m-1)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) 
+      = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
   proof(rule disjE)
     show "v = zero \<or> v = one" using assms by auto
   next
     assume "v=zero" 
-    then show "(CR (k+2) \<Otimes> Id (m-k)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw ys (m-k))) = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw ys (m-k))" 
-      using app_controlled_phase_shift_zero[of k m c] assms zero_def f0 by auto
+    then show "(CR (k-c+2) \<Otimes> Id (m-1)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) 
+             = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
+      using app_controlled_phase_shift_zero[of k m c j] assms zero_def f0 by auto
   next
     assume "v=one" 
-    then show "(CR (k+2) \<Otimes> Id (m-k)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw ys (m-k))) = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw ys (m-k))" 
+    then show "(CR (k-c+2) \<Otimes> Id (m-1)) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) 
+             = (qr c (k+1) m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
       using app_controlled_phase_shift_one assms zero_def f0 by auto
   qed
 qed
@@ -1051,68 +1130,98 @@ proof-
   = (qr c (k+1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))" using tensor_mat_is_assoc by auto
 qed
 
-lemma [simp]:
-  assumes "k\<ge>1"
-  shows "dim_row (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) = 2^(k+t+1)"
-    and "dim_col (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) = 2^(k+t+1)"
-  using SWAP_front_hermite_cnj_dim Id_def sorry
+(*All this proofs can be improved a lot*)
+lemma Id_fSWAP_herm_cnj_dim [simp]:
+  assumes "k\<ge>1" and "m>k"
+  shows "dim_row (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) = 2^(m+1)"
+    and "dim_col (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) = 2^(m+1)"
+  using SWAP_front_hermite_cnj_dim Id_def 
+  using SWAP_front_dim2(2) assms apply auto[1]
+  using Quantum.Id_def SWAP_front_dim2(1) assms by auto
 
-lemma [simp]:
-  assumes "k\<ge>1"
-  shows "dim_row (Id 1 \<Otimes> (fSWAP k (m-k))) = 2^(k+t+1)"
-    and "dim_col (Id 1 \<Otimes> (fSWAP k (m-k))) = 2^(k+t+1)"
-  using SWAP_front_hermite_cnj_dim Id_def sorry
+lemma Id_fSWAP_dim [simp]:
+  assumes "k\<ge>1" and "m>k"
+  shows "dim_row (Id 1 \<Otimes> (fSWAP k (m-k))) = 2^(m+1)"
+    and "dim_col (Id 1 \<Otimes> (fSWAP k (m-k))) = 2^(m+1)"
+  using SWAP_front_hermite_cnj_dim Id_def SWAP_front_dim2 
+  using assms apply auto[1]
+  using Id_def SWAP_front_dim2(2) assms by auto
 
-lemma [simp]:
-  assumes "k\<ge>1"
-  shows "dim_row (CR k * (Id (m-1))) = 2^(k+t+1)"
-    and "dim_col (CR k * (Id (m-1))) = 2^(k+t+1)"
-  using SWAP_front_hermite_cnj_dim Id_def sorry
+lemma CR_Id_dim [simp]:
+  assumes "k\<ge>1" and "m>k"
+  shows "dim_row (CR (k-c+2) * (Id (m-1))) = 2^(m+1)"
+    and "dim_col (CR (k-c+2) * (Id (m-1))) = 2^(m+1)"
+  using Id_def controlled_phase_shift_def sorry
 
 
+
+(*ABBREV DOES NOT WORK*)
 (*k is the index of the qubit that should be added to the binary fraction. c is the current qubit *)
 (*If this is applied to (qr 1 m m j)\<Otimes>...\<Otimes>(qr (c-1) m m j)\<Otimes>(qr ) *)
 definition CR_on_all::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR\<^sub>_ _ _" 75) where
-"CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) "
+"CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) "
 
-
-(*get indices right*)
-lemma app_CR_on_all_wth_Id:
-  assumes "k\<ge>1" and "m>k" and "dim_row v = 2" and "dim_col v = 1" 
+(*get indices right!*)
+lemma app_CR_on_all_wo_Id:
+  assumes "k\<ge>1" and "m\<ge>1" and "m>k" and "dim_row v = 2" and "dim_col v = 1" 
+      and "c\<ge>1" and "c\<le>k"
       and "v = zero \<or> v = one"
-      and "v = zero \<longrightarrow> ((bin_rep m j)!(k+1)) = 1"
-      and "v = one \<longrightarrow>  ((bin_rep m j)!(k+1)) = 0" 
+      and "v = zero \<longrightarrow> ((bin_rep m j)!k) = 1"
+      and "v = one \<longrightarrow>  ((bin_rep m j)!k) = 0" 
       and "(\<forall>x \<in> set xs. dim_row x = 2)" and "(\<forall>y \<in> set ys. dim_row y = 2)"
       and "(\<forall>x \<in> set xs. dim_col x = 1)" and "(\<forall>y \<in> set ys. dim_col y = 1)" 
       and "length xs = (k-1)" and "length ys = m-k"
-  shows "((Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1))) * (Id 1 \<Otimes> (fSWAP k (m-k))))
+  shows "((Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * (Id (m-1))) * (Id 1 \<Otimes> (fSWAP k (m-k))))
         * ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
         = (qr c (k+1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))"
 proof-
-  have "dim_row ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 2^(m-1)" sorry
-  moreover have "dim_col ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 1" sorry
-  have "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * Id (m - 1)) \<in> carrier_mat (2 ^ (m - 1)) (2 ^ (m - 1))" sorry
-  moreover have "(Id 1 \<Otimes> (fSWAP k (m-k))) * (CR k * Id (m - 1)) \<in> carrier_mat (2 ^ (m - 1)) (2 ^ (m - 1))" sorry
-  moreover have "((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))  \<in> carrier_mat (2 ^ (m - 1)) 1" sorry
-  ultimately have "((Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1))) * (Id 1 \<Otimes> (fSWAP k (m-k))))
+  have "((Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * (Id (m-1))) * (Id 1 \<Otimes> (fSWAP k (m-k))))
         * ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
-        = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1))) * ((Id 1 \<Otimes> (fSWAP k (m-k)))
+        = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * (Id (m-1))) * ((Id 1 \<Otimes> (fSWAP k (m-k)))
         * ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))))" 
-    using assoc_mult_mat[of "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1)))" "2^(m-1)" "2^(m-1)"
-                     "(Id 1 \<Otimes> (fSWAP k (m-k)))" "2^(m-1)" "((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) " "1" ]
-    sorry
-  then have "...  = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1))) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) "
+  proof-
+    have "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * Id (m - 1)) \<in> carrier_mat (2^(m+1)) (2^(m+1))" 
+      using Id_fSWAP_herm_cnj_dim[of k m] CR_Id_dim[of k m] assms by auto
+    moreover have "(Id 1 \<Otimes> (fSWAP k (m-k))) \<in> carrier_mat (2^(m+1)) (2^(m+1))" 
+      using Id_fSWAP_dim[of k m] assms by auto
+    moreover have "((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) \<in> carrier_mat (2^(m+1)) 1" 
+    proof- 
+      have "2 * (2 ^ (m - k) * 2 ^ (k - Suc 0)) = 2 ^ m" sorry
+      then have "dim_row ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 2^(m+1)" 
+        using pow_tensor_list_dim_row[of xs "k-1" 2]  pow_tensor_list_dim_row[of ys "m-k" 2] assms 
+          qr_def assms by auto
+      moreover have "dim_col ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 1" 
+        using pow_tensor_list_dim_col[of xs "k-1"] pow_tensor_list_dim_col[of ys "m-k"]
+          qr_def assms by auto
+      ultimately show ?thesis by blast
+    qed
+    ultimately show ?thesis 
+      using assoc_mult_mat[of "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1)))" "2^(m+1)" "2^(m+1)"
+            "(Id 1 \<Otimes> (fSWAP k (m-k)))" "2^(m+1)" "((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) " "1"]
+          assms by auto
+  qed
+  then have "...  = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * (Id (m-1))) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) "
     using app_Id_fSWAP[of k m v xs ys c j] assms tensor_mat_is_assoc by auto
-  then have "...  = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((CR k * (Id (m-1))) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k)))) "
-    sorry
+  then have "...  = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((CR (k-c+2) * (Id (m-1))) * ((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k)))) "
+  proof-
+    have "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) \<in> carrier_mat (2^(m+1)) (2^(m+1))" sorry
+    moreover have "(CR (k-c+2) * (Id (m-1))) \<in> carrier_mat (2^(m+1)) (2^(m+1))" sorry
+    moreover have "((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))) \<in> carrier_mat (2^(m+1)) 1" sorry
+    ultimately show ?thesis 
+      using assoc_mult_mat[of "(Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>))" "2^(m+1)" "2^(m+1)" "(CR k * (Id (m-1)))" "2^(m+1)"
+                            "((qr c k m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k)))" "1"] assms by auto
+  qed
   then have "... = (Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * ((qr c (k+1) m j) \<Otimes> v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k)))"
-    using CR_on_all_Id assms sorry
-  then have "... = ((qr c (k+1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))"
+    using CR_on_all_Id[of k m c v j ys xs] assms sorry
+  then have "... = ((qr c (k+1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" (*make own lemma for this*)
     sorry
-  then show "((Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR k * (Id (m-1))) * (Id 1 \<Otimes> (fSWAP k (m-k))))
-        * ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = ((qr c (k+1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))"
+  then show "((Id 1 \<Otimes> ((fSWAP k (m-k))\<^sup>\<dagger>)) * (CR (k-c+2) * (Id (m-1))) * (Id 1 \<Otimes> (fSWAP k (m-k))))
+        * ((qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+        = (qr c (k+1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))"
     sorry
 qed
+
+
 
 
 (*I think it is not possible without pw because of corner cases *)
@@ -1125,17 +1234,29 @@ lemma app_CR_on_all:
       and "(\<forall>x \<in> set xs. dim_col x = 1)" and "(\<forall>y \<in> set ys. dim_col y = 1)" 
       and "(\<forall>x \<in> set cs. dim_col x = 2)" and "(\<forall>y \<in> set cs. dim_col y = 1)" 
       and "length xs = (k-1)" and "length ys = m-k" and "length cs=(c-1)"
-  shows "(CR\<^sub>k c m) * ((pw cs (c-1)) \<Otimes> (qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+  shows "(CR_on_all k c m) * ((pw cs (c-1)) \<Otimes> (qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
        = ((pw cs (c-1)) \<Otimes> (qr c (k+1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))"
 proof-
-  have "(CR\<^sub>k c m) * ((pw cs c) \<Otimes> (qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+  have "(CR_on_all k c m) * ((pw cs (c-1)) \<Otimes> (qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
        = ((Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))) 
        * ((pw cs (c-1)) \<Otimes> (qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) " 
-    using CR_on_all_def[of k c m] sorry
-  have "... 
+    using CR_on_all_def[of k c m] by auto
+  then have "... 
        = ((Id (c-1)) * (pw cs (c-1))) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) 
        * ((qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" 
-    sorry
+  proof- 
+    have "dim_col (Id (c-1)) = dim_row (pw cs (c-1))" 
+     and "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) 
+        = dim_row ((qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" 
+     and "dim_col (Id (c-1)) > 0" 
+     and "dim_col (pw cs (c-1)) > 0" 
+     and "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) > 0" 
+     and "dim_col ((qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) > 0" sorry
+    then show ?thesis 
+      using tensor_mat_is_assoc mult_distr_tensor[of "Id (c-1)" "(pw cs (c-1))" 
+          "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))" 
+          "((qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))"] sorry
+  qed
   then have  "... 
        = (pw cs (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR k * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) 
        * ((qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" sorry
