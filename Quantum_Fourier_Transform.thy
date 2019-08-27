@@ -862,6 +862,15 @@ proof-
     using tensor_mat_is_assoc by auto
 qed
 
+lemma app_SWAP_all':
+  assumes "dim_row v = 2" and "dim_col v = 1"  
+      and "dim_row w = 2" and "dim_col w = 1" 
+      and "length xs = k-c-1" and "length ys = t"
+      and "\<forall>x \<in> set xs. dim_row x = 2" and "\<forall>y \<in> set ys. dim_row y = 2"
+      and "\<forall>x \<in> set xs. dim_col x = 1" and "\<forall>y \<in> set ys. dim_col y = 1"
+    shows "(SWAP_all (k-c-1) t) * ((pw xs (k-c-1)) \<Otimes> v \<Otimes> w \<Otimes> (pw ys t)) = ((pw xs (k-c-1)) \<Otimes> w \<Otimes> v \<Otimes> (pw ys t))"
+  using app_SWAP_all[of v w xs "k-c-1" ys t] assms  by auto
+
 (*Could go into generic mult function would be more confusing to understand though*)
 (*Takes a the position k of a qubit that should be swapped to the front and the number of remaining qubits t. If the 
 qubit is already at the front the Id matrix is applied
@@ -1027,6 +1036,106 @@ lemma app_fSWAP:
       and "length xs = (k-1)" and "length ys = m-k"
     shows "(fSWAP k (m-k)) * ((pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = v \<Otimes> (pw xs (k-1)) \<Otimes> (pw ys (m-k))" 
   using aux_app_fSWAP assms by simp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*"(fSWAP (Suc 0) t) = Id (t+1)" 
+| "(fSWAP (Suc k) t) = (fSWAP k (t+1)) * (SWAP_all (k-1) t)"*)
+
+lemma aux_app_fSWAP':
+  fixes k m::nat 
+  assumes "k\<ge>c+1" and "k\<ge>1" and "m>k" and "dim_row v = 2" and "dim_col v = 1" 
+    shows "\<forall>xs ys. (\<forall>x \<in> set xs. dim_row x = 2) \<and> (\<forall>y \<in> set ys. dim_row y = 2) \<and>
+           (\<forall>x \<in> set xs. dim_col x = 1) \<and> (\<forall>y \<in> set ys. dim_col y = 1) \<and>
+           length xs = (k-c-1) \<and> length ys = m-k \<longrightarrow> 
+           (fSWAP (k-c) (m-k)) * ((pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+          = v \<Otimes> (pw xs (k-c-1)) \<Otimes> (pw ys (m-k))" 
+proof(rule Nat.nat_induct_at_least[of "c+1" k])
+  show "k\<ge>c+1" using assms by auto
+next
+  show "\<forall>xs ys. (\<forall>x \<in> set xs. dim_row x = 2) \<and> (\<forall>y \<in> set ys. dim_row y = 2) \<and>
+           (\<forall>x \<in> set xs. dim_col x = 1) \<and> (\<forall>y \<in> set ys. dim_col y = 1) \<and>
+           length xs = ((c+1)-c-1) \<and> length ys = m-(c+1) \<longrightarrow> 
+           (fSWAP ((c+1)-c) (m-(c+1))) * ((pw xs ((c+1)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(c+1)))) 
+          = v \<Otimes> (pw xs ((c+1)-c-1)) \<Otimes> (pw ys (m-(c+1)))" 
+  proof(rule allI, rule allI, rule impI)
+    fix xs ys::"complex Matrix.mat list"
+    assume a0: "(\<forall>x \<in> set xs. dim_row x = 2) \<and> (\<forall>y \<in> set ys. dim_row y = 2) \<and>
+           (\<forall>x \<in> set xs. dim_col x = 1) \<and> (\<forall>y \<in> set ys. dim_col y = 1) \<and>
+           length xs = ((c+1)-c-1) \<and> length ys = m-(c+1)"
+    then have "(fSWAP 1 (m-c-1)) * ((pw xs 0) \<Otimes> v \<Otimes> (pw ys (m-(c+1)))) = Id (m-c-1+1) * ((pw xs 0) \<Otimes> v \<Otimes> (pw ys (m-(c+1))))"
+      using assms by auto
+    then have "(fSWAP 1 (m-c-1)) * ((pw xs 0) \<Otimes> v \<Otimes> (pw ys (m-(c+1)))) = Id (m-c-1+1) * (v \<Otimes> (pw ys (m-(c+1))))"
+      using a0 Id_left_tensor by auto
+    moreover have "dim_row (v \<Otimes> (pw ys (m-(c+1)))) = 2 * 2^(m-(c+1))" 
+      using assms pow_tensor_list_dim_row[of ys "(m-(c+1))" "2"] a0 by simp
+    moreover have "2 * 2^(m-(c+1)) = 2^(m-c-1+1)" by auto
+    ultimately have "(fSWAP 1 (m-c-1)) * ((pw xs 0) \<Otimes> v \<Otimes> (pw ys (m-(c+1)))) = (v \<Otimes> (pw ys (m-(c+1))))"
+      using Id_def assms a0 one_mat_def Id_mult_left by auto
+    then show "(fSWAP ((c+1)-c) (m-(c+1))) * ((pw xs ((c+1)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(c+1)))) 
+              = v \<Otimes> (pw xs ((c+1)-c-1)) \<Otimes> (pw ys (m-(c+1)))"
+      using Id_right_tensor a0 by auto
+  qed
+next
+  fix k::nat
+  assume a0: "k\<ge>c+1"
+  assume IH: "\<forall>xs ys. (\<forall>x \<in> set xs. dim_row x = 2) \<and> (\<forall>y \<in> set ys. dim_row y = 2) \<and>
+           (\<forall>x \<in> set xs. dim_col x = 1) \<and> (\<forall>y \<in> set ys. dim_col y = 1) \<and>
+           length xs = (k-c-1) \<and> length ys = m-k \<longrightarrow> 
+           (fSWAP (k-c) (m-k)) * ((pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+          = v \<Otimes> (pw xs (k-c-1)) \<Otimes> (pw ys (m-k))" 
+  show "\<forall>xs ys. (\<forall>x \<in> set xs. dim_row x = 2) \<and> (\<forall>y \<in> set ys. dim_row y = 2) \<and>
+           (\<forall>x \<in> set xs. dim_col x = 1) \<and> (\<forall>y \<in> set ys. dim_col y = 1) \<and>
+           length xs = ((Suc k)-c-1) \<and> length ys = m-(Suc k) \<longrightarrow> 
+           (fSWAP ((Suc k)-c) (m-(Suc k))) * ((pw xs ((Suc k)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) 
+          = v \<Otimes> (pw xs ((Suc k)-c-1)) \<Otimes> (pw ys (m-(Suc k)))" 
+  proof(rule allI, rule allI, rule impI)
+    fix xs ys::"complex Matrix.mat list"
+    assume a1: "(\<forall>x \<in> set xs. dim_row x = 2) \<and> (\<forall>y \<in> set ys. dim_row y = 2) \<and>
+           (\<forall>x \<in> set xs. dim_col x = 1) \<and> (\<forall>y \<in> set ys. dim_col y = 1) \<and>
+           length xs = ((Suc k)-c-1) \<and> length ys = m-(Suc k)"
+    have "(fSWAP ((Suc k)-c) (m-(Suc k))) * ((pw xs ((Suc k)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) 
+         = (fSWAP ((Suc k)-c-1) (m-(Suc k)+1)) * (SWAP_all (((Suc k)-c-1)-1) (m-(Suc k)))  * ((pw xs ((Suc k)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) "
+      using a0 SWAP_front.simps le_Suc_ex by fastforce
+    then have "(fSWAP ((Suc k)-c) (m-(Suc k))) * ((pw xs ((Suc k)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) 
+         = (fSWAP (k-c) (m-k)) * (SWAP_all (k-c-1) (m-(Suc k))) * ((pw xs (k-c)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) "
+      sorry
+    moreover have "\<exists>x. (pw xs (k-c)) = (pw xs ((k-c)-1)) \<Otimes> x \<and> dim_row x = 2 \<and> dim_col x = 1" sorry
+    moreover have "\<exists>x. (pw xs (k-c)) = (pw xs ((k-c)-1)) \<Otimes> x \<and> dim_row x = 2 \<and> dim_col x = 1 \<longrightarrow> 
+    (fSWAP ((Suc k)-c) (m-(Suc k))) * ((pw xs ((Suc k)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) 
+          = v \<Otimes> (pw xs ((Suc k)-c-1)) \<Otimes> (pw ys (m-(Suc k)))" sorry
+    ultimately show "(fSWAP ((Suc k)-c) (m-(Suc k))) * ((pw xs ((Suc k)-c-1)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) 
+          = v \<Otimes> (pw xs ((Suc k)-c-1)) \<Otimes> (pw ys (m-(Suc k)))" sorry
+  qed
+qed
+
+
+lemma app_fSWAP':
+  fixes k m c::nat 
+  assumes "k\<ge>c+1" and "k\<ge>1" and "m>k" and "dim_row v = 2" and "dim_col v = 1" 
+      and "(\<forall>x \<in> set xs. dim_row x = 2)" and "(\<forall>y \<in> set ys. dim_row y = 2)"
+      and "(\<forall>x \<in> set xs. dim_col x = 1)" and "(\<forall>y \<in> set ys. dim_col y = 1)" 
+      and "length xs = (k-c-1)" and "length ys = m-k"
+    shows "(fSWAP (k-c) (m-k)) * ((pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+          = v \<Otimes> (pw xs (k-c-1)) \<Otimes> (pw ys (m-k))" 
+  using aux_app_fSWAP' assms by auto
+
+
+
 
 lemma[simp]:
   fixes m k::nat
@@ -1256,7 +1365,7 @@ lemma ut1 [simp]:
 (*k is the index of the qubit that should be added to the binary fraction. c is the current qubit *)
 (*If this is applied to (qr 1 m m j)\<Otimes>...\<Otimes>(qr (c-1) m m j)\<Otimes>(qr ) *)
 definition CR_on_all::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR\<^sub>_ _ _" 75) where
-"CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) * Id (m-c)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) "
+"CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) * Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) "
 
 (*If I swap the kth qubit in front I also have to have qr c (k-1) instead of qr c k*)
 (*This def of CR_on_all appears correct now propagate it though. *)
@@ -1282,8 +1391,8 @@ lemma app_CR_on_all_wo_Id:
       and "(\<forall>x \<in> set xs. dim_col x = 1)" and "(\<forall>y \<in> set ys. dim_col y = 1)" 
       and "length xs = (k-1)" and "length ys = m-k"
   shows "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) * (Id (m-c))) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))
-        * ((qr c (k-1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
-        = (qr c k m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))"
+        * ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
+        = (qr c k m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))"
 proof-
   have "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) * (Id (m-c))) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))
         * ((qr c (k-1) m j) \<Otimes> (pw xs (k-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) 
