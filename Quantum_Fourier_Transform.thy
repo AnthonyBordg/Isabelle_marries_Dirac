@@ -1566,21 +1566,21 @@ definition CR_on_all::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> com
 "CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) "
 
 lemma CR_on_all_dim:
-  assumes "k-c\<ge>1" and "c\<ge>1" and "m>k"
+  assumes "k-c\<ge>1" and "c\<ge>1" and "m\<ge>k"
   shows "dim_row (CR_on_all k c m) = 2^m"
     and "dim_col (CR_on_all k c m) = 2^m"
 proof-
   have "dim_row (CR_on_all k c m) = dim_row (Id (c-1)) * dim_row ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)))"
     using CR_on_all_def by auto
   moreover have "2^(c-Suc 0) * (2 * 2^(k+(m-k)-c)) = (2::nat)^m" using assms 
-    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse less_imp_le_nat semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
+    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
   ultimately show "dim_row (CR_on_all k c m) = 2^m"
     using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
 next
   have "dim_col (CR_on_all k c m) = dim_col (Id (c-1)) * dim_col (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))"
     using CR_on_all_def by auto
   moreover have "2^(c-Suc 0) * (2 * 2^(k+(m-k)-c)) = (2::nat)^m" using assms 
-    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse less_imp_le_nat semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
+    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
   ultimately show "dim_col (CR_on_all k c m) = 2^m"
     using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
 qed
@@ -1844,31 +1844,31 @@ fun all_CR:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matr
 
 
 lemma all_CR_dim:
-  assumes "c<m" and "1 \<le> c"
-  shows "c + k < m \<longrightarrow> dim_row (aCR c k m) = 2^m \<and> dim_col (aCR c k m) = 2^m"
+  assumes "c\<le>m" and "1 \<le> c"
+  shows "c + k \<le> m \<longrightarrow> dim_row (aCR c k m) = 2^m \<and> dim_col (aCR c k m) = 2^m"
 proof(induction k)
-  show "c + 0 < m \<longrightarrow> dim_row (aCR c 0 m) = 2^m \<and> dim_col (aCR c 0 m) = 2^m"
+  show "c + 0 \<le> m \<longrightarrow> dim_row (aCR c 0 m) = 2^m \<and> dim_col (aCR c 0 m) = 2^m"
     using Id_def by auto
 next
   fix k
-  assume IH: "c + k < m \<longrightarrow> dim_row (aCR c k m) = 2^m \<and> dim_col (aCR c k m) = 2^m"
-  have "c + (Suc k) < m \<longrightarrow> dim_row (aCR c (Suc k) m) = 2^m"
+  assume IH: "c + k \<le> m \<longrightarrow> dim_row (aCR c k m) = 2^m \<and> dim_col (aCR c k m) = 2^m"
+  have "c + (Suc k) \<le> m \<longrightarrow> dim_row (aCR c (Suc k) m) = 2^m"
   proof
-    assume a0: "c + (Suc k) < m"
+    assume a0: "c + (Suc k) \<le> m"
     have "dim_row (aCR c (Suc k) m) = dim_row (CR_on_all (c+(Suc k)) c m)" by auto
-    moreover have " 1 \<le> c + Suc k - c \<and> 1 \<le> c \<and> c + Suc k < m" using assms a0 by auto
+    moreover have " 1 \<le> c + Suc k - c \<and> 1 \<le> c \<and> c + Suc k \<le> m" using assms a0 by auto
     ultimately show "dim_row (aCR c (Suc k) m) = 2^m" 
       using CR_on_all_dim[of "c+(Suc k)" c m] assms by auto
   qed
-  moreover have "c + (Suc k) < m \<longrightarrow> dim_col (aCR c (Suc k) m) = 2^m"
+  moreover have "c + (Suc k) \<le> m \<longrightarrow> dim_col (aCR c (Suc k) m) = 2^m"
   proof
-    assume a0: "c + (Suc k) < m"
+    assume a0: "c + (Suc k) \<le> m"
     have "dim_col (aCR c (Suc k) m) = dim_col (aCR c k m)" by auto
-    moreover have "c + k < m" using a0 by auto
+    moreover have "c + k \<le> m" using a0 by auto
     ultimately show "dim_col (aCR c (Suc k) m) = 2^m" 
       using CR_on_all_dim[of "c+(Suc k)" c m] assms IH by auto
   qed
-  ultimately show "c + (Suc k) < m \<longrightarrow> dim_row (aCR c (Suc k) m) = 2^m \<and> dim_col (aCR c (Suc k) m) = 2^m"
+  ultimately show "c + (Suc k) \<le> m \<longrightarrow> dim_row (aCR c (Suc k) m) = 2^m \<and> dim_col (aCR c (Suc k) m) = 2^m"
     by auto
 qed
 
@@ -1932,11 +1932,23 @@ lemma all_CR_app:
 
 (*Apply the H gate to the current qubit then apply R_2 to R_(m-c)*)
 definition all_gates_on_single_qubit:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("G _ _" 75)  where
- "G c m =  aCR c (m-c) m * (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))"  
+ "G c m = aCR c (m-c) m * (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))"  
 
 lemma G_dim:
+  fixes c m::nat
+  assumes "c\<le>m" and "c\<ge>1"  
   shows "dim_row (G c m) = 2^m"
-    and "dim_col (G c m) = 2^m" sorry
+    and "dim_col (G c m) = 2^m" 
+proof-
+  have "dim_row (G c m) = dim_row (aCR c (m-c) m )" using all_gates_on_single_qubit_def by auto
+  moreover have "c + (m - c) \<le> m" by (simp add: assms(1))
+  ultimately show "dim_row (G c m) = 2^m" using all_CR_dim[of c m "m-c"] assms by auto
+next
+  have "dim_col (G c m) = dim_col (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))" using all_gates_on_single_qubit_def by auto
+  moreover have "2^(c-1) * 2 * 2^(m-c) = (2::nat)^m" using assms(1) assms(2) by auto (*Put in aux_calculation*)
+  then show "dim_col (G c m) = 2^m" using Id_def by (simp add: H_without_scalar_prod calculation)
+qed
+
 
 lemma app_H_zero: (*Do again with k-1?*)
   assumes "((bin_rep m jd)!k) = 0"
@@ -2018,7 +2030,7 @@ lemma app_H:
     shows "H * v = (qr c c m jd)"  using  app_H_zero assms app_H_one by auto
 
 lemma app_H_all:
-  assumes "c\<ge>1" and "m>c" and "j < 2 ^ m" 
+  assumes "c\<ge>1" and "m\<ge>c" and "j < 2 ^ m" 
   shows "(Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
 = ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
 proof-
@@ -2083,11 +2095,42 @@ proof-
 qed
 
 
-lemma app_G:
-  assumes "c\<ge>1" and "m>c" and "j < 2 ^ m" 
+lemma app_G: (*Might be nicer to seperate th case m=c since (j\<Otimes> (m+1) (m-m+1-1) m j) is okay but conceptually not great.*)
+  fixes c m j::nat
+  assumes "c\<ge>1" and "m\<ge>c" and "j < 2 ^ m" 
   shows "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = ((pw [qr (nat i) m m j. i<-[1..c]] c) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
-proof-
+proof(rule disjE)
+  show "m>c \<or> m=c" using assms by auto
+next
+  assume a0: "m=c"
+  then have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = G m m * ((pw [qr (nat i) m m j. i<-[1..(m-1)]] (m-1)) \<Otimes> (j\<Otimes> m (m-m+1) m j))" by auto
+ then have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = (Id m * (Id (m-1) \<Otimes> H \<Otimes> Id (m-m))) * ((pw [qr (nat i) m m j. i<-[1..(m-1)]] (m-1)) \<Otimes> (j\<Otimes> m (m-m+1) m j))" 
+   using all_gates_on_single_qubit_def by auto
+  moreover have "dim_row (Id (m-1) \<Otimes> H \<Otimes> Id (m-m)) = 2^m" 
+    by (metis (no_types, lifting) H_without_scalar_prod Id_right_tensor One_nat_def Quantum.Id_def a0 assms(1) diff_self_eq_0 dim_row_mat(1) dim_row_tensor_mat index_one_mat(2) less_eq_Suc_le power_minus_mult)
+  ultimately have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = ((Id (m-1) \<Otimes> H \<Otimes> Id (m-m))) * ((pw [qr (nat i) m m j. i<-[1..(m-1)]] (m-1)) \<Otimes> (j\<Otimes> m (m-m+1) m j))" 
+    using Id_mult_left by auto
+  then have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = (pw [qr (nat i) m m j. i<-[1..(m-1)]] (m-1)) \<Otimes> (qr m m m j) \<Otimes> (j\<Otimes> (m+1) (m-m+1-1) m j)" 
+    using app_H_all[of m m j] assms by auto
+  moreover have "length  [qr (nat i) m m j. i<-[1..(m-1)]] = m-1" by simp
+  ultimately have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = (pw ([qr (nat i) m m j. i<-[1..int(m-1)]]@[qr m m m j]) ((m-1)+1)) \<Otimes> (j\<Otimes> (m+1) (m-m+1-1) m j)"
+    using pow_tensor_decomp_left a0 by auto
+  moreover have "[qr (nat i) m m j. i<-[1..(m-1)]]@[qr m m m j] = [qr (nat i) m m j. i<-[1..m]]"
+    using a0
+    by (metis (no_types, lifting) assms(1) linordered_nonzero_semiring_class.of_nat_mono list.simps(8) list.simps(9) map_append nat_int of_nat_1 of_nat_diff upto_rec2)
+  ultimately have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = ((pw [qr (nat i) m m j. i<-[1..m]] m) \<Otimes> (j\<Otimes> (m+1) (m-m+1-1) m j))" 
+    using assms by auto
+  then show "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
+      = ((pw [qr (nat i) m m j. i<-[1..c]] c) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))" using a0 by auto
+next
+  assume a0: "m>c"
   have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = (aCR c (m-c) m * (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))) * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))"
     using all_gates_on_single_qubit_def by auto
@@ -2099,7 +2142,7 @@ proof-
     using app_H_all assms by auto
   then have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c m m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
-    using all_CR_app assms by auto
+    using all_CR_app assms a0 by auto
   moreover have "length  [qr (nat i) m m j. i<-[1..(c-1)]] = c-1" by simp
   ultimately have "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = ((pw ([qr (nat i) m m j. i<-[1..(c-1)]]@[qr c m m j]) (c-1+1)) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
@@ -2210,79 +2253,95 @@ qed
 
 
 lemma pow_mult_decomp_G:
+  fixes k::nat
   assumes "k\<ge>1"
-  shows "(pm [G (nat i) m. i<-[1..(Suc k)]] (k+1)) = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
+  shows "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
 proof-
-  have "length [G (nat i) m. i<-[1..(Suc k)]] = k+1" sorry
-  moreover have "(\<forall>x \<in> set [G (nat i) m. i<-[1..(Suc k)]]. dim_row x = 2^m \<and> dim_col x = 2^m)" sorry
-  moreover have "2 \<le> k + 1" sorry
-  ultimately have "(pm [G (nat i) m. i<-[1..(Suc k)]] (k+1)) 
+  have "length [G (nat i) m. i<-[1..(Suc k)]] = k+1" by auto
+  moreover have "(\<forall>x \<in> set [G (nat i) m. i<-[1..(Suc k)]]. dim_row x = 2^m \<and> dim_col x = 2^m)" 
+    by (simp add: G_dim(1) G_dim(2))
+  moreover have "2 \<le> k + 1" 
+    using assms by linarith
+  ultimately have "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) 
       = (last [G (nat i) m. i<-[1..(Suc k)]]) * (pm (butlast [G (nat i) m. i<-[1..(Suc k)]]) (k+1-1))"  
     using pow_mult_decomp[of "k+1" "2^m"] assms by auto
-  moreover have "(last [G (nat i) m. i<-[1..(Suc k)]]) = G (nat (Suc k)) m " using assms sorry
-  then have "(pm [G (nat i) m. i<-[1..(Suc k)]] (k+1)) 
-      = (last [G (nat i) m. i<-[1..(Suc k)]]) * (pm (butlast [G (nat i) m. i<-[1..(Suc k)]]) k)" by auto 
+  moreover have "(last [G (nat i) m. i<-[1..(Suc k)]]) = G (nat (Suc k)) m " by (simp add: upto_rec2)
+  moreover have "(butlast [G (nat i) m. i<-[1..(Suc k)]]) = [G (nat i) m. i<-[1..k]]" by (simp add: upto_rec2) 
+  ultimately show "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) 
+      = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
+    by (metis add_diff_cancel_right' nat_int)
+qed
 
 
-lemma pow_mult_decomp:
-  fixes k m s::nat
-  assumes "k\<ge>2"
-  shows "\<forall>xs. length xs = k \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) 
-    \<longrightarrow> (pm xs k) = (last xs) * (pm (butlast xs) (k-1))" 
+
+lemma app_all_G: 
+  fixes k m j::nat
+  assumes "k\<ge>1" and "j<2^m" and "m\<ge>1" (*Make a special case for k=m*)
+  shows "k\<le>m \<longrightarrow> (pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
+      = ((pw [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))" 
+proof(rule Nat.nat_induct_at_least[of 1 k])
+  show "k\<ge>1" using assms by auto
+next
+  show "1\<le>m \<longrightarrow>(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
+      = ((pw [qr (nat i) m m j. i<-[1..int 1]] 1) \<Otimes> (j\<Otimes> (1+1) (m-1) m j))" 
+  proof
+    assume "1\<le>m" 
+    have "(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
+       = (G 1 m) * (j\<Otimes> 1 m m j)"
+     by auto
+    moreover have "(j\<Otimes> 1 m m j) = ((pw [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) \<Otimes> (j\<Otimes> 1 (m-1+1) m j))" 
+    proof-
+      have "(pw [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) = (Id 0)" by simp
+      moreover have "(j\<Otimes> 1 m m j) = (j\<Otimes> 1 (m-1+1) m j)" using assms by auto
+      ultimately show ?thesis using Id_left_tensor by auto
+    qed
+    moreover have "G 1 m * ((pw [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) \<Otimes> (j\<Otimes> 1 (m-1+1) m j))
+       = ((pw [qr (nat i) m m j. i<-[1..1]] 1) \<Otimes> (j\<Otimes> (1+1) (m-1) m j))"
+      using app_G[of 1 m j] assms by auto 
+    ultimately show "(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
+      = ((pw [qr (nat i) m m j. i<-[1..int 1]] 1) \<Otimes> (j\<Otimes> (1+1) (m-1) m j))"  by auto
+ qed
+next
+  fix k::nat
+  assume a0: "k\<ge>1"
+  assume IH: "k\<le>m \<longrightarrow>(pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
+            = ((pw [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))" 
+  show  "(Suc k)\<le>m \<longrightarrow> (pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+      = ((pw [qr (nat i) m m j. i<-[1..(Suc k)]] (Suc k)) \<Otimes> (j\<Otimes> ((Suc k)+1) (m-(Suc k)) m j))" 
+  proof
+    assume a1: "(Suc k)\<le>m"
+    then have "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+             = ((G (Suc k) m) * (pm [G (nat i) m. i<-[1..int k]] k)) * (j\<Otimes> 1 m m j)"
+      using a0 pow_mult_decomp_G[of k m] by auto
+    then have "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+            = (G (Suc k) m) * ((pm [G (nat i) m. i<-[1..int k]] k) * (j\<Otimes> 1 m m j))"
+    sorry
+    then have  "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+            = (G (Suc k) m) * ((pw [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))"
+      using IH a1 by auto
+    then show "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+            = ((pw [qr (nat i) m m j. i<-[1..int (Suc k)]] (Suc k)) \<Otimes> (j\<Otimes> ((Suc k)+1) (m-(Suc k)) m j))"
+      using app_G[of "Suc k" m j] assms a0 a1 by auto
+  qed
+qed
+
+
 
 abbreviation \<psi>\<^sub>1::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>1 m j \<equiv> pw [qr (nat k) m m j. k<-[1..m] ] m"
 
-(*Application of all R gates on a current qubit k*)
-
-
-lemma o2: 
-  fixes k m j::nat
-  assumes "k\<ge>1" and "k\<le>m"  and "j<2^m" and "m>1" (*Make a special case for k=m*)
-  shows "(pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
-      = ((pw [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))" 
-proof(rule Nat.nat_induct_at_least[of 1 k])
-  have "(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
-      = (G 1 m) * (j\<Otimes> 1 m m j)"
-    by auto
-  moreover have "(j\<Otimes> 1 m m j) = ((pw [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) \<Otimes> (j\<Otimes> 1 (m-1+1) m j))" 
-  proof-
-    have "(pw [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) = (Id 0)" by simp
-    moreover have "(j\<Otimes> 1 m m j) = (j\<Otimes> 1 (m-1+1) m j)" using assms by auto
-    ultimately show ?thesis using Id_left_tensor by auto
-  qed
-  moreover have "G 1 m * ((pw [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) \<Otimes> (j\<Otimes> 1 (m-1+1) m j))
-      = ((pw [qr (nat i) m m j. i<-[1..1]] 1) \<Otimes> (j\<Otimes> (1+1) (m-1) m j))"
-     using app_G[of 1 m j] assms by auto 
-  ultimately show "(pm [G (nat i) m. i<-[1..int 1]] (1-1)) * (j\<Otimes> 1 m m j)
-      = ((pw [qr (nat i) m m j. i<-[1..int 1]] 1) \<Otimes> (j\<Otimes> (1+1) (m-1) m j))" by auto
-next
-  fix k::nat
-  assume a0: "k\<ge>1"
-  assume IH: "(pm [G (nat i) m. i<-[1..k]] (k-1)) * (j\<Otimes> 1 m m j)
-            = ((pw [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))" 
-  then have "(pm [G (nat i) m. i<-[1..(Suc k)]] k) * (j\<Otimes> 1 m m j)
-            =
-  show "(pm [G (nat i) m. i<-[1..(Suc k)]] ((Suc k)-1)) * (j\<Otimes> 1 m m j)
-            = ((pw [qr (nat i) m m j. i<-[1..(Suc k)]] (Suc k)) \<Otimes> (j\<Otimes> ((Suc k)+1) (m-(Suc k)) m j))" 
-
-
-
-
-
-lemma app_G:
-  assumes "c\<ge>1" and "m>c" and "j < 2 ^ m" 
-  shows "G c m * ((pw [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
-      = ((pw [qr (nat i) m m j. i<-[1..c]] c) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
-
-
-
-
-
-
-
-
-
+theorem quantum_fourier_transform_tensor_prod_rep: (*Change name*)
+  fixes j m::nat
+  assumes "j < 2^m" and "m\<ge>1"
+  shows "(pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j) = \<psi>\<^sub>1 m j" 
+proof-
+  have "(pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j) = ((pw [qr (nat i) m m j. i<-[1..m]] m) \<Otimes> (j\<Otimes> (m+1) (m-m) m j))" 
+    using app_all_G assms by auto
+  moreover have "(j\<Otimes> (m+1) (m-m) m j) = (Id 0)" by simp
+  ultimately have "(pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j) = (pw [qr (nat i) m m j. i<-[1..m]] m)" 
+    by (simp add: Id_right_tensor)
+  then show ?thesis by auto
+qed
 
 
 
