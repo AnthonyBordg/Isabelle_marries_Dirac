@@ -82,6 +82,7 @@ lemma aux_calculation[simp]:
     and "c\<le>m \<and> k\<ge>c+1 \<and> m\<ge>(Suc k) \<longrightarrow> k - c - 1 + 2 + (m - Suc k) = m - c"
     and "1\<le>k-c \<and> m\<ge>k \<and> m\<ge>c \<longrightarrow> (2::nat) * 2^(k-c-1) * 2 * 2^(m-k) = 2^(m-c+1)" 
     and "1\<le>k-c \<and> m\<ge>k \<and> m\<ge>c \<longrightarrow> (2::nat)^(m-c) = 2 * 2^(k-Suc c) * 2^(m-k)"
+    and "k\<ge>c \<and> m\<ge>(Suc k) \<longrightarrow> (2::nat)^(k-c) * 2 * 2^(m-Suc k) = 2^(m-c)"
 proof-
   show "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat)^(k-Suc 0) * 2 * 2^(m-k) = 2^m"
     by (metis One_nat_def le_add_diff_inverse less_or_eq_imp_le not_less_eq_eq power_add power_commutes power_eq_if)
@@ -105,6 +106,9 @@ next
     by (metis (no_types, hide_lams) Nat.add_diff_assoc2 Nat.diff_diff_right Suc_diff_Suc diff_diff_cancel diff_le_self 
         less_imp_le_nat neq0_conv not_one_le_zero power_add semiring_normalization_rules(28) semiring_normalization_rules(7) 
         zero_less_diff)
+next
+  show "k\<ge>c \<and> m\<ge>(Suc k) \<longrightarrow> (2::nat)^(k-c) * 2 * 2^(m-Suc k) = 2^(m-c)"
+    by (metis (no_types, lifting) Nat.add_diff_assoc2 Suc_eq_plus1 add.assoc le_add_diff_inverse power_add semiring_normalization_rules(28))
 qed
 
 
@@ -646,9 +650,21 @@ next
     using ket_vec_def unit_vec_def zero_def by auto
 qed
 
+
+lemma bin_rep_even: 
+  fixes k m i::nat
+  assumes "(bin_rep k m)!(k-1) = 0" and "k \<ge> 1" and "m < 2^k" 
+  shows "even m" 
+proof-
+  have "bin_rep k m ! (k-1) = (m mod 2^(k-(k-1))) div 2^(k-1-(k-1))"
+    using bin_rep_index[of k m "k-1"] assms by auto
+  then have "0 = (m mod 2) div 2^0" using assms by auto
+  then show "even m" by auto
+qed
+
 lemma decomp_unit_vec_zero_right:
   fixes k::nat
-  assumes "k\<ge>1" and "m<2^k" and "even m" 
+  assumes "k\<ge>1" and "m<2^k" and "even m" (*Rather go back to even m?*)
   shows "|unit_vec (2^k) m\<rangle> = |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero" 
 proof
   fix i j
@@ -664,7 +680,7 @@ proof
   next
     assume a2: "i = m"
     then have "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero) $$ (i,j) = 1"
-      using ket_vec_def unit_vec_def a0 f0 assms by auto
+      using ket_vec_def unit_vec_def a0 f0 assms bin_rep_even by auto
     then show "( |unit_vec (2^k) m\<rangle> ) $$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero) $$ (i,j)"
       using ket_vec_def unit_vec_def f0 a2 by auto
   next
@@ -674,8 +690,10 @@ proof
       show "i div 2 = m div 2 \<or> i div 2 \<noteq> m div 2" by auto
     next
       assume "i div 2 = m div 2"
-      then have "i=m+1" using a2 assms(3) by auto
-      then have "i mod 2 = 1" using assms by auto
+      then have "i=m+1" using a2 assms bin_rep_even 
+        by (metis add.right_neutral add_Suc_right dvd_mult_div_cancel even_zero less_one linordered_semidom_class.add_diff_inverse odd_two_times_div_two_nat plus_1_eq_Suc)
+      then have "i mod 2 = 1" using assms bin_rep_even 
+        by (meson even_plus_one_iff mod_0_imp_dvd not_mod_2_eq_1_eq_0)
       then have "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero) $$ (i,j) = 0" using f1 zero_def f0 by auto
       then show "( |unit_vec (2^k) m\<rangle> )$$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero) $$ (i,j)"
         using ket_vec_def unit_vec_def f0 a2 by (smt assms(2) index_unit_vec(1) index_unit_vec(3) ket_vec_index)
@@ -762,11 +780,24 @@ next
     using ket_vec_def unit_vec_def one_def by auto
 qed
 
+lemma bin_rep_odd: 
+  fixes k m i::nat
+  assumes "(bin_rep k m)!(k-1) = 1" and "k \<ge> 1" and "m < 2^k" 
+  shows "odd m" 
+proof-
+  have "bin_rep k m ! (k-1) = (m mod 2^(k-(k-1))) div 2^(k-1-(k-1))"
+    using bin_rep_index[of k m "k-1"] assms by auto
+  then have "1 = (m mod 2) div 2^0" using assms by auto
+  then show "odd m" by auto
+qed
+
+
 lemma decomp_unit_vec_one_right:
   fixes k::nat
-  assumes "k\<ge>1" and "m<2^k" and "odd m" 
+  assumes "k\<ge>1" and "m<2^k" and "(bin_rep k m)!(k-1) = 1"
   shows "|unit_vec (2^k) m\<rangle> = |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one"
   sorry
+
 
 lemma div_of_div:
   fixes j n::nat
@@ -775,12 +806,6 @@ lemma div_of_div:
   by (metis One_nat_def Suc_1 assms diff_Suc_1 diff_self_eq_0 div_mult2_eq eq_iff less_imp_add_positive mult.commute not_less plus_1_eq_Suc power.simps(2))
 
 
-(*indices might be wrong, meddled with it*)
-lemma prefix_of_dec_even:
-  fixes j m k::nat
-  assumes "m \<ge> 1" and "k < m" and "(bin_rep m j)!k = 0" and "j < 2^m"
-  shows "even (j div 2^(m-(Suc k)))" (*j div ... takes substring of binary rep which ends with 0 \<rightarrow> even*)
-  oops
 
 lemma prefix_of_dec_odd:
   fixes j m k::nat
@@ -800,32 +825,37 @@ next
 next
   fix k 
   assume IH: "k \<le> m \<longrightarrow> (j\<Otimes> 1 k m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle>"
-    and asm: "k\<ge>1"
+    and a0: "k\<ge>1"
   show "(Suc k) \<le> m \<longrightarrow> (j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle>"
   proof
-    assume a0: "(Suc k) \<le> m"
+    assume a1: "(Suc k) \<le> m"
     show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle>"
     proof (rule disjE)
       show "(bin_rep m j)!k = 0 \<or> (bin_rep m j)!k = 1" 
-        using bin_rep_coeff a0 assms(1) less_eq_Suc_le by blast
+        using bin_rep_coeff a1 assms(1) less_eq_Suc_le by blast
     next 
-      assume a1: "(bin_rep m j)!k = 0"
+      assume a2: "(bin_rep m j)!k = 0"
       then have "(j\<Otimes> 1 (Suc k) m j) = (j\<Otimes> 1 k m j) \<Otimes> zero" 
-        using j_to_tensor_prod_def decomp_unit_vec_zero_right sorry
+        using j_to_tensor_prod_decomp_left_zero[of "k+1" m j 1]   
+        by (metis Suc_eq_plus1 add_diff_cancel_left' j_to_tensor_prod_decomp_right_zero)
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle> \<Otimes> zero" 
-        using IH a0 Suc_leD by presburger
+        using IH a1 Suc_leD by presburger
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-(Suc k)) div 2)\<rangle> \<Otimes> zero" 
-        using div_of_div[of "m-k" "j"] a0 by auto
-      moreover have "even (j div 2^(m-(Suc k)))" using a0 assms sorry 
+        using div_of_div[of "m-k" "j"] a1 by auto
+      moreover have " bin_rep (Suc k) (j div 2 ^ (m - Suc k)) ! (Suc k - 1) = 0" sorry
+      moreover have "even (j div 2^(m-(Suc k)))" using a1 assms sorry (*old approach*)
       ultimately show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle> " 
-        using decomp_unit_vec_zero_right[of "(Suc k)" "(j div 2^(m-(Suc k)))"] asm 
-        by (metis a0 assms(1) diff_Suc_1 le_SucI less_power_add_imp_div_less ordered_cancel_comm_monoid_diff_class.add_diff_inverse)
+        using decomp_unit_vec_zero_right[of "(Suc k)" "(j div 2^(m-(Suc k)))"] a0 a1 sorry
     next
       show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle> " sorry
     qed
   qed
 qed
 
+
+j_to_tensor_prod_decomp_left_zero:
+  assumes "l\<ge>1" and "(bin_rep m j)!(s-1) = 0"
+  shows "(j\<Otimes> s l m j) = zero \<Otimes> (j\<Otimes> (s+1) (l-1) m j)"
 lemma j_dec_as_unit:
   assumes "1 \<le> n" and "j < 2^n" 
   shows "(j\<Otimes> 1 n n j) = |unit_vec (2^n) j\<rangle>"
@@ -870,7 +900,7 @@ next
   show "dim_col (CR k)\<^sup>t = dim_col (CR k)" using controlled_phase_shift_def by simp
 qed
 
-lemma adjoint_of_controlled_phase_shift:
+lemma adjoint_of_controlled_phase_shift: 
   fixes k
   defines "CR_adjoint \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). if i = j then (if i = 3 then (exp (2*pi*-\<i>*1/2^k)) else 1) else 0)"
   shows "(CR k)\<^sup>\<dagger> = CR_adjoint"
@@ -1130,8 +1160,61 @@ abbreviation swapping_gate :: "complex Matrix.mat" ("SWAP") where  (*TODO: do no
                                 (if i=2 \<and> j=1 then 1 else 
                                 (if i=3 \<and> j=3 then 1 else 0))))"
 
+
+lemma transpose_of_swapping_gate:
+  shows "(SWAP)\<^sup>t = SWAP"
+proof
+  fix i j::nat
+  assume a0: "i < dim_row SWAP" and a1: "j < dim_col SWAP"
+  then have "i \<in> {0,1,2,3}" and "j \<in> {0,1,2,3}" by auto
+  then show  "(SWAP)\<^sup>t $$ (i,j) = SWAP $$ (i,j)" by auto    
+next
+  show "dim_row (SWAP)\<^sup>t = dim_row SWAP" by simp
+next
+  show "dim_col (SWAP)\<^sup>t = dim_col SWAP"  by simp
+qed
+
+lemma adjoint_of_SWAP: 
+  shows "(SWAP)\<^sup>\<dagger> = SWAP"
+proof
+  show "dim_row (SWAP\<^sup>\<dagger>) = dim_row SWAP" by simp
+next
+  show "dim_col (SWAP\<^sup>\<dagger>) = dim_col SWAP" by simp
+next
+  fix i j:: nat
+  assume "i < dim_row SWAP" and "j < dim_col SWAP"
+  then have "i \<in> {0,1,2,3}" and "j \<in> {0,1,2,3}" by auto
+  thus "SWAP\<^sup>\<dagger> $$ (i, j) = SWAP $$ (i, j)" 
+    using hermite_cnj_def by auto
+qed
+
 lemma SWAP_gate:
-  shows "gate 2 SWAP" sorry
+  shows "gate 2 SWAP" 
+proof
+  show "dim_row SWAP = 2\<^sup>2" by simp
+next
+  show "square_mat SWAP" by simp
+next
+  show "unitary SWAP" 
+  proof-
+    have "(SWAP)\<^sup>\<dagger> * SWAP = 1\<^sub>m (dim_col SWAP)"
+    proof
+      show "dim_row ((SWAP)\<^sup>\<dagger> * SWAP) = dim_row (1\<^sub>m (dim_col SWAP))" by simp
+    next
+      show "dim_col ((SWAP)\<^sup>\<dagger> * SWAP) = dim_col (1\<^sub>m (dim_col SWAP))" by simp
+    next
+      fix i j:: nat
+      assume "i < dim_row (1\<^sub>m (dim_col SWAP))" and "j < dim_col (1\<^sub>m (dim_col SWAP))"
+      then have "i \<in> {0,1,2,3}" and "j \<in> {0,1,2,3}" using controlled_phase_shift_def by auto 
+      then show "((SWAP)\<^sup>\<dagger> * SWAP) $$ (i,j) = 1\<^sub>m (dim_col SWAP) $$ (i, j)"
+        apply (auto simp add: one_mat_def times_mat_def)
+         apply (auto simp: scalar_prod_def controlled_phase_shift_def).
+    qed
+    then show ?thesis 
+      by (simp add: adjoint_of_SWAP unitary_def)
+  qed    
+qed
+
 
 lemma app_SWAP:
   assumes "dim_row v = 2" and "dim_col v = 1"
@@ -1280,12 +1363,26 @@ lemma Id_fSWAP_dim [simp]:
 
 lemma SWAP_unitary:
   assumes "k\<ge>1"
-  shows "unitary (fSWAP k t)" sorry
+  shows "unitary (fSWAP k t)" 
+proof-
+  have "(fSWAP k t)\<^sup>\<dagger> * (fSWAP k t) = 1\<^sub>m (dim_col (fSWAP k t))"
+    sorry
+  show ?thesis sorry
+qed
+
+
 
 lemma SWAP_front_gate: 
   assumes "k\<ge>1" (*This is important ^^ Otw inconsistency*)
-  shows "gate (k+t) (fSWAP k t)" sorry
-
+  shows "gate (k+t) (fSWAP k t)" 
+proof
+  show "dim_row (fSWAP k t) = 2^(k+t)" using assms by auto
+next
+  show "square_mat (fSWAP k t)" using assms by auto
+next
+  show "unitary (fSWAP k t)"
+    sorry
+qed
 
 lemma SWAP_front_hermite_cnj_dim:
   assumes "k\<ge>1"
@@ -1382,8 +1479,24 @@ next
         by (smt Nat.le_diff_conv2 a0 add.right_neutral add_Suc_right add_leD2 carrier_matI plus_1_eq_Suc)
       moreover have "(SWAP_all (k-c-1) (m-(Suc k))) \<in> carrier_mat (2^(m-c)) (2^(m-c))"
         using SWAP_all_dim[of "k-c-1" "m-(Suc k)"] aux_calculation(5) a1 assms by (smt a0 carrier_matI less_imp_le_nat)
-      moreover have "((pw xs (k-c)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) \<in> carrier_mat (2^(m-c)) (2^(m-c))" 
-        using pow_tensor_list_dim_row pow_tensor_list_dim_col assms a1 sorry
+      moreover have "((pw xs (k-c)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) \<in> carrier_mat (2^(m-c)) 1" 
+      proof
+        have "m \<ge> Suc k" using a1 by auto
+        moreover have "dim_row (pw xs (k-c)) = 2^(k-c)" 
+          using pow_tensor_list_dim_row[of xs "k-c"] a0 a1 by auto
+        moreover have "dim_row (pw ys (m-(Suc k))) = 2^(m-(Suc k))"  
+          using pow_tensor_list_dim_row[of ys "m-(Suc k)"] a0 a1 by auto
+        ultimately show "dim_row ((pw xs (k-c)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) = 2^(m-c)" 
+          using assms a0 a1 by auto
+      next
+        have "m \<ge> Suc k" using a1 by auto
+        moreover have "dim_col (pw xs (k-c)) = 1" 
+          using pow_tensor_list_dim_col[of xs "k-c"] a0 a1 by auto
+        moreover have "dim_col (pw ys (m-(Suc k))) = 1"  
+          using pow_tensor_list_dim_col[of ys "m-(Suc k)"] a0 a1 by auto
+        show "dim_col ((pw xs (k-c)) \<Otimes> v \<Otimes> (pw ys (m-(Suc k)))) = 1" 
+          using assms a0 a1 by (simp add: assms(4) assms(5) \<open>dim_col (pw ys m - Suc k) = 1\<close> calculation(2))
+      qed
       ultimately show ?thesis by auto
     qed
     moreover have "(SWAP_all (k-c-1) (m-(Suc k))) * ((pw (butlast xs) (k-c-1)) \<Otimes> (last xs) \<Otimes> v \<Otimes> (pw ys (m-(Suc k))))
@@ -1412,7 +1525,8 @@ next
     proof-
       have "(\<forall>x \<in> set (butlast xs). dim_row x = 2) \<and> (\<forall>x \<in> set (butlast xs). dim_col x = 1) " 
         using a1 by (simp add: in_set_butlastD)
-      moreover have "dim_row (last xs) = 2 \<and> dim_col (last xs) = 1" sorry
+      moreover have "dim_row (last xs) = 2 \<and> dim_col (last xs) = 1" 
+        by (metis Suc_diff_le Zero_not_Suc a0 a1 diff_diff_left last_in_set list.size(3))
       moreover have "(\<forall>y \<in> set ((last xs)#ys). dim_row y = 2) \<and> (\<forall>y \<in> set ((last xs)#ys). dim_col y = 1)"
         using a1 calculation by auto
       moreover have "length (butlast xs) = (k-c-1) \<and> length ((last xs)#ys) = m-k \<and> m>k" 
@@ -1714,9 +1828,15 @@ proof-
       using Id_fSWAP_dim[of k m c] assms using f0 by blast       
     moreover have "((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) \<in> carrier_mat (2^(m-c+1)) 1" 
     proof- 
-      have "dim_row ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 2^(m-c+1)" 
-        using pow_tensor_list_dim_row[of xs "(k-c-1)" 2]  pow_tensor_list_dim_row[of ys "m-k" 2] assms 
-          qr_def aux_calculation(6)[of k c m] sorry
+      have "dim_row (pw xs (k-c-1)) = 2^(k-c-1)"  
+        using pow_tensor_list_dim_row[of xs "(k-c-1)" 2] assms(12) assms(16) by blast
+      moreover have "dim_row (pw ys (m-k)) = 2^(m-k)" using pow_tensor_list_dim_row[of ys "m-k" 2] assms(13) assms(17) by blast
+      moreover have "2 * (2 ^ (m - k) * 2 ^ (k - Suc c)) = (2::nat) ^ (m - c)" 
+        using assms(3) assms (7) f0 
+        by (metis Nat.add_diff_assoc2 add.commute diff_diff_left le_SucI ordered_cancel_comm_monoid_diff_class.add_diff_inverse 
+            plus_1_eq_Suc power_add power_commutes semiring_normalization_rules(19) semiring_normalization_rules(28))
+      ultimately have "dim_row ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 2^(m-c+1)" 
+        using assms qr_def aux_calculation(6)[of k c m] by auto
       moreover have "dim_col ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 1" 
         using pow_tensor_list_dim_col[of xs "(k-c-1)"] pow_tensor_list_dim_col[of ys "m-k"]
           qr_def assms by auto
@@ -1798,7 +1918,20 @@ proof-
     have "dim_col (Id (c-1)) = dim_row (pw cs (c-1))" 
       using Id_def pow_tensor_list_dim_row[of cs "c-1" 2] assms by auto
     moreover have "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) 
-        = dim_row ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" sorry
+        = dim_row ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k)))" 
+    proof-
+      have "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))
+          = dim_col (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))" by auto
+      moreover have "dim_col (Id 1 \<Otimes> (fSWAP (k-c) (m-k))) = 2^(m-c+1)"
+        using Id_def fSWAP_dim assms by auto
+      moreover have " 2 ^ (k - Suc c) * (2 * 2 ^ (m - k)) = (2::nat) ^ (m - c) " 
+        using  assms(1) assms(3) assms(7) assms(8) aux_calculation(4)
+        by (smt Suc_1 Suc_diff_le add_leD1 cancel_comm_monoid_add_class.diff_cancel diff_Suc_1 le_neq_implies_less le_numeral_extra(4) less_imp_le_nat plus_1_eq_Suc semigroup_mult_class.mult.assoc zero_less_diff)
+      moreover have "dim_row ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) = 2^(m-c+1)"
+        using qr_def pow_tensor_list_dim_row[of xs "k-c-1" 2] pow_tensor_list_dim_row[of ys "m-k" 2] assms(18-20) 
+        assms(12-13) assms(9) calculation by auto
+      ultimately show ?thesis by auto
+    qed
     moreover have "dim_col (Id (c-1)) > 0" and "dim_col (pw cs (c-1)) > 0" and 
                   "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) > 0" and
                   "dim_col ((qr c (k-1) m j) \<Otimes> (pw xs (k-c-1)) \<Otimes> v \<Otimes> (pw ys (m-k))) > 0" sorry
@@ -1886,7 +2019,7 @@ proof-
       moreover have "(pw (j_to_list_bound n 1 m j) 1) = one \<longrightarrow> bin_rep m j ! (n - 1) = 1" 
         using j_to_tensor_bin_rep_one j_to_tensor_prod_def assms(1-2) assms by auto 
       moreover have " (\<forall>c\<in>set (map (\<lambda>i. qr (nat i) m m j) [1..int (c - 1)]). dim_row c = 2)"
-        sorry
+        using qr_def sorry
       moreover have 
         "(\<forall>c\<in>set (map (\<lambda>i. qr (nat i) m m j) [1..int (c - 1)]). dim_col c = 1)" using qr_def assms(7) sorry
       ultimately show ?thesis
@@ -2422,6 +2555,7 @@ qed
 abbreviation \<psi>\<^sub>1::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>1 m j \<equiv> pw [qr (nat k) m m j. k<-[1..m] ] m"
 
+(*Replace (j\<Otimes> 1 m m j) by |unit_vec (2^n) j\<rangle> *)
 theorem quantum_fourier_transform_tensor_prod_rep: (*Change name*)
   fixes j m::nat
   assumes "j < 2^m" and "m\<ge>1"
