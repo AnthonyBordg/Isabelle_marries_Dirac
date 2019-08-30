@@ -6,11 +6,9 @@ imports
 begin
 
 (*A lot of the proofs are ad hoc and by no means perfect. Feel free to revise them. Since the approach 
-was a bit risky my tactic was to first try out what could be achieved with it. Also I made a lot of 
-changes and just adapted proofs as fast as possible.*)
-
-(*There might be some errors later on (esp. false indices) as I revised the file and this changed a lot 
-of definitions.*)
+was a little bit risky my tactic was to first try out what could be achieved with it. Also I made a lot of 
+changes and just adapted proofs as fast as possible. This is why proofs might have unnecessary intermediate
+steps or are not needed. *)
 
 (*The way I named the variables in the theorem are inconsistent. Of course this does not matter for the
 proofs but for readability purposes it would be nice to use the same variable name if you talk about the 
@@ -25,12 +23,8 @@ will leave them in at first.*)
 *)
 
 
-(*Use the other defs right now to not worry about ket_vec_def all the time. Can switch to this easily later
-abbreviation zero where "zero \<equiv> unit_vec 2 0"
-abbreviation one where "one \<equiv> unit_vec 2 1" 
-When I used abbreviation there where strange errors so I changed this. Some proof might be shortable now
-Edit: It was so hard because I didn't fixed the types! Now it might work again with abbrev*)
 
+(*It would be also possible to use this: abbreviation zero where "zero \<equiv> unit_vec 2 0" *)
 abbreviation zero::"complex Matrix.mat" where "zero \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else 0))"
 abbreviation one::"complex Matrix.mat" where "one \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=1 then 1 else 0))" 
 
@@ -54,7 +48,7 @@ next
   show "dim_col ((Id 0) \<Otimes> A) = dim_col A" using one_mat_def Id_def by auto
 qed
 
-lemma Id_right_tensor:
+lemma Id_right_tensor: (*Could go into some other theory as well*)
   shows "A \<Otimes> (Id 0) = A" 
 proof
   fix i j
@@ -74,26 +68,25 @@ next
   show "dim_col (A \<Otimes> (Id 0)) = dim_col A" using one_mat_def Id_def by auto
 qed
 
-
-lemma Id_mult_left: 
+lemma Id_mult_left: (*Could go into some other theory as well*)
   assumes "dim_row A = 2^m"
   shows "Id m * A = A"
   using Id_def one_mat_def by (simp add: assms)
 
 lemma aux_calculation[simp]:
   fixes m k c::nat
-  shows "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat) ^ (k - Suc 0) * 2 * 2 ^ (m - k) = 2^m"
-    and "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat) ^ (m - Suc 0) = 2 ^ (k - Suc 0) * 2 ^ (m - k)"
-    and "m>k \<longrightarrow> Suc (m - Suc k) = m - k" 
+  shows "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat)^(k-Suc 0) * 2 * 2^(m-k) = 2^m"
+    and "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat)^(m-Suc 0) = 2^(k-Suc 0) * 2^(m-k)"
+    and "m>k \<longrightarrow> Suc (m-Suc k) = m - k" 
     and "1\<le>k-c \<and> m\<ge>k \<and> m\<ge>c \<longrightarrow> (2::nat)^(k-Suc c) * 2 * 2^(m-k) = 2^(m-c)" 
-    and "c\<le>m \<and> k\<ge>c+1 \<and> m\<ge>(Suc k) \<longrightarrow> k - c - 1 + 2 + (m - Suc k) = m-c"
+    and "c\<le>m \<and> k\<ge>c+1 \<and> m\<ge>(Suc k) \<longrightarrow> k - c - 1 + 2 + (m - Suc k) = m - c"
     and "1\<le>k-c \<and> m\<ge>k \<and> m\<ge>c \<longrightarrow> (2::nat) * 2^(k-c-1) * 2 * 2^(m-k) = 2^(m-c+1)" 
-    and "1\<le>k-c \<and> m\<ge>k \<and> m\<ge>c \<longrightarrow> (2::nat) ^ (m - c) = 2 * 2 ^ (k - Suc c) * 2 ^ (m - k)"
+    and "1\<le>k-c \<and> m\<ge>k \<and> m\<ge>c \<longrightarrow> (2::nat)^(m-c) = 2 * 2^(k-Suc c) * 2^(m-k)"
 proof-
-  show "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat) ^ (k - Suc 0) * 2 * 2 ^ (m - k) = 2^m"
+  show "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat)^(k-Suc 0) * 2 * 2^(m-k) = 2^m"
     by (metis One_nat_def le_add_diff_inverse less_or_eq_imp_le not_less_eq_eq power_add power_commutes power_eq_if)
 next
-  show "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat) ^ (m - Suc 0) = 2 ^ (k - Suc 0) * 2 ^ (m - k)"
+  show "m>k \<and> k\<ge>1 \<longrightarrow> (2::nat)^(m-Suc 0) = 2^(k-Suc 0) * 2^(m-k)"
     by (metis Nat.add_diff_assoc2 One_nat_def le_add_diff_inverse less_or_eq_imp_le power_add)
 next
   show "m>k \<longrightarrow> Suc (m - Suc k) = m - k" 
@@ -126,7 +119,6 @@ primrec j_to_list_bound :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow
 "j_to_list_bound s 0 m j = []" |
 "j_to_list_bound s (Suc l) m j = (if (bin_rep m j)!(s-1) = 0 then zero else one) # (j_to_list_bound (s+1) l m j)"
 
-(*TODO: Would exchanging the arguments help with induction problem?*) (*TODO: delete second argument?*)
 (*Takes a list and the number of elements in this list and gives out the tensor product of the elements*)
 fun pow_tensor_list :: "((complex Matrix.mat) list) \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("pw _ _" 75)  where
   "(pw [] 0) = (Id 0)"  |
@@ -547,8 +539,6 @@ proof-
 qed
 
 
-(*This was incredible hard, because I didn't fixed the type of zero and one (and the name was the same 
-as a lemma I needed :D ). Now it may be superflous*)
 lemma zero_neq_one_mat:
   shows "zero \<noteq> one" 
 proof-
@@ -594,7 +584,7 @@ next
     using j_to_tensor_prod_def pow_tensor_list_one by auto 
 qed
 
-lemma decomp_unit_vec_zero_left:
+lemma decomp_unit_vec_zero_left: (*This is not needed anymore -_- Might be useful for some other theory?*)
   fixes k::nat
   assumes "k\<ge>1" and "m<2^(k-1)"
   shows "|unit_vec (2^k) m\<rangle> = zero \<Otimes> |unit_vec (2^(k-1)) m\<rangle>" 
@@ -707,7 +697,7 @@ next
     using unit_vec_def zero_def ket_vec_def by simp
 qed
 
-lemma decomp_unit_vec_one_left:
+lemma decomp_unit_vec_one_left:  (*This is not needed anymore -_- Might be useful for some other theory?*)
   fixes k::nat
   assumes "k\<ge>1" and "m\<ge>2^(k-1) \<and> m<2^k"
   shows " |unit_vec (2^k) m\<rangle> = one \<Otimes> |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>"
@@ -772,30 +762,31 @@ next
     using ket_vec_def unit_vec_def one_def by auto
 qed
 
-
 lemma decomp_unit_vec_one_right:
   fixes k::nat
   assumes "k\<ge>1" and "m<2^k" and "odd m" 
   shows "|unit_vec (2^k) m\<rangle> = |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one"
   sorry
 
-lemma h1:
+lemma div_of_div:
   fixes j n::nat
   assumes "n\<ge>1"
   shows "j div 2^(n-1) div 2 = j div 2^n" 
   by (metis One_nat_def Suc_1 assms diff_Suc_1 diff_self_eq_0 div_mult2_eq eq_iff less_imp_add_positive mult.commute not_less plus_1_eq_Suc power.simps(2))
 
-lemma h2:
-  fixes j m k::nat
-  assumes "m \<ge> 1" and "k < m" and "(bin_rep m j)!k = 0 \<and> j < 2^m"
-  shows "even (j div 2^(m-(Suc k)))" (*j div ... takes substring of binary rep which ends with 0 \<rightarrow> even*)
-  sorry
 
-lemma h3:
+(*indices might be wrong, meddled with it*)
+lemma prefix_of_dec_even:
+  fixes j m k::nat
+  assumes "m \<ge> 1" and "k < m" and "(bin_rep m j)!k = 0" and "j < 2^m"
+  shows "even (j div 2^(m-(Suc k)))" (*j div ... takes substring of binary rep which ends with 0 \<rightarrow> even*)
+  oops
+
+lemma prefix_of_dec_odd:
   fixes j m k::nat
   assumes "(bin_rep m j)!k = 0" and "m \<ge> 1" and "j < 2^m" and "k < m"
   shows "odd (j div 2^(m-(Suc k)))"
-  sorry
+  oops
 
 
 lemma j_as_unit:
@@ -820,11 +811,11 @@ next
     next 
       assume a1: "(bin_rep m j)!k = 0"
       then have "(j\<Otimes> 1 (Suc k) m j) = (j\<Otimes> 1 k m j) \<Otimes> zero" 
-        using j_to_tensor_prod_decomp_zero by auto
+        using j_to_tensor_prod_def decomp_unit_vec_zero_right sorry
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle> \<Otimes> zero" 
         using IH a0 Suc_leD by presburger
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-(Suc k)) div 2)\<rangle> \<Otimes> zero" 
-        using h1[of "m-k" "j"] a0 by auto
+        using div_of_div[of "m-k" "j"] a0 by auto
       moreover have "even (j div 2^(m-(Suc k)))" using a0 assms sorry 
       ultimately show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle> " 
         using decomp_unit_vec_zero_right[of "(Suc k)" "(j div 2^(m-(Suc k)))"] asm 
@@ -866,7 +857,108 @@ definition qr::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Righ
               else (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (t-1) m jd)))*1/sqrt(2)))"
 
 
-(*Missing: CR is gate*)
+lemma transpose_of_controlled_phase_shift:
+  shows "(CR k)\<^sup>t = (CR k)"
+proof
+  fix i j::nat
+  assume a0: "i < dim_row (CR k)" and a1: "j < dim_col (CR k)"
+  then show  "(CR k)\<^sup>t $$ (i,j) = (CR k) $$ (i,j)" 
+    using controlled_phase_shift_def by (simp add: hermite_cnj_def)
+next
+  show "dim_row (CR k)\<^sup>t = dim_row (CR k)" using controlled_phase_shift_def by simp
+next
+  show "dim_col (CR k)\<^sup>t = dim_col (CR k)" using controlled_phase_shift_def by simp
+qed
+
+lemma adjoint_of_controlled_phase_shift:
+  fixes k
+  defines "CR_adjoint \<equiv> Matrix.mat 4 4 (\<lambda>(i,j). if i = j then (if i = 3 then (exp (2*pi*-\<i>*1/2^k)) else 1) else 0)"
+  shows "(CR k)\<^sup>\<dagger> = CR_adjoint"
+proof
+  fix i j:: nat
+  assume "i < dim_row CR_adjoint" and "j < dim_col CR_adjoint"
+  then have "i \<in> {0,1,2,3}" and "j \<in> {0,1,2,3}" using controlled_phase_shift_def CR_adjoint_def by auto
+  moreover have "cnj (exp (2 * complex_of_real pi * \<i> / 2 ^ k)) = exp (2 * complex_of_real pi * -\<i> / 2 ^ k)"
+  proof
+    show "Re (cnj (exp (2 * complex_of_real pi * \<i> / 2 ^ k))) = Re (exp (2 * complex_of_real pi * -\<i> / 2 ^ k))"
+    proof-
+      have "Re (cnj (exp (2 * complex_of_real pi * \<i> / 2 ^ k))) = Re (exp (2 * complex_of_real pi * \<i> / 2 ^ k))"
+        by auto
+      then have "Re (exp (2 * complex_of_real pi * \<i> / 2 ^ k)) = cos (2*pi*1/2^k)" 
+        by (smt cis.simps(1) cis_conv_exp mult.commute mult_2 of_real_add of_real_divide of_real_hom.hom_one of_real_power one_add_one times_divide_eq_left)
+      moreover have "Re (exp (2 * complex_of_real pi * -\<i> / 2 ^ k)) = cos (2*pi*1/2^k)" 
+        using cis.simps(1) cis_conv_exp mult.commute mult_2 of_real_add of_real_divide of_real_hom.hom_one of_real_power one_add_one times_divide_eq_left
+      proof- (*Replace this automated proof*)
+        have "\<forall>x0. - (x0::real) = - 1 * x0" by auto
+        moreover have f2: "\<i> * complex_of_real (- 1 * (2 * pi / 2 ^ k)) = 2 * complex_of_real pi / 2 ^ k * - \<i>"
+          by (simp add: mult.commute)
+        moreover have "2 * pi * 1 = 2 * pi"
+          by auto
+        ultimately show ?thesis
+           by (metis (no_types) cis.simps(1) cis_conv_exp cos_minus times_divide_eq_left)
+      qed
+      ultimately show ?thesis by auto
+    qed
+  next
+    show "Im (cnj (exp (2 * complex_of_real pi * \<i> / 2 ^ k))) = Im (exp (2 * complex_of_real pi * -\<i> / 2 ^ k))"
+    proof-
+      have "Im (cnj (exp (2 * complex_of_real pi * \<i> / 2 ^ k))) = -Im (exp (2 * complex_of_real pi * \<i> / 2 ^ k))" 
+        using cnj_def by auto
+      then have "Im (cnj (exp (2 * complex_of_real pi * \<i> / 2 ^ k))) = -sin(2*pi*1/2^k)" 
+      proof -
+        have "Im (cnj (exp (complex_of_real 2 * complex_of_real pi * \<i> / complex_of_real 2 ^ k))) = - Im (exp (\<i> * complex_of_real (2 * pi / 2 ^ k)))"
+          by (simp add: mult.commute)
+        then show ?thesis
+          by (metis cis.simps(2) cis_conv_exp mult.right_neutral of_real_numeral)
+      qed
+      moreover have "Im (exp (2 * complex_of_real pi * -\<i> / 2 ^ k)) = - sin(2*pi*1/2^k)" 
+        using cis.simps(1) cis_conv_exp mult.commute mult_2 of_real_add of_real_divide of_real_hom.hom_one of_real_power one_add_one 
+              times_divide_eq_left Im_exp by auto
+      ultimately show ?thesis by auto
+    qed
+  qed
+  ultimately show "(CR k)\<^sup>\<dagger> $$ (i, j) = CR_adjoint $$ (i, j)"
+    apply (auto simp add: hermite_cnj_def)
+    apply (auto simp add: controlled_phase_shift_def CR_adjoint_def).
+next
+  show "dim_row (CR k)\<^sup>\<dagger> = dim_row CR_adjoint" using controlled_phase_shift_def CR_adjoint_def by simp
+next
+  show "dim_col (CR k)\<^sup>\<dagger> = dim_col CR_adjoint" using controlled_phase_shift_def CR_adjoint_def by simp
+qed
+
+
+lemma controlled_phase_shift_is_gate:
+  shows "gate 2 (CR k)"
+proof
+  show "dim_row (CR k) = 2\<^sup>2" using controlled_phase_shift_def by auto
+next
+  show "square_mat (CR k)" by (simp add: controlled_phase_shift_def)
+next
+  show "unitary (CR k)"
+  proof-
+    have "(CR k)\<^sup>\<dagger> * (CR k) = 1\<^sub>m (dim_col (CR k))"
+    proof
+      show "dim_row ((CR k)\<^sup>\<dagger> * (CR k)) = dim_row (1\<^sub>m (dim_col (CR k)))" by simp
+    next
+      show "dim_col ((CR k)\<^sup>\<dagger> * (CR k)) = dim_col (1\<^sub>m (dim_col (CR k)))" by simp
+    next
+      fix i j:: nat
+      assume "i < dim_row (1\<^sub>m (dim_col (CR k)))" and "j < dim_col (1\<^sub>m (dim_col (CR k)))"
+      then have "i \<in> {0,1,2,3}" and "j \<in> {0,1,2,3}" using controlled_phase_shift_def by auto
+      moreover have "(CR k)\<^sup>\<dagger> = Matrix.mat 4 4 (\<lambda>(i,j). if i = j then (if i = 3 then (exp (2*pi*-\<i>*1/2^k)) else 1) else 0)"
+        using adjoint_of_controlled_phase_shift by auto     
+      moreover have "exp (- (2 * complex_of_real pi * \<i> / 2 ^ k)) * exp (2 * complex_of_real pi * \<i> / 2 ^ k) = 1" 
+        by (simp add: mult_exp_exp)
+      ultimately show "((CR k)\<^sup>\<dagger> * (CR k)) $$ (i,j) = 1\<^sub>m (dim_col (CR k)) $$ (i, j)"
+        apply (auto simp add: one_mat_def times_mat_def)
+         apply (auto simp: scalar_prod_def controlled_phase_shift_def).
+    qed
+    then show ?thesis 
+      by (metis cpx_mat_cnj_cnj cpx_mat_cnj_id cpx_mat_cnj_prod hermite_cnj_dim_col index_transpose_mat(2) transpose_cnj transpose_of_controlled_phase_shift unitary_def)
+  qed
+qed
+
+
 
 lemma exp_mult: 
   fixes r jd m s::nat
