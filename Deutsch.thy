@@ -8,6 +8,7 @@ Authors:
 theory Deutsch
 imports
   More_Tensor
+  Measurement
 begin
 
 (*Important: Isabelle build will require the package amsmath in root*)

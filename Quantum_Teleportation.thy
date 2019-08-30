@@ -9,6 +9,7 @@ theory Quantum_Teleportation
 imports 
   More_Tensor
   Basics
+  Measurement
 begin
 
 
