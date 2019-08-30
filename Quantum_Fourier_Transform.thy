@@ -2254,12 +2254,12 @@ qed
 
 lemma pow_mult_decomp_G:
   fixes k::nat
-  assumes "k\<ge>1"
+  assumes "k\<ge>1" and "k<m" 
   shows "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
 proof-
   have "length [G (nat i) m. i<-[1..(Suc k)]] = k+1" by auto
   moreover have "(\<forall>x \<in> set [G (nat i) m. i<-[1..(Suc k)]]. dim_row x = 2^m \<and> dim_col x = 2^m)" 
-    by (simp add: G_dim(1) G_dim(2))
+    using assms G_dim(1) G_dim(2) by auto
   moreover have "2 \<le> k + 1" 
     using assms by linarith
   ultimately have "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) 
@@ -2343,9 +2343,20 @@ proof-
   then show ?thesis by auto
 qed
 
+abbreviation \<psi>\<^sub>2::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
+  "\<psi>\<^sub>2 m j \<equiv> Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*(bip i m j)/2^m)/(sqrt(2)^m))"
 
 
 
 
+
+(*subsection \<open>The Bitwise Inner Product\<close> (* contribution by Hanna Lachnitt *)
+
+definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where 
+"bitwise_inner_prod n i j = (\<Sum>k\<in>{0..<n}. (bin_rep n i) ! k * (bin_rep n j) ! k)"
+
+abbreviation bip:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("_ \<cdot>\<^bsub>_\<^esub>  _") where
+"bip i n j \<equiv> bitwise_inner_prod n i j"
+*)
 
 end
