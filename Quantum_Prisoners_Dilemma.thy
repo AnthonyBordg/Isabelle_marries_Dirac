@@ -67,9 +67,9 @@ locale restricted_strategic_space = prisoner +
     and \<phi>\<^sub>A:: "real" 
     and \<theta>\<^sub>B:: "real"
     and \<phi>\<^sub>B:: "real"
-  assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> 2*pi"
+  assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> pi"
       and "0 \<le> \<phi>\<^sub>A \<and> \<phi>\<^sub>A \<le> 2*pi"
-      and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> 2*pi"
+      and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> pi"
       and "0 \<le> \<phi>\<^sub>B \<and> \<phi>\<^sub>B \<le> 2*pi"
 
 abbreviation (in restricted_strategic_space) U\<^sub>A :: "complex Matrix.mat" where
@@ -184,10 +184,10 @@ abbreviation (in restricted_strategic_space) \<psi>\<^sub>f :: "complex Matrix.m
 cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 + (-\<i>*sin(\<gamma>/2)) * (sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
-cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) +sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
+cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
 + (\<i>*sin(\<gamma>/2)) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
-(\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2)+ sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
+(\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 + cos(\<gamma>/2) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
 (-\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
@@ -230,6 +230,10 @@ definition (in restricted_strategic_space) alice_payoff :: "real" where
 
 definition (in restricted_strategic_space) bob_payoff :: "real" where
 "bob_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 0 * (prob10 \<psi>\<^sub>f)"
+
+(* The variables represent true values of \<gamma>, \<theta>\<^sub>A, \<phi>\<^sub>A, \<theta>\<^sub>B, \<phi>\<^sub>B respectively *)
+(* definition (in restricted_strategic_space) nash_eq :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool" where
+"nash_eq c ta pa tb pb \<equiv> True" *)
 
 
 section \<open>The Separable Case\<close>
@@ -388,7 +392,7 @@ lemma cmod_real_prod_squared:
   shows "(cmod (complex_of_real x * complex_of_real y))\<^sup>2 = x\<^sup>2 * y\<^sup>2"
   by (simp add: norm_mult power_mult_distrib)
 
-lemma quantum_reward_simp:
+lemma quantum_payoff_simp:
   fixes x y:: real
   shows "3 * (cmod (complex_of_real (sin x) * complex_of_real (cos y)))\<^sup>2 +
          (cmod (complex_of_real (cos x) * complex_of_real (cos y)))\<^sup>2 = 
@@ -401,7 +405,7 @@ proof-
     by (simp add: cmod_real_prod_squared power_mult_distrib)
 qed
 
-lemma quantum_reward_le_3: 
+lemma quantum_payoff_le_3: 
   fixes x y:: real
   shows "2 * (sin x)\<^sup>2 * (cos y)\<^sup>2 + (cos y)\<^sup>2 \<le> 3"
 proof-
@@ -421,7 +425,7 @@ lemma hidden_sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * (complex_of_real 
 lemma (in restricted_strategic_space) max_entangled_QQ: 
 (* both players play the quantum move in the maximally entangled case *)
   assumes "\<gamma> = pi/2"
-  shows "\<phi>\<^sub>A = pi*(1/2) \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
   using alice_payoff_def bob_payoff_def mat_of_cols_list_def sin_cos_squared_add_cpx
         cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
@@ -493,7 +497,7 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "alice_payoff \<le> 3"
-  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state quantum_reward_simp quantum_reward_le_3 
+  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state quantum_payoff_simp quantum_payoff_le_3 
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
 qed
 
@@ -536,8 +540,100 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "bob_payoff \<le> 3"
-  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state quantum_reward_simp quantum_reward_le_3 
+  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state quantum_payoff_simp quantum_payoff_le_3 
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+qed
+
+
+section \<open>The Unfair Strategy Case\<close>
+
+lemma half_sqrt_two_squared: "2 * (sqrt 2 / 2)\<^sup>2 = 1"
+  by (auto simp add: power2_eq_square)
+
+lemma entangled_MD_is_state: 
+  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[0, 0, complex_of_real (sqrt 2)/2, complex_of_real (sqrt 2)/2]] ! j ! i))"
+  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan half_sqrt_two_squared)
+
+lemma entangled_MC_is_state: 
+  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[0, 0, -(complex_of_real (sqrt 2)/2), complex_of_real (sqrt 2)/2]] ! j ! i))"
+  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan half_sqrt_two_squared)
+
+lemma (in restricted_strategic_space) max_entangled_MD:
+(* Alice plays the quantum miracle move, and Bob plays the classical defect move in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 1/2"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
+  show "alice_payoff = 3 \<and> bob_payoff = 1/2"
+    using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] entangled_MD_is_state
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+qed
+
+lemma (in restricted_strategic_space) max_entangled_MC:
+(* Alice plays the "miracle move", and Bob plays the classical cooperate move in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 1/2"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0"
+  show "alice_payoff = 3 \<and> bob_payoff = 1/2"
+    using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] entangled_MC_is_state
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+qed
+
+lemma hidden_sqrt_two_squared_cpx2:
+  fixes x :: complex
+  shows "(sqrt 2) * ((sqrt 2) * ((sqrt 2) * x)) / 2 = (sqrt 2) * x"
+  using sqrt_two_squared_cpx by auto
+
+lemma (in restricted_strategic_space) unfair_strategy_alice_payoff: 
+"3 \<le> (cos (\<theta>\<^sub>B/2 - pi/4))\<^sup>2 + 5 * (sin (\<theta>\<^sub>B/2 - pi/4))\<^sup>2"
+  sorry
+
+lemma (in restricted_strategic_space) unfair_strategy_bob_payoff: 
+"(cos (\<theta>\<^sub>B/2 - pi/4))\<^sup>2 * 2 \<le> 1"
+  sorry
+
+lemma unfair_strategy_vec_is_state:"state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j).
+[[0, 0, complex_of_real (sin (\<theta>\<^sub>B/2 - pi/4)), complex_of_real (cos (\<theta>\<^sub>B/2 - pi/4))]] ! j ! i))"
+  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
+
+lemma (in restricted_strategic_space) unfair_strategy_payoff_M\<^sub>A:
+(* Two players' payoffs in the maximally entangled case given that Alice plays the "miracle move" and Bob 
+only plays classical strategies*)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<longrightarrow> alice_payoff \<ge> 3 \<and> bob_payoff \<le> 1/2"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0"
+  have "\<psi>\<^sub>f $$ (0,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (1,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (2,0) = sin(\<theta>\<^sub>B/2 - pi/4)"
+  proof-
+    have "\<psi>\<^sub>f $$ (2,0) = cos(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2) - sin(\<theta>\<^sub>A/2)*cos(\<theta>\<^sub>B/2)"
+      using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+      by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
+    then show ?thesis
+      using sin_add[of "\<theta>\<^sub>B/2" "-\<theta>\<^sub>A/2"] sin_minus
+      by (simp add: asm)
+  qed
+  moreover have "\<psi>\<^sub>f $$ (3,0) = cos(\<theta>\<^sub>B/2 - pi/4)"
+  proof-
+    have "\<psi>\<^sub>f $$ (3,0) = cos(\<theta>\<^sub>A/2)*cos(\<theta>\<^sub>B/2) + sin(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2)"
+      using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+      by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
+    then show ?thesis
+      using cos_add[of "\<theta>\<^sub>B/2" "-\<theta>\<^sub>A/2"] sin_minus
+      by (simp add: asm)
+  qed
+  ultimately show "alice_payoff \<ge> 3 \<and> bob_payoff \<le> 1/2"
+    using alice_payoff_def bob_payoff_def mat_of_cols_list_def unfair_strategy_vec_is_state
+          unfair_strategy_alice_payoff unfair_strategy_bob_payoff
+    by auto
 qed
 
 (* 
