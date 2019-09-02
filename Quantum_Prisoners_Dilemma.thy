@@ -559,7 +559,7 @@ lemma entangled_MC_is_state:
   using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan half_sqrt_two_squared)
 
 lemma (in restricted_strategic_space) max_entangled_MD:
-(* Alice plays the quantum miracle move, and Bob plays the classical defect move in the maximally entangled case *)
+(* Alice plays the "miracle move", and Bob plays the classical defect move in the maximally entangled case *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 1/2"
 proof
@@ -571,7 +571,7 @@ proof
 qed
 
 lemma (in restricted_strategic_space) max_entangled_MC:
-(* Alice plays the "miracle move", and Bob plays the classical cooperate move in the maximally entangled case *)
+(* Alice plays the "miracle move", and Bob plays the classical defect move in the maximally entangled case *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 1/2"
 proof
@@ -579,6 +579,18 @@ proof
   show "alice_payoff = 3 \<and> bob_payoff = 1/2"
     using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
           exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] entangled_MC_is_state
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+qed
+
+lemma (in restricted_strategic_space) max_entangled_MH:
+(* Alice plays the "miracle move", and Bob plays the classical half move in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi/2 \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi/2"
+  show "alice_payoff = 1 \<and> bob_payoff = 1"
+    using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] unit_vec_4_is_state
     by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
 qed
 
