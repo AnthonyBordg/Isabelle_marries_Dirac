@@ -38,7 +38,7 @@ abbreviation (in prisoner) J :: "complex Matrix.mat" where
 abbreviation (in prisoner) \<psi>\<^sub>1 :: "complex Matrix.mat" where
 "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[cos(\<gamma>/2), 0, 0, \<i>*sin(\<gamma>/2)]]"
 
-lemma (in prisoner) 
+lemma (in prisoner) psi_one:
   shows "J * |unit_vec 4 0\<rangle> = \<psi>\<^sub>1"
 proof
   fix i j assume a0:"i < dim_row \<psi>\<^sub>1" and a1:"j < dim_col \<psi>\<^sub>1"      
@@ -134,7 +134,7 @@ lemma sum_4: (* idem *)
   shows "(\<Sum>k<4::nat. f(k)) = f 0 + f 1 + f 2 + f 3"
   using set_4_lessThan by simp
 
-lemma (in restricted_strategic_space)
+lemma (in restricted_strategic_space) psi_two:
   shows "(U\<^sub>A \<Otimes> U\<^sub>B) * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof
   fix i j
@@ -194,7 +194,7 @@ cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<the
 + cos(\<gamma>/2) * (sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 ]]"
 
-lemma (in restricted_strategic_space)
+lemma (in restricted_strategic_space) psi_f:
   shows "(J\<^sup>\<dagger>) * \<psi>\<^sub>2 = \<psi>\<^sub>f"
 proof
   fix i j assume a0:"i < dim_row \<psi>\<^sub>f" and a1:"j < dim_col \<psi>\<^sub>f"
@@ -212,6 +212,10 @@ next
   show "dim_col ((J\<^sup>\<dagger>) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>f" 
     using mat_of_cols_list_def by simp  
 qed 
+
+lemma (in restricted_strategic_space) equation_one:
+  shows "(J\<^sup>\<dagger>) * ((U\<^sub>A \<Otimes> U\<^sub>B) * (J * |unit_vec 4 0\<rangle>)) = \<psi>\<^sub>f"
+  using psi_one psi_two psi_f by auto
 
 abbreviation (in restricted_strategic_space) prob00 :: "complex Matrix.mat \<Rightarrow> real" where
 "prob00 v \<equiv> if state 2 v then (cmod (v $$ (0,0)))\<^sup>2 else undefined"
