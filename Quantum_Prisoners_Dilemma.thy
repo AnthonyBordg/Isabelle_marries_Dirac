@@ -598,11 +598,34 @@ proof
     by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
 qed
 
+(* This is the definition of M in equation (9) *)
+abbreviation M :: "complex Matrix.mat" where
+"M \<equiv> mat_of_cols_list 2 [[\<i> * sqrt(2)/2, -1 * sqrt(2)/2],
+                          [1 * sqrt(2)/2, -\<i> * sqrt(2)/2]]"
+
+lemma (in restricted_strategic_space) M_correct:
+  assumes "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2"
+  shows "U\<^sub>A = M"
+proof
+  show "dim_row U\<^sub>A = dim_row M" using mat_of_cols_list_def by simp
+  show "dim_col U\<^sub>A = dim_col M" using mat_of_cols_list_def by simp
+  fix i j assume a0:"i < dim_row M" and a1:"j < dim_col M"
+  then show "U\<^sub>A $$ (i,j) = M $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+      by (auto simp add: assms sin_45 cos_45)
+  qed
+qed
+
 lemma hidden_sqrt_two_squared_cpx2:
   fixes x :: complex
   shows "(sqrt 2) * ((sqrt 2) * ((sqrt 2) * x)) / 2 = (sqrt 2) * x"
   using sqrt_two_squared_cpx by auto
 
+(* These two lemmas are clearly not true *)
 lemma (in restricted_strategic_space) unfair_strategy_alice_payoff: 
 "3 \<le> (cos (\<theta>\<^sub>B/2 - pi/4))\<^sup>2 + 5 * (sin (\<theta>\<^sub>B/2 - pi/4))\<^sup>2"
   sorry
