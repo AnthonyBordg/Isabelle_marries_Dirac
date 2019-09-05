@@ -621,9 +621,33 @@ proof
 qed
 
 lemma hidden_sqrt_two_squared_cpx2:
-  fixes x :: complex
-  shows "(sqrt 2) * ((sqrt 2) * ((sqrt 2) * x)) / 2 = (sqrt 2) * x"
+  fixes x y :: complex
+  shows "(sqrt 2) * ((sqrt 2) * (x * y)) / 2 = x * y"
   using sqrt_two_squared_cpx by auto
+
+lemma (in restricted_strategic_space) unfair_strategy_no_benefit:
+(* Two players' payoffs in the maximally entangled case given that Alice plays a quantum move and Bob 
+plays a classical move with the same theta *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>A = \<theta>\<^sub>B \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>A = \<theta>\<^sub>B"
+  have "\<psi>\<^sub>f $$ (0,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (1,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (2,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (3,0) = 1"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] cos_sin_squared_add_cpx
+    by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
+  ultimately show "alice_payoff = 1 \<and> bob_payoff = 1"
+    using alice_payoff_def bob_payoff_def mat_of_cols_list_def unit_vec_4_is_state
+    by auto
+qed
 
 (* These two lemmas are clearly not true *)
 lemma (in restricted_strategic_space) unfair_strategy_alice_payoff: 
