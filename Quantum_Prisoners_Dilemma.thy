@@ -235,9 +235,23 @@ definition (in restricted_strategic_space) alice_payoff :: "real" where
 definition (in restricted_strategic_space) bob_payoff :: "real" where
 "bob_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 0 * (prob10 \<psi>\<^sub>f)"
 
-(* The variables represent true values of \<gamma>, \<theta>\<^sub>A, \<phi>\<^sub>A, \<theta>\<^sub>B, \<phi>\<^sub>B respectively *)
-(* definition (in restricted_strategic_space) nash_eq :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool" where
-"nash_eq c ta pa tb pb \<equiv> True" *)
+(* The variables represent values of \<gamma>, \<theta>\<^sub>A, \<phi>\<^sub>A, \<theta>\<^sub>B, \<phi>\<^sub>B respectively *)
+definition (in restricted_strategic_space) alice_optimal :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool" where
+"alice_optimal c pa ta pb tb pay \<equiv> ((\<gamma> = c \<and> \<theta>\<^sub>A = ta \<and> \<phi>\<^sub>A = pa \<and> \<theta>\<^sub>B = tb \<and> \<phi>\<^sub>B = pb) \<longrightarrow> (alice_payoff = pay)) \<and>
+                                   ((\<gamma> = c \<and> \<theta>\<^sub>B = tb \<and> \<phi>\<^sub>B = pb) \<longrightarrow> (alice_payoff \<le> pay))"
+
+definition (in restricted_strategic_space) bob_optimal :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool" where
+"bob_optimal c pa ta pb tb pay \<equiv> ((\<gamma> = c \<and> \<theta>\<^sub>A = ta \<and> \<phi>\<^sub>A = pa \<and> \<theta>\<^sub>B = tb \<and> \<phi>\<^sub>B = pb) \<longrightarrow> (bob_payoff = pay)) \<and>
+                                   ((\<gamma> = c \<and> \<theta>\<^sub>A = ta \<and> \<phi>\<^sub>A = pa) \<longrightarrow> (bob_payoff \<le> pay))"
+
+definition (in restricted_strategic_space) is_nash_eq :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool" where
+"is_nash_eq c pa ta pb tb \<equiv> \<exists> p1 p2. alice_optimal c pa ta pb tb p1 \<and> bob_optimal c pa ta pb tb p2"
+
+definition (in restricted_strategic_space) is_pareto_optimal :: 
+"real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool" where
+"is_pareto_optimal c pa ta pb tb p1 p2 \<equiv> (alice_payoff > p1 \<longrightarrow> bob_payoff < p2) \<and> 
+                                          (bob_payoff > p2 \<longrightarrow> alice_payoff < p1) \<and>
+((\<gamma> = c \<and> \<theta>\<^sub>A = ta \<and> \<phi>\<^sub>A = pa \<and> \<theta>\<^sub>B = tb \<and> \<phi>\<^sub>B = pb) \<longrightarrow> (alice_payoff = p1 \<and> bob_payoff = p2))"
 
 
 section \<open>The Separable Case\<close>
@@ -333,6 +347,32 @@ lemma (in restricted_strategic_space) separable_bob_payoff_D\<^sub>A:
   using bob_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
         sin_squared_le_one bob_vec_is_state
   by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+
+lemma (in restricted_strategic_space) separable_alice_optimal:
+  shows "alice_optimal 0 0 pi 0 pi 1"
+proof-
+  have "\<gamma> = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> alice_payoff = 1"
+    using separable_case_DD by simp
+  moreover have "\<gamma> = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> alice_payoff \<le> 1"
+    using separable_alice_payoff_D\<^sub>B by simp
+  ultimately show ?thesis
+    using alice_optimal_def by simp
+qed
+
+lemma (in restricted_strategic_space) separable_bob_optimal:
+  shows "bob_optimal 0 0 pi 0 pi 1"
+proof-
+  have "\<gamma> = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> bob_payoff = 1"
+    using separable_case_DD by simp
+  moreover have "\<gamma> = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> 1"
+    using separable_bob_payoff_D\<^sub>A by simp
+  ultimately show ?thesis
+    using bob_optimal_def by simp
+qed
+
+lemma (in restricted_strategic_space) separable_case_DD_is_nash_eq:
+  shows "is_nash_eq 0 0 pi 0 pi"
+  using separable_alice_optimal separable_bob_optimal is_nash_eq_def by auto
 
 
 section \<open>The Maximally Entangled Case\<close>
