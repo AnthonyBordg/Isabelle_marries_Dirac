@@ -470,13 +470,28 @@ proof-
     by (auto simp add: numeral_2_eq_2)
 qed
 
-lemma (in restricted_strategic_space) psi_two_is_state: 
+lemma (in restricted_strategic_space) psi_two_is_state:
   shows "state 2 \<psi>\<^sub>2"
 proof-
   have "state 2 ((U\<^sub>A \<Otimes> U\<^sub>B) * \<psi>\<^sub>1)"
     using psi_one_is_state U\<^sub>A\<^sub>B_is_gate by auto
   then show ?thesis
     using psi_two by simp
+qed
+
+(* This could be added to Quantum.thy *)
+lemma hermite_cnj_of_hermite_cnj:
+  fixes M :: "complex Matrix.mat"
+  shows "(M\<^sup>\<dagger>)\<^sup>\<dagger> = M"
+proof
+  show "dim_row ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_row M" by simp
+  show "dim_col ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_col M" by simp
+  fix i j assume a0:"i < dim_row M" and a1:"j < dim_col M"
+  then show "(M\<^sup>\<dagger>)\<^sup>\<dagger> $$ (i,j) = M $$ (i,j)"
+  proof-
+    show ?thesis
+      using hermite_cnj_def a0 a1 by auto
+  qed
 qed
 
 lemma (in restricted_strategic_space) J_cnj_is_gate:
@@ -486,7 +501,8 @@ proof
     using mat_of_cols_list_def by simp
   moreover show "square_mat (J\<^sup>\<dagger>)"
     using mat_of_cols_list_def by simp
-  moreover have "(J\<^sup>\<dagger>)\<^sup>\<dagger> = J" sorry
+  moreover have "(J\<^sup>\<dagger>)\<^sup>\<dagger> = J"
+    using hermite_cnj_of_hermite_cnj by auto
   ultimately show "unitary (J\<^sup>\<dagger>)"
     using mat_of_cols_list_def unitary_def J_cnj_times_J J_times_J_cnj by auto
 qed
@@ -541,65 +557,54 @@ definition (in restricted_strategic_space) is_pareto_optimal ::
 ((\<gamma> = c \<and> \<theta>\<^sub>A = ta \<and> \<phi>\<^sub>A = pa \<and> \<theta>\<^sub>B = tb \<and> \<phi>\<^sub>B = pb) \<longrightarrow> (alice_payoff = p1 \<and> bob_payoff = p2)) \<and>
 (\<gamma> = c) \<longrightarrow> ((alice_payoff > p1 \<longrightarrow> bob_payoff < p2) \<and> (bob_payoff > p2 \<longrightarrow> alice_payoff < p1))"
 
-
-section \<open>The Separable Case\<close>
-
-lemma select_index_2_0: (* To move in Measurement *)
-  shows "{x. select_index 2 0 x} = {2,3}"
-  using select_index_def by auto
-
-lemma select_index_2_0_inv: 
-  shows "{x. x < 4 \<and> \<not> select_index 2 0 x} = {0,1}" (* idem *)
-  using select_index_def by auto
-
-lemma select_index_2_1: 
-  shows "{x. select_index 2 (Suc 0) x} = {1,3}" (* idem *)
-proof
-  show "{1,3} \<subseteq> {x. select_index 2 (Suc 0) x}" 
-    using select_index_def by simp
-  show "{x. select_index 2 (Suc 0) x} \<subseteq> {1,3}"
-  proof
-    fix x assume "x \<in> {x. select_index 2 (Suc 0) x}"
-    then have "x \<in> {0,1,2,3} \<and> x mod 2 \<ge> 1" 
-      using select_index_def by auto
-    then show "x \<in> {1,3}" by auto
-  qed
+lemma (in restricted_strategic_space) sum_of_prob:
+  fixes v :: "complex Matrix.mat"
+  assumes "state 2 v"
+  shows "(prob00 v) + (prob11 v) + (prob01 v) + (prob10 v) = 1"
+proof-
+  have "(prob00 v) + (prob11 v) + (prob01 v) + (prob10 v) = 
+        (cmod (v $$ (0,0)))\<^sup>2 + (cmod (v $$ (1,0)))\<^sup>2 + (cmod (v $$ (2,0)))\<^sup>2 + (cmod (v $$ (3,0)))\<^sup>2"
+    using assms by auto
+  then show ?thesis
+    using state_def assms cpx_vec_length_def by (auto simp add: set_4_lessThan)
 qed
 
-lemma select_index_2_1_inv: (* idem *)
-  shows "{x. x < 4 \<and> \<not> select_index 2 (Suc 0) x} = {0,2}"
-  using select_index_def select_index_2_1 by auto
+lemma (in restricted_strategic_space) sum_payoff_le_6:
+  shows "alice_payoff + bob_payoff \<le> 6"
+proof-
+  have "alice_payoff + bob_payoff = 6 * (prob00 \<psi>\<^sub>f) + 2 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 5 * (prob10 \<psi>\<^sub>f)"
+    using alice_payoff_def bob_payoff_def psi_f_is_state by auto
+  then have "alice_payoff + bob_payoff \<le> 6 * ((prob00 \<psi>\<^sub>f) + (prob11 \<psi>\<^sub>f) + (prob01 \<psi>\<^sub>f) + (prob10 \<psi>\<^sub>f))"
+    using psi_f_is_state by (auto simp add: algebra_simps)
+  moreover have "(prob00 \<psi>\<^sub>f) + (prob11 \<psi>\<^sub>f) + (prob01 \<psi>\<^sub>f) + (prob10 \<psi>\<^sub>f) = 1"
+    using sum_of_prob[of "\<psi>\<^sub>f"] psi_f_is_state by auto
+  ultimately show ?thesis
+    by auto
+qed
 
-lemma unit_vec_4_0_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[1, 0, 0, 0]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
+lemma (in restricted_strategic_space) cooperate_is_pareto_optimal:
+  fixes c pa ta pb tb :: real
+  assumes "((\<gamma> = c \<and> \<theta>\<^sub>A = ta \<and> \<phi>\<^sub>A = pa \<and> \<theta>\<^sub>B = tb \<and> \<phi>\<^sub>B = pb) \<longrightarrow> (alice_payoff = 3 \<and> bob_payoff = 3))"
+  shows "is_pareto_optimal c pa ta pb tb"
+proof-
+  have "(alice_payoff > 3 \<longrightarrow> bob_payoff < 3) \<and> (bob_payoff > 3 \<longrightarrow> alice_payoff < 3)"
+    using sum_payoff_le_6 by auto
+  then show ?thesis
+    using assms is_pareto_optimal_def by auto
+qed
 
-lemma unit_vec_4_3_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[0, 0, 0, 1]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
 
-lemma minus_unit_vec_4_0_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[-1, 0, 0, 0]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
+section \<open>The Separable Case\<close>
 
 lemma (in restricted_strategic_space) separable_case_CC: (* both player defect *)
   assumes "\<gamma> = 0"
   shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
-  using alice_payoff_def bob_payoff_def mat_of_cols_list_def cos_sin_squared_add_cpx 
-        unit_vec_4_0_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state by auto
 
 lemma (in restricted_strategic_space) separable_case_DD: (* both player defect *)
   assumes "\<gamma> = 0"
   shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
-  using alice_payoff_def bob_payoff_def mat_of_cols_list_def cos_sin_squared_add_cpx 
-        unit_vec_4_3_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
-
-lemma cmod_squared_of_rotated_real:
-  fixes x y
-  shows "(cmod (exp (\<i>*complex_of_real y) * complex_of_real x))\<^sup>2 = x\<^sup>2"
-  by (simp add: norm_mult)
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state by auto
 
 lemma sin_squared_le_one:
   fixes x:: real
@@ -611,29 +616,17 @@ lemma cos_squared_le_one:
   shows "(cos x)\<^sup>2 \<le> 1"
   using abs_cos_le_one abs_square_le_1 by blast
 
-lemma alice_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[0,-exp (\<i>*complex_of_real \<phi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A/2)),0,complex_of_real (sin (\<theta>\<^sub>A/2))]] ! j ! i))"
-  using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_4_lessThan)
-
-lemma bob_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[0,0,-exp (\<i>*complex_of_real \<phi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B/2)),complex_of_real (sin (\<theta>\<^sub>B/2))]] ! j ! i))"
-  using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_4_lessThan)
-
 lemma (in restricted_strategic_space) separable_alice_payoff_D\<^sub>B: 
 (* Alice's payoff in the separable case given that Bob defects *)
   assumes "\<gamma> = 0" and "\<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
   shows "alice_payoff \<le> 1"
-  using alice_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
-        sin_squared_le_one alice_vec_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def assms sin_squared_le_one psi_f_is_state by auto
 
 lemma (in restricted_strategic_space) separable_bob_payoff_D\<^sub>A:
 (* Bob's payoff in the separable case given that Alice defects *)
   assumes "\<gamma> = 0" and "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi"
   shows "bob_payoff \<le> 1"
-  using bob_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
-        sin_squared_le_one bob_vec_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using bob_payoff_def assms sin_squared_le_one psi_f_is_state by auto
 
 lemma (in restricted_strategic_space) separable_alice_optimal:
   shows "alice_optimal 0 0 pi 0 pi 1"
@@ -663,11 +656,7 @@ lemma (in restricted_strategic_space) separable_case_DD_is_nash_eq:
 
 lemma (in restricted_strategic_space) separable_case_CC_is_pareto_optimal:
   shows "is_pareto_optimal 0 0 0 0 0"
-  sorry
-
-lemma (in restricted_strategic_space) separable_case_DD_is_not_pareto_optimal:
-  shows "\<not>is_pareto_optimal 0 0 pi 0 pi"
-  sorry
+  using cooperate_is_pareto_optimal separable_case_CC by auto
 
 
 section \<open>The Maximally Entangled Case\<close>
@@ -761,44 +750,30 @@ lemma sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * complex_of_real (sqrt 2)
 lemma hidden_sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * (complex_of_real (sqrt 2) * x) / 4 = x/2"
   using sqrt_two_squared_cpx by (auto simp add: algebra_simps)
 
-lemma (in restricted_strategic_space) max_entangled_QQ: 
-(* both players play the quantum move in the maximally entangled case *)
+lemma (in restricted_strategic_space) max_entangled_DD:
+(* both players defects in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state
+  by auto
+
+lemma (in restricted_strategic_space) max_entangled_QQ:
+(* both players play the move Q in the maximally entangled case *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
-  using alice_payoff_def bob_payoff_def mat_of_cols_list_def sin_cos_squared_add_cpx
-        cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_0_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def bob_payoff_def sin_cos_squared_add_cpx exp_of_half_pi exp_of_minus_half_pi psi_f_is_state
+  by auto
 
-lemma alice_quantum_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[-(complex_of_real (sin \<phi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A/2))), 
-  complex_of_real (sin (\<theta>\<^sub>A/2)), 
-  0,
-  complex_of_real (cos \<phi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A/2))]] ! j ! i))"
-proof-
-  have "(sin \<phi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A/2))\<^sup>2 + ((sin (\<theta>\<^sub>A/2))\<^sup>2 + (cos \<phi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A/2))\<^sup>2) =
-        ((sin \<phi>\<^sub>A)\<^sup>2 + (cos \<phi>\<^sub>A)\<^sup>2) * (cos (\<theta>\<^sub>A/2))\<^sup>2 + (sin (\<theta>\<^sub>A/2))\<^sup>2"
-    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
-  then show ?thesis
-    using state_def cpx_vec_length_def cmod_real_prod_squared sin_cos_squared_add 
-    by (auto simp add: set_4_lessThan)
-qed
+lemma (in restricted_strategic_space) max_entangled_DQ:
+(* Alice defects, and Bob plays the move Q in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 0 \<and> bob_payoff = 5"
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx exp_of_half_pi exp_of_minus_half_pi 
+        psi_f_is_state sqrt_two_squared_cpx
+  by (auto simp add: assms algebra_simps sin_45 cos_45)
 
-lemma bob_quantum_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[-(complex_of_real (sin \<phi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B/2))), 
-  0, 
-  complex_of_real (sin (\<theta>\<^sub>B/2)),
-  complex_of_real (cos \<phi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B/2))]] ! j ! i))" 
-proof-
-  have "(sin \<phi>\<^sub>B)\<^sup>2 * (cos (\<theta>\<^sub>B/2))\<^sup>2 + ((sin (\<theta>\<^sub>B/2))\<^sup>2 + (cos \<phi>\<^sub>B)\<^sup>2 * (cos (\<theta>\<^sub>B/2))\<^sup>2) =
-        ((sin \<phi>\<^sub>B)\<^sup>2 + (cos \<phi>\<^sub>B)\<^sup>2) * (cos (\<theta>\<^sub>B/2))\<^sup>2 + (sin (\<theta>\<^sub>B/2))\<^sup>2"
-    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
-  then show ?thesis
-    using state_def cpx_vec_length_def cmod_real_prod_squared sin_cos_squared_add 
-    by (auto simp add: set_4_lessThan)
-qed
-
-lemma (in restricted_strategic_space) max_entangled_alice_payoff_D\<^sub>B:
-(* Alice's payoff in the maximally entangled case given that Bob defects *)
+lemma (in restricted_strategic_space) max_entangled_alice_payoff_Q\<^sub>B:
+(* Alice's payoff in the maximally entangled case given that Bob plays the move Q *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff \<le> 3"
 proof
@@ -836,12 +811,12 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "alice_payoff \<le> 3"
-  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state quantum_payoff_simp quantum_payoff_le_3 
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def psi_f_is_state quantum_payoff_simp quantum_payoff_le_3 
+  by auto
 qed
 
-lemma (in restricted_strategic_space) max_entangled_bob_payoff_D\<^sub>A:
-(* Bob's payoff in the maximally entangled case given that Alice defects *)
+lemma (in restricted_strategic_space) max_entangled_bob_payoff_Q\<^sub>A:
+(* Bob's payoff in the maximally entangled case given that Alice plays the move Q *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> 3"
 proof
@@ -879,35 +854,64 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "bob_payoff \<le> 3"
-  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state quantum_payoff_simp quantum_payoff_le_3 
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using bob_payoff_def psi_f_is_state quantum_payoff_simp quantum_payoff_le_3 
+  by auto
 qed
 
 lemma (in restricted_strategic_space) max_entangled_DD_is_not_nash_eq:
   shows "\<not>is_nash_eq (pi/2) 0 pi 0 pi"
-  sorry
+proof
+  assume "is_nash_eq (pi/2) 0 pi 0 pi"
+  then have "\<exists>p2. bob_optimal (pi/2) 0 pi 0 pi p2"
+    using is_nash_eq_def by auto
+  then obtain p2 where "bob_optimal (pi/2) 0 pi 0 pi p2"
+    by blast
+  then have f0:"(\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> bob_payoff = p2) \<and>
+                (\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> p2)"
+    using bob_optimal_def by auto
+  then have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> p2 = 1"
+    using max_entangled_DD by auto
+  then have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> 1"
+    using f0 sorry
+  show False
+    sorry
+qed
+
+lemma (in restricted_strategic_space) max_entangled_alice_optimal:
+  shows "alice_optimal (pi/2) (pi/2) 0 (pi/2) 0 3"
+proof-
+  have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>A = (pi/2) \<and> \<theta>\<^sub>B = 0 \<and> \<phi>\<^sub>B = (pi/2) \<longrightarrow> alice_payoff = 3"
+    using max_entangled_QQ by simp
+  moreover have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>B = 0 \<and> \<phi>\<^sub>B = (pi/2) \<longrightarrow> alice_payoff \<le> 3"
+    using max_entangled_alice_payoff_Q\<^sub>B by simp
+  ultimately show ?thesis
+    using alice_optimal_def[of "(pi/2)" "(pi/2)" "0" "(pi/2)" "0" "3"] by auto
+qed
+
+lemma (in restricted_strategic_space) max_entangled_bob_optimal:
+  shows "bob_optimal (pi/2) (pi/2) 0 (pi/2) 0 3"
+proof-
+  have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>A = (pi/2) \<and> \<theta>\<^sub>B = 0 \<and> \<phi>\<^sub>B = (pi/2) \<longrightarrow> bob_payoff = 3"
+    using max_entangled_QQ by simp
+  moreover have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>A = (pi/2) \<longrightarrow> bob_payoff \<le> 3"
+    using max_entangled_bob_payoff_Q\<^sub>A by simp
+  ultimately show ?thesis
+    using bob_optimal_def[of "(pi/2)" "(pi/2)" "0" "(pi/2)" "0" "3"] by auto
+qed
 
 lemma (in restricted_strategic_space) max_entangled_QQ_is_nash_eq:
   shows "is_nash_eq (pi/2) (pi/2) 0 (pi/2) 0"
-  sorry
+  using max_entangled_alice_optimal max_entangled_bob_optimal is_nash_eq_def by auto
 
 lemma (in restricted_strategic_space) max_entangled_QQ_is_pareto_optimal:
   shows "is_pareto_optimal (pi/2) (pi/2) 0 (pi/2) 0"
-  sorry
+  using cooperate_is_pareto_optimal[of "(pi/2)" "0" "(pi/2)" "0" "(pi/2)"] max_entangled_QQ by auto
 
 
 section \<open>The Unfair Strategy Case\<close>
 
 lemma half_sqrt_two_squared: "2 * (sqrt 2 / 2)\<^sup>2 = 1"
   by (auto simp add: power2_eq_square)
-
-lemma entangled_MD_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[0, 0, complex_of_real (sqrt 2)/2, complex_of_real (sqrt 2)/2]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan half_sqrt_two_squared)
-
-lemma entangled_MC_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[0, 0, -(complex_of_real (sqrt 2)/2), complex_of_real (sqrt 2)/2]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan half_sqrt_two_squared)
 
 lemma (in restricted_strategic_space) max_entangled_MD:
 (* Alice plays the "miracle move", and Bob plays the classical defect move in the maximally entangled case *)
@@ -916,8 +920,8 @@ lemma (in restricted_strategic_space) max_entangled_MD:
 proof
   assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
   show "alice_payoff = 3 \<and> bob_payoff = 1/2"
-    using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
-          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] entangled_MD_is_state
+    using alice_payoff_def bob_payoff_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] psi_f_is_state
     by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
 qed
 
@@ -928,8 +932,8 @@ lemma (in restricted_strategic_space) max_entangled_MC:
 proof
   assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0"
   show "alice_payoff = 3 \<and> bob_payoff = 1/2"
-    using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
-          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] entangled_MC_is_state
+    using alice_payoff_def bob_payoff_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] psi_f_is_state
     by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
 qed
 
@@ -940,8 +944,8 @@ lemma (in restricted_strategic_space) max_entangled_MH:
 proof
   assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi/2"
   show "alice_payoff = 1 \<and> bob_payoff = 1"
-    using alice_payoff_def bob_payoff_def mat_of_cols_list_def sqrt_two_squared_cpx half_sqrt_two_squared
-          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] unit_vec_4_3_is_state
+    using alice_payoff_def bob_payoff_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] psi_f_is_state
     by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
 qed
 
@@ -992,7 +996,7 @@ proof
     using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] cos_sin_squared_add_cpx
     by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
   ultimately show "alice_payoff = 1 \<and> bob_payoff = 1"
-    using alice_payoff_def bob_payoff_def mat_of_cols_list_def unit_vec_4_3_is_state
+    using alice_payoff_def bob_payoff_def psi_f_is_state
     by auto
 qed
 
