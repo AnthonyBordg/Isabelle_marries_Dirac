@@ -869,12 +869,20 @@ proof
   then have f0:"(\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> bob_payoff = p2) \<and>
                 (\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> p2)"
     using bob_optimal_def by auto
-  then have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> p2 = 1"
-    using max_entangled_DD by auto
-  then have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> 1"
-    using f0 sorry
   show False
-    sorry
+  proof (cases "p2 = 1")
+    assume "p2 = 1"
+    then have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = 0 \<and> \<phi>\<^sub>B = pi/2 \<longrightarrow> False"
+      using f0 max_entangled_DQ by auto
+    show False
+      sorry
+  next
+    assume "p2 \<noteq> 1"
+    then have "\<gamma> = (pi/2) \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>B = pi \<and> \<phi>\<^sub>B = 0 \<longrightarrow> False"
+      using f0 max_entangled_DD by auto
+    then show False
+      sorry
+  qed
 qed
 
 lemma (in restricted_strategic_space) max_entangled_alice_optimal:
