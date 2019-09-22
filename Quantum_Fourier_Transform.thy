@@ -551,7 +551,7 @@ proof-
   ultimately show ?thesis  by (metis zero_neq_one)
 qed
 
-lemma j_to_tensor_bin_rep_zero:
+lemma j_to_tensor_bin_rep_zero: (*Needed?*)
   fixes n m j::nat
   assumes "n\<ge>1"
   shows "(j\<Otimes> n 1 m j) = zero \<longleftrightarrow> bin_rep m j ! (n-1) = 0"
@@ -569,7 +569,7 @@ next
 qed
 
 
-lemma j_to_tensor_bin_rep_one:
+lemma j_to_tensor_bin_rep_one: (*Needed?*) 
   fixes n m j::nat
   assumes "n\<ge>1" and "j < 2^m" and "n-1 < m" 
   shows "(j\<Otimes> n 1 m j) = one \<longleftrightarrow> bin_rep m j ! (n-1) = 1"
@@ -662,9 +662,34 @@ proof-
   then show "even m" by auto
 qed
 
+lemma bin_rep_div_even: 
+  assumes "bin_rep m j ! k = 0" and "j < 2^m" and "m\<ge>1" and "m-k\<ge>1"
+  shows "even (j div 2^(m-(k+1)))"
+proof-
+  have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = 0" 
+  proof-
+    have "(j div 2^(m-k-1)) < 2^m" using assms by (meson div_le_dividend le_trans not_less)
+    then have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = ((j div 2^(m-k-1)) mod 2^(m-(m-1))) div 2^(m-1-(m-1))" using assms bin_rep_index 
+      by (meson diff_less le_trans linorder_not_le not_one_le_zero zero_le)
+    then have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = (j div 2^(m-k-1)) mod 2 div 1" 
+      by (metis assms(3) cancel_comm_monoid_add_class.diff_cancel diff_diff_cancel power_0 power_one_right)
+    then have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = (j div 2^(m-k-1)) mod 2" by presburger
+    moreover have "(j div 2^(m-k-1)) mod 2 = j mod 2^(m-k) div 2^(m-k-1)" 
+      by (smt One_nat_def add.commute add.right_neutral assms(4) div_add_self1 le_simps(3) mod_div_trivial mod_mult2_eq mult.right_neutral mult_zero_right not_mod2_eq_Suc_0_eq_0 power_eq_0_iff power_minus_mult zero_neq_numeral)
+    moreover have "0 = (j mod 2^(m-k)) div 2^(m-1-k)"                                                                                                  
+      by (metis assms(1) assms(2) bin_rep_index div_less mod_by_1 mod_if neq0_conv not_less not_less_zero pos2 power_0 zero_less_diff zero_less_power)
+    ultimately show ?thesis 
+      by (metis cancel_ab_semigroup_add_class.diff_right_commute)
+  qed
+  moreover have "m \<ge> 1" using assms(3) by blast
+  moreover have "j div 2^(m-k-1) < 2^m" by (meson assms(2) div_le_dividend le_less_trans) 
+  ultimately show ?thesis using bin_rep_even by (metis diff_diff_left)
+qed
+
+
 lemma decomp_unit_vec_zero_right:
   fixes k::nat
-  assumes "k\<ge>1" and "m<2^k" and "even m" (*Rather go back to even m?*)
+  assumes "k\<ge>1" and "m<2^k" and "even m" 
   shows "|unit_vec (2^k) m\<rangle> = |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero" 
 proof
   fix i j
@@ -780,6 +805,7 @@ next
     using ket_vec_def unit_vec_def one_def by auto
 qed
 
+
 lemma bin_rep_odd: 
   fixes k m i::nat
   assumes "(bin_rep k m)!(k-1) = 1" and "k \<ge> 1" and "m < 2^k" 
@@ -792,12 +818,86 @@ proof-
 qed
 
 
+lemma bin_rep_div_odd: 
+  assumes "bin_rep m j ! k = 1" and "j < 2^m" and "m\<ge>1" and "m-k\<ge>1"
+  shows "odd (j div 2^(m-(k+1)))"
+proof-
+  have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = 1" 
+  proof-
+    have "(j div 2^(m-k-1)) < 2^m" using assms by (meson div_le_dividend le_trans not_less)
+    then have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = ((j div 2^(m-k-1)) mod 2^(m-(m-1))) div 2^(m-1-(m-1))" using assms bin_rep_index 
+      by (meson diff_less le_trans linorder_not_le not_one_le_zero zero_le)
+    then have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = (j div 2^(m-k-1)) mod 2 div 1" 
+      by (metis assms(3) cancel_comm_monoid_add_class.diff_cancel diff_diff_cancel power_0 power_one_right)
+    then have "(bin_rep m (j div 2^(m-k-1)))!(m-1) = (j div 2^(m-k-1)) mod 2" by presburger
+    moreover have "(j div 2^(m-k-1)) mod 2 = j mod 2^(m-k) div 2^(m-k-1)" 
+      by (smt One_nat_def add.commute add.right_neutral assms(4) div_add_self1 le_simps(3) mod_div_trivial mod_mult2_eq mult.right_neutral mult_zero_right not_mod2_eq_Suc_0_eq_0 power_eq_0_iff power_minus_mult zero_neq_numeral)
+    moreover have "1 = (j mod 2^(m-k)) div 2^(m-1-k)" using assms 
+      by (metis One_nat_def bin_rep_index div_by_0 div_le_dividend le_simps(3) zero_less_diff)                                                                                               
+    ultimately show ?thesis 
+      by (metis cancel_ab_semigroup_add_class.diff_right_commute)
+  qed
+  moreover have "m \<ge> 1" using assms(3) by blast
+  moreover have "j div 2^(m-k-1) < 2^m" by (meson assms(2) div_le_dividend le_less_trans) 
+  ultimately show ?thesis using bin_rep_odd by (metis diff_diff_left)
+qed
+
+
+
 lemma decomp_unit_vec_one_right:
   fixes k::nat
   assumes "k\<ge>1" and "m<2^k" and "(bin_rep k m)!(k-1) = 1"
   shows "|unit_vec (2^k) m\<rangle> = |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one"
-  sorry
-
+proof
+  fix i j
+  assume a0: "i < dim_row ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one)" 
+     and a1: "j < dim_col ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one)" 
+  then have f0: "i < 2^k \<and> j=0" 
+    by (metis (no_types, lifting) One_nat_def assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) dim_row_tensor_mat index_unit_vec(3) ket_vec_def less_eq_Suc_le less_one one_power2 power2_eq_square power_minus_mult)
+  then have f1: "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j) = |unit_vec (2^(k-1)) (m div 2)\<rangle> $$ (i div 2, j div 1) 
+        * one $$ (i mod 2, j mod 1)" using unit_vec_def assms ket_vec_def a0 by fastforce
+  show "( |unit_vec (2^k) m\<rangle> ) $$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j)"
+  proof (rule disjE)
+    show "i=m \<or> i\<noteq>m" by auto
+  next
+    assume a2: "i = m" 
+    then have "i div 2 = m div 2" using bin_rep_odd assms by blast
+    then have "|unit_vec (2^(k-1)) (m div 2)\<rangle> $$ (i div 2, j div 1) = 1" using a0 a1 unit_vec_def ket_vec_def by auto
+    moreover have "i mod 2 = 1" using bin_rep_odd assms odd_iff_mod_2_eq_one a2 by blast
+    ultimately have "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j) = 1"
+      using ket_vec_def unit_vec_def a0 f0 assms bin_rep_odd a2 by auto 
+    then show "( |unit_vec (2^k) m\<rangle> ) $$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j)"
+      using ket_vec_def unit_vec_def f0 a2 by auto
+  next
+    assume a2: "i \<noteq> m"
+    show "( |unit_vec (2^k) m\<rangle> ) $$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j)"
+    proof(rule disjE)
+      show "i div 2 = m div 2 \<or> i div 2 \<noteq> m div 2" by auto
+    next
+      assume "i div 2 = m div 2"
+      then have "i=m-1" using a2 assms bin_rep_odd 
+        by (metis dvd_mult_div_cancel even_zero less_one linordered_semidom_class.add_diff_inverse odd_two_times_div_two_nat plus_1_eq_Suc)
+      then have "i mod 2 = 0" using assms bin_rep_odd by (simp add: \<open>m < 2 ^ k\<close>)
+      then have "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j) = 0" using f1 zero_def f0 by auto
+      then show "( |unit_vec (2^k) m\<rangle> )$$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j)"
+        using ket_vec_def unit_vec_def f0 a2 by (smt assms(2) index_unit_vec(1) index_unit_vec(3) ket_vec_index)
+    next
+      assume "i div 2 \<noteq> m div 2"
+      then have "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j) = 0" 
+        using f1 ket_vec_def unit_vec_def assms 
+        by (smt diff_diff_cancel diff_le_self div_by_1 f0 index_unit_vec(1) index_unit_vec(3) ket_vec_index less_power_add_imp_div_less mult_eq_0_iff ordered_cancel_comm_monoid_diff_class.add_diff_inverse power_one_right)
+      then show "( |unit_vec (2^k) m\<rangle> )$$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j)"
+        using ket_vec_def unit_vec_def f0 a2 by (smt assms(2) index_unit_vec(1) index_unit_vec(3) ket_vec_index)
+    qed
+  qed
+next
+  show "dim_row ( |unit_vec (2^k) m\<rangle> ) = dim_row ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one)"
+    using unit_vec_def ket_vec_def 
+    by (smt One_nat_def assms(1) dim_row_mat(1) dim_row_tensor_mat index_unit_vec(3) less_eq_Suc_le power_minus_mult)
+next
+  show "dim_col ( |unit_vec (2^k) m\<rangle> ) = dim_col ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one)"
+    using unit_vec_def ket_vec_def by simp
+qed
 
 lemma div_of_div:
   fixes j n::nat
@@ -814,7 +914,7 @@ lemma prefix_of_dec_odd:
   oops
 
 
-lemma j_as_unit:
+lemma aux_j_as_unit: (*look up naming convention*)
   fixes k j m::nat
   assumes "j < 2^m" and "k\<ge>1"
   shows "k \<le> m \<longrightarrow> (j\<Otimes> 1 k m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle>"
@@ -842,28 +942,34 @@ next
         using IH a1 Suc_leD by presburger
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-(Suc k)) div 2)\<rangle> \<Otimes> zero" 
         using div_of_div[of "m-k" "j"] a1 by auto
-      moreover have " bin_rep (Suc k) (j div 2 ^ (m - Suc k)) ! (Suc k - 1) = 0" sorry
-      moreover have "even (j div 2^(m-(Suc k)))" using a1 assms sorry (*old approach*)
+      moreover have "even (j div 2^(m-(Suc k)))" using a1 assms bin_rep_div_even 
+        by (smt One_nat_def Suc_eq_plus1 Suc_leD Suc_le_eq a0 a2 le_trans zero_less_diff) 
       ultimately show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle> " 
-        using decomp_unit_vec_zero_right[of "(Suc k)" "(j div 2^(m-(Suc k)))"] a0 a1 sorry
+        using decomp_unit_vec_zero_right[of "(Suc k)" "(j div 2^(m-(Suc k)))"] a0 a1 
+        by (metis (no_types, lifting) add_diff_cancel_left' assms(1) le_SucI less_power_add_imp_div_less ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
     next
-      show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle> " sorry
+      assume a2: "(bin_rep m j)!k = 1"
+      then have "(j\<Otimes> 1 (Suc k) m j) = (j\<Otimes> 1 k m j) \<Otimes> one" 
+        using j_to_tensor_prod_decomp_left_one[of "k+1" m j 1]   
+        by (metis Suc_eq_plus1 add_diff_cancel_left' j_to_tensor_prod_decomp_right_one)
+      then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle> \<Otimes> one" 
+        using IH a1 Suc_leD by presburger
+      then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-(Suc k)) div 2)\<rangle> \<Otimes> one" 
+        using div_of_div[of "m-k" "j"] a1 by auto
+      moreover have "odd (j div 2^(m-(Suc k)))" using a1 assms bin_rep_div_odd 
+        by (smt Suc_eq_plus1 Suc_leD a0 a2 add_le_imp_le_diff le_trans plus_1_eq_Suc)
+      show "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^(Suc k)) (j div 2^(m-(Suc k)))\<rangle> " 
+        by (smt One_nat_def \<open>odd (j div 2 ^ (m - Suc k))\<close> a0 a1 add_diff_cancel_left' add_diff_cancel_right' assms(1) bin_rep_even bin_rep_index calculation cancel_ab_semigroup_add_class.diff_right_commute decomp_unit_vec_one_right div_by_1 le_SucI lessI less_power_add_imp_div_less linorder_not_less not_less_zero not_mod2_eq_Suc_0_eq_0 ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc power.simps(1) power_one_right)
     qed
   qed
 qed
 
+lemma j_as_unit:
+  fixes k j m::nat
+  assumes "j < 2^m" and "m\<ge>1"
+  shows "(j\<Otimes> 1 m m j) = |unit_vec (2^m) j\<rangle>" 
+  using aux_j_as_unit assms by auto
 
-j_to_tensor_prod_decomp_left_zero:
-  assumes "l\<ge>1" and "(bin_rep m j)!(s-1) = 0"
-  shows "(j\<Otimes> s l m j) = zero \<Otimes> (j\<Otimes> (s+1) (l-1) m j)"
-lemma j_dec_as_unit:
-  assumes "1 \<le> n" and "j < 2^n" 
-  shows "(j\<Otimes> 1 n n j) = |unit_vec (2^n) j\<rangle>"
-proof-
-  have "(j\<Otimes> 1 n n j) = |unit_vec (2^n) (j mod 2^n)\<rangle>" using assms j_as_unit by auto
-  moreover have "j mod 2^n = j" using assms by auto
-  ultimately show ?thesis by auto
-qed 
 
 
 (*------------------------------------------------------------------------------------------------*)
