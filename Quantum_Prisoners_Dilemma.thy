@@ -1012,56 +1012,6 @@ proof
     by auto
 qed
 
-(* The lemmas in the comments are not true *)
-(* lemma (in strategic_space) unfair_strategy_alice_payoff: 
-"3 \<le> (cos (\<theta>\<^sub>B/2 - pi/4))\<^sup>2 + 5 * (sin (\<theta>\<^sub>B/2 - pi/4))\<^sup>2"
-  sorry
-
-lemma (in strategic_space) unfair_strategy_bob_payoff: 
-"(cos (\<theta>\<^sub>B/2 - pi/4))\<^sup>2 * 2 \<le> 1"
-  sorry
-
-lemma unfair_strategy_vec_is_state:"state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j).
-[[0, 0, complex_of_real (sin (\<theta>\<^sub>B/2 - pi/4)), complex_of_real (cos (\<theta>\<^sub>B/2 - pi/4))]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
-
-lemma (in strategic_space) unfair_strategy_payoff_M\<^sub>A:
-(* Two players' payoffs in the maximally entangled case given that Alice plays the "miracle move" and Bob 
-only plays classical strategies*)
-  assumes "\<gamma> = pi/2"
-  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<longrightarrow> alice_payoff \<ge> 3 \<and> bob_payoff \<le> 1/2"
-proof
-  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0"
-  have "\<psi>\<^sub>f $$ (0,0) = 0"
-    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
-    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
-  moreover have "\<psi>\<^sub>f $$ (1,0) = 0"
-    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
-    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
-  moreover have "\<psi>\<^sub>f $$ (2,0) = sin(\<theta>\<^sub>B/2 - pi/4)"
-  proof-
-    have "\<psi>\<^sub>f $$ (2,0) = cos(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2) - sin(\<theta>\<^sub>A/2)*cos(\<theta>\<^sub>B/2)"
-      using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
-      by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
-    then show ?thesis
-      using sin_add[of "\<theta>\<^sub>B/2" "-\<theta>\<^sub>A/2"] sin_minus
-      by (simp add: asm)
-  qed
-  moreover have "\<psi>\<^sub>f $$ (3,0) = cos(\<theta>\<^sub>B/2 - pi/4)"
-  proof-
-    have "\<psi>\<^sub>f $$ (3,0) = cos(\<theta>\<^sub>A/2)*cos(\<theta>\<^sub>B/2) + sin(\<theta>\<^sub>A/2)*sin(\<theta>\<^sub>B/2)"
-      using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
-      by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
-    then show ?thesis
-      using cos_add[of "\<theta>\<^sub>B/2" "-\<theta>\<^sub>A/2"] sin_minus
-      by (simp add: asm)
-  qed
-  ultimately show "alice_payoff \<ge> 3 \<and> bob_payoff \<le> 1/2"
-    using alice_payoff_def bob_payoff_def mat_of_cols_list_def unfair_strategy_vec_is_state
-          unfair_strategy_alice_payoff unfair_strategy_bob_payoff
-    by auto
-qed *)
-
 
 (*
 Bibliography:
