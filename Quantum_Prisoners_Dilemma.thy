@@ -1077,7 +1077,7 @@ Bibliography:
     pages = {3077-3080},
       doi = {10.1103/PhysRevLett.83.3077},
    adsurl = {https://ui.adsabs.harvard.edu/abs/1999PhRvL..83.3077E},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}s
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 *)
 
