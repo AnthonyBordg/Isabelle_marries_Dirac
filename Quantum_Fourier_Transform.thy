@@ -8,17 +8,11 @@ begin
 section \<open>Quantum Fourier Tranform\<close>
 
 
-(*A lot of the proofs are ad hoc and by no means perfect. Feel free to revise them. Since the approach 
-was a little bit risky my tactic was to first try out what could be achieved with it. Also I made a lot of 
-changes and just adapted proofs as fast as possible. This is why proofs might have unnecessary intermediate
-steps or are not needed. *)
-
-(*The way I named the variables in the theorem are inconsistent. Of course this does not matter for the
-proofs but for readability purposes it would be nice to use the same variable name if you talk about the 
-same thing. E.g. sometimes j and sometimes jd is used, k stands for different things...*)
-
-(*There might be a lot of lemmas be able to be written without pw. But I am not sure at this point so I 
-will leave them in at first.*)
+(* Since I wanted to know early if the approach was feasible some proofs might have unnecessary intermediate
+steps or are not needed anymore. Also the way I named the variables in the theorems is inconsistent. 
+Of course this does not matter for the proofs themselves but for readability purposes it would be nice 
+to use the same variable name if you talk about the same thing. E.g. sometimes j and sometimes jd is used, 
+k stands for different things...*)
 
 (*It might be nice to change all assumptions of the form
    "(\<forall>x \<in> set xs. dim_row x = 2)" and "(\<forall>y \<in> set ys. dim_row y = 2)"
@@ -484,7 +478,7 @@ proof-
   ultimately show ?thesis  by (metis zero_neq_one)
 qed
 
-lemma j_to_tensor_bin_rep_zero: (*Needed?*)
+lemma j_to_tensor_bin_rep_zero: 
   fixes n m j::nat
   assumes "n\<ge>1"
   shows "(j\<Otimes> n 1 m j) = zero \<longleftrightarrow> bin_rep m j ! (n-1) = 0"
@@ -502,7 +496,7 @@ next
 qed
 
 
-lemma j_to_tensor_bin_rep_one: (*Needed?*) 
+lemma j_to_tensor_bin_rep_one: 
   fixes n m j::nat
   assumes "n\<ge>1" and "j < 2^m" and "n-1 < m" 
   shows "(j\<Otimes> n 1 m j) = one \<longleftrightarrow> bin_rep m j ! (n-1) = 1"
@@ -845,14 +839,6 @@ lemma div_of_div:
   assumes "n\<ge>1"
   shows "j div 2^(n-1) div 2 = j div 2^n" 
   by (metis One_nat_def Suc_1 assms diff_Suc_1 diff_self_eq_0 div_mult2_eq eq_iff less_imp_add_positive mult.commute not_less plus_1_eq_Suc power.simps(2))
-
-
-
-lemma prefix_of_dec_odd:
-  fixes j m k::nat
-  assumes "(bin_rep m j)!k = 0" and "m \<ge> 1" and "j < 2^m" and "k < m"
-  shows "odd (j div 2^(m-(Suc k)))"
-  oops
 
 
 lemma aux_j_as_unit: (*look up naming convention*)
@@ -2626,25 +2612,88 @@ qed
 abbreviation \<psi>\<^sub>1::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>1 m j \<equiv> pw [qr (nat k) m m j. k<-[1..m] ] m"
 
-(*Replace (j\<Otimes> 1 m m j) by |unit_vec (2^n) j\<rangle> *)
 theorem quantum_fourier_transform_tensor_prod_rep: (*Change name*)
   fixes j m::nat
   assumes "j < 2^m" and "m\<ge>1"
-  shows "(pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j) = \<psi>\<^sub>1 m j" 
+  shows "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle>  = \<psi>\<^sub>1 m j" 
 proof-
-  have "(pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j) = ((pw [qr (nat i) m m j. i<-[1..m]] m) \<Otimes> (j\<Otimes> (m+1) (m-m) m j))" 
+  have "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle>  = (pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j)"
+    using assms(1) assms(2) j_as_unit by auto
+  then have "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle> = ((pw [qr (nat i) m m j. i<-[1..m]] m) \<Otimes> (j\<Otimes> (m+1) (m-m) m j))" 
     using app_all_G assms by auto
   moreover have "(j\<Otimes> (m+1) (m-m) m j) = (Id 0)" by simp
-  ultimately have "(pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j) = (pw [qr (nat i) m m j. i<-[1..m]] m)" 
-    by (simp add: Id_right_tensor)
+  ultimately have "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle> = (pw [qr (nat i) m m j. i<-[1..m]] m)" by simp
   then show ?thesis by auto
 qed
 
+
+(*MISSING: Reverse order of qubits.*)
+
 abbreviation \<psi>\<^sub>2::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
-  "\<psi>\<^sub>2 m j \<equiv> Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*(bip i m j)/2^m)/(sqrt(2)^m))"
+  "\<psi>\<^sub>2 m jd \<equiv> Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^m)/(sqrt(2)^m))"
+
+definition tryo::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>real" where
+"tryo k m n = (\<Sum>i\<in>{1..n}. (bin_rep m k)!i/2^i)"
+
+lemma 
+  assumes "k < 2^m"
+  shows "tryo k m m = k"
+  sorry
+
+lemma
+  assumes "bin_rep m i ! (Suc n) = 0"
+  shows "(tryo (i div 2) m n) = (tryo i m (Suc n))"
+  sorry
+
+lemma
+  assumes "even i" and "i<2^m"
+  shows "bin_rep m i ! (m-1) = 0" sorry
 
 
 
+lemma
+  shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^k)/sqrt(2))"
+  sorry
+ 
+lemma 
+  fixes m jd ::nat
+  shows "(pw [qr (m-nat k) m m jd. k<-[1..m] ] m) 
+       = (pw [Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) 
+            else exp(complex_of_real (2*pi)*\<i>*jd/2^(nat k))*1/sqrt(2)) . k<-[1..m] ] m) "
+  sorry
+
+lemma
+  shows "(pw [qr (m-nat k) m m jd. k<-[1..n] ] n) 
+       = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(tryo i m n))/(sqrt(2)^n)))"
+proof(induction n)
+  fix n
+  assume IH: "(pw [qr (m-nat k) m m jd. k<-[1..n] ] n) 
+       = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(tryo i m n))/(sqrt(2)^n)))"
+  show "(pw [qr (m-nat k) m m jd. k<-[1..(Suc n)] ] (Suc n)) 
+       = (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(tryo i m (Suc n)))/(sqrt(2)^(Suc n))))"
+  proof-
+    have "(pw [qr (m-nat k) m m jd. k<-[1..(Suc n)] ] (Suc n)) 
+       =  (pw [qr (m-nat k) m m jd. k<-[1..n] ] n) \<Otimes> qr (m-nat (Suc n)) m m jd" sorry
+    have "(pw [qr (m-nat k) m m jd. k<-[1..(Suc n)] ] (Suc n)) 
+       = (pw [qr (m-nat k) m m jd. k<-[1..n] ] n) \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(Suc n))/sqrt(2)))"
+      sorry
+    have "(pw [qr (m-nat k) m m jd. k<-[1..(Suc n)] ] (Suc n)) 
+       = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(tryo i m n))/(sqrt(2)^n))) \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(Suc n))/sqrt(2)))"
+      sorry
+    have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(tryo i m n))/(sqrt(2)^n))) \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(Suc n))/sqrt(2)))
+=  (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(tryo i m (Suc n)))/(sqrt(2)^(Suc n))))" sorry
+(*Case even i*)
+    have "exp(2*pi*\<i>*jd*(tryo (i div 2) m n))/(sqrt(2)^n) * 1/sqrt(2) = exp(2*pi*\<i>*jd*(tryo i m (Suc n)))/(sqrt(2)^(Suc n))" sorry
+ (*Case odd i*)  
+    have "exp(2*pi*\<i>*jd*(tryo (i div 2) m n))/(sqrt(2)^n) * exp(2*pi*\<i>*jd/2^(Suc n))/sqrt(2) = exp(2*pi*\<i>*jd*(tryo i m (Suc n)))/(sqrt(2)^(Suc n))" sorry
+
+
+
+
+lemma
+  shows "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*((\<Sum>k\<in>{0..<i}. (bin_rep n i) ! k * (bin_rep n j) ! k))/2^m)/(sqrt(2)^m)) 
+      = (qr 1 m m j) \<Otimes> (Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*(bip i m j)/2^m)/(sqrt(2)^m)))"
+  sorry
 
 
 (*subsection \<open>The Bitwise Inner Product\<close> (* contribution by Hanna Lachnitt *)
