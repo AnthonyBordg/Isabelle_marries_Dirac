@@ -76,9 +76,9 @@ qed
 
 locale state =
   fixes n:: nat and v:: "complex mat"
-  assumes dim_col [simp]: "dim_col v = 1"
+  assumes is_column [simp]: "dim_col v = 1"
     and dim_row [simp]: "dim_row v = 2^n"
-    and length [simp]: "\<parallel>col v 0\<parallel> = 1"
+    and is_normal [simp]: "\<parallel>col v 0\<parallel> = 1"
 
 text\<open> 
 Below the natural number n codes for the dimension of the complex vector space whose elements of norm
@@ -750,7 +750,7 @@ next
   then have "\<parallel>col (A * v) 0\<parallel> = \<parallel>col v 0\<parallel>"
     using unitary_length assms gate_def state_def by simp
   thus"\<parallel>col (A * v) 0\<parallel> = 1"
-    using a2 state.length by simp
+    using a2 state.is_normal by simp
 qed
 
 
