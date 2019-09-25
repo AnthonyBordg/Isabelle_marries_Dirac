@@ -2803,7 +2803,24 @@ proof-
           using IH a1 by auto
         moreover have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))
                       = 1"
-          sorry
+        proof(rule disjE)
+          show "(bin_rep m jd)!(k-1) = 0 \<or> (bin_rep m jd)!(k-1) = 1" 
+            using bin_rep_coeff a0 a1 assms diff_less_Suc less_le_trans by blast
+        next
+          assume a2: "(bin_rep m jd)!(k-1) = 0"
+          then show ?thesis by auto
+        next
+          assume a2: "(bin_rep m jd)!(k-1) = 1"
+          then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))
+                      = exp(2*pi*\<i>*( 1/2^(m-(Suc k)+1)*real 2^(m-k)))" using a2 by auto
+          then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))
+                      = exp(2*pi*\<i>*( 1/2^(m-k)*real 2^(m-k)))" 
+            by (metis (no_types, lifting) One_nat_def Suc_diff_le a1 add.right_neutral add_Suc_right diff_Suc_Suc)
+          then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))
+                      = exp(2*pi*\<i>)"  
+            by (smt Suc_diff_le Suc_eq_plus1 Suc_leD a0 a1 add.right_neutral add_diff_cancel_right' diff_Suc_Suc h2 le_SucI mult.right_neutral of_nat_power of_real_hom.hom_one order_refl plus_1_eq_Suc power.simps(1))
+          then show "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k))) = 1"  by simp
+        qed
         ultimately show "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) = 1" 
           by auto
       qed
@@ -2811,7 +2828,19 @@ proof-
     ultimately have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp(2*pi*\<i>*(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)))"
       using assms by auto
     moreover have "exp(2*pi*\<i>*(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)))
-        = exp (complex_of_real (2*pi)*\<i>*(bf (k-1) (m-1) m jd))" sorry
+        = exp (2*pi*\<i>*(bf (k-1) (m-1) m jd))" 
+    proof-
+      have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
+           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!(i+1-1) * 1/2^(m-k+1)*real 2^(m-(i+1)))"
+        using sum.shift_bounds_cl_nat_ivl[of "\<lambda>i.(bin_rep m jd)!(i+1-1) * 1/2^(m-k+1)*real 2^(m-(i+1))" 
+              "k-1" 1 "m-1"] 
+        sorry
+      moreover have "1/2^(m-k+1)*real 2^(m-(i+1)) = 1/2^(i-(k-1)+1)" for i sorry 
+      ultimately have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
+           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!(i+1-1) * 1/2^(i-(k-1)+1))"
+        sorry
+      then show ?thesis using binary_fraction_def by auto
+    qed
     ultimately show ?thesis by auto
   qed
   ultimately show ?thesis by auto
