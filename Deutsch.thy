@@ -326,7 +326,7 @@ next
     by (simp add: Tensor.mat_of_cols_list_def)
 next
   show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
-    using H_on_ket_one_is_state H_on_ket_zero_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
+    using H_on_ket_one_is_state H_on_ket_zero_is_state state.is_normal tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
     H_on_ket_one H_on_ket_zero by force
 qed
 
