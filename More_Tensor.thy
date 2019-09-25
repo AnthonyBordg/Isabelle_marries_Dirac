@@ -248,7 +248,7 @@ lemma tensor_state2 [simp]:
   shows "state 2 (u \<Otimes> v)"
 proof
   show "dim_col (u \<Otimes> v) = 1"
-    using assms dim_col_tensor_mat state.dim_col by presburger
+    using assms dim_col_tensor_mat state.is_column by presburger
   show "dim_row (u \<Otimes> v) = 2\<^sup>2" 
     using assms dim_row_tensor_mat state.dim_row
     by (metis (mono_tags, lifting) power2_eq_square power_one_right)
@@ -334,7 +334,7 @@ lemma tensor_state [simp]:
   shows "state (m + n) (u \<Otimes> v)"
 proof
   show c1:"dim_col (u \<Otimes> v) = 1"
-    using assms dim_col_tensor_mat state.dim_col by presburger
+    using assms dim_col_tensor_mat state.is_column by presburger
   show c2:"dim_row (u \<Otimes> v) = 2^(m + n)" 
     using assms dim_row_tensor_mat state.dim_row by (metis power_add)
   have "(\<Sum>i<2^(m + n). (cmod (u $$ (i div 2 ^ n, 0) * v $$ (i mod 2 ^ n, 0)))\<^sup>2) = 
