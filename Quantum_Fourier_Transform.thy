@@ -2632,28 +2632,6 @@ qed
 abbreviation \<psi>\<^sub>2::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>2 m jd \<equiv> Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^m)/(sqrt(2)^m))"
 
-(*qr 1 n n j_dec is 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>1\<^sup>j\<^sup>2\<^sup>.\<^sup>.\<^sup>.\<^sup>j\<^sup>n|1\<rangle>) 
-  qr n n n j_dec is 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>n|1\<rangle>) *)
-(*"qr s t m jd \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) 
-              else (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (t-1) m jd)))*1/sqrt(2)))"*)
-
-lemma aux_pow_div:
-  fixes i m k::nat
-  assumes "i<m" and "m>k" and "i>k" and "k\<ge>1"
-  shows "2^(m-k+1)/2^(i-(k-1)+1) = 2^(m-i-1)" 
-  sorry
-
-lemma h1: 
-  assumes "m\<ge>k" and "k\<ge>1" and "m>i" and "i\<ge>k-1" 
-  shows "(2::nat)^(m-k+1)/2^(i-(k-1)+1) = 2^(m-i-1)"
-proof-
-  have "i - (k - 1) + 1 \<le> m - k + 1" 
-    using assms(3) by linarith
-  then have "(2::nat)^(m-k+1) / 2^(i-(k-1)+1) = 2^(m-k+1-(i-(k-1)+1))"
-    by (smt of_nat_1 of_nat_add of_nat_power one_add_one power_diff)
-  moreover have "m-k+1-(i-(k-1)+1) = m-i-1" using assms by auto
-  ultimately show ?thesis by auto
-qed 
 
 lemma h2: 
   assumes "m\<ge>k" and "k\<ge>1" and "m\<ge>i" and "k\<ge>i+1" 
@@ -2669,39 +2647,6 @@ proof-
   ultimately show ?thesis by auto
 qed 
 
-
-
-lemma h0a:
-  shows "exp(2^k * z) = exp z ^ (2^k)"
-proof(induction k)
-  show "exp(2^0 * z) = exp z ^ (2^0)" by auto
-next
-  fix k
-  assume IH: "exp(2^k * z) = exp z ^ (2^k)"
-  have "exp(2^(Suc k) * z) = exp(2*2^k*z)" by simp
-  then have "exp(2^(Suc k) * z) = exp(2^k*z)^2" using exp_double 
-    by (simp add: exp_double semigroup_mult_class.mult.assoc)
-  then have "exp(2^(Suc k) * z) = (exp z ^ (2^k))^2" using IH by auto
-  then show "exp(2^(Suc k) * z) = exp z ^ (2^(Suc k))"
-    by (metis power_Suc power_even_eq)
-qed
-
-declare[[show_types]]
-
-lemma h0b:
-  fixes k::nat
-  shows "exp(2*pi*\<i>*2^k) = 1" 
-proof-
-  have "exp(2*pi*\<i>*2^k) = exp(2*pi*\<i>)^(2^k)" by (simp add: h0a mult.commute)
-  then have "exp(2*pi*\<i>*2^k) = 1^(2^k)" by simp
-  then show ?thesis by auto
-qed
-
-value "(\<Sum>i\<in>{(1::nat)..<1}.i) = 0"
-
-lemma t1:
-  shows "(\<Sum>i\<in>{1..<k}.(2::nat)*A) = (2::nat)*(\<Sum>i\<in>{1..<k}.A)"
-  by simp
 
 lemma
   fixes k m jd::nat
@@ -2831,118 +2776,43 @@ proof-
         = exp (2*pi*\<i>*(bf (k-1) (m-1) m jd))" 
     proof-
       have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
-           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!(i+1-1) * 1/2^(m-k+1)*real 2^(m-(i+1)))"
-        using sum.shift_bounds_cl_nat_ivl[of "\<lambda>i.(bin_rep m jd)!(i+1-1) * 1/2^(m-k+1)*real 2^(m-(i+1))" 
-              "k-1" 1 "m-1"] 
-        sorry
-      moreover have "1/2^(m-k+1)*real 2^(m-(i+1)) = 1/2^(i-(k-1)+1)" for i sorry 
+          = (\<Sum>i\<in>{k-1+1..m-1+1}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))"
+        using assms(1) assms(3) by auto
+      then have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
+           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i* 1/2^(m-k+1)*real 2^(m-(i+1)))"
+        using sum.shift_bounds_cl_nat_ivl[of "\<lambda>i.(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)" 
+             "k-1" 1 "m-1"] 
+        by auto
+      then have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
+           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * (1/2^(m-k+1)*real 2^(m-(i+1))))"
+        by auto
+      moreover have "(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * (1/2^(m-k+1)*real 2^(m-(i+1))))
+                = (\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * (1/2^(i-(k-1)+1)))"
+      proof-
+        have "i\<in>{k-1..m-1} \<longrightarrow> 1/2^(m-k+1)*real 2^(m-(i+1)) = 1/2^(i-(k-1)+1)" for i 
+        proof
+          assume a0: "i\<in>{k-1..m-1}"
+          then have "(m::nat) - ((i::nat) + (1::nat)) \<le> m - (k::nat) + (1::nat)" 
+            using assms(3) diff_le_mono2 by auto
+          then have "(2::nat)^(m-k+1) * 1/2^(m-(i+1)) = 2^(m-k+1-(m-(i+1)))"
+            using power_diff[of "2::nat" "m-(i+1)" "m-k+1"] 
+            by (smt mult.right_neutral of_nat_1 of_nat_add of_nat_power one_add_one power_diff)
+          then have "(2::nat)^(m-k+1) * 1/2^(m-(i+1)) = 2^(i-(k-1)+1)" 
+            by (smt Nat.add_diff_assoc2 a0 add_diff_cancel_right assms(1) assms(3) atLeastAtMost_iff cancel_ab_semigroup_add_class.diff_right_commute diff_diff_cancel diff_le_mono2 le_add_diff_inverse2) 
+          then show "1/2^(m-k+1)*real 2^(m-(i+1)) = 1/2^(i-(k-1)+1)" 
+            by (metis (no_types, lifting) divide_divide_eq_right nat_mult_1_right of_nat_1 of_nat_add of_nat_power one_add_one times_divide_eq_left)
+        qed
+        then show ?thesis by auto
+      qed
       ultimately have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
-           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!(i+1-1) * 1/2^(i-(k-1)+1))"
-        sorry
+           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i* 1/2^(i-(k-1)+1))"
+        by auto
       then show ?thesis using binary_fraction_def by auto
     qed
     ultimately show ?thesis by auto
   qed
   ultimately show ?thesis by auto
 qed
-
-(*
-definition binary_fraction::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex" ("bf _ _") where
-"binary_fraction l k m j \<equiv> (\<Sum>i\<in>{l..k}. ((bin_rep m j)!i) /2^(i-l+1) )"*)
-
-
-
-    moreover have "i < k \<longrightarrow> exp(2*pi*\<i>*(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) = 1" for i 
-    proof
-      assume a0: "i < k"
-      show "exp(2*pi*\<i>*(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) = 1"
-      proof(rule disjE) (*Case distinction not needed? Everything falls into second case*)
-        show "(bin_rep m jd)!(i-1) = 0 \<or> (bin_rep m jd)!(i-1) = 1" 
-          using bin_rep_coeff assms a0 by auto
-      next
-        assume a1: "(bin_rep m jd)!(i-1) = 0"
-        then show ?thesis by auto
-      next
-        assume a1: "(bin_rep m jd)!(i-1) = 1"
-        then have "exp(2*pi*\<i>*(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) = exp(2*pi*\<i>*1/2^(m-k+1)*real 2^(m-i))" 
-          by auto
-        moreover have "exp(2*pi*\<i>*1/2^(m-k+1)*real 2^(m-i)) = exp(2*pi*\<i>*2^(k-i-1))" 
-        proof-
-          have "(m::nat) - (k::nat) + (1::nat) \<le> m - (i::nat)" 
-            using a0 assms(2) by linarith
-          then have "1/2^(m-k+1)*real 2^(m-i) = 2^(m-i-(m-k+1))" 
-            using h2 assms a0 by auto
-          then have "1/2^(m-k+1)*real 2^(m-i) = 2^(k-i-1)" 
-            by (smt a0 assms(2) assms(3) discrete h2 le_trans less_imp_le_nat of_nat_power)
-          then show ?thesis 
-            by (smt Groups.mult_ac(1) of_real_1 of_real_add of_real_divide of_real_mult of_real_power one_add_one times_divide_eq_right)
-        qed 
-        ultimately have "exp(2*pi*\<i>*(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) = exp(2*pi*\<i>*2^(k-i-1))" 
-          by auto
-        then show "exp(2*pi*\<i>*(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) =  1" using h0b by auto
-      qed
-    qed
-    then have "(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
-              = (\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))" sorry
-    then have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp(2*pi*\<i>*(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 2^(k-i-1)))" sorry
-    then have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp(2*pi*\<i>*(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * 2^(k-i-2)))" sorry
-
-    then have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp(2*pi*\<i>*bf (k-1) (m-1) m jd)" sorry
-
-
-  
-  lemma bin_rep_eq:
-  fixes n m:: nat 
-  assumes "n \<ge> 1" and "m \<ge> 0" and "m < 2^n" and "m \<ge> 0"
-  shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"
-  
-  (*have "bf (k-1) (m-1) m jd = jd/2^(m-k+1)"
-  proof-
-    have "2^(m-k+1) * bf (k-1) (m-1) m jd = (complex_of_real 2^(m-k+1)) * (\<Sum>i\<in>{k-1..m-1}. complex_of_real ((bin_rep m jd)!i /2^(i-(k-1)+1)) )"
-      using binary_fraction_def by auto
-    then have "2^(m-k+1) * bf (k-1) (m-1) m jd = (\<Sum>i\<in>{k-1..m-1}. complex_of_real (2^(m-k+1) * (bin_rep m jd)!i /2^(i-(k-1)+1)) )"
-      using sum_distrib_left[of "complex_of_real 2^(m-k+1)" " \<lambda>i. complex_of_real((bin_rep m jd)!i) /2^(i-(k-1)+1)" "{k-1..m-1}"] by auto
-    then have "2^(m-k+1) * bf (k-1) (m-1) m jd = (\<Sum>i\<in>{k-1..m-1}. complex_of_real (2^(m-k+1)/2^(i-(k-1)+1) * (bin_rep m jd)!i ) )"
-      by auto
-    then have "2^(m-k+1) * bf (k-1) (m-1) m jd = (\<Sum>i\<in>{k-1..m-1}. complex_of_real (real (2^(m-k+1))/2^(i-(k-1)+1) * (bin_rep m jd)!i ) )"
-      by auto
-    moreover have "i\<in>{k-1..m-1} \<longrightarrow> real (2^(m-k+1))/2^(i-(k-1)+1) = 2^(m-i-1)" for i
-    proof-
-      have "i\<in>{k-1..m-1} \<longrightarrow>  i < m" using assms(1) by force
-      moreover have "i\<in>{k-1..m-1} \<longrightarrow> k - 1 \<le> i" using atLeastAtMost_iff by blast
-      ultimately show ?thesis using h1[of k m i] assms by auto
-    qed
-    ultimately have "2^(m-k+1) * bf (k-1) (m-1) m jd = (\<Sum>i\<in>{k-1..m-1}. complex_of_real (2^(m-i-1) * (bin_rep m jd)!i ) )"
-      sorry
-    moreover have "(\<Sum>i\<in>{0..<k-1}. (2^(m-i-1) * (bin_rep m jd)!i)) = 0"
-    proof-
-      have "i\<in>{0..<k-1} \<longrightarrow> (2^(m-i-1) * (bin_rep m jd)!i) = 0" for i
-      proof(rule disjE)
-        show "(bin_rep m jd)!i = 0 \<or> (bin_rep m jd)!i = 1" sorry
-      next
-        assume a0: "(bin_rep m jd)!i = 0"
-        then show ?thesis by auto
-      next
-        assume a0: "(bin_rep m jd)!i = 1"
-        then have "i\<in>{0..<k-1} \<longrightarrow> (2^(m-i-1) * (bin_rep m jd)!i) = 2^(m-i-1)" by auto
-        then have "i\<in>{0..<k-1} \<longrightarrow> (2^(m-i-1) * (bin_rep m jd)!i) = 2^(m-i-1)" by auto 
-
-
-    ultimately have "2^(m-k+1) * bf (k-1) (m-1) m jd = (\<Sum>i\<in>{0..m-1}. ((bin_rep m jd)!i) * 2^(m-i-1))" 
-      sorry
-    then have "2^(m-k+1) * bf (k-1) (m-1) m jd = (\<Sum>i\<in>{0..<m}. ((bin_rep m jd)!i) * 2^(m-i-1))" 
-      sorry
-    then have "2^(m-k+1) * bf (k-1) (m-1) m jd = jd"
-      using bin_rep_eq sorry
-    then show ?thesis sorry
-  qed
-*)
-
-
-(* bin_rep_eq:
-  fixes n m:: nat 
-  assumes "n \<ge> 1" and "m \<ge> 0" and "m < 2^n" and "m \<ge> 0"
-  shows "m = (\<Sum>i<n. bin_rep n m ! i * 2^(n-1-i))"*)
 
 
 definition tryo::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>real" where
