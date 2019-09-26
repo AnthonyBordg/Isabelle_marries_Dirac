@@ -2744,7 +2744,7 @@ qed
 
 
 
-lemma
+lemma qr_different_rep:
   fixes k m jd::nat
   assumes "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
   shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))" 
@@ -2799,6 +2799,97 @@ proof-
   ultimately show ?thesis by auto
 qed
 
+lemma qr_different_rep':
+  fixes k m jd::nat
+  assumes "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
+  shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2))" 
+proof-
+  have "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))" 
+    using qr_different_rep assms by simp
+  moreover have "Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))
+              = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2))"
+  proof
+    fix i j
+    assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)))"
+       and "j < dim_col( Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)))"
+    then have "i \<in> {0,1} \<and> j = 0" by auto
+    moreover have "Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2)) $$ (0,0)
+              = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)) $$ (0,0)"
+      by auto
+    moreover have "Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2)) $$ (1,0)
+              = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)) $$ (1,0)" by auto  
+    ultimately show "Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2)) $$ (i,j)
+              = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)) $$ (i,j)" by auto
+  next
+    show "dim_row (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2)))
+              = dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)))" 
+      by simp
+  next
+    show "dim_col (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2)))
+              = dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2)))" by simp
+  qed
+  ultimately show ?thesis by auto
+qed
+
+
+lemma 
+  assumes "n \<ge> 1" and "m \<ge> 1" and "j < 2^m"
+  shows "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n] ] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2))"
+proof(rule Nat.nat_induct_at_least[of 1 n])
+  show "n \<ge> 1" using assms by auto
+next
+  have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))" by auto
+  moreover have "i < 2^m \<longrightarrow> i/2^(m-(nat 1)+1) = (bin_rep m i)!0/2^1" 
+  proof
+    assume a0: "i<2^m"
+    then have "i/2^m = (\<Sum>l\<in>{1..m}. (bin_rep m i)!(l-1) * 2^(m-l))/2^m" using assms j_bit_representation by auto
+    then have "i/2^m = (\<Sum>l\<in>{1..m}. (bin_rep m i)!(l-1) * 2^(m-l)*1/2^m)" 
+      using sum_distrib_right[of "\<lambda>l.((bin_rep m i)!(l-1) * 2^(m-l))" "{1..m}" "1/2^m"] by auto
+    moreover have "l\<in>{1..m} \<longrightarrow> 2^(m-l)*1/2^m = 1/2^l" for l by auto
+    then have "i/2^m = (\<Sum>l\<in>{1..m}. (bin_rep m i)!(l-1) * 1/2^l)" using power_diff sorry 
+
+
+lemma j_bit_representation:
+  assumes "j < 2^m" and "m\<ge>1"
+  shows "j = (\<Sum>i\<in>{1..m}. (bin_rep m j)!(i-1) * 2^(m-i))" 
+proof-
+
+
+  moreover have "(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)/2^l) = (bin_rep m i)!0/2^1" by auto (*same concept as with jd before*)
+  ultimately show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2))" 
+    sorry
+next
+  fix n
+  assume IH: "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n] ] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2))"
+  have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+      = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n] ] n)
+      \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))" sorry
+  then have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+      = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)))
+      \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))" using IH sorry
+
+
+
+  show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+       =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2))"
+
+
+
+
+
+lemma 
+  fixes m jd::nat
+  assumes "m\<ge>1" and "jd < 2^m"
+  shows "(pw [qr (m-nat k) m m jd. k<-[1..m] ] m) 
+       = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*i*jd/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..m] ] m)"
+  sorry
+
+
+         
 
 definition tryo::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>real" where
 "tryo k m n = (\<Sum>i\<in>{1..n}. (bin_rep m k)!(i-1)/2^i)"
@@ -2821,13 +2912,7 @@ lemma
   shows "bin_rep m i ! (m-1) = 0" sorry
 
 
- 
-lemma 
-  fixes m jd::nat
-  shows "(pw [qr (m-nat k) m m jd. k<-[1..m] ] m) 
-       = (pw [Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) 
-            else exp(complex_of_real (2*pi)*\<i>*jd/2^(m-nat k+1))*1/sqrt(2)) . k<-[1..m] ] m) "
-  sorry
+
 
 lemma
   shows "(pw [qr (m-nat k) m m jd. k<-[1..n] ] n) 
