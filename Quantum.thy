@@ -100,10 +100,9 @@ qed
 definition state_qbit :: "nat \<Rightarrow> complex vec set" where
 "state_qbit n \<equiv> {v| v:: complex vec. dim_vec v = 2^n \<and> \<parallel>v\<parallel> = 1}"
 
-lemma state_to_state_qbit [simp]:
-  assumes "state n v"
+lemma (in state) state_to_state_qbit [simp]:
   shows "col v 0 \<in> state_qbit n"
-  using assms state_def state_qbit_def by simp
+  using state_def state_qbit_def by simp
 
 subsection "The Hermitian Conjugation"
 
@@ -330,7 +329,7 @@ subsection "The Inner Product"
 text \<open>We introduce a coercion between complex vectors and (column) complex matrices.\<close>
 
 definition ket_vec :: "complex vec \<Rightarrow> complex mat" ("|_\<rangle>") where
-"ket_vec v \<equiv> mat (dim_vec v) 1 (\<lambda>(i,j). v $ i)"
+"|v\<rangle> \<equiv> mat (dim_vec v) 1 (\<lambda>(i,j). v $ i)"
 
 lemma ket_vec_index [simp]:
   assumes "i < dim_vec v"
