@@ -2741,7 +2741,116 @@ next
 qed
 
 
+(*
+lemma exp_term_one':
+  assumes "m \<ge> 1" and "k \<ge> 1" and "jd < 2^m"
+  shows "k \<le> m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(of_nat k)*real 2^(m-i))) = 1"
+proof(rule Nat.nat_induct_at_least[of 1 k])
+  show "k\<ge>1" using assms by auto
+next
+  have "(\<Sum>i\<in>{(1::nat)..<1}. (bin_rep m jd)!(i-1) * 1/2^1*real 2^(m-i)) = 0" 
+    by auto 
+  then show "1\<le>m \<longrightarrow>exp(2*pi*\<i>*(\<Sum>i\<in>{1..<1}. (bin_rep m jd)!(i-1) * 1/2^(of_nat 1)*real 2^(m-i))) = 1"
+    by simp
+next
+  fix k::nat
+  assume a0: "k\<ge> 1"
+  assume IH: "k\<le>m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(of_nat k)*real 2^(m-i))) = 1"
+  show "(Suc k)\<le>m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i))) = 1"
+  proof
+    assume a1: "(Suc k)\<le>m"
+    have "(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i)) =
+          (\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i))
+        + (bin_rep m jd)!(k-1) * 1/2^(of_nat (Suc k))*real 2^(m-k)" using sum_Un a0 by auto 
+    then have "(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i)) =
+               (2::nat) *(\<Sum>i\<in>{1..<k}.  ((bin_rep m jd)!(i-1) * 1/2^(of_nat k) * real 2^(m-i))) 
+             + (bin_rep m jd)!(k-1) * 1/2^(of_nat (Suc k))*real 2^(m-k)"
+      using sum_distrib_left[of 2 "\<lambda>i.((bin_rep m jd)!(i-1) * 1/2^k * real 2^(m-i))" "{1..<k}" ] a1 sorry
+    then have "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i))) =
+               exp((2::nat)*(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. ((bin_rep m jd)!(i-1) * 1/2^(of_nat k) * real 2^(m-i))))) 
+             * exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k)*real 2^(m-k)))" 
+      using exp_add distrib_left[of "(2*pi*\<i>)" "((2::nat)*(\<Sum>i\<in>{1..<k}. ((bin_rep m jd)!(i-1) * 1/2^k * real 2^(m-i))))"] 
+      by auto
+    then have "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i))) =
+               exp((2*pi*\<i>*(\<Sum>i\<in>{1..<k}. ((bin_rep m jd)!(i-1) * 1/2^(of_nat k) * real 2^(m-i)))))^2
+             * exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k) * real 2^(m-k)))" 
+      by (metis (mono_tags, lifting) exp_double of_nat_numeral)
+    then have "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i))) =
+               exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k) * real 2^(m-k)))" 
+      using IH a1 by auto
+    moreover have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k) * real 2^(m-k))) = 1"
+    proof(rule disjE)
+      show "(bin_rep m jd)!(k-1) = 0 \<or> (bin_rep m jd)!(k-1) = 1" 
+        using bin_rep_coeff a0 a1 assms diff_less_Suc less_le_trans by blast
+    next
+      assume a2: "(bin_rep m jd)!(k-1) = 0"
+      then show ?thesis by auto
+    next
+      assume a2: "(bin_rep m jd)!(k-1) = 1"
+      then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k)*real 2^(m-k)))
+               = exp(2*pi*\<i>*( 1/2^(Suc k)*real 2^(m-k)))" using a2 by auto
+      moreover have "1/2^(Suc k)*real 2^(m-k) = 2^(m-1)" sorry
+      ultimately have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k)*real 2^(m-k))) = exp(2*pi*\<i>*2^(m-1))" sorry
+      then show "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(Suc k)*real 2^(m-k))) = 1" sorry
+    qed
+    ultimately show "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(of_nat (Suc k))*real 2^(m-i))) = 1" 
+      by auto
+  qed
+qed
 
+lemma qr_different_rep:
+  fixes k m jd::nat
+  assumes "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
+  shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^k)*1/sqrt(2))" 
+proof- 
+  have "qr k m m jd = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) 
+              else (exp (complex_of_real (2*pi)*\<i>*(bf (k-1) (m-1) m jd)))*1/sqrt(2)))"
+        using qr_def by auto
+  moreover have "exp(2*pi*\<i>*jd/2^k) = exp (complex_of_real (2*pi)*\<i>*(bf (k-1) (m-1) m jd))" 
+  proof-
+    have "exp(2*pi*\<i>*jd/2^k) = exp(2*pi*\<i>*(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i))*1/2^k)" 
+      using j_bit_representation assms by auto
+    then have "exp(2*pi*\<i>*jd/2^k) = exp(2*pi*\<i>*(1/2^k*real(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i))))" 
+      using Groups.mult_ac(1) mult.right_neutral times_divide_eq_left by simp
+    moreover have "(1/2^k*real(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i)))
+                 = (\<Sum>i\<in>{1..m}. 1/2^k*((bin_rep m jd)!(i-1) * 2^(m-i)))"
+      using sum_distrib_left[of "1/2^k" "\<lambda>i.(bin_rep m jd)!(i-1) * 2^(m-i)" "{1..m}"] by auto 
+    ultimately have "exp(2*pi*\<i>*jd/2^k) = exp(2*pi*\<i>*(\<Sum>i\<in>{1..m}. 1/2^k*((bin_rep m jd)!(i-1) * 2^(m-i))))"
+      by presburger
+    then have "exp(2*pi*\<i>*jd/2^k) = exp(2*pi*\<i>*(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)))"
+      by auto
+    moreover have "(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)) = 
+          (\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)) +
+          (\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i))" 
+      using assms(2) assms(3) 
+      by (smt atLeastLessThanSuc_atLeastAtMost le_eq_less_or_eq le_less_trans lessI sum.atLeastLessThan_concat)
+    ultimately have "exp(2*pi*\<i>*jd/2^k) 
+        = exp(2*pi*\<i>*((\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i))+(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i))))"
+      by metis
+    then have "exp(2*pi*\<i>*jd/2^k) 
+             = exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i))) *
+               exp(2*pi*\<i>*(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)))"
+      using exp_add by (simp add: distrib_left)
+    then have "exp(2*pi*\<i>*jd/2^k) = exp(2*pi*\<i>*(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)))"
+      using assms exp_term_one' by auto
+    moreover have "exp(2*pi*\<i>*(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)))
+                 = exp(2*pi*\<i>*(bf (k-1) (m-1) m jd))" 
+    proof-
+      have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i))
+          = (\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i* 1/2^k*real 2^(m-(i+1)))"
+        using sum.shift_bounds_cl_nat_ivl[of "\<lambda>i.(bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i)" "k-1" 1 "m-1"] assms(1) assms(3)
+        by auto
+      moreover have "(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * (1/2^k*real 2^(m-(i+1))))
+                   = (\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * 2^(m-i-1+k))" sorry
+      ultimately have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^k*real 2^(m-i))
+           =(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i* 1/2^(m-(i+1)-k))"
+        by auto
+      then show ?thesis using binary_fraction_def by auto
+    qed
+    ultimately show ?thesis by auto
+  qed
+  ultimately show ?thesis by auto
+qed *)
 
 
 lemma qr_different_rep:
@@ -2831,13 +2940,657 @@ proof-
   ultimately show ?thesis by auto
 qed
 
+lemma
+  assumes "m\<ge>1"
+  shows "1/(2::real)^(m+1)*2 = 1/2^m" by auto
 
-
+lemma
+  fixes a b c::nat
+  shows "a * (b+c) = a*b + a*c" 
+  by (simp add: distrib_left)
 lemma 
-  assumes "n \<ge> 1" and "m \<ge> 1" and "j < 2^m" (*Need to use i div 2^n? *)
-  shows "n\<le>m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(nat k)*1/sqrt(2))). k<-[1..n] ] n)
-       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2))"
-  oops
+  assumes "i\<in>{0,1}" and "m>1"
+  shows "(bin_rep m i)!0 = 0"
+  by (metis assms(1) assms(2) bin_rep_index_0 insert_iff lessI one_add_one plus_1_eq_Suc pos2 power_one_right singletonD)
+
+
+(*Da die Elemente der pw liste noch geswitched werden müssen ergibt sich die veränderte Matrix *)
+lemma product_rep_to_def: 
+  fixes n m jd::nat
+  assumes "n \<ge> 1" and "m \<ge> 1" and "jd < 2^m"
+  shows "n \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n] ] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)"
+proof(rule Nat.nat_induct_at_least[of 1 n])
+  show "n \<ge> 1" using assms by auto
+next
+  show "1 \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep 1 (of_nat i))!(l-1)/2^l))*1/sqrt(2)^1)"
+  proof
+    assume a0: "1 \<le> m"
+    have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2))" by auto
+    moreover have "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2))
+                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2))" 
+    proof
+      fix i j
+      assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)))" 
+      and "j < dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)))" 
+      then have f0: "i \<in> {0,1} \<and> j = 0" by auto
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^1)*1/sqrt(2))) $$ (0,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (0,j)"  
+        using f0 by (simp add: bin_rep_index_0)
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^1)*1/sqrt(2))) $$ (1,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (1,j)" 
+        using f0 
+      proof-
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 1)!(1-1)/2^1)*1/sqrt(2)" using f0 by auto
+        moreover have "(bin_rep 1 1)!(1-1) = 1" using a0 
+          by (metis One_nat_def Suc_eq_plus1 add_diff_cancel_left' bin_rep_index_0_geq le_numeral_extra(4) lessI one_add_one plus_1_eq_Suc power.simps(1) power_one_right)
+        ultimately have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*1/2^1)*1/sqrt(2)" by auto
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^1)*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*1/2^1)*1/sqrt(2)" using f0 by auto
+        ultimately show ?thesis by auto
+      qed 
+      ultimately show "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2)) $$ (i,j)
+                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)) $$ (i,j)" by auto
+    next
+      show "dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2)))
+          = dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)))" by auto
+    next
+      show "dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2)))
+          = dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)))" by auto
+    qed
+    ultimately have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2))" 
+      by auto
+    then show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep 1 (of_nat i))!(l-1)/2^l))*1/sqrt(2)^1)"
+      using a0 by auto
+  qed
+next
+  fix n::nat
+  assume a0: "n \<ge> 1"
+  assume IH: "n \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n] ] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)"
+  show  "(Suc n) \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+       =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n))"
+  proof
+    assume a1: "(Suc n) \<le> m"
+    have "length [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n]] = n" by auto
+    moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n]]
+              @ [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k <-[Suc n..Suc n]]
+            = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)]]" 
+      by (smt One_nat_def a0 map_append nat_1 nat_le_iff of_nat_Suc upto_split1)
+    moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k <-[Suc n..Suc n]]
+                 = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2))]" by auto
+    ultimately have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n]] n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))" 
+      using pow_tensor_decomp_left[of "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n]]"
+          "n" "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))"] by auto
+    then have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))"
+    using a1 IH by auto
+    moreover have "Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))
+=  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n))"
+    proof
+      fix i j
+      assume "i < dim_row (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n)))"
+      and "j < dim_col (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n)))"
+      then have f0: "i < 2^(Suc n) \<and> j=0" by auto
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
+        = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)) $$ (i div 2, j div 2)
+        * (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))$$ (i mod 2, j mod 2)" 
+        by (smt One_nat_def add_self_mod_2 dim_col_mat(1) dim_row_mat(1) index_tensor_mat less_numeral_extra(1) mod_add_self1 mod_div_trivial mod_if one_add_one one_power2 plus_1_eq_Suc plus_nat.simps(2) power_Suc2 power_one_right)
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
+        = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat (i div 2)))!(l-1)/2^l))
+        * exp(complex_of_real(2*pi)*\<i>*jd*(of_nat (i mod 2))/2^(nat (Suc n))))*1/sqrt(2)^(Suc n)" using f0 by auto
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
+        = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat (i div 2)))!(l-1)/2^l) 
+        + complex_of_real(2*pi)*\<i>*jd*(of_nat (i mod 2))/2^(nat (Suc n))))*1/sqrt(2)^(Suc n)"
+        by (simp add: exp_add)
+      moreover have "complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat (i div 2)))!(l-1)/2^l)
+                   + complex_of_real(2*pi)*\<i>*jd*(of_nat (i mod 2))/2^(nat (Suc n))
+        = complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n)))" 
+        using distrib_left[of "(complex_of_real(2*pi)*\<i>*jd)" "(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat (i div 2)))!(l-1)/2^l)" 
+                              "(of_nat (i mod 2))/2^(nat (Suc n))"] by auto
+      ultimately have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
+        = (exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n)))))*1/sqrt(2)^(Suc n)"
+        by auto
+      moreover have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n))
+                    = (\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (i div 2))!(l-1)/2^l)"
+      proof-
+        have "(i mod 2) = (bin_rep (Suc n) i)!((Suc n)-1)" 
+          using a0 f0
+          by (metis bin_rep_coeff bin_rep_even bin_rep_odd diff_less dvd_imp_mod_0 le_SucI le_imp_less_Suc less_one odd_iff_mod_2_eq_one zero_le) 
+        then have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n))
+           = (\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + ((bin_rep (Suc n) i)!((Suc n)-1))/2^(nat (Suc n))" by auto
+        moreover have "l\<in>{1..n} \<longrightarrow> (bin_rep n (i div 2))!(l-1) = (bin_rep (Suc n) i)!(l-1) " for i sorry
+        ultimately have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l)*2^n + (i mod 2)/2^(nat (Suc n))
+           = (\<Sum>l\<in>{1..n}. (bin_rep (Suc n) i)!(l-1)/2^l) + ((bin_rep (Suc n) i)!((Suc n)-1))/2^(nat (Suc n))"
+          sorry
+        moreover have "(\<Sum>l\<in>{1..n}. (bin_rep (Suc n) i)!(l-1)/2^l)*2^n + ((bin_rep (Suc n) i)!((Suc n)-1))/2^(Suc n)
+           = (\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^l)" sorry
+        show ?thesis sorry
+      qed
+      then show "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
+        = (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n))) $$ (i,j) "
+        sorry
+    next
+      show "dim_row (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2))))
+        = dim_row (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n)))"
+        by auto
+    next
+      show "dim_col (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2))))
+        = dim_col (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n)))"
+        by auto
+    qed
+    ultimately show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+       =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n))"
+      by auto
+  qed
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*QR UMDREHEN! *)
+lemma product_rep_to_def: 
+  fixes n m jd::nat
+  assumes "n \<ge> 1" and "m \<ge> 1" and "jd < 2^m"
+  shows "n \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n] ] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)"
+proof(rule Nat.nat_induct_at_least[of 1 n])
+  show "n \<ge> 1" using assms by auto
+next
+  show "1 \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep 1 i)!(l-1)/2^(m+l))*2^1)*1/sqrt(2)^1)"
+  proof
+    assume a0: "1 \<le> m"
+    have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))" by auto
+    moreover have "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))
+                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))" 
+    proof
+      fix i j
+      assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2)))" 
+      and "j < dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2)))" 
+      then have f0: "i \<in> {0,1} \<and> j = 0" by auto
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (0,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))) $$ (0,j)"  
+        using f0 by (simp add: bin_rep_index_0)
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))) $$ (1,j)" 
+      proof-
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 1)!(1-1)/2^(m+1)*2)*1/sqrt(2)" using f0 by auto
+        moreover have "(bin_rep 1 1)!(1-1) = 1" using a0 
+          by (metis One_nat_def Suc_eq_plus1 add_diff_cancel_left' bin_rep_index_0_geq le_numeral_extra(4) lessI one_add_one plus_1_eq_Suc power.simps(1) power_one_right)
+        ultimately have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*1/(2::real)^(m+1)*2)*1/sqrt(2)" by auto
+        moreover have "1/(2::real)^(m+1)*2 = 1/2^m" by auto
+        ultimately have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*1/2^m)*1/sqrt(2)" 
+          by (smt Groups.mult_ac(2) add.right_neutral add_Suc_right mult_divide_mult_cancel_left_if of_real_1 of_real_add of_real_power one_add_one plus_1_eq_Suc power.simps(2) rel_simps(76) times_divide_eq_right)
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+            = exp(complex_of_real(2*pi)*\<i>*jd*1/2^m)*1/sqrt(2)" using f0 a0 by auto
+        ultimately show ?thesis by auto
+      qed
+      ultimately show "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2)) $$ (i,j)
+                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2)) $$ (i,j)" by auto
+    next
+      show "dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2)))
+          = dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2)))" by auto
+    next
+      show "dim_col  (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2)))
+          = dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2)))" by auto
+    qed
+    ultimately have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^(m+1)*2)*1/sqrt(2))" 
+      by auto
+    moreover have "pw map (\<lambda>k. Matrix.mat 2 1 (\<lambda>x. case case x of (x, y) \<Rightarrow> (of_nat x, y) of
+                        (i, j) \<Rightarrow> exp (complex_of_real (2 * pi) * \<i> * of_nat jd * i / 2 ^ (m - nat k + 1)) * 1 / complex_of_real (sqrt 2))) [1..int 1] 1 
+      = pw map (\<lambda>k. Matrix.mat 2 1 (\<lambda>(i, j). exp (complex_of_real (2 * pi) * \<i> * of_nat jd * of_nat i / 2 ^ (m - nat k + 1)) * 1 / complex_of_real (sqrt 2))) [1..int 1] 1" 
+      by auto (*Phrase this better*)
+    ultimately show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep 1 i)!(l-1)/2^(m+l))*2^1)*1/sqrt(2)^1)"
+      using a0 by auto
+  qed
+next
+  fix n::nat
+  assume a0: "n \<ge> 1"
+  assume IH: "n \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n] ] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)"
+  show "(Suc n) \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+       =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n))"
+  proof
+    assume a1: "(Suc n) \<le> m"
+    have "length [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] = n" by auto
+    moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]]
+              @ [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k <-[Suc n..Suc n]]
+            = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]" 
+      by (smt One_nat_def a0 map_append nat_1 nat_le_iff of_nat_Suc upto_split1)
+    moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k <-[Suc n..Suc n]]
+                 = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat (Suc n))+1))*1/sqrt(2))]" by auto
+    ultimately have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat (Suc n))+1))*1/sqrt(2)))" 
+      using pow_tensor_decomp_left[of "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]]"
+          "n" "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat (Suc n))+1))*1/sqrt(2)))"] by auto
+    then have  "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(m-(nat (Suc n))+1))*1/sqrt(2)))"
+    using a1 IH by auto
+   moreover have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+       \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))) 
+=  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n))"
+    proof
+      fix i j
+      assume "i < dim_row (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n)))"
+      and "j < dim_col (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n)))"
+      then have f0: "i < 2^(Suc n) \<and> j=0" by auto
+      then have "((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+                \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+        = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)) $$ (i div 2, j div 2)
+        * (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))$$ (i mod 2, j mod 2)" 
+        by (smt One_nat_def add_self_mod_2 dim_col_mat(1) dim_row_mat(1) index_tensor_mat less_numeral_extra(1) mod_add_self1 mod_div_trivial mod_if one_add_one one_power2 plus_1_eq_Suc plus_nat.simps(2) power_Suc2 power_one_right)
+      then have "((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+                \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+        = exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n
+        * exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1))*1/sqrt(2)" using f0 by auto
+      then have "((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+                \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+        = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n
+        + complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1)))*1/sqrt(2)^(Suc n)" 
+        by (simp add: exp_add)
+      moreover have "complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n
+                   + complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1) 
+        = complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n +(i mod 2)/2^(m-(nat (Suc n))+1))" 
+        using distrib_left[of "(complex_of_real(2*pi)*\<i>*jd)" "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n" 
+                              "(i mod 2)/2^(m-(nat (Suc n))+1)"] by auto
+      ultimately have "((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+                \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+        = (exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n
+        + (i mod 2)/2^(m-(nat (Suc n))+1))))*1/sqrt(2)^(Suc n)" by auto
+      moreover have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+                    = (\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (i div 2))!(l-1)/2^(m+l))*2^(Suc n)"
+      proof-
+        have "(i mod 2) = (bin_rep (Suc n) i)!((Suc n)-1)" 
+          using a0 f0
+          by (metis bin_rep_coeff bin_rep_even bin_rep_odd diff_less dvd_imp_mod_0 le_SucI le_imp_less_Suc less_one odd_iff_mod_2_eq_one zero_le) 
+        then have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (bin_rep (Suc n) i)!((Suc n)-1)/2^(m-(nat (Suc n))+1)" by auto
+        moreover have "l\<in>{1..n} \<longrightarrow> (bin_rep n (i div 2))!(l-1) = (bin_rep n i)!(l-1) " for i sorry
+        ultimately have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n + (bin_rep (Suc n) i)!((Suc n)-1)/2^(m-(nat (Suc n))+1)"
+          sorry
+
+          show ?thesis sorry
+        qed
+        ultimately have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{2..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l-1)) + (bin_rep (Suc n) i)!(1-1)/2^(m+1) * 2^(n+1)" sorry
+        then have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l-1))" sorry
+        show ?thesis sorry
+      qed
+      then show "((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+       \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j) 
+= (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n))) $$ (i,j)"
+        sorry
+    next
+      show "dim_row ((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+       \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))))
+= dim_row (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n)))"
+        sorry
+   next
+      show "dim_col ((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n i)!(l-1)/2^(m+l))*2^n)*1/sqrt(2)^n)
+       \<Otimes> Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))))
+= dim_col (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n)))"
+        sorry
+    qed
+    ultimately show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+        = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n))"
+      by auto
+  qed
+
+
+
+
+
+(*
+        then have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{2..(Suc n)}. (bin_rep n i)!(l-1)/2^(m+l)*2)*2^n + (bin_rep n i)!(1-1)/2^(m-(nat (Suc n))+1)" sorry
+      then have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{2..(Suc n)}. (bin_rep n i)!(l-1)/2^(m+l))*2^(n+1) + (bin_rep n i)!(1-1)/2^(m+1) * 2^(n+1)" sorry
+then have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = ((\<Sum>l\<in>{2..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l)) + (bin_rep n i)!(1-1)/2^(m+1)) * 2^(n+1)" sorry
+then show "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^(m+l))*2^n + (i mod 2)/2^(m-(nat (Suc n))+1)
+           = (\<Sum>l\<in>{1..(Suc n)}. (bin_rep n i)!(l-1)/2^(m+l)) * 2^(Suc n)" sorry
+
+
+
+
+    show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+       =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) i)!(l-1)/2^(m+l))*2^(Suc n))*1/sqrt(2)^(Suc n))"
+ 
+
+
+lemma product_rep_to_def: 
+  fixes n m jd::nat
+  assumes "n \<ge> 1" and "m \<ge> 1" and "jd < 2^m"
+  shows "n\<le>m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)"
+proof(rule Nat.nat_induct_at_least[of 1 n])
+  show "n \<ge> 1" using assms by auto
+next
+  show  "1 \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)*2^(m-l))/2^1)*1/sqrt(2)^1)" 
+  proof
+    assume a0: "1 \<le> m"
+    have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))" by auto
+    moreover have "Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)*2^(m-l))/2^1)*1/sqrt(2)^1)
+      =  Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))" by auto
+    moreover have "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))
+                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))" 
+    proof
+      fix i j
+      assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)))" 
+      and "j < dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)))" 
+      then have f0: "i \<in> {0,1} \<and> j = 0" by auto
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (0,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)" 
+      proof-
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m 0)!0*2^(m-1)/2^1)*1/sqrt(2)" using f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*0*2^(m-1)/2^1)*1/sqrt(2)" using bin_rep_def a0 
+          by (metis (no_types, lifting) One_nat_def bin_rep_index_0 le_simps(3) less_numeral_extra(1) of_nat_0 power_0)
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)
+                = 1/sqrt(2)" by auto
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (0,j)
+                = 1/sqrt(2)" 
+          using f0 by auto
+        ultimately show ?thesis by auto
+      qed  
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)" 
+      proof(rule disjE) (*DOES NOT IT YET. Clearify this first before doing something else. Equation is not true! *)
+        show "m = 1 \<or> m > 1" using a0 by auto
+      next
+        assume a1: "m = 1" 
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m 1)!0*2^(m-1)/2^1)*1/sqrt(2)" using f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*1/2)*1/sqrt(2)"
+          using a1 bin_rep_def by auto
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*1/2)*1/sqrt(2)" using a1 f0 by auto 
+        ultimately show ?thesis by auto
+      next
+        assume a1: "m > 1"
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+              = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m 1)!0*2^(m-1)/2^1)*1/sqrt(2)" using f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+              = exp(complex_of_real(2*pi)*\<i>*jd*0*2^(m-1)/2^1)*1/sqrt(2)" 
+          by (metis (no_types, lifting) a1 bin_rep_index_0 lessI of_nat_0 one_add_one plus_1_eq_Suc power_one_right)
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+              = 1/sqrt(2)" by auto
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                =  exp(complex_of_real(2*pi)*\<i>*jd*1/2^(1-(nat 1)+1))*1/sqrt(2)" using f0 by auto
+        moreover have "exp(complex_of_real(2*pi)*\<i>*jd*1/2^(1-(nat 1)+1))*1/sqrt(2)
+                      = exp(complex_of_real(2*pi)*\<i>*jd*1/2)*1/sqrt(2) " by auto
+ 
+
+
+*)
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+proof(rule Nat.nat_induct_at_least[of 1 n])
+  show "n \<ge> 1" using assms by auto
+next
+  show  "1 \<le> m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)*2^(m-l))/2^1)*1/sqrt(2)^1)" 
+  proof
+    assume a0: "1 \<le> m"
+    have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))" by auto
+    moreover have "Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)*2^(m-l))/2^1)*1/sqrt(2)^1)
+      =  Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))" by auto
+    moreover have "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))
+                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))" 
+    proof
+      fix i j
+      assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)))" 
+      and "j < dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)))" 
+      then have f0: "i \<in> {0,1} \<and> j = 0" by auto
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (0,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)" 
+      proof-
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m 0)!0*2^(m-1)/2^1)*1/sqrt(2)" using f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*0*2^(m-1)/2^1)*1/sqrt(2)" using bin_rep_def a0 
+          by (metis (no_types, lifting) One_nat_def bin_rep_index_0 le_simps(3) less_numeral_extra(1) of_nat_0 power_0)
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (0,j)
+                = 1/sqrt(2)" by auto
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (0,j)
+                = 1/sqrt(2)" 
+          using f0 by auto
+        ultimately show ?thesis by auto
+      qed  
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)" 
+      proof(rule disjE) (*DOES NOT IT YET. Clearify this first before doing something else. Equation is not true! *)
+        show "m = 1 \<or> m > 1" using a0 by auto
+      next
+        assume a1: "m = 1" 
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m 1)!0*2^(m-1)/2^1)*1/sqrt(2)" using f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*1/2)*1/sqrt(2)"
+          using a1 bin_rep_def by auto
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*1/2)*1/sqrt(2)" using a1 f0 by auto 
+        ultimately show ?thesis by auto
+      next
+        assume a1: "m > 1"
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(1-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*1/2^(1-(nat 1)+1))*1/sqrt(2)" sorry
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+                    = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)" 
+
+
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m 1)!0*2^(m-1)/2^1)*1/sqrt(2)" using f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*1*2^(m-1)/2^1)*1/sqrt(2)" using f0 a1 bin_rep_def sorry
+
+        have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*jd*1/2^m)*1/sqrt(2)" using a1 f0 by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i))*1/2^m)*1/sqrt(2)"
+          using assms a1 j_bit_representation by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i)/2^m))*1/sqrt(2)" sorry
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i)/2^m))*1/sqrt(2)" sorry
+
+
+
+        moreover have "jd = (\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i))"  using assms a1 j_bit_representation by auto
+        then have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+                = exp(complex_of_real(2*pi)*\<i>*0)*1/sqrt(2)" using assms by auto
+        ultimately show ?thesis by auto
+          
+          
+        (*
+  assumes "m \<ge> 1" and "k \<ge> 1" and "jd < 2^m"
+  shows "k \<le> m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))) = 1"*)  
+          
+          
+          sorry (*1 for m\<ge>2  *)
+        moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (1,j)
+         = exp(complex_of_real(2*pi)*\<i>*jd*1/2^m)*1/sqrt(2)" sorry (*jd < 2^m \<rightarrow> jd/2^m=0 \<rightarrow> exp term is 1. For m=1 same as the one before.*)
+        show ?thesis sorry
+      qed
+      ultimately show "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2))) $$ (i,j)
+                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2))) $$ (i,j)"
+        by auto
+    next 
+      show "dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2)))
+          = dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)))" by auto
+    next 
+      show "dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat 1)+1))*1/sqrt(2)))
+          = dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep m i)!0*2^(m-1)/2^1)*1/sqrt(2)))" by auto
+    qed
+    ultimately have "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..int 1] ] 1)
+       =  Matrix.mat (2^1) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..1}. (bin_rep m i)!(l-1)*2^(m-l))/2^1)*1/sqrt(2)^1)" 
+      by auto
+next
+  fix n::nat
+  assume a0: "n\<ge>1"
+  assume IH: "n\<le>m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] n)
+       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)"
+  show "(Suc n)\<le>m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+      =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))"
+  proof 
+    assume a1: "(Suc n) \<le> m"
+    have "length [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] = n" by auto
+    moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]]
+              @ [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k <-[Suc n..Suc n]]
+            = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]" 
+      by (smt One_nat_def a0 map_append nat_1 nat_le_iff of_nat_Suc upto_split1)
+    moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k <-[Suc n..Suc n]]
+                 = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))]" by auto
+    ultimately have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))" 
+      using pow_tensor_decomp_left[of "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]]"
+          "n" "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))"] by auto
+    moreover have "m-(nat (Suc n))+1 = m-n" using a0 a1 by auto
+    ultimately have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))" 
+      by presburger
+    then have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n))
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))" 
+      using a1 IH by auto
+    moreover have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n))
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))
+    = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))"
+    proof
+      fix i j 
+      assume a2: "i < dim_row ( Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n)))"
+         and a3: "j < dim_col ( Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n)))"
+      then have f0: "i < 2^(Suc n) \<and> j = 0" by auto
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+              \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+               = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)) $$ (i div 2, j div 2)
+               * (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2))) $$ (i mod 2, j mod 2)" 
+        by (smt One_nat_def a1 a3 dim_col_mat(1) dim_row_mat(1) div_less index_tensor_mat less_Suc0 mod_if mult.right_neutral power_Suc2 rel_simps(51))
+      moreover have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)) $$ (i div 2, j div 2)
+             =  exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n" 
+        using f0 by auto
+      moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2))) $$ (i mod 2, j mod 2)
+            = exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n))*1/sqrt(2)"
+        using f0 by auto
+      ultimately have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+              \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+               = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+               * (exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n))*1/sqrt(2))" 
+        by (smt f0 index_mat(1) less_numeral_extra(1) mod_if mod_less_divisor prod.simps(2) rel_simps(51))
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+              \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+               = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n)
+               * (exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n)))) * (1/sqrt(2)^n *1/sqrt(2))" 
+        by (smt mult.right_neutral of_real_1 of_real_divide times_divide_eq_left times_divide_eq_right)
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+              \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+               = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n + 
+                      complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n))) * 1/sqrt(2)^(Suc n)" 
+        by (simp add: exp_add)
+      then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+              \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+               =  (exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n
+                                              + (i mod 2)/2^(m-n)))) * 1/sqrt(2)^(Suc n)" 
+        sorry
+      moreover have "(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n + (i mod 2)/2^(m-n)
+                  =  (\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n)" 
+      proof-
+        have "(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)*2^(m-l))/2^n = (\<Sum>l\<in>{2..Suc n}. (bin_rep m i)!(l-1)/2^(m-l))/2^(Suc n)" sorry (*Maybe better first proof then phase shift to 2*)
+        moreover have "(i mod 2)/2^(m-n) = (bin_rep m i)!(1-1)*2^(m-1)/2^(Suc n)" sorry
+        ultimately show ?thesis sorry
+      qed
+      ultimately have  "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n)
+              \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+               =  (exp(complex_of_real(2*pi)*\<i>*jd* (\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))) * 1/sqrt(2)^(Suc n)" 
+        sorry
+      moreover have " (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))) $$ (i,j)
+ =  (exp(complex_of_real(2*pi)*\<i>*jd* (\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))) * 1/sqrt(2)^(Suc n)" sorry
+      ultimately show "((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n))
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
+    = (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))) $$ (i,j)"
+        by auto
+    next
+      show "dim_row ((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n))
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2))))
+    = dim_row (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))) "
+        by auto
+    next
+      show "dim_col ((Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)*2^(m-l))/2^n)*1/sqrt(2)^n))
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2))))
+    = dim_col (Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))) "
+        by auto
+    qed
+    ultimately show "(pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
+      =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)*2^(m-l))/2^(Suc n))*1/sqrt(2)^(Suc n))"
+      by auto
+  qed
+qed
+
+
 
 
 
@@ -2855,7 +3608,7 @@ next
        =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)"
   show "(Suc n)\<le>m \<longrightarrow> (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
        =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^(Suc n))"
-  proof
+  proof 
     assume a1: "(Suc n) \<le> m"
     have "length [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] = n" by auto
     moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]]
@@ -2869,12 +3622,17 @@ next
       \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))" 
       using pow_tensor_decomp_left[of "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]]"
           "n" "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))"] by auto
+    moreover have "m-(nat (Suc n))+1 = m-n" using a0 a1 by auto
+    ultimately have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
+      = (pw [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..n]] n)
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))" 
+      by presburger
     then have "(pw ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat k)+1))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
       = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n))
-      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))" 
-      sorry
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))" 
+      using a1 IH sorry
     moreover have  "Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)
-      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))
+      \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))
 = Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2))"
   proof
     fix i j 
@@ -2882,41 +3640,41 @@ next
     and a3: "j < dim_col ( Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)))"
     then have f0: "i < 2^(Suc n) \<and> j = 0" by auto
     then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)
-            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
              = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)) $$ (i div 2, j div 2)
-             * (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))) $$ (i mod 2, j mod 2)" 
+             * (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2))) $$ (i mod 2, j mod 2)" 
       by (smt One_nat_def a1 a3 dim_col_mat(1) dim_row_mat(1) div_less index_tensor_mat less_Suc0 mod_if mult.right_neutral power_Suc2 rel_simps(51))
     moreover have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)) $$ (i div 2, j div 2)
            =  exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l))*1/sqrt(2)^n" 
       using f0 by auto
-    moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2))) $$ (i mod 2, j mod 2)
-          = exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1))*1/sqrt(2)"
+    moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2))) $$ (i mod 2, j mod 2)
+          = exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n))*1/sqrt(2)"
       using f0 by auto
     ultimately have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)
-            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
              = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l))*1/sqrt(2)^n)
-             * (exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1))*1/sqrt(2))" 
+             * (exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n))*1/sqrt(2))" 
       by (smt f0 index_mat(1) less_numeral_extra(1) mod_if mod_less_divisor prod.simps(2) rel_simps(51))
     then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)
-            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
              = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l))
-             * (exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1)))) * (1/sqrt(2)^n *1/sqrt(2))" 
+             * (exp(complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n)))) * (1/sqrt(2)^n *1/sqrt(2))" 
       by (smt mult.right_neutral of_real_1 of_real_divide times_divide_eq_left times_divide_eq_right)
     then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)
-            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
              = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l) + 
-                    complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-(nat (Suc n))+1))) * 1/sqrt(2)^(Suc n)" 
+                    complex_of_real(2*pi)*\<i>*jd*(i mod 2)/2^(m-n))) * 1/sqrt(2)^(Suc n)" 
       by (simp add: exp_add)
     then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep m i)!(l-1)/2^l))*1/sqrt(2)^n)
-            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-(nat (Suc n))+1))*1/sqrt(2)))) $$ (i,j)
+            \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^(m-n))*1/sqrt(2)))) $$ (i,j)
              = (exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l)
-                                            + (i mod 2)/2^(m-(nat (Suc n))+1)))) * 1/sqrt(2)^(Suc n)" 
+                                            + (i mod 2)/2^(m-n)))) * 1/sqrt(2)^(Suc n)" 
       sorry
-    moreover have "(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l) + (i mod 2)/2^(m-(nat (Suc n))+1)
+    moreover have "(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l) + (i mod 2)/2^(m-n)
                 =  (\<Sum>l\<in>{1..(Suc n)}. (bin_rep m i)!(l-1)/2^l)" 
     proof-
       have "(\<Sum>l\<in>{1..n}. (bin_rep m (i div 2))!(l-1)/2^l) = (\<Sum>l\<in>{2..Suc n}. (bin_rep m i)!(l-1)/2^(l-1))" sorry (*Maybe better first proof then phase shift to 2*)
-      moreover have "(i mod 2)/2^(m-(nat (Suc n))+1) = (bin_rep m i)!(1-1)/2^(m-1)" sorry
+      moreover have "(i mod 2)/2^(m-n) = (bin_rep m i)!(1-1)/2^(m-n)" sorry
 
 
 (*
@@ -3042,7 +3800,7 @@ assume "i< dim_row ..."*)
     have "exp(2*pi*\<i>*jd*(tryo (i div 2) m n))/(sqrt(2)^n) * exp(2*pi*\<i>*jd/2^(Suc n))/sqrt(2) = exp(2*pi*\<i>*jd*(tryo i m (Suc n)))/(sqrt(2)^(Suc n))" sorry
 
 
-
+*)
 
 lemma
   shows "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(2*pi*\<i>*((\<Sum>k\<in>{0..<i}. (bin_rep n i) ! k * (bin_rep n j) ! k))/2^m)/(sqrt(2)^m)) 
