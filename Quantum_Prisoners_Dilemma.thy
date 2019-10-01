@@ -169,7 +169,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_def by auto
+      using mat_of_cols_list_def dagger_def by auto
   qed
 next
   show "dim_row (J\<^sup>\<dagger>) = dim_row J_cnj" 
