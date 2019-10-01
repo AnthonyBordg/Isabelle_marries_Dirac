@@ -320,7 +320,7 @@ proof
     have "i\<in>{0,1} \<and> j\<in>{0,1}"
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_def exp_of_real_cnj exp_of_real_cnj2 by auto
+      using mat_of_cols_list_def dagger_def exp_of_real_cnj exp_of_real_cnj2 by auto
   qed
 next
   show "dim_row (U\<^sub>A\<^sup>\<dagger>) = dim_row U\<^sub>A_cnj"
@@ -339,7 +339,7 @@ proof
     have "i\<in>{0,1} \<and> j\<in>{0,1}"
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_def exp_of_real_cnj exp_of_real_cnj2 by auto
+      using mat_of_cols_list_def dagger_def exp_of_real_cnj exp_of_real_cnj2 by auto
   qed
 next
   show "dim_row (U\<^sub>B\<^sup>\<dagger>) = dim_row U\<^sub>B_cnj"
@@ -490,7 +490,7 @@ proof
   then show "(M\<^sup>\<dagger>)\<^sup>\<dagger> $$ (i,j) = M $$ (i,j)"
   proof-
     show ?thesis
-      using hermite_cnj_def a0 a1 by auto
+      using dagger_def a0 a1 by auto
   qed
 qed
 
