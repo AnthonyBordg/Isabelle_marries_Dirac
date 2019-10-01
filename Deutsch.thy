@@ -179,7 +179,7 @@ proof
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
   thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
-    apply (auto simp add: hermite_cnj_def)
+    apply (auto simp add: dagger_def)
     by (metis complex_cnj_of_nat complex_cnj_zero deutsch_transform_coeff 
 deutsch_transform_coeff_is_zero set_four)
 qed
