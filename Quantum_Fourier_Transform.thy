@@ -1316,6 +1316,58 @@ next
 qed
 
 
+lemma SWAP_tensor_Id_is_gate:
+  shows "gate (t+2) (SWAP \<Otimes> (Id t))"
+proof
+  show "dim_row (SWAP \<Otimes> Quantum.Id t) = 2^(t+2)" using Id_def by simp
+next
+  show "square_mat (SWAP \<Otimes> Quantum.Id t)" using Id_def by simp
+next
+  have "gate 2 SWAP" using SWAP_gate by blast
+  moreover have "gate t (Id t)" by simp 
+  ultimately show "unitary (SWAP \<Otimes> Quantum.Id t)"
+    using gate.unitary tensor_gate SWAP_gate by blast
+qed
+
+
+lemma SWAP_all_is_gate: (*Rather use tensor_gate_unitary1 !  *)
+  shows "gate (k+2+t) (SWAP_all k t)"
+proof
+  show "dim_row (SWAP_all k t) = 2^(k+2+t)" using SWAP_all_dim by auto
+next
+  show "square_mat (SWAP_all k t)" using SWAP_all_dim by auto
+next
+  show "unitary (SWAP_all k t)"
+  proof-
+    have "((SWAP_all k t)\<^sup>\<dagger>) * (SWAP_all k t) = 1\<^sub>m (dim_col (SWAP_all k t))"
+    proof-
+      have "((SWAP_all k t)\<^sup>\<dagger>) * (SWAP_all k t) = ((Id k) \<Otimes> SWAP \<Otimes> (Id t))\<^sup>\<dagger> * ((Id k) \<Otimes> SWAP \<Otimes> (Id t))" 
+        using SWAP_all_def by auto
+      moreover have "(dim_col (SWAP_all k t)) = (2^(k+2+t))" by (simp add: SWAP_all_dim(2))
+      moreover have "((Id k) \<Otimes> SWAP \<Otimes> (Id t))\<^sup>\<dagger> * ((Id k) \<Otimes> SWAP \<Otimes> (Id t)) = 1\<^sub>m (2^(k+2+t))"
+      proof
+        fix i j
+        assume "i < dim_row (1\<^sub>m (2^(k+2+t)))" and "j < dim_col (1\<^sub>m (2^(k+2+t)))"
+        moreover have "gate k (Id k)" using id_is_gate by blast
+        moreover have "gate (t+2) (SWAP \<Otimes> (Id t))" using SWAP_tensor_Id_is_gate by auto
+        moreover have "dim_col (Id k) * dim_col (SWAP \<Otimes> (Id t)) = (2^(k+2+t))" sorry 
+        ultimately show "(((Id k) \<Otimes> SWAP \<Otimes> (Id t))\<^sup>\<dagger> * ((Id k) \<Otimes> SWAP \<Otimes> (Id t))) $$ (i,j) = (1\<^sub>m (2^(k+2+t))) $$ (i,j)"
+          using index_tensor_gate_unitary1[of k "Id k" "t+2" "(SWAP \<Otimes> (Id t))" i j] tensor_mat_is_assoc by auto
+      next
+        show "dim_row (((Id k) \<Otimes> SWAP \<Otimes> (Id t))\<^sup>\<dagger> * ((Id k) \<Otimes> SWAP \<Otimes> (Id t))) = dim_row (1\<^sub>m (2^(k+2+t)))" 
+          using SWAP_all_def SWAP_all_dim(2) by auto
+      next
+        show "dim_col (((Id k) \<Otimes> SWAP \<Otimes> (Id t))\<^sup>\<dagger> * ((Id k) \<Otimes> SWAP \<Otimes> (Id t))) = dim_col (1\<^sub>m (2^(k+2+t)))" 
+          using SWAP_all_def SWAP_all_dim(2) by auto
+      qed
+      ultimately show ?thesis by auto
+    qed
+    then show ?thesis 
+      by (simp add: SWAP_all_dim(1) SWAP_all_dim(2) carrier_matI mat_mult_left_right_inverse unitary_def)
+  qed
+qed
+
+
 lemma app_SWAP_all:
   assumes "dim_row v = 2" and "dim_col v = 1"  
       and "dim_row w = 2" and "dim_col w = 1" 
@@ -1405,7 +1457,7 @@ proof-
   then show "dim_row (fSWAP k t) = 2^(k+t)" and "dim_col (fSWAP k t) = 2^(k+t)"  by auto
 qed
 
-lemma fSWAP_dim [simp]: (*Might not be needed change name*)
+lemma fSWAP_dim [simp]: (*Might not be needed*)
   assumes "m\<ge>k" and "k-c \<ge>1"
   shows "dim_row (fSWAP (k-c) (m-k)) = 2^(m-c)"
     and "dim_col (fSWAP (k-c) (m-k)) = 2^(m-c)"
@@ -1418,19 +1470,50 @@ lemma Id_fSWAP_dim [simp]:
   using SWAP_front_dim assms Id_def by auto
 
 
-lemma SWAP_unitary:
+lemma fSWAP_unitary: 
   assumes "k\<ge>1"
-  shows "unitary (fSWAP k t)" 
+  shows "\<forall>t. unitary (fSWAP k t)" 
 proof-
-  have "(fSWAP k t)\<^sup>\<dagger> * (fSWAP k t) = 1\<^sub>m (dim_col (fSWAP k t))"
-    sorry
-  show ?thesis sorry
+  have "\<forall>t.(fSWAP k t)\<^sup>\<dagger> * (fSWAP k t) = 1\<^sub>m (dim_col (fSWAP k t))"
+  proof(rule Nat.nat_induct_at_least[of 1 k])
+    show "k\<ge>1" using assms by simp
+  next
+    show "\<forall>t. (fSWAP 1 t)\<^sup>\<dagger> * (fSWAP 1 t) = 1\<^sub>m (dim_col (fSWAP 1 t))" by (simp add: Quantum.Id_def) 
+  next
+    fix k::nat
+    assume a0: "k \<ge> 1"
+    and IH: "\<forall>t. (fSWAP k t)\<^sup>\<dagger> * (fSWAP k t) = 1\<^sub>m (dim_col (fSWAP k t))"
+    show "\<forall>t. (fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = 1\<^sub>m (dim_col (fSWAP (Suc k) t))"
+    proof
+      fix t
+      have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = ((fSWAP k (t+1)) * (SWAP_all (k-1) t))\<^sup>\<dagger> * ((fSWAP k (t+1)) * (SWAP_all (k-1) t))"
+        using Suc_le_D assms a0 by fastforce
+      then have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = ((SWAP_all (k-1) t)\<^sup>\<dagger> * ((fSWAP k (t+1))\<^sup>\<dagger>)) * ((fSWAP k (t+1)) * (SWAP_all (k-1) t))"
+        using a0 cpx_mat_hermite_cnj_prod[of "fSWAP k (t+1)" "(SWAP_all (k-1) t)"] SWAP_front_dim SWAP_all_dim by auto
+      moreover have "(SWAP_all (k-1) t)\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using SWAP_all_dim[of "k-1" t] a0 by auto
+      moreover have "(fSWAP k (t+1))\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using SWAP_front_dim a0 by auto
+      moreover have "((fSWAP k (t+1)) * (SWAP_all (k-1) t)) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))"  using SWAP_all_dim[of "k-1" t] a0 by auto
+      ultimately have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * (((fSWAP k (t+1))\<^sup>\<dagger>) * ((fSWAP k (t+1)) * (SWAP_all (k-1) t)))" by auto
+      moreover have "(fSWAP k (t+1))\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using SWAP_front_dim a0 by auto
+      moreover have "(fSWAP k (t+1)) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using SWAP_front_dim a0 by auto
+      moreover have "(SWAP_all (k-1) t) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using SWAP_all_dim[of "k-1" t] a0 by auto
+      ultimately have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * ((((fSWAP k (t+1))\<^sup>\<dagger>) * (fSWAP k (t+1))) * (SWAP_all (k-1) t))"
+        by auto
+      then have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * (1\<^sub>m (dim_col (fSWAP k (t+1))) * (SWAP_all (k-1) t))"
+        using IH by auto
+      then have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * (SWAP_all (k-1) t)"
+        using SWAP_all_dim[of "k-1" t] a0 by auto
+      then show "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = 1\<^sub>m (dim_col (fSWAP (Suc k) t))" 
+        by (metis SWAP_all_is_gate gate.unitary index_mult_mat(3) unitary_def)
+    qed
+  qed
+  then show ?thesis 
+    by (metis SWAP_front_dim(1) SWAP_front_dim(2) assms carrier_matI hermite_cnj_dim_col hermite_cnj_dim_row mat_mult_left_right_inverse unitary_def)
 qed
 
 
-
 lemma SWAP_front_gate: 
-  assumes "k\<ge>1" (*This is important ^^ Otw inconsistency*)
+  assumes "k\<ge>1"
   shows "gate (k+t) (fSWAP k t)" 
 proof
   show "dim_row (fSWAP k t) = 2^(k+t)" using assms by auto
@@ -1438,7 +1521,7 @@ next
   show "square_mat (fSWAP k t)" using assms by auto
 next
   show "unitary (fSWAP k t)"
-    sorry
+    using fSWAP_unitary assms by auto
 qed
 
 lemma SWAP_front_hermite_cnj_dim:
@@ -1826,7 +1909,7 @@ qed
 (*k is the index of the qubit that should be added to the binary fraction, i.e. the controll qubit. 
 c is the current qubit *)
 definition CR_on_all::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("CR\<^sub>_ _ _" 75) where
-"CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) "
+"CR_on_all k c m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"
 
 lemma CR_on_all_dim:
   assumes "k-c\<ge>1" and "c\<ge>1" and "m\<ge>k"
@@ -1847,6 +1930,138 @@ next
   ultimately show "dim_col (CR_on_all k c m) = 2^m"
     using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
 qed
+
+lemma Id_tensor_fSWAP_is_gate:
+  assumes "m \<ge> k" and "k>c"
+  shows "gate (m-c+1) (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))"
+proof-
+  have "k - c + (m - k) = m - c" using assms by auto
+  then have "gate (m-c) (fSWAP (k-c) (m-k))" using SWAP_front_gate[of "k-c" "m-k"] assms by auto
+  moreover have "gate 1 (Id 1)" by simp
+  moreover have "1+(m-c) = m-c+1" using assms by auto
+  ultimately show ?thesis 
+    using tensor_gate[of 1 "Id 1" "m-c" "(fSWAP (k-c) (m-k))"] by auto
+qed
+
+lemma CR_tensor_Id_is_gate:
+  assumes "m > c"
+  shows "gate (m-c+1) (CR (k-c+1) \<Otimes> Id (m-c-1))"
+proof-
+  have "gate (m-c-1) (Id (m-c-1))" by simp
+  moreover have "gate 2 (CR (k-c+1))" using controlled_phase_shift_is_gate by auto
+  moreover have "(m-c-1) + 2 = m-c+1" using assms by auto
+  ultimately show ?thesis by (metis add.commute tensor_gate)
+qed
+
+lemma fSWAP_cnj_is_gate:
+  assumes "m - c \<ge> 1" and "k \<le> m" and "1 \<le> k - c" 
+  shows "gate (m-c) ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)"
+proof
+  show "dim_row ((fSWAP (k-c) (m-k))\<^sup>\<dagger>) = 2^(m-c)" using fSWAP_dim[of k m c] assms by auto
+next
+  show "square_mat ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)" using fSWAP_dim[of k m c] assms by auto 
+next
+  show "unitary ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)"
+  using SWAP_front_gate[of "k-c" "m-k"] assms 
+  by (metis cpx_mat_hermite_cnj_prod fSWAP_unitary hermite_cnj_dim_col hermite_cnj_dim_row hermite_cnj_of_id_is_id unitary_def)
+qed
+
+lemma Id_tensor_fSWAP_cnj_is_gate:
+  assumes "m - c \<ge> 1" and "k \<le> m" and "1 \<le> k - c" 
+  shows "gate (m-c+1) (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>))"
+  by (metis fSWAP_cnj_is_gate add.commute assms(1) assms(2) assms(3) id_is_gate tensor_gate)
+
+
+
+
+lemma prod_of_gate_is_gate: (*Put into Quantum *)
+  assumes "gate n G1" and "gate n G2"
+  shows "gate n (G1 * G2)"
+proof
+  show "dim_row (G1 * G2) = 2^n" using assms by (simp add: gate_def)
+next
+  show "square_mat (G1 * G2)" 
+    using assms(1) assms(2) gate.dim_row gate.square_mat by auto
+next
+  show "unitary (G1 * G2)" 
+  proof-
+    have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col G1)"
+    proof-
+      have f0: "G1 \<in> carrier_mat (2^n) (2^n)" and f1: "G2 \<in> carrier_mat (2^n) (2^n)" 
+        using assms gate.dim_row gate.square_mat by auto
+      have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = ((G2\<^sup>\<dagger>) * (G1\<^sup>\<dagger>)) * (G1 * G2)" 
+        using cpx_mat_hermite_cnj_prod assms gate.dim_row gate.square_mat by auto
+      moreover have "G2\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n)" and "G1\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n)" and "G1 * G2 \<in> carrier_mat (2^n) (2^n)" 
+        using assms gate.dim_row gate.square_mat by auto
+      ultimately have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = (G2\<^sup>\<dagger>) * ((G1\<^sup>\<dagger>) * (G1 * G2))" 
+        using assms assoc_mult_mat gate.dim_row gate.square_mat by auto
+      moreover have "G1\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n)"  
+        using assms gate.dim_row gate.square_mat by auto
+      ultimately have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = (G2\<^sup>\<dagger>) * (((G1\<^sup>\<dagger>) * G1) * G2)" 
+        using assms assoc_mult_mat f0 f1 gate.square_mat[of n G1] by auto
+      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G1)) * G2)" 
+        using gate.unitary[of n G1] assms unitary_def[of G1] by auto
+      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G2)) * G2)" 
+        using assms by (metis f0 f1 carrier_matD(2))
+      also have "... = (G2\<^sup>\<dagger>) * G2" 
+        using f1 by (smt carrier_matD(2) left_mult_one_mat)
+      also have "... = 1\<^sub>m (dim_col G2)"
+        using gate.unitary[of n G2] assms unitary_def[of G2] by auto
+      finally show "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col G1)" 
+        using assms f0 f1 by (metis carrier_matD(2))
+    qed
+    then show ?thesis sorry
+  qed
+qed
+
+
+
+lemma CR_on_all_wth_Id_is_gate:
+  assumes "m > c" and "c < k" and "k \<le> m"
+  shows "gate (m-c+1) ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"
+proof-
+  have "gate (m-c+1) ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)))" 
+    using prod_of_gate_is_gate CR_tensor_Id_is_gate Id_tensor_fSWAP_cnj_is_gate assms by auto
+  moreover have "gate (m-c+1) (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))" using Id_tensor_fSWAP_is_gate assms by auto
+  ultimately show "gate (m-c+1) ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"
+    using prod_of_gate_is_gate by auto
+qed
+
+lemma CR_on_all_is_gate:
+  assumes "k-c\<ge>1" and "c\<ge>1" and "m\<ge>k" and "c < k" and "m > c" (*delete assms *)
+  shows "gate m (CR_on_all k c m)"
+proof
+  show "dim_row (CR_on_all k c m) = 2^m" using assms CR_on_all_dim by auto
+next
+  show "square_mat (CR_on_all k c m)" using assms CR_on_all_dim by auto
+next
+  show "unitary (CR_on_all k c m)"
+  proof-
+    have "((CR_on_all k c m)\<^sup>\<dagger>) * (CR_on_all k c m) = 1\<^sub>m (dim_col (CR_on_all k c m))" 
+    proof-
+      have "gate (c - 1) (Quantum.Id (c - 1))" using id_is_gate by blast
+      moreover have "gate (m-c+1) ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))" 
+        using CR_on_all_wth_Id_is_gate assms by blast
+      ultimately have "((CR_on_all k c m)\<^sup>\<dagger>) * (CR_on_all k c m) = 1\<^sub>m (dim_col (Id (c-1)) * dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))))" 
+        using CR_on_all_def tensor_gate_unitary1[of "c-1" "Id (c-1)" "m-c+1" "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"]
+        by auto
+      moreover have "(dim_col (Id (c-1)) * dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))) = 2^m" 
+      proof-
+        have "dim_col (Id (c-1)) = 2^(c-1)" using Id_def by auto
+        moreover have "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) = 2^(m-c+1)" 
+          using Id_fSWAP_dim(2) assms(1) assms(3) by auto
+        moreover have "2^(c-1) * 2^(m-c+1) = (2::real)^m" using assms (* Find other proof *)
+          by (smt CR_on_all_def CR_on_all_dim(2) calculation(1) calculation(2) dim_col_tensor_mat of_nat_1 of_nat_add of_nat_mult of_nat_power one_add_one)
+        ultimately show ?thesis using assms by (smt CR_on_all_def CR_on_all_dim(2) dim_col_tensor_mat)
+      qed
+      moreover have "dim_col (CR_on_all k c m) = (2::real)^m" using CR_on_all_dim assms by auto
+      ultimately show ?thesis by auto
+    qed
+  then show ?thesis 
+      by (smt CR_on_all_dim(1) CR_on_all_dim(2) assms(1) assms(2) assms(3) carrier_matI hermite_cnj_dim_col hermite_cnj_dim_row mat_mult_left_right_inverse unitary_def)
+  qed
+qed
+
 
 
 lemma [simp]: (*Put into aux calculation*)
@@ -3167,7 +3382,6 @@ qed
 abbreviation \<psi>\<^sub>3::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>3 m jd \<equiv> Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^m)*1/sqrt(2)^m)"
 
-declare [[show_types]]
 lemma product_rep_equals_matrix_rep: 
   fixes m jd::nat
   assumes "jd < 2^m" and "m \<ge> 1"
@@ -3186,52 +3400,61 @@ proof-
     using product_rep_to_def assms by auto
   ultimately have "(\<psi>\<^sub>2 m jd) = Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m)"
     by auto
-  moreover have "i < 2^m \<longrightarrow> (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = i/2^m" for i 
+  moreover have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m)
+= (\<psi>\<^sub>3 m jd)"
   proof
-    assume a0: "i < 2^m"
-    have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) * 2^m/2^m" by auto
-    then have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l* 2^m) * 1/2^m" 
+    fix i j::nat
+    assume a0: "i < dim_row (\<psi>\<^sub>3 m jd)" and a1: "j < dim_col (\<psi>\<^sub>3 m jd)"
+    then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+    = exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m" by auto
+    then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+    =exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l)*2^m/2^m))*1/sqrt(2)^m" by auto
+    then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+    =exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l*2^m)*1/2^m))*1/sqrt(2)^m" 
       by (smt sum.cong sum_distrib_right)
-   then have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1) * (1/2^l* 2^m)) * 1/2^m" 
-     sorry
-    moreover have "l\<in>{1..m} \<longrightarrow> 1/(2::real)^l* 2^m = 2^(m-l)" for l sorry
-    ultimately have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*(2::real)^(m-l)) * 1/2^m" 
-      sorry
-    then have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = (\<Sum>l\<in>{1..m}. (bin_rep m i)!(l-1)*(2::nat)^(m-l)) * 1/2^m" 
-      sorry
-    then show "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l) = i/2^m" 
-      using j_bit_representation[of i m] assms a0 nat_mult_1_right by presburger
+    then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+    =exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*(1/2^l*2^m))*1/2^m)*1/sqrt(2)^m" 
+      using mult.commute by auto
+    moreover have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*(1/2^l*2^m)) = (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*2^(m-l))"
+    proof-
+      have "l\<in>{1..m} \<longrightarrow> (1/2^l*2^m) = (2::real)^(m-l)" for l::nat by (simp add: power_diff)
+      then show ?thesis by auto
+    qed
+    ultimately have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+    =exp(complex_of_real(2*pi)*\<i>*jd*real (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*2^(m-l))*1/2^m)*1/sqrt(2)^m" 
+      by metis
+    then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+    =exp(complex_of_real(2*pi)*\<i>*jd*real i*1/2^m)*1/sqrt(2)^m" 
+      using j_bit_representation[of i m] assms nat_mult_1_right 
+      by (metis (mono_tags, lifting) a0 dim_row_mat(1) of_nat_id sum.cong)
+    then show "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
+            = (\<psi>\<^sub>3 m jd) $$ (i,j)" using a0 a1 by auto
+  next
+    show "dim_row (Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m))
+        = dim_row (\<psi>\<^sub>3 m jd)" by auto
+  next
+    show "dim_col (Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m))
+        = dim_col (\<psi>\<^sub>3 m jd)" by auto
   qed
-  ultimately show ?thesis sorry
+  ultimately show ?thesis by auto
 qed
-
-lemma
-  assumes "j < 2^m" and "m\<ge>1"
-  shows "j = (\<Sum>i\<in>{1..m}. (bin_rep m j)!(i-1) * 2^(m-i))" 
-
-  ultimately show ?thesis sorry
-qed
-
-
-
-
-lemma qr_different_rep':
-  fixes k m jd::nat
-  assumes "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
-  shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*i*jd/2^(m-k+1))*1/sqrt(2))" 
-
 
 
 theorem quantum_fourier_transform_matrix_rep:
   fixes j m::nat
   assumes "j < 2^m" and "m\<ge>1"
   shows "(QFT m) * |unit_vec (2^m) j\<rangle> = \<psi>\<^sub>3 m j" 
+  using quantum_fourier_transform_prod_rep assms product_rep_equals_matrix_rep by auto
 
-
-
-
-
-
+theorem quantum_fourier_transform_is_state:
+  fixes j m::nat
+  assumes "j < 2^m" and "m\<ge>1"
+  shows "state m (\<psi>\<^sub>3 m j)"
+proof-
+  have "state m ((QFT m) * |unit_vec (2^m) j\<rangle>)"
+  proof-
+    have "state m |unit_vec (2^m) j\<rangle>" sorry
+    have "(QFT m) * |unit_vec (2^m) j\<rangle> = ((rQB m m) * (pm [G (nat i) m. i<-[1..m]] m)) * |unit_vec (2^m) j\<rangle>" sorry 
 
 
 
