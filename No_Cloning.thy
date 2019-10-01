@@ -147,13 +147,13 @@ proof
 ((A \<Otimes> B)\<^sup>\<dagger>) $$ (i, j) = ((A\<^sup>\<dagger>) \<Otimes> (B\<^sup>\<dagger>)) $$ (i, j)"
   proof-
     fix i j assume a0:"i < dim_row ((A\<^sup>\<dagger>) \<Otimes> (B\<^sup>\<dagger>))" and a1:"j < dim_col ((A\<^sup>\<dagger>) \<Otimes> (B\<^sup>\<dagger>))"
-    then have "(A \<Otimes> B)\<^sup>\<dagger> $$ (i, j) = cnj((A \<Otimes> B) $$ (j, i))" by (simp add: hermite_cnj_def)
+    then have "(A \<Otimes> B)\<^sup>\<dagger> $$ (i, j) = cnj((A \<Otimes> B) $$ (j, i))" by (simp add: dagger_def)
     also have "\<dots> = cnj(A $$ (j div dim_row(B), i div dim_col(B)) * B $$ (j mod dim_row(B), i mod dim_col(B)))"
-      by (metis (mono_tags, lifting) a0 a1 c1 dim_row_tensor_mat hermite_cnj_dim_col hermite_cnj_dim_row 
+      by (metis (mono_tags, lifting) a0 a1 c1 dim_row_tensor_mat dim_col_of_dagger dim_row_of_dagger 
 index_tensor_mat less_nat_zero_code mult_not_zero neq0_conv)
     moreover have "((A\<^sup>\<dagger>) \<Otimes> (B\<^sup>\<dagger>)) $$ (i, j) = 
 (A\<^sup>\<dagger>) $$ (i div dim_col(B), j div dim_row(B)) * (B\<^sup>\<dagger>) $$ (i mod dim_col(B), j mod dim_row(B))"
-      by (smt a0 a1 c1 dim_row_tensor_mat hermite_cnj_dim_col hermite_cnj_dim_row index_tensor_mat 
+      by (smt a0 a1 c1 dim_row_tensor_mat dim_col_of_dagger dim_row_of_dagger index_tensor_mat 
 less_nat_zero_code mult_eq_0_iff neq0_conv)
     moreover have "(B\<^sup>\<dagger>) $$ (i mod dim_col(B), j mod dim_row(B)) = cnj(B $$ (j mod dim_row(B), i mod dim_col(B)))"
     proof-
@@ -161,15 +161,15 @@ less_nat_zero_code mult_eq_0_iff neq0_conv)
         using a0 gr_implies_not_zero mod_div_trivial by fastforce
       moreover have "j mod dim_row(B) < dim_row(B)"
         using a1 gr_implies_not_zero mod_div_trivial by fastforce
-      ultimately show ?thesis by (simp add: hermite_cnj_def)
+      ultimately show ?thesis by (simp add: dagger_def)
     qed
     moreover have "(A\<^sup>\<dagger>) $$ (i div dim_col(B), j div dim_row(B)) = cnj(A $$ (j div dim_row(B), i div dim_col(B)))"
     proof-
       have "i div dim_col(B) < dim_col(A)"
-        using a0 hermite_cnj_def by (simp add: less_mult_imp_div_less)
+        using a0 dagger_def by (simp add: less_mult_imp_div_less)
       moreover have "j div dim_row(B) < dim_row(A)"
-        using a1 hermite_cnj_def by (simp add: less_mult_imp_div_less)
-      ultimately show ?thesis by (simp add: hermite_cnj_def)
+        using a1 dagger_def by (simp add: less_mult_imp_div_less)
+      ultimately show ?thesis by (simp add: dagger_def)
     qed
     ultimately show "((A \<Otimes> B)\<^sup>\<dagger>) $$ (i, j) = ((A\<^sup>\<dagger>) \<Otimes> (B\<^sup>\<dagger>)) $$ (i, j)" by simp
   qed
@@ -178,8 +178,8 @@ qed
 lemma hermite_cnj_of_prod:
   assumes "dim_col A = dim_row B"
   shows "(A * B)\<^sup>\<dagger>  = (B\<^sup>\<dagger>) * (A\<^sup>\<dagger>)"
-  using assms by(metis carrier_mat_triv cpx_mat_cnj_cnj cpx_mat_cnj_prod hermite_cnj_dim_col 
-hermite_cnj_dim_row transpose_cnj transpose_mult)
+  using assms by(metis carrier_mat_triv cpx_mat_cnj_cnj cpx_mat_cnj_prod dim_col_of_dagger 
+dim_row_of_dagger transpose_cnj_is_dagger transpose_mult)
 
 locale quantum_machine =
   fixes n:: nat and s:: "complex Matrix.vec" and U:: "complex Matrix.mat"
@@ -204,7 +204,7 @@ theorem (in quantum_machine) no_cloning:
 proof-
   define s:: "complex Matrix.vec" where d0:"s = unit_vec (2^n) 0"
   have f0:"\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| = (( |v\<rangle> \<Otimes> |s\<rangle>)\<^sup>\<dagger>)" 
-    using hermite_cnj_of_tensor[of "|v\<rangle>" "|s\<rangle>"] bra_def hermite_cnj_def ket_vec_def by simp
+    using hermite_cnj_of_tensor[of "|v\<rangle>" "|s\<rangle>"] bra_def dagger_def ket_vec_def by simp
   moreover have f1:"( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger> * ( |w\<rangle> \<Otimes> |w\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ( |w\<rangle> \<Otimes> |s\<rangle>)"
   proof-
     have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>)"
@@ -212,12 +212,12 @@ proof-
     then have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U * ( |w\<rangle> \<Otimes> |s\<rangle>)" by simp
     moreover have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>) * ( |w\<rangle> \<Otimes> |w\<rangle>)"
       using assms(2-4) d0 unit_vec_def by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
-dim_row_tensor_mat hermite_cnj_dim_col index_mult_mat(2) ket_vec_def square square_mat.elims(2))
+dim_row_tensor_mat dim_col_of_dagger index_mult_mat(2) ket_vec_def square square_mat.elims(2))
     moreover have "(U\<^sup>\<dagger>) * U = 1\<^sub>m (2^n * 2^n)"
       using unitary_def dim_col unitary by simp
     moreover have "(\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ((U\<^sup>\<dagger>) * U)"
       using d0 assms(1) unit_vec_def by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
-dim_row_tensor_mat f0 hermite_cnj_dim_col hermite_cnj_dim_row ket_vec_def local.dim_col)
+dim_row_tensor_mat f0 dim_col_of_dagger dim_row_of_dagger ket_vec_def local.dim_col)
     moreover have "(\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * 1\<^sub>m (2^n * 2^n) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| )"
       using f0 ket_vec_def d0 by simp
     ultimately show ?thesis by simp
@@ -225,7 +225,7 @@ dim_row_tensor_mat f0 hermite_cnj_dim_col hermite_cnj_dim_row ket_vec_def local.
   then have f2:"(\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|v\<rangle>| * |w\<rangle>) = (\<langle>|v\<rangle>| * |w\<rangle>) \<Otimes> (\<langle>|s\<rangle>| * |s\<rangle>)"
   proof-
     have "\<langle>|v\<rangle>| \<Otimes> \<langle>|v\<rangle>| = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>)"
-      using hermite_cnj_of_tensor[of "|v\<rangle>" "|v\<rangle>"] bra_def hermite_cnj_def ket_vec_def by simp
+      using hermite_cnj_of_tensor[of "|v\<rangle>" "|v\<rangle>"] bra_def dagger_def ket_vec_def by simp
     then show ?thesis
       using f1 d0 by (simp add: bra_def mult_distr_tensor ket_vec_def)
   qed

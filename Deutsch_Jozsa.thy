@@ -275,18 +275,18 @@ next
     by linarith
   next
     assume "i=j"
-    then show "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = U\<^sub>f $$ (i,j)" using a0 hermite_cnj_def by simp
+    then show "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = U\<^sub>f $$ (i,j)" using a0 dagger_def by simp
   next
     assume "(i=j+1 \<and> odd i)"
-    then show "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = U\<^sub>f $$ (i,j)" using a0 hermite_cnj_def by auto
+    then show "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = U\<^sub>f $$ (i,j)" using a0 dagger_def by auto
   next
     assume a2:"(i=j-1 \<and> even i \<and> j\<ge>1)"
     then have "U\<^sub>f $$ (i,j) = f (i div 2)" 
       using a0 a1 jozsa_transform_coeff by auto
     moreover have "U\<^sub>f\<^sup>\<dagger>  $$ (j,i) = f (i div 2)" 
-      using a1 a2 jozsa_transform_coeff hermite_cnj_def by auto
+      using a1 a2 jozsa_transform_coeff dagger_def by auto
     ultimately show "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = U\<^sub>f $$ (i,j)"
-      by(metis a0 a1 cnj_transpose hermite_cnj_dim_row index_transpose_mat transpose_hermite_cnj transpose_of_jozsa_transform)
+      by(metis a0 a1 cnj_transpose_is_dagger dim_row_of_dagger index_transpose_mat dagger_of_transpose_is_cnj transpose_of_jozsa_transform)
   next 
     assume a2: "(i\<noteq>j \<and> \<not>(i=j+1 \<and> odd i) \<and> \<not> (i=j-1 \<and> even i \<and> j\<ge>1))"
     then have f0:"(i\<noteq>j \<and> \<not>(j=i+1 \<and> odd j) \<and> \<not> (j=i-1 \<and> even j \<and> i\<ge>1))" 
@@ -294,7 +294,7 @@ next
     then have "U\<^sub>f $$ (j,i) = 0" and "cnj 0 = 0"
       using jozsa_transform_coeff_is_zero a0 a1 a2 by auto
     then have "U\<^sub>f\<^sup>\<dagger> $$ (i,j) = 0" 
-      using a0 a1 hermite_cnj_def by simp
+      using a0 a1 dagger_def by simp
     then show "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)" 
       using a0 a1 a2 jozsa_transform_coeff_is_zero by auto
   qed 

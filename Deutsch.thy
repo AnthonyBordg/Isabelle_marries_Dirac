@@ -179,7 +179,7 @@ proof
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
   thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
-    apply (auto simp add: hermite_cnj_def)
+    apply (auto simp add: dagger_def)
     by (metis complex_cnj_of_nat complex_cnj_zero deutsch_transform_coeff 
 deutsch_transform_coeff_is_zero set_four)
 qed
@@ -326,7 +326,7 @@ next
     by (simp add: Tensor.mat_of_cols_list_def)
 next
   show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
-    using H_on_ket_one_is_state H_on_ket_zero_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
+    using H_on_ket_one_is_state H_on_ket_zero_is_state state.is_normal tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
     H_on_ket_one H_on_ket_zero by force
 qed
 
