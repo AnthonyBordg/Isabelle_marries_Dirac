@@ -558,7 +558,7 @@ lemma mat_on_ket:
   shows "A * |v\<rangle> = |col (A * v) 0\<rangle>"
   using assms ket_vec_def by auto
 
-lemma dagger_of_mat_on_vec:
+lemma dagger_of_mat_on_ket:
   fixes v:: "complex vec" and A :: "complex mat"
   assumes "dim_col A = dim_vec v"
   shows "(A * |v\<rangle> )\<^sup>\<dagger> = \<langle>v| * (A\<^sup>\<dagger>)"
