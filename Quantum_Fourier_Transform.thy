@@ -2341,7 +2341,7 @@ fun all_CR:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matr
 
 
 lemma all_CR_dim:
-  assumes "c\<le>m" and "1 \<le> c"
+  assumes "c \<le> m" and "1 \<le> c"
   shows "c + k \<le> m \<longrightarrow> dim_row (aCR c k m) = 2^m \<and> dim_col (aCR c k m) = 2^m"
 proof(induction k)
   show "c + 0 \<le> m \<longrightarrow> dim_row (aCR c 0 m) = 2^m \<and> dim_col (aCR c 0 m) = 2^m"
@@ -2367,6 +2367,20 @@ next
   qed
   ultimately show "c + (Suc k) \<le> m \<longrightarrow> dim_row (aCR c (Suc k) m) = 2^m \<and> dim_col (aCR c (Suc k) m) = 2^m"
     by auto
+qed
+
+lemma all_CR_is_gate:
+  fixes m c k::nat
+  assumes "c \<ge> 1" and "c \<le> m"
+  shows "c + k \<le> m \<longrightarrow> gate m (aCR c k m)" 
+proof(induction k)
+  show "c + 0 \<le> m \<longrightarrow> gate m (aCR c 0 m)" by auto
+next
+  fix k
+  assume IH: "c + k \<le> m \<longrightarrow> gate m (aCR c k m)" 
+  moreover have "(aCR c (Suc k) m) = (CR_on_all (c+(Suc k)) c m) * (aCR c k m)" by auto
+  moreover have "c + (Suc k) \<le> m \<longrightarrow> gate m (CR_on_all (c+(Suc k)) c m)" using CR_on_all_is_gate[of "c+(Suc k)" c m] assms by auto
+  ultimately show "c + (Suc k) \<le> m \<longrightarrow> gate m (aCR c (Suc k) m)" using prod_of_gate_is_gate[of m "(CR_on_all (c+(Suc k)) c m)" "(aCR c k m)"] by auto
 qed
 
 lemma all_CR_app_aux:
@@ -2446,6 +2460,16 @@ next
   then show "dim_col (G c m) = 2^m" using Id_def by (simp add: H_without_scalar_prod calculation)
 qed
 
+lemma G_is_gate:
+  fixes m c k::nat
+  assumes "c \<ge> 1" and "c \<le> m"
+  shows "gate m (G c m)"
+proof-
+  have "gate m (aCR c (m-c) m)" using all_CR_is_gate assms by auto
+  moreover have "gate m (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))" 
+    by (metis H_is_gate assms(1) assms(2) id_is_gate le_add_diff_inverse2 ordered_cancel_comm_monoid_diff_class.add_diff_inverse tensor_gate)
+  ultimately show ?thesis using prod_of_gate_is_gate all_gates_on_single_qubit_def by auto
+qed
 
 lemma app_H_zero: (*Do again with k-1?*)
   assumes "((bin_rep m jd)!k) = 0"
@@ -2686,6 +2710,22 @@ next
   qed
 qed
 
+lemma all_G_is_gate:
+  assumes "1 \<le> k" and "1 \<le> m"
+  shows "k \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..k]] k)"
+proof(rule Nat.nat_induct_at_least[of 1 k])
+  show "1 \<le> k" using assms by auto
+next
+  show "1 \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..int 1]] 1)" using G_is_gate[of 1 m] assms by auto
+next
+  fix k
+  assume IH: "k \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..int k]] k)"
+     and a0: "k \<ge> 1"
+  moreover have "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = (pm [G (nat i) m. i<-[1..k]] k) * G (nat (Suc k)) m" sorry
+  moreover have "(Suc k) \<le> m \<longrightarrow> gate m (G (nat (Suc k)) m)" using G_is_gate[of "Suc k" m] a0 by (simp add: G_is_gate)
+  ultimately show "(Suc k) \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k))" 
+    by (simp add: prod_of_gate_is_gate)
+qed
 
 lemma pow_mult_decomp:
   fixes k m s::nat
@@ -2847,6 +2887,21 @@ next
   qed
 qed
 
+lemma reverse_qubits_is_gate:
+  shows "k \<le> m \<longrightarrow> gate m (rQB k m)"
+proof(induction k)
+  show "0 \<le> m \<longrightarrow> gate m (rQB 0 m)" by auto
+next
+  fix k
+  assume IH: "k \<le> m \<longrightarrow> gate m (rQB k m)"
+  moreover have "(Suc k) \<le> m \<longrightarrow> gate m (fSWAP (Suc k) (m-(Suc k)))" 
+    using SWAP_front_gate 
+    by (metis le_add1 ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
+  ultimately show "(Suc k) \<le> m \<longrightarrow> gate m (rQB (Suc k) m)"
+    using prod_of_gate_is_gate by auto
+qed
+
+
 lemma app_reverse_qubits:
   shows "i \<le> m \<longrightarrow> (rQB i m) * (pw [qr (nat k) m m j. k<-[1..m]] m) 
        = (pw (rev [qr (nat k) m m j. k<-[1..i]]) i) \<Otimes> (pw [qr (nat k) m m j. k<-[i+1..m]] (m-i))"
@@ -2945,8 +3000,14 @@ qed
 definition quantum_fourier_transform :: "nat\<Rightarrow>complex Matrix.mat" ("QFT _" 75) where 
 "(QFT m) = (rQB m m) * (pm [G (nat i) m. i<-[1..m]] m)"
 
-
-
+lemma quantum_fourier_transform_is_gate:
+  assumes "1 \<le> m"
+  shows "gate m (QFT m)"
+proof-
+  have "gate m (rQB m m)" using reverse_qubits_is_gate by auto
+  moreover have "gate m (pm [G (nat i) m. i<-[1..m]] m)" using all_G_is_gate[of m m] assms by auto
+  ultimately show ?thesis using prod_of_gate_is_gate quantum_fourier_transform_def by auto
+qed
 
 abbreviation \<psi>\<^sub>1::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
   "\<psi>\<^sub>1 m j \<equiv> pw [qr (nat k) m m j. k<-[1..m] ] m"
@@ -3451,21 +3512,13 @@ theorem quantum_fourier_transform_is_state:
   assumes "j < 2^m" and "m\<ge>1"
   shows "state m (\<psi>\<^sub>3 m j)"
 proof-
-  have "state m ((QFT m) * |unit_vec (2^m) j\<rangle>)"
-  proof-
-    have "state m |unit_vec (2^m) j\<rangle>" sorry
-    have "(QFT m) * |unit_vec (2^m) j\<rangle> = ((rQB m m) * (pm [G (nat i) m. i<-[1..m]] m)) * |unit_vec (2^m) j\<rangle>" sorry 
+  have "(QFT m) * |unit_vec (2^m) j\<rangle> = \<psi>\<^sub>3 m j" using quantum_fourier_transform_matrix_rep assms by auto
+  moreover have "gate m (QFT m)" using assms quantum_fourier_transform_is_gate by auto
+  moreover have "state m |unit_vec (2^m) j\<rangle>" 
+    by (metis (no_types, lifting) assms(1) dim_col_mat(1) dim_row_mat(1) index_unit_vec(3) ket_vec_col ket_vec_def state_def unit_cpx_vec_length)
+  ultimately show ?thesis
+     by (metis gate_on_state_is_state)
+ qed
 
-
-
-
-(*subsection \<open>The Bitwise Inner Product\<close> (* contribution by Hanna Lachnitt *)
-
-definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where 
-"bitwise_inner_prod n i j = (\<Sum>k\<in>{0..<n}. (bin_rep n i) ! k * (bin_rep n j) ! k)"
-
-abbreviation bip:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" ("_ \<cdot>\<^bsub>_\<^esub>  _") where
-"bip i n j \<equiv> bitwise_inner_prod n i j"
-*)
 
 end
