@@ -681,6 +681,12 @@ lemma unitary_length_bis [simp]:
   using assms unitary_squared_length_bis
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
+lemma unitary_length_bis2 [simp]:
+  fixes U:: "complex mat"
+  assumes "\<forall>v::complex vec. dim_vec v = dim_col U \<longrightarrow> \<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
+  shows "unitary U"
+  sorry
+
 lemma inner_prod_with_unitary_mat [simp]:
   assumes "unitary U" and "dim_vec u = dim_col U" and "dim_vec v = dim_col U"
   shows "\<langle>U * |u\<rangle>|U * |v\<rangle>\<rangle> = \<langle>u|v\<rangle>"
