@@ -761,8 +761,37 @@ proof-
   then have c0:"U \<in> carrier_mat n n" using assms(1) by auto
   have c1:"U\<^sup>\<dagger> \<in> carrier_mat n n" using d0 assms(1) dagger_def by auto
   have f0:"(U\<^sup>\<dagger>) * U = 1\<^sub>m (dim_col U)"
-    using inverts_mat_def cpx_vec_length_def
-    sorry
+  proof
+    show "dim_row (U\<^sup>\<dagger> * U) = dim_row (1\<^sub>m (dim_col U))" using d0 by simp
+  next
+    show "dim_col (U\<^sup>\<dagger> * U) = dim_col (1\<^sub>m (dim_col U))" using d0 by simp
+  next
+    fix i j assume "i < dim_row (1\<^sub>m (dim_col U))" and "j < dim_col (1\<^sub>m (dim_col U))"
+    then have f1:"i < n \<and> j < n" using d0 by simp
+    have f2:"\<And>l. l<n \<longrightarrow> (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1"
+    proof
+      fix l assume a0:"l<n"
+      define v::"complex vec" where d1:"v = unit_vec n l"
+      have "{..<n} = {0..<n}" by auto
+      then have "\<parallel>col U l\<parallel>\<^sup>2 = (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l))"
+        using d0 a0 assms(1) cpx_vec_length_inner_prod inner_prod_def by simp
+      moreover have "\<parallel>col U l\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2" using d0 d1 a0 assms(2) unit_vec_to_col by simp
+      moreover have "\<parallel>v\<parallel>\<^sup>2 = 1" using d1 a0 cpx_vec_length_inner_prod by simp
+      ultimately show "(\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1" by simp
+    qed
+    moreover have "i \<noteq> j \<longrightarrow> (\<Sum>k<n. cnj (U $$ (k, i)) * U $$ (k, j)) = 0"
+    proof
+      assume a0:"i \<noteq> j"
+      define v1::"complex vec" where d1:"v1 = unit_vec n i + unit_vec n j"
+      define v2::"complex vec" where d2:"v2 = unit_vec n i + \<i> \<cdot>\<^sub>v unit_vec n j"
+      have "\<parallel>U * |v1\<rangle>\<parallel>\<^sup>2 = \<parallel>v1\<parallel>\<^sup>2" using d0 d1 assms(2) unit_vec_to_col by simp
+      have "\<parallel>U * |v2\<rangle>\<parallel>\<^sup>2 = \<parallel>v2\<parallel>\<^sup>2" using d0 d2 assms(2) unit_vec_to_col by simp
+      show "(\<Sum>k<n. cnj (U $$ (k, i)) * U $$ (k, j)) = 0"
+        sorry
+    qed
+    ultimately show "(U\<^sup>\<dagger> * U) $$ (i, j) = 1\<^sub>m (dim_col U) $$ (i, j)"
+      using d0 assms(1) f1 one_mat_def dagger_def by auto
+qed
   then have "(U\<^sup>\<dagger>) * U = 1\<^sub>m n" using d0 by simp
   then have "inverts_mat (U\<^sup>\<dagger>) U" using c1 inverts_mat_def by auto
   then have "inverts_mat U (U\<^sup>\<dagger>)" using c0 c1 inverts_mat_sym by simp
