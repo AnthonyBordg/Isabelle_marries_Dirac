@@ -2456,7 +2456,7 @@ fun pow_mult :: "(complex Matrix.mat) list \<Rightarrow> nat \<Rightarrow> compl
   "(pm (Cons x []) (Suc 0)) = x"  
 | "(pm (Cons x xs) (Suc k)) = (pm xs k) * x"
 
-lemma pow_mult_dim [simp]:
+lemma aux_pow_mult_dim:
   assumes "k \<ge> 1"
   shows "\<forall>xs. length xs = k \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) \<longrightarrow> dim_row (pm xs k) = n \<and> dim_col (pm xs k) = n"
 proof(rule Nat.nat_induct_at_least[of 1 k])
@@ -2489,6 +2489,76 @@ next
   qed
 qed
 
+lemma pow_mult_dim [simp]:
+  assumes "k \<ge> 1" and "length xs = k" and "(\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)"
+  shows "dim_row (pm xs k) = n \<and> dim_col (pm xs k) = n"
+  using assms aux_pow_mult_dim by auto
+
+lemma aux_pow_mult_decomp_left:
+  assumes "k \<ge> 1" and "(dim_row x = n \<and> dim_col x = n)"
+  shows "\<forall>xs. length xs = k \<and> (\<forall>y \<in> set xs. dim_row y = n \<and> dim_col y = n) \<longrightarrow> pm (xs@[x]) (Suc k) = x * (pm xs k)"
+proof(rule Nat.nat_induct_at_least)
+  show "k \<ge> 1" using assms by auto
+next
+  show "\<forall>xs. length xs = 1 \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)\<longrightarrow> pm (xs@[x]) (Suc 1) = x * (pm xs 1)"
+  proof(rule allI, rule impI)
+    fix xs:: "complex Matrix.mat list"
+    assume a0: "length xs = 1 \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)"
+    then have "\<exists>y. xs = y # tl xs" by (metis One_nat_def length_Suc_conv list.sel(3))
+    then have "\<exists>y. xs = [y]" using a0 
+      by (metis One_nat_def Suc_le_mono add_diff_cancel_left' butlast.simps(2) impossible_Cons le_numeral_extra(4) length_butlast length_tl list.sel(2) list.size(3) plus_1_eq_Suc)
+    then obtain y where f0: "xs = [y]" by auto
+    have "pm (xs@[x]) (Suc 1) = pm ([y]@[x]) (Suc 1)" using f0 by auto
+    then have "pm (xs@[x]) (Suc 1) = x * y" by auto
+    moreover have "x * (pm xs 1) = x * y" using f0 by auto
+    ultimately show "pm (xs@[x]) (Suc 1) = x * (pm xs 1)" by auto
+  qed
+next
+  fix k::nat
+  assume a0: "k \<ge> 1"
+     and IH: "\<forall>xs. length xs = k \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) \<longrightarrow> pm (xs@[x]) (Suc k) = x * (pm xs k)"
+  show "\<forall>xs. length xs = (Suc k) \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) \<longrightarrow> pm (xs@[x]) (Suc (Suc k)) = x * (pm xs (Suc k))"
+  proof(rule allI, rule impI)
+    fix xs:: "complex Matrix.mat list"
+    assume a1: "length xs = (Suc k) \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)"
+    then have "\<exists>y. xs = y # tl xs" by (metis length_Suc_conv list.sel(3))
+    then obtain y::"complex Matrix.mat" where f0: "xs = y # tl xs" by auto
+    then have "pm (xs@[x]) (Suc (Suc k)) = pm (tl xs @ [x]) (Suc k) * y" by (metis append_Cons pow_mult.simps(3)) 
+    then have "pm (xs@[x]) (Suc (Suc k)) = x * (pm (tl xs) k) * y" using IH a1 
+      by (metis Nitpick.size_list_simp(2) add_diff_cancel_left' list.set_sel(2) nat.distinct(1) plus_1_eq_Suc)
+    moreover have "x \<in> carrier_mat n n" using assms by auto
+    moreover have "(pm (tl xs) k) \<in> carrier_mat n n" using pow_mult_dim[of k "tl xs" n] a0 a1 f0
+      by (metis Ex_list_of_length carrier_matI length_Cons length_tl list.distinct(1) list.sel(3) list.set_sel(2))
+      moreover have "y \<in> carrier_mat n n" by (metis a1 carrier_matI f0 list.set_intros(1))
+    ultimately have "pm (xs@[x]) (Suc (Suc k)) = x * ((pm (tl xs) k) * y)" by auto
+    then have "pm (xs@[x]) (Suc (Suc k)) = x * (pm (y#tl xs) (Suc k))" 
+      using f0 a1
+      by (metis append_Cons append_self_conv2 length_0_conv length_Cons not0_implies_Suc old.nat.inject pow_mult.simps)
+    then show "pm (xs@[x]) (Suc (Suc k)) = x * (pm xs (Suc k))" using f0 by auto
+  qed
+qed
+
+lemma pow_mult_decomp_left:
+  assumes "k \<ge> 1" and "(dim_row x = n \<and> dim_col x = n)" and "length xs = k" "(\<forall>y \<in> set xs. dim_row y = n \<and> dim_col y = n)"
+  shows "pm (xs@[x]) (Suc k) = x * (pm xs k)"
+  using aux_pow_mult_decomp_left assms by auto
+
+lemma pow_mult_decomp_G:
+  assumes "k \<ge> 1" and "k < m" 
+  shows "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
+proof-
+  have "dim_row (G nat (int (Suc k)) m) = 2 ^ m \<and> dim_col (G nat (int (Suc k)) m) = 2 ^ m"
+    using G_dim[of "nat (int (Suc k))" m] assms by auto
+  moreover have "length (map (\<lambda>i. G nat i m) [1..int k]) = k" by simp
+  moreover have "(\<forall>y\<in>set (map (\<lambda>i. G nat i m) [1..int k]). dim_row y = 2 ^ m \<and> dim_col y = 2 ^ m)" 
+    using G_dim assms by auto
+  moreover have "[G (Suc k) m ] = [G (nat i) m. i<-[(Suc k)..(Suc k)]]" 
+    by (metis Cons_eq_map_conv list.simps(8) nat_int upto_single)
+  moreover have "[G (nat i) m. i<-[1..(Suc k)]] = [G (nat i) m. i<-[1..k]] @ [G (Suc k) m ]"
+    using calculation by (smt map_append of_nat_Suc of_nat_le_0_iff upto_split1)
+  ultimately show ?thesis using pow_mult_decomp_left[of k "G (nat (Suc k)) m" "2^m" "[G (nat i) m. i<-[1..k]]"] assms by auto
+qed
+
 lemma all_G_is_gate:
   assumes "1 \<le> k" and "1 \<le> m"
   shows "k \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..k]] k)"
@@ -2500,110 +2570,41 @@ next
   fix k
   assume IH: "k \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..int k]] k)"
      and a0: "k \<ge> 1"
-  moreover have "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = G (nat (Suc k)) m * (pm [G (nat i) m. i<-[1..k]] k)" sorry
-  moreover have "(Suc k) \<le> m \<longrightarrow> gate m (G (nat (Suc k)) m)" using G_is_gate[of "Suc k" m] a0 by (simp add: G_is_gate)
-  ultimately show "(Suc k) \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k))" 
-    by (simp add: prod_of_gate_is_gate)
-qed
-
-lemma pow_mult_decomp:
-  fixes k m s::nat
-  assumes "k\<ge>2"
-  shows "\<forall>xs. length xs = k \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) 
-    \<longrightarrow> (pm xs k) = (last xs) * (pm (butlast xs) (k-1))" 
-proof(rule Nat.nat_induct_at_least[of 2 k])
-  show "k\<ge>2" using assms by auto
-next
-  show "\<forall>xs. length xs = 2 \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) 
-    \<longrightarrow> (pm xs 2) = (last xs) * (pm (butlast xs) (2-1))" 
-  proof(rule allI, rule impI)
-    fix xs::"complex Matrix.mat list"
-    assume a0: "length xs = 2 \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)"
-    then have "(pm xs 2) = (pm (tl xs) 1) * (hd xs)" 
-      by (metis One_nat_def Suc_length_conv list.sel(1) list.sel(3) numeral_2_eq_2 pow_mult.simps(3))
-    then have "(pm xs 2) = (hd (tl xs)) * (hd xs)" 
-      by (metis One_nat_def Suc_1 a0 diff_Suc_1 length_0_conv length_tl list.exhaust_sel not_less_eq_eq pow_mult.simps(1))
-    then have "(pm xs 2) = (last xs) * (hd xs)" 
-      by (metis a0 last.simps length_0_conv length_Suc_conv list.sel(1) list.sel(3) numeral_2_eq_2)
-    then show "(pm xs 2) = (last xs) * (pm (butlast xs) (2-1))"  
-      by (metis a0 butlast.simps(2) length_0_conv length_Suc_conv length_butlast list.sel(1) numeral_2_eq_2 pow_mult.simps(1))
-  qed
-next
-  fix k 
-  assume a0: "k\<ge>2"
-    and  IH: "\<forall>xs. length xs = k \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) 
-         \<longrightarrow> (pm xs k) = (last xs) * (pm (butlast xs) (k-1))" 
-  show "\<forall>xs. length xs = (Suc k) \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) 
-    \<longrightarrow> (pm xs (Suc k)) = (last xs) * (pm (butlast xs) ((Suc k)-1))" 
-  proof(rule allI, rule impI)
-    fix xs::"complex Matrix.mat list"
-    assume a1: "length xs = (Suc k) \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)"
-    then have "(pm xs (Suc k)) = (pm (tl xs) k) * (hd xs)" using a0 
-      by (metis Suc_1 Suc_le_D Suc_length_conv list.sel(1) list.sel(3) pow_mult.simps(3))
-    moreover have f0: "length (tl xs) = k" by (simp add: a1)
-    moreover have "last (tl xs) = last xs" using a1 by (metis a0 f0 last_tl le_zero_eq list.size(3) zero_neq_numeral)
-    ultimately have "(pm xs (Suc k)) = (last xs) * (pm (butlast (tl xs)) (k-1)) * (hd xs)" 
-      using IH a1 by (metis One_nat_def Suc_eq_plus1 Suc_less_eq le_add2 le_imp_less_Suc length_greater_0_conv list.set_sel(2))
-    moreover have "(last xs) * (pm (butlast (tl xs)) (k-1)) * (hd xs) = (last xs) * ((pm (butlast (tl xs)) (k-1)) * (hd xs))" 
-    proof- 
-      have "length (butlast (tl xs)) = k-1" using f0 length_butlast by blast
-      moreover have "1 \<le> k - 1" using a0 by linarith
-      moreover have "(\<forall>x\<in>set (butlast (tl xs)). dim_row x = n \<and> dim_col x = n)" 
-        by (metis a1 butlast.simps(1) in_set_butlastD list.set_sel(2) tl_Nil)
-      then have "(pm (butlast (tl xs)) (k-1)) \<in> carrier_mat n n" 
-        using a0 a1 pow_mult_dim[of "k-1" n ] by auto
-      moreover  have "(last xs) \<in> carrier_mat n n" using a1 
-        by (metis carrier_matI last_in_set length_0_conv nat.simps(3))
-      moreover have "(hd xs) \<in> carrier_mat n n" using a1 
-        by (metis Suc_eq_plus1 Zero_not_Suc carrier_mat_triv list.set_sel(1) list.size(3))
-      ultimately show ?thesis using assoc_mult_mat by auto
+  show "(Suc k) \<le> m \<longrightarrow> gate m (pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k))" 
+  proof
+    assume a1: "(Suc k) \<le> m"
+    have "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = G (nat (Suc k)) m * (pm [G (nat i) m. i<-[1..k]] k)" 
+    proof-
+      have "dim_row (G nat (int (Suc k)) m) = 2 ^ m \<and> dim_col (G nat (int (Suc k)) m) = 2 ^ m"
+        using G_dim[of "nat (int (Suc k))" m] a1 by auto
+      moreover have "length (map (\<lambda>i. G nat i m) [1..int k]) = k" by simp
+      moreover have "(\<forall>y\<in>set (map (\<lambda>i. G nat i m) [1..int k]). dim_row y = 2 ^ m \<and> dim_col y = 2 ^ m)" 
+        using G_dim a1 by auto
+      moreover have "[G (Suc k) m ] = [G (nat i) m. i<-[(Suc k)..(Suc k)]]" 
+        by (metis Cons_eq_map_conv list.simps(8) nat_int upto_single)
+      moreover have "[G (nat i) m. i<-[1..(Suc k)]] = [G (nat i) m. i<-[1..k]] @ [G (Suc k) m ]"
+        using calculation by (smt map_append of_nat_Suc of_nat_le_0_iff upto_split1)
+      ultimately show ?thesis using pow_mult_decomp_left[of k "G (nat (Suc k)) m" "2^m" "[G (nat i) m. i<-[1..k]]"] a0 by auto
     qed
-    ultimately have "(pm xs (Suc k)) = (last xs) * ((pm (butlast (tl xs)) (k-1)) * (hd xs))" by auto
-    moreover have "(hd xs)#(butlast (tl xs)) = butlast xs" using a0 a1 
-      by (metis butlast.simps(2) f0 length_0_conv length_greater_0_conv less_le_trans list.exhaust_sel nat.simps(3) pos2)
-    ultimately show "(pm xs (Suc k)) = (last xs) * (pm (butlast xs) ((Suc k)-1))" 
-      using a0 a1 f0 pow_mult.simps 
-      by (metis (no_types, lifting) Suc_1 Suc_diff_le diff_Suc_Suc length_Cons length_butlast)
+    moreover have "gate m (G (nat (Suc k)) m)" using G_is_gate[of "Suc k" m] a0 a1 by (simp add: G_is_gate)
+    ultimately show "gate m (pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k))" 
+      by (simp add: IH Suc_leD a1 prod_of_gate_is_gate)
   qed
 qed
-
-
-lemma pow_mult_decomp_G:
-  fixes k::nat
-  assumes "k\<ge>1" and "k<m" 
-  shows "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
-proof-
-  have "length [G (nat i) m. i<-[1..(Suc k)]] = k+1" by auto
-  moreover have "(\<forall>x \<in> set [G (nat i) m. i<-[1..(Suc k)]]. dim_row x = 2^m \<and> dim_col x = 2^m)" 
-    using assms G_dim(1) G_dim(2) by auto
-  moreover have "2 \<le> k + 1" 
-    using assms by linarith
-  ultimately have "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) 
-      = (last [G (nat i) m. i<-[1..(Suc k)]]) * (pm (butlast [G (nat i) m. i<-[1..(Suc k)]]) (k+1-1))"  
-    using pow_mult_decomp[of "k+1" "2^m"] assms by auto
-  moreover have "(last [G (nat i) m. i<-[1..(Suc k)]]) = G (nat (Suc k)) m " by (simp add: upto_rec2)
-  moreover have "(butlast [G (nat i) m. i<-[1..(Suc k)]]) = [G (nat i) m. i<-[1..k]]" by (simp add: upto_rec2) 
-  ultimately show "(pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) 
-      = (G (Suc k) m) * (pm [G (nat i) m. i<-[1..k]] k)" 
-    by (metis add_diff_cancel_right' nat_int)
-qed
-
 
 
 lemma app_all_G: 
-  fixes k m j::nat
-  assumes "k\<ge>1" and "j<2^m" and "m\<ge>1"
-  shows "k\<le>m \<longrightarrow> (pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
+  assumes "k \<ge> 1" and "j < 2^m" and "m \<ge> 1"
+  shows "k \<le> m \<longrightarrow> (pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
       = ((pr [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))" 
 proof(rule Nat.nat_induct_at_least[of 1 k])
-  show "k\<ge>1" using assms by auto
+  show "k \<ge> 1" using assms by auto
 next
-  show "1\<le>m \<longrightarrow>(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
+  show "1 \<le> m \<longrightarrow>(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
       = ((pr [qr (nat i) m m j. i<-[1..int 1]] 1) \<Otimes> (j\<Otimes> (1+1) (m-1) m j))" 
   proof
-    assume "1\<le>m" 
-    have "(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j)
-       = (G 1 m) * (j\<Otimes> 1 m m j)"
+    assume "1 \<le> m" 
+    have "(pm [G (nat i) m. i<-[1..int 1]] 1) * (j\<Otimes> 1 m m j) = (G 1 m) * (j\<Otimes> 1 m m j)"
      by auto
     moreover have "(j\<Otimes> 1 m m j) = ((pr [qr (nat i) m m j. i<-[1..(1-1)]] (1-1)) \<Otimes> (j\<Otimes> 1 (m-1+1) m j))" 
     proof-
@@ -2619,19 +2620,29 @@ next
  qed
 next
   fix k::nat
-  assume a0: "k\<ge>1"
-  assume IH: "k\<le>m \<longrightarrow>(pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
+  assume a0: "k \<ge> 1"
+  assume IH: "k \<le> m \<longrightarrow>(pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
             = ((pr [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))" 
-  show  "(Suc k)\<le>m \<longrightarrow> (pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
-      = ((pr [qr (nat i) m m j. i<-[1..(Suc k)]] (Suc k)) \<Otimes> (j\<Otimes> ((Suc k)+1) (m-(Suc k)) m j))" 
+  show  "(Suc k) \<le> m \<longrightarrow> (pm [G (nat i) m. i<-[1..(Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+       = ((pr [qr (nat i) m m j. i<-[1..(Suc k)]] (Suc k)) \<Otimes> (j\<Otimes> ((Suc k)+1) (m-(Suc k)) m j))" 
   proof
-    assume a1: "(Suc k)\<le>m"
+    assume a1: "(Suc k) \<le> m"
     then have "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
              = ((G (Suc k) m) * (pm [G (nat i) m. i<-[1..int k]] k)) * (j\<Otimes> 1 m m j)"
       using a0 pow_mult_decomp_G[of k m] by auto
-    then have "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
-            = (G (Suc k) m) * ((pm [G (nat i) m. i<-[1..int k]] k) * (j\<Otimes> 1 m m j))"
-    sorry
+    moreover have "((G (Suc k) m) * (pm [G (nat i) m. i<-[1..int k]] k)) * (j\<Otimes> 1 m m j)
+                 = (G (Suc k) m) * ((pm [G (nat i) m. i<-[1..int k]] k) * (j\<Otimes> 1 m m j))"
+    proof-
+      have "length [G (nat i) m. i<-[1..int k]] = k" by simp
+      moreover have "\<forall>x\<in>set (map (\<lambda>i. G nat i m) [1..int k]). dim_row x = 2^m \<and> dim_col x = 2^m" using G_dim a0 a1 by auto
+      ultimately have "(pm [G (nat i) m. i<-[1..int k]] k) \<in> carrier_mat (2^m) (2^m)" 
+        using a0 pow_mult_dim[of k "[G (nat i) m. i<-[1..int k]]" "2^m"] by auto
+        moreover have "(G (Suc k) m) \<in> carrier_mat (2^m) (2^m)" using G_dim[of "Suc k" m] a1 a0 le_SucI by blast
+      moreover have "(j\<Otimes> 1 m m j) \<in> carrier_mat (2^m) 1" using j_to_tensor_prod_dim[of 1 m m j] by auto
+      ultimately show ?thesis by auto
+    qed
+    ultimately have "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
+             = (G (Suc k) m) * ((pm [G (nat i) m. i<-[1..int k]] k) * (j\<Otimes> 1 m m j))" by auto
     then have  "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
             = (G (Suc k) m) * ((pr [qr (nat i) m m j. i<-[1..k]] k) \<Otimes> (j\<Otimes> (k+1) (m-k) m j))"
       using IH a1 by auto
@@ -2644,7 +2655,7 @@ qed
 
 
 
-
+subsection \<open> Reverse the qubits \<close>
 
 fun reverse_qubits:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("rQB _ _" 75) where
   "(rQB 0 m) = (Id m)" 
@@ -2680,13 +2691,12 @@ next
     using prod_of_gate_is_gate by auto
 qed
 
-
 lemma app_reverse_qubits:
   shows "i \<le> m \<longrightarrow> (rQB i m) * (pr [qr (nat k) m m j. k<-[1..m]] m) 
        = (pr (rev [qr (nat k) m m j. k<-[1..i]]) i) \<Otimes> (pr [qr (nat k) m m j. k<-[i+1..m]] (m-i))"
 proof(induction i)
   have "(rQB 0 m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
-       = (Id m) * (pr [qr (nat k) m m j. k<-[1..int m]] m)" by auto
+      = (Id m) * (pr [qr (nat k) m m j. k<-[1..int m]] m)" by auto
   moreover have "dim_row (pr [qr (nat k) m m j. k<-[1..int m]] m) = 2^m" 
     using pow_tensor_list_dim_row[of "[qr (nat k) m m j. k<-[1..int m]]" m 2] qr_def by auto 
   ultimately have "(rQB 0 m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
@@ -2699,13 +2709,13 @@ next
   assume IH: "i \<le> m \<longrightarrow> (rQB i m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
        = (pr (rev [qr (nat k) m m j. k<-[1..int i]]) i) \<Otimes> (pr [qr (nat k) m m j. k<-[int (i+1)..int m]] (m-i))"
   show "(Suc i) \<le> m \<longrightarrow> (rQB (Suc i) m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
-       = (pr (rev [qr (nat k) m m j. k<-[1..int (Suc i)]]) (Suc i)) \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i)))"
+      = (pr (rev [qr (nat k) m m j. k<-[1..int (Suc i)]]) (Suc i)) \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i)))"
   proof
     assume a0: "(Suc i) \<le> m"
     have "(rQB (Suc i) m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
-       = (fSWAP (Suc i) (m-(Suc i)) * rQB i m) * (pr [qr (nat k) m m j. k<-[1..int m]] m)" by auto
+        = (fSWAP (Suc i) (m-(Suc i)) * rQB i m) * (pr [qr (nat k) m m j. k<-[1..int m]] m)" by auto
     moreover have "(fSWAP (Suc i) (m-(Suc i))) \<in> carrier_mat (2^m) (2^m)"  using SWAP_front_dim[of "Suc i" "m-(Suc i)"] a0 by auto
-    moreover have "(rQB i m) \<in> carrier_mat (2^m) (2^m)" using  reverse_qubits_dim a0 by auto
+    moreover have "(rQB i m) \<in> carrier_mat (2^m) (2^m)" using reverse_qubits_dim a0 by auto
     moreover have "(pr [qr (nat k) m m j. k<-[1..int m]] m) \<in> carrier_mat (2^m) 1" 
       using pow_tensor_list_dim_row[of "[qr (nat k) m m j. k<-[1..int m]]" m 2]   
             pow_tensor_list_dim_col[of "[qr (nat k) m m j. k<-[1..int m]]" m] qr_def by auto
@@ -2733,10 +2743,8 @@ next
        = fSWAP (Suc i) (m-(Suc i)) * ((pr (rev [qr (nat k) m m j. k<-[1..int i]]) i) \<Otimes> qr (nat (i+1)) m m j \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-i-1)))" 
       using tensor_mat_is_assoc by auto
     moreover have "fSWAP (Suc i-0) (m-(Suc i)) *
- ((pr (rev [qr (nat k) m m j. k<-[1..int i]]) (Suc i - 0 - 1)) \<Otimes> qr (nat (i+1)) m m j \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i))))
-   =
-    qr (nat (i+1)) m m j \<Otimes> (pr (rev [qr (nat k) m m j. k<-[1..int i]]) (Suc i - 0 - 1)) \<Otimes>
-    (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i)))"
+((pr (rev [qr (nat k) m m j. k<-[1..int i]]) (Suc i - 0 - 1)) \<Otimes> qr (nat (i+1)) m m j \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i))))
+= qr (nat (i+1)) m m j \<Otimes> (pr (rev [qr (nat k) m m j. k<-[1..int i]]) (Suc i - 0 - 1)) \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i)))"
     proof-
       have "0 + 1 \<le> Suc i" by auto
       moreover have "1 \<le> Suc i" by auto
@@ -2764,7 +2772,7 @@ next
         by simp
       moreover have "[qr (nat k) m m j. k<-[1..int i]] @ [qr (nat (i+1)) m m j] = [qr (nat k) m m j. k<-[1..int (i+1)]]" 
         by (simp add: upto_rec2)
-      moreover have "length [qr (nat k) m m j. k<-[1..int i]] = i" sorry
+      moreover have "length [qr (nat k) m m j. k<-[1..int i]] = i" by simp
       ultimately show ?thesis using pow_tensor_decomp_right[of "[qr (nat k) m m j. k<-[1..int i]]" i "qr (nat (i+1)) m m j "]
         by (metis Suc_eq_plus1 pow_tensor_list.simps(2))
     qed
@@ -2775,6 +2783,7 @@ next
 qed
 
 
+subsection \<open> The Quantum Fourier Transform \<close>
 
 definition quantum_fourier_transform :: "nat\<Rightarrow>complex Matrix.mat" ("QFT _" 75) where 
 "(QFT m) = (rQB m m) * (pm [G (nat i) m. i<-[1..m]] m)"
@@ -2808,13 +2817,21 @@ qed
 abbreviation \<psi>\<^sub>2::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>2 m j \<equiv> pr [qr (m+1-nat k) m m j. k<-[1..m] ] m"
 
+
+
+
 theorem quantum_fourier_transform_prod_rep:
-  fixes j m::nat
-  assumes "j < 2^m" and "m\<ge>1"
+  assumes "j < 2^m" and "m \<ge> 1"
   shows "(QFT m) * |unit_vec (2^m) j\<rangle> = \<psi>\<^sub>2 m j" 
 proof-
-  have "(QFT m) * |unit_vec (2^m) j\<rangle>  = (rQB m m) * ((pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle>)"
-    using quantum_fourier_transform_def sorry
+  have "length [G (nat i) m. i<-[1..m]] = m" by simp
+  moreover have "\<forall>x\<in>set (map (\<lambda>i. G nat i m) [1..int m]). dim_row x = 2 ^ m \<and> dim_col x = 2 ^ m" using G_dim by auto
+  ultimately have "(pm [G (nat i) m. i<-[1..m]] m) \<in> carrier_mat (2^m) (2^m)" 
+    using assms pow_mult_dim[of m "[G (nat i) m. i<-[1..m]]" "2^m"] by auto
+  moreover have "(rQB m m) \<in> carrier_mat (2^m) (2^m)" using reverse_qubits_dim by auto
+  moreover have "|unit_vec (2^m) j\<rangle> \<in> carrier_mat (2^m) 1" by (simp add: ket_vec_def)
+  ultimately have "(QFT m) * |unit_vec (2^m) j\<rangle>  = (rQB m m) * ((pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle>)"
+    using quantum_fourier_transform_def by auto
   then have "(QFT m) * |unit_vec (2^m) j\<rangle>  = (rQB m m) * (\<psi>\<^sub>1 m j)" 
     using assms aux_quantum_fourier_transform_prod_rep by auto
   moreover have "(rQB m m) * (\<psi>\<^sub>1 m j) = (\<psi>\<^sub>2 m j)" 
@@ -2830,21 +2847,21 @@ proof-
 qed
 
 lemma aux_exp_term_one_1: 
-  assumes "m\<ge>k" and "k\<ge>1" and "m\<ge>i" and "k\<ge>i+1" 
+  assumes "m \<ge> k" and "k \<ge> 1" and "m \<ge> i" and "k \<ge> i + 1" 
   shows "1/2^(m-k+1)*(2::nat)^(m-i) = 2^(k-i-1)"
 proof-
-  have " m - k + 1 \<le> m - i" 
+  have "m - k + 1 \<le> m - i" 
     using assms(1) assms(4) by linarith
   then have "1/2^(m-k+1)*(2::nat)^(m-i) = 2^(m-i-(m-k+1))"
     using power_diff[of 2 "m-k+1" "m-i"] 
     by (metis One_nat_def add.right_neutral add_Suc_right diff_diff_left mult.left_neutral of_nat_numeral 
         of_nat_power one_add_one times_divide_eq_left zero_neq_numeral)   
-  moreover have "m-i-(m-k+1) = k-i-1" using assms by auto
+  moreover have "m - i - (m - k + 1) = k - i - 1" using assms by auto
   ultimately show ?thesis by auto
 qed 
 
 lemma aux_exp_term_one_2: 
-  assumes "i\<in>{k-1..m-1}" and "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
+  assumes "i \<in> {k-1..m-1}" and "m \<ge> 1" and "m \<ge> k" and "k \<ge> 1" and "jd < 2^m"
   shows "1/2^(m-k+1)*real 2^(m-(i+1)) = 1/2^(i-(k-1)+1)" 
 proof-
   have "(m::nat) - ((i::nat) + (1::nat)) \<le> m - (k::nat) + (1::nat)"
@@ -2860,8 +2877,8 @@ proof-
 qed
 
 
-lemma j_bit_representation: (*Rename to make it more general no j in name*)
-  assumes "j < 2^m" and "m\<ge>1"
+lemma bit_representation: (*Rename to make it more general no j in name*)
+  assumes "j < 2^m" and "m \<ge> 1"
   shows "j = (\<Sum>i\<in>{1..m}. (bin_rep m j)!(i-1) * 2^(m-i))" 
 proof-
   have "j = (\<Sum>i<m. bin_rep m j ! i * 2^(m-1-i))" 
@@ -2888,16 +2905,16 @@ next
     by simp
 next
   fix k::nat
-  assume a0: "k\<ge> 1"
-  assume IH: "k\<le>m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))) = 1"
-  show "(Suc k)\<le>m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) = 1"
+  assume a0: "k \<ge> 1"
+  assume IH: "k \<le> m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))) = 1"
+  show "(Suc k) \<le> m \<longrightarrow> exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) = 1"
   proof
-    assume a1: "(Suc k)\<le>m"
+    assume a1: "(Suc k) \<le> m"
     have "(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i)) =
           (\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))
         + (bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)" using sum_Un a0 by auto 
     then have "(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i)) =
-               (2::nat) *(\<Sum>i\<in>{1..<k}.  ((bin_rep m jd)!(i-1) * 1/2^(m-k+1) * real 2^(m-i))) 
+               (2::nat) * (\<Sum>i\<in>{1..<k}.  ((bin_rep m jd)!(i-1) * 1/2^(m-k+1) * real 2^(m-i))) 
              + (bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)"
       using sum_distrib_left[of 2 "\<lambda>i.((bin_rep m jd)!(i-1) * 1/2^(m-k+1) * real 2^(m-i))" "{1..<k}" ] a1 by auto
     then have "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) =
@@ -2917,18 +2934,19 @@ next
       show "(bin_rep m jd)!(k-1) = 0 \<or> (bin_rep m jd)!(k-1) = 1" 
         using bin_rep_coeff a0 a1 assms diff_less_Suc less_le_trans by blast
     next
-      assume a2: "(bin_rep m jd)!(k-1) = 0"
+      assume "(bin_rep m jd)!(k-1) = 0"
       then show ?thesis by auto
     next
-      assume a2: "(bin_rep m jd)!(k-1) = 1"
+      assume "(bin_rep m jd)!(k-1) = 1"
       then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))
-               = exp(2*pi*\<i>*( 1/2^(m-(Suc k)+1)*real 2^(m-k)))" using a2 by auto
+               = exp(2*pi*\<i>*( 1/2^(m-(Suc k)+1)*real 2^(m-k)))" by auto
       then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))
                = exp(2*pi*\<i>*( 1/2^(m-k)*real 2^(m-k)))" 
         using a1
         by (metis (no_types, lifting) One_nat_def Suc_diff_le add.right_neutral add_Suc_right diff_Suc_Suc)
       then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k))) = exp(2*pi*\<i>)"  
-          by (smt Suc_diff_le Suc_eq_plus1 Suc_leD a0 a1 add.right_neutral add_diff_cancel_right' diff_Suc_Suc aux_exp_term_one_1 le_SucI mult.right_neutral of_nat_power of_real_hom.hom_one order_refl plus_1_eq_Suc power.simps(1))
+        using  a0 a1
+        by (smt Suc_diff_le Suc_eq_plus1 Suc_leD add.right_neutral add_diff_cancel_right' diff_Suc_Suc aux_exp_term_one_1 le_SucI mult.right_neutral of_nat_power of_real_hom.hom_one order_refl plus_1_eq_Suc power.simps(1))
       then show "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k))) = 1" by simp
     qed
     ultimately show "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) = 1" 
@@ -2939,8 +2957,7 @@ qed
 
 
 lemma qr_different_rep:
-  fixes k m jd::nat
-  assumes "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
+  assumes "m \<ge> 1" and "m \<ge> k" and "k \<ge> 1" and "jd < 2^m"
   shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))" 
 proof- 
   have "qr k m m jd = (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) 
@@ -2949,7 +2966,7 @@ proof-
   moreover have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp (complex_of_real (2*pi)*\<i>*(bf (k-1) (m-1) m jd))" 
   proof-
     have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp(2*pi*\<i>*(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i))*1/2^(m-k+1))" 
-      using j_bit_representation assms by auto
+      using bit_representation assms by auto
     then have "exp(2*pi*\<i>*jd/2^(m-k+1)) = exp(2*pi*\<i>*(1/2^(m-k+1)*real(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i))))" 
       using Groups.mult_ac(1) mult.right_neutral times_divide_eq_left by simp
     moreover have "(1/2^(m-k+1)*real(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 2^(m-i)))
@@ -2995,7 +3012,7 @@ qed
 
 lemma qr_different_rep':
   fixes k m jd::nat
-  assumes "m\<ge>1" and "m\<ge>k" and "k\<ge>1" and "jd < 2^m"
+  assumes "m \<ge> 1" and "m \<ge> k" and "k \<ge> 1" and "jd < 2^m"
   shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2))" 
 proof-
   have "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))" 
@@ -3025,21 +3042,8 @@ proof-
   ultimately show ?thesis by auto
 qed
 
-lemma
-  assumes "m\<ge>1"
-  shows "1/(2::real)^(m+1)*2 = 1/2^m" by auto
-
-lemma
-  fixes a b c::nat
-  shows "a * (b+c) = a*b + a*c" 
-  by (simp add: distrib_left)
-lemma 
-  assumes "i\<in>{0,1}" and "m>1"
-  shows "(bin_rep m i)!0 = 0"
-  by (metis assms(1) assms(2) bin_rep_index_0 insert_iff lessI one_add_one plus_1_eq_Suc pos2 power_one_right singletonD)
-
 lemma bin_rep_div:
-  assumes "i < 2^(Suc n)" and "n\<ge>1" and "l\<le>n" and "l\<ge>1"
+  assumes "i < 2^(Suc n)" and "n \<ge> 1" and "l \<le> n" and "l \<ge> 1"
   shows "(bin_rep n (i div 2))!(l-1) = (bin_rep (Suc n) i)!(l-1) " 
 proof-
   have "m \<le> n \<longrightarrow> i div 2 mod 2^m = i mod 2^(m+1) div 2" for m::nat
@@ -3061,7 +3065,6 @@ proof-
     using bin_rep_index assms by auto
 qed
 
-(*Da die Elemente der pr liste noch geswitched werden müssen ergibt sich die veränderte Matrix *)
 lemma product_rep_to_def: 
   fixes n m jd::nat
   assumes "n \<ge> 1" and "m \<ge> 1" and "jd < 2^m"
@@ -3265,7 +3268,7 @@ proof-
       by metis
     then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
     =exp(complex_of_real(2*pi)*\<i>*jd*real i*1/2^m)*1/sqrt(2)^m" 
-      using j_bit_representation[of i m] assms nat_mult_1_right 
+      using bit_representation[of i m] assms nat_mult_1_right 
       by (metis (mono_tags, lifting) a0 dim_row_mat(1) of_nat_id sum.cong)
     then show "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
             = (\<psi>\<^sub>3 m jd) $$ (i,j)" using a0 a1 by auto
