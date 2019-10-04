@@ -687,32 +687,24 @@ lemma inverts_mat_sym:
   shows "inverts_mat B A"
 proof-
   define n where d0:"n = dim_row B"
-  have "A * B = 1\<^sub>m (dim_row A)"
-    using assms(1) inverts_mat_def by auto
-  moreover have "dim_col B = dim_col (A * B)"
-    using times_mat_def by simp
-  ultimately have "dim_col B = dim_row A"
-    by simp
-  then have c0:"A \<in> carrier_mat n n"
-      using assms(2,3) d0 by auto
-  have c1:"B \<in> carrier_mat n n"
-    using assms(3) d0 by auto
-  have f0:"A * B = 1\<^sub>m n"
-    using inverts_mat_def c0 c1 assms(1) by auto
+  have "A * B = 1\<^sub>m (dim_row A)" using assms(1) inverts_mat_def by auto
+  moreover have "dim_col B = dim_col (A * B)" using times_mat_def by simp
+  ultimately have "dim_col B = dim_row A" by simp
+  then have c0:"A \<in> carrier_mat n n" using assms(2,3) d0 by auto
+  have c1:"B \<in> carrier_mat n n" using assms(3) d0 by auto
+  have f0:"A * B = 1\<^sub>m n" using inverts_mat_def c0 c1 assms(1) by auto
   have f1:"det B \<noteq> 0"
   proof
     assume "det B = 0"
-    moreover have "B \<in> carrier_mat n n"
-      using assms(3) d0 by auto
-    ultimately have "\<exists>v. v \<in> carrier_vec n \<and> v \<noteq> 0\<^sub>v n \<and> B *\<^sub>v v = 0\<^sub>v n"
-      using det_0_iff_vec_prod_zero assms(3) by blast
+    then have "\<exists>v. v \<in> carrier_vec n \<and> v \<noteq> 0\<^sub>v n \<and> B *\<^sub>v v = 0\<^sub>v n"
+      using det_0_iff_vec_prod_zero assms(3) c1 by blast
     then obtain v where d1:"v \<in> carrier_vec n \<and> v \<noteq> 0\<^sub>v n \<and> B *\<^sub>v v = 0\<^sub>v n" by auto
     then have d2:"dim_vec v = n" by simp
     have "B * |v\<rangle> = |0\<^sub>v n\<rangle>"
     proof
       show "dim_row (B * |v\<rangle>) = dim_row |0\<^sub>v n\<rangle>" using ket_vec_def d0 by simp
     next
-      show "dim_col (B * |v\<rangle>) = dim_col |0\<^sub>v n\<rangle>"  using ket_vec_def d0 by simp
+      show "dim_col (B * |v\<rangle>) = dim_col |0\<^sub>v n\<rangle>" using ket_vec_def d0 by simp
     next
       fix i j assume "i < dim_row |0\<^sub>v n\<rangle>" and "j < dim_col |0\<^sub>v n\<rangle>"
       then have f2:"i < n \<and> j = 0" using ket_vec_def by simp
@@ -722,34 +714,27 @@ proof-
       ultimately show "(B * |v\<rangle>) $$ (i, j) = |0\<^sub>v n\<rangle> $$ (i, j)"
         using ket_vec_def d0 d1 times_mat_def mult_mat_vec_def by (auto simp add: scalar_prod_def)
     qed
-    moreover have "|v\<rangle> \<in> carrier_mat n 1"
-      using d2 ket_vec_def by simp
-    ultimately have "(A * B) * |v\<rangle> = A * |0\<^sub>v n\<rangle>"
-      using c0 c1 by simp
-    then have f3:"|v\<rangle> = A * |0\<^sub>v n\<rangle>"
-      using d2 f0 ket_vec_def by auto
+    moreover have "|v\<rangle> \<in> carrier_mat n 1" using d2 ket_vec_def by simp
+    ultimately have "(A * B) * |v\<rangle> = A * |0\<^sub>v n\<rangle>" using c0 c1 by simp
+    then have f3:"|v\<rangle> = A * |0\<^sub>v n\<rangle>" using d2 f0 ket_vec_def by auto
     have "v = 0\<^sub>v n"
     proof
-      show "dim_vec v = dim_vec (0\<^sub>v n)"
-        using d2 by simp
+      show "dim_vec v = dim_vec (0\<^sub>v n)" using d2 by simp
     next
       fix i assume f4:"i < dim_vec (0\<^sub>v n)"
-      then have "|v\<rangle> $$ (i,0) = v $ i"
-        using d2 ket_vec_def by simp
+      then have "|v\<rangle> $$ (i,0) = v $ i" using d2 ket_vec_def by simp
       moreover have "(A * |0\<^sub>v n\<rangle>) $$ (i, 0) = 0"
         using ket_vec_def times_mat_def scalar_prod_def f4 c0 by auto
-      ultimately show "v $ i = 0\<^sub>v n $ i"
-        using f3 f4 by simp
+      ultimately show "v $ i = 0\<^sub>v n $ i" using f3 f4 by simp
     qed
-    then show False
-      using d1 by simp
+    then show False using d1 by simp
   qed
-  have f2:"adj_mat B \<in> carrier_mat n n \<and> B * adj_mat B = det B \<cdot>\<^sub>m 1\<^sub>m n" using c1 adj_mat by auto
+  have f5:"adj_mat B \<in> carrier_mat n n \<and> B * adj_mat B = det B \<cdot>\<^sub>m 1\<^sub>m n" using c1 adj_mat by auto
   then have c2:"((1/det B) \<cdot>\<^sub>m adj_mat B) \<in> carrier_mat n n" by simp
-  have f3:"B * ((1/det B) \<cdot>\<^sub>m adj_mat B) = 1\<^sub>m n" using c1 f1 f2 mult_smult_distrib[of "B"] by auto
+  have f6:"B * ((1/det B) \<cdot>\<^sub>m adj_mat B) = 1\<^sub>m n" using c1 f1 f5 mult_smult_distrib[of "B"] by auto
   then have "A = (A * B) * ((1/det B) \<cdot>\<^sub>m adj_mat B)" using c0 c1 c2 by simp
   then have "A = (1/det B) \<cdot>\<^sub>m adj_mat B" using f0 c2 by auto
-  then show ?thesis using c0 c1 f3 inverts_mat_def by auto
+  then show ?thesis using c0 c1 f6 inverts_mat_def by auto
 qed
 
 lemma sum_of_unit_vec_length:
@@ -822,7 +807,7 @@ lemma set_n:
   shows "{..<n} = {0..<n}"
   by auto
 
-lemma unitary_length_bis2:
+lemma unitary_length_bis_conv:
   fixes U:: "complex mat"
   assumes "square_mat U" and "\<forall>v::complex vec. dim_vec v = dim_col U \<longrightarrow> \<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
   shows "unitary U"
