@@ -797,8 +797,7 @@ lemma inner_prod_is_sesquilinear:
   shows "\<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|c3 \<cdot>\<^sub>v v1 + c4 \<cdot>\<^sub>v v2\<rangle> = cnj (c1) * c3 * \<langle>u1|v1\<rangle> + cnj (c2) * c3 * \<langle>u2|v1\<rangle> + 
                                                  cnj (c1) * c4 * \<langle>u1|v2\<rangle> + cnj (c2) * c4 * \<langle>u2|v2\<rangle>"
 proof-
-  have "\<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|c3 \<cdot>\<^sub>v v1 + c4 \<cdot>\<^sub>v v2\<rangle> = c3 * \<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|v1\<rangle> +
-                                                c4 * \<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|v2\<rangle>"
+  have "\<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|c3 \<cdot>\<^sub>v v1 + c4 \<cdot>\<^sub>v v2\<rangle> = c3 * \<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|v1\<rangle> + c4 * \<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|v2\<rangle>"
     using inner_prod_is_linear[of "c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2" "\<lambda>i. if i = 0 then v1 else v2" 
                                   "\<lambda>i. if i = 0 then c3 else c4"] assms
     by simp
@@ -818,82 +817,79 @@ proof-
     by (auto simp add: algebra_simps)
 qed
 
+lemma set_n:
+  fixes n::nat
+  shows "{..<n} = {0..<n}"
+  by auto
+
 lemma unitary_length_bis2:
   fixes U:: "complex mat"
   assumes "square_mat U" and "\<forall>v::complex vec. dim_vec v = dim_col U \<longrightarrow> \<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
   shows "unitary U"
 proof-
-  define n where d0:"n = dim_col U"
+  define n where "n = dim_col U"
   then have c0:"U \<in> carrier_mat n n" using assms(1) by auto
-  have c1:"U\<^sup>\<dagger> \<in> carrier_mat n n" using d0 assms(1) dagger_def by auto
+  then have c1:"U\<^sup>\<dagger> \<in> carrier_mat n n" using assms(1) dagger_def by auto
   have f0:"(U\<^sup>\<dagger>) * U = 1\<^sub>m (dim_col U)"
   proof
-    show "dim_row (U\<^sup>\<dagger> * U) = dim_row (1\<^sub>m (dim_col U))" using d0 by simp
+    show "dim_row (U\<^sup>\<dagger> * U) = dim_row (1\<^sub>m (dim_col U))" using c0 by simp
   next
-    show "dim_col (U\<^sup>\<dagger> * U) = dim_col (1\<^sub>m (dim_col U))" using d0 by simp
+    show "dim_col (U\<^sup>\<dagger> * U) = dim_col (1\<^sub>m (dim_col U))" using c0 by simp
   next
     fix i j assume "i < dim_row (1\<^sub>m (dim_col U))" and "j < dim_col (1\<^sub>m (dim_col U))"
-    then have f1:"i < n \<and> j < n" using d0 by simp
-    have f2:"\<And>l. l<n \<longrightarrow> (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1"
+    then have a0:"i < n \<and> j < n" using c0 by simp
+    have f1:"\<And>l. l<n \<longrightarrow> (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1"
     proof
-      fix l assume a0:"l<n"
+      fix l assume a1:"l<n"
       define v::"complex vec" where d1:"v = unit_vec n l"
-      have "{..<n} = {0..<n}" by auto
-      then have "\<parallel>col U l\<parallel>\<^sup>2 = (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l))"
-        using d0 a0 assms(1) cpx_vec_length_inner_prod inner_prod_def by simp
-      moreover have "\<parallel>col U l\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2" using d0 d1 a0 assms(2) unit_vec_to_col by simp
-      moreover have "\<parallel>v\<parallel>\<^sup>2 = 1" using d1 a0 cpx_vec_length_inner_prod by simp
+      have "\<parallel>col U l\<parallel>\<^sup>2 = (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l))"
+        using c0 a1 cpx_vec_length_inner_prod inner_prod_def set_n by simp
+      moreover have "\<parallel>col U l\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2" using c0 d1 a1 assms(2) unit_vec_to_col by simp
+      moreover have "\<parallel>v\<parallel>\<^sup>2 = 1" using d1 a1 cpx_vec_length_inner_prod by simp
       ultimately show "(\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1" by simp
     qed
     moreover have "i \<noteq> j \<longrightarrow> (\<Sum>k<n. cnj (U $$ (k, i)) * U $$ (k, j)) = 0"
     proof
-      assume a0:"i \<noteq> j"
+      assume a2:"i \<noteq> j"
       define v1::"complex vec" where d1:"v1 = unit_vec n i + 1 \<cdot>\<^sub>v unit_vec n j"
       define v2::"complex vec" where d2:"v2 = unit_vec n i + \<i> \<cdot>\<^sub>v unit_vec n j"
-      have a1:"{..<n} = {0..<n}" by auto
-      then have f3:"\<langle>col U i|col U i\<rangle> = 1 \<and> \<langle>col U j|col U j\<rangle> = 1"
-        using d0 f1 f2 inner_prod_def assms(1) by auto
-
-      have "\<parallel>v1\<parallel>\<^sup>2 = 1 + cnj 1 * 1" using d1 f1 a0 sum_of_unit_vec_length by blast
-      then have f4:"\<parallel>v1\<parallel>\<^sup>2 = 2"
-        by (metis complex_cnj_one cpx_vec_length_inner_prod mult.left_neutral 
-            of_real_eq_iff of_real_numeral one_add_one)
-      have f5:"\<parallel>U * |v1\<rangle>\<parallel>\<^sup>2 = \<parallel>v1\<parallel>\<^sup>2" using d0 d1 assms(2) unit_vec_to_col by simp
-      have "col U i + 1 \<cdot>\<^sub>v col U j = U * |v1\<rangle>"
-        using d0 d1 f1 sum_of_unit_vec_to_col by blast
-      then have f6:"\<langle>col U i + col U j|col U i + col U j\<rangle> = \<parallel>U * |v1\<rangle>\<parallel>\<^sup>2"
-        using cpx_vec_length_inner_prod by auto
-      have f7:"\<langle>col U i + col U j|col U i + col U j\<rangle> = \<langle>col U i|col U i\<rangle> + \<langle>col U j|col U i\<rangle> +
-                                                       \<langle>col U i|col U j\<rangle> + \<langle>col U j|col U j\<rangle>"
+      have "\<parallel>v1\<parallel>\<^sup>2 = 1 + cnj 1 * 1" using d1 a0 a2 sum_of_unit_vec_length by blast
+      then have "\<parallel>v1\<parallel>\<^sup>2 = 2"
+        by (metis complex_cnj_one cpx_vec_length_inner_prod mult.left_neutral of_real_eq_iff 
+            of_real_numeral one_add_one)
+      then have "\<parallel>U * |v1\<rangle>\<parallel>\<^sup>2 = 2" using c0 d1 assms(2) unit_vec_to_col by simp
+      moreover have "col U i + 1 \<cdot>\<^sub>v col U j = U * |v1\<rangle>"
+        using c0 d1 a0 sum_of_unit_vec_to_col by blast
+      moreover have "col U i + 1 \<cdot>\<^sub>v col U j = col U i + col U j" by simp
+      ultimately have "\<langle>col U i + col U j|col U i + col U j\<rangle> = 2"
+        using cpx_vec_length_inner_prod by (metis of_real_numeral)
+      moreover have "\<langle>col U i + col U j|col U i + col U j\<rangle> = 
+               \<langle>col U i|col U i\<rangle> + \<langle>col U j|col U i\<rangle> + \<langle>col U i|col U j\<rangle> + \<langle>col U j|col U j\<rangle>"
         using inner_prod_is_sesquilinear[of "col U i" "dim_row U" "col U j" "col U i" "col U j" "1" "1" "1" "1"]
         by simp
-      have f8:"\<langle>col U j|col U i\<rangle> + \<langle>col U i|col U j\<rangle> = 0"
-        using f3 f4 f5 f6 f7 by auto
+      ultimately have f2:"\<langle>col U j|col U i\<rangle> + \<langle>col U i|col U j\<rangle> = 0"
+        using c0 a0 f1 inner_prod_def set_n by auto
 
-      have "\<parallel>v2\<parallel>\<^sup>2 = 1 + cnj \<i> * \<i>" using d2 f1 a0 sum_of_unit_vec_length by simp
-      then have f9:"\<parallel>v2\<parallel>\<^sup>2 = 2"
-        by (metis Re_complex_of_real complex_norm_square mult.commute norm_ii 
-            numeral_Bit0 numeral_One numeral_eq_one_iff of_real_numeral one_power2)
-      have f10:"\<parallel>U * |v2\<rangle>\<parallel>\<^sup>2 = \<parallel>v2\<parallel>\<^sup>2" using d0 d2 assms(2) unit_vec_to_col by simp
-      have "col U i + \<i> \<cdot>\<^sub>v col U j = U * |v2\<rangle>"
-        using d0 d2 f1 sum_of_unit_vec_to_col by auto
-      then have f11:"\<langle>col U i + \<i> \<cdot>\<^sub>v col U j|col U i + \<i> \<cdot>\<^sub>v col U j\<rangle> = \<parallel>U * |v2\<rangle>\<parallel>\<^sup>2"
-        using cpx_vec_length_inner_prod by auto
-      have f12:"\<langle>col U i + \<i> \<cdot>\<^sub>v col U j|col U i + \<i> \<cdot>\<^sub>v col U j\<rangle> = \<langle>col U i|col U i\<rangle> + (-\<i>) * \<langle>col U j|col U i\<rangle> +
-                                                                \<i> * \<langle>col U i|col U j\<rangle> + \<langle>col U j|col U j\<rangle>"
+      have "\<parallel>v2\<parallel>\<^sup>2 = 1 + cnj \<i> * \<i>" using a0 a2 d2 sum_of_unit_vec_length by simp
+      then have "\<parallel>v2\<parallel>\<^sup>2 = 2"
+        by (metis Re_complex_of_real complex_norm_square mult.commute norm_ii numeral_Bit0 
+            numeral_One numeral_eq_one_iff of_real_numeral one_power2)
+      moreover have "\<parallel>U * |v2\<rangle>\<parallel>\<^sup>2 = \<parallel>v2\<parallel>\<^sup>2" using c0 d2 assms(2) unit_vec_to_col by simp
+      moreover have "\<langle>col U i + \<i> \<cdot>\<^sub>v col U j|col U i + \<i> \<cdot>\<^sub>v col U j\<rangle> = \<parallel>U * |v2\<rangle>\<parallel>\<^sup>2"
+        using c0 a0 d2 sum_of_unit_vec_to_col cpx_vec_length_inner_prod by auto
+      moreover have "\<langle>col U i + \<i> \<cdot>\<^sub>v col U j|col U i + \<i> \<cdot>\<^sub>v col U j\<rangle> = 
+                     \<langle>col U i|col U i\<rangle> + (-\<i>) * \<langle>col U j|col U i\<rangle> + \<i> * \<langle>col U i|col U j\<rangle> + \<langle>col U j|col U j\<rangle>"
         using inner_prod_is_sesquilinear[of "col U i" "dim_row U" "col U j" "col U i" "col U j" "1" "\<i>" "1" "\<i>"]
         by simp
-      have f13:"\<langle>col U j|col U i\<rangle> - \<langle>col U i|col U j\<rangle> = 0"
-        using f3 f9 f10 f11 f12 by auto
-      have "\<langle>col U i|col U j\<rangle> = 0"
-        using f8 f13 by simp
+      ultimately have "\<langle>col U j|col U i\<rangle> - \<langle>col U i|col U j\<rangle> = 0"
+        using c0 a0 f1 inner_prod_def set_n by auto
       then show "(\<Sum>k<n. cnj (U $$ (k, i)) * U $$ (k, j)) = 0"
-        using c0 f1 a1 inner_prod_def col_def by auto
+        using c0 a0 f2 set_n inner_prod_def by auto
     qed
     ultimately show "(U\<^sup>\<dagger> * U) $$ (i, j) = 1\<^sub>m (dim_col U) $$ (i, j)"
-      using d0 assms(1) f1 one_mat_def dagger_def by auto
+      using c0 assms(1) a0 one_mat_def dagger_def by auto
 qed
-  then have "(U\<^sup>\<dagger>) * U = 1\<^sub>m n" using d0 by simp
+  then have "(U\<^sup>\<dagger>) * U = 1\<^sub>m n" using c0 by simp
   then have "inverts_mat (U\<^sup>\<dagger>) U" using c1 inverts_mat_def by auto
   then have "inverts_mat U (U\<^sup>\<dagger>)" using c0 c1 inverts_mat_sym by simp
   then have "U * (U\<^sup>\<dagger>) = 1\<^sub>m (dim_row U)" using c0 inverts_mat_def by auto
