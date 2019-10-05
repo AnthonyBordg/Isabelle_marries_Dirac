@@ -2420,10 +2420,14 @@ next
     moreover have "(Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) \<in> carrier_mat (2^m) (2^m)" 
       using Id_def H_without_scalar_prod calculation a0 assms(1) carrier_matI[of H 2 2] carrier_matI[of "Id (c-1)" "c-1" "c-1"] carrier_matI[of "Id (m-c)" "m-c" "m-c"] 
       by (metis (no_types, lifting) carrier_matI dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) dim_row_tensor_mat index_one_mat(2) index_one_mat(3))
-    moreover have "((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j)) \<in> carrier_mat (2^m) (2^m)" 
+    moreover have "((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j)) \<in> carrier_mat (2^m) 1" 
     proof-
-      have "(pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<in> carrier_mat (2^(c-1)) (2^(c-1))" sorry
-      moreover have "(j\<Otimes> c (m-c+1) m j) \<in> carrier_mat (2^(m-c+1)) (2^(m-c+1))" sorry
+      have "length [qr (nat i) m m j. i<-[1..(c-1)]] = c-1" by simp
+      moreover have "\<forall>x\<in>set [qr (nat i) m m j. i<-[1..(c-1)]]. dim_row x = 2" using qr_def by auto
+      moreover have "\<forall>x\<in>set [qr (nat i) m m j. i<-[1..(c-1)]]. dim_col x = 1" using qr_def by auto
+      ultimately have "(pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<in> carrier_mat (2^(c-1)) 1"         
+        using pow_tensor_list_dim_row[of "[qr (nat i) m m j. i<-[1..(c-1)]]" "c-1" 2] by auto
+      moreover have "(j\<Otimes> c (m-c+1) m j) \<in> carrier_mat (2^(m-c+1)) 1" using j_to_tensor_prod_dim by auto
       moreover have "2^(c-1) * 2^(m-c+1) = (2::nat)^m" using \<open>2 ^ (c - 1) * 2 * 2 ^ (m - c) = 2 ^ m\<close> by auto (*TODO: put into aux_calculation*)
       ultimately show ?thesis by auto
     qed
