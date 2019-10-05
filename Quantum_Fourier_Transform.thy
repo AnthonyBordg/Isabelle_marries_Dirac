@@ -2328,7 +2328,7 @@ proof-
     moreover have "dim_col (j\<Otimes> c (m-c+1) m j) > 0" using j_to_tensor_prod_dim by auto
     moreover have "dim_col (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) > 0"
       using pow_tensor_list_dim_col qr_def by auto
-    ultimately show ?thesis using tensor_mat_is_assoc j_to_tensor_prod_dim mult_distr_tensor pos2 by presburger
+    ultimately show ?thesis using tensor_mat_is_assoc j_to_tensor_prod_dim mult_distr_tensor pos2 by auto
   qed
   then have "(Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
   = (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j)"
@@ -2817,7 +2817,58 @@ qed
 abbreviation \<psi>\<^sub>2::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>2 m j \<equiv> pr [qr (m+1-nat k) m m j. k<-[1..m] ] m"
 
-
+lemma list_shift_one:
+  fixes n::nat
+  assumes "n \<ge> 1"
+  shows "[A k. k<-[1..int n]] = [A (k-1). k<-[2..int (Suc n)]]" 
+proof(rule Nat.nat_induct_at_least[of 1 n])
+  show "n \<ge> 1" using assms by auto
+next
+  show "[A k. k<-[1..int 1]] = [A (k-1). k<-[2..int (Suc 1)]]" by auto
+next
+  fix n
+  assume a0: "n \<ge> 1"
+     and IH: "[A k. k<-[1..int n]] = [A (k-1). k<-[2..int (Suc n)]]" 
+  have "[A k. k<-[1..int (Suc n)]] = [A k. k<-[1..int n]] @ [A (Suc n)]" (*Can be replaced *)
+    by (smt append_self_conv2 list.map(1) list.map(2) map_append of_nat_le_0_iff semiring_1_class.of_nat_simps(2) upto_empty upto_single upto_split2)
+  then have "[A k. k<-[1..int (Suc n)]] = [A (k-1). k<-[2..int (Suc n)]] @ [A (Suc n)]" by (simp add: IH)
+  moreover have "[A (Suc n)] = [A (k-1). k<-[(Suc (Suc n))..int (Suc (Suc n))]]" using a0 by simp
+  ultimately show "[A k. k<-[1..int (Suc n)]] = [A (k-1). k<-[2..int (Suc (Suc n))]]" 
+    by (simp add: upto_rec2)
+qed
+ 
+lemma rev_of_qr_list:
+  assumes "n\<ge>1"
+  shows "n \<le> m \<longrightarrow> (rev [qr (nat k) m m j. k<-[1..n]]) = [qr (n+1-nat k) m m j. k<-[1..n]]"
+proof(rule Nat.nat_induct_at_least)
+  show "n\<ge>1" using assms by auto
+next
+  show "1 \<le> m \<longrightarrow> (rev [qr (nat k) m m j. k<-[1..int 1]]) = [qr (1+1-nat k) m m j. k<-[1..int 1]]" by auto
+next
+  fix n 
+  assume a0: "n \<ge> 1"
+     and IH: "n \<le> m \<longrightarrow> (rev [qr (nat k) m m j. k<-[1..n]]) = [qr (n+1-nat k) m m j. k<-[1..n]]"
+  show "(Suc n) \<le> m \<longrightarrow> (rev [qr (nat k) m m j. k<-[1..(Suc n)]]) = [qr ((Suc n)+1-nat k) m m j. k<-[1..(Suc n)]]"
+  proof
+    assume a1: "(Suc n) \<le> m " 
+    have "[qr (nat (Suc n)) m m j] = [qr (nat k) m m j. k<-[(Suc n)..(Suc n)]]" by simp
+    then have "(rev [qr (nat k) m m j. k<-[1..(Suc n)]]) = qr (nat (Suc n)) m m j # (rev [qr (nat k) m m j. k<-[1..n]])"
+      by (simp add: upto_rec2)
+    then have "(rev [qr (nat k) m m j. k<-[1..(Suc n)]]) = qr (nat (Suc n)) m m j # [qr (n+1-nat k) m m j. k<-[1..n]]"
+      using IH a1 by auto
+    moreover have "[qr (n+1-nat k) m m j. k<-[1..n]] = [qr (Suc n+1-nat k) m m j. k<-[2..Suc n]]" 
+    proof-
+      have "[qr (n+1-nat k) m m j. k<-[1..int n]] = [qr (n+1-nat (k-1)) m m j. k<-[2..int (Suc n)]]"
+        using list_shift_one[of n "\<lambda>k. qr (n+1-nat k) m m j" ] a0 by auto
+      moreover have "k \<ge> 1 \<longrightarrow> n+1-nat (k-1) = Suc n+1-nat k" for k by auto
+      ultimately show ?thesis by auto
+    qed
+    ultimately have "(rev [qr (nat k) m m j. k<-[1..(Suc n)]]) =  qr (nat (Suc n)+1-1) m m j # [qr (Suc n+1-nat k) m m j. k<-[2..Suc n]]"
+      by auto
+    then show "(rev [qr (nat k) m m j. k<-[1..(Suc n)]]) = [qr ((Suc n)+1-nat k) m m j. k<-[1..(Suc n)]]" 
+      by (smt Cons_eq_map_conv One_nat_def nat.simps(3) nat_1 nat_int of_nat_le_0_iff upto_rec1)
+  qed
+qed
 
 
 theorem quantum_fourier_transform_prod_rep:
@@ -2840,7 +2891,7 @@ proof-
        = (pr (rev [qr (nat k) m m j. k<-[1..m]]) m) \<Otimes> (pr [qr (nat k) m m j. k<-[m+1..m]] (m-m))" 
       using app_reverse_qubits by auto 
     then have "(rQB m m) * (\<psi>\<^sub>1 m j) = (pr (rev [qr (nat k) m m j. k<-[1..m]]) m)" by auto 
-    moreover have "(rev [qr (nat k) m m j. k<-[1..m]]) = [qr (m+1-nat k) m m j. k<-[1..m]]" sorry
+    moreover have "(rev [qr (nat k) m m j. k<-[1..m]]) = [qr (m+1-nat k) m m j. k<-[1..m]]" using rev_of_qr_list[of m m j] assms by auto
     ultimately show ?thesis by auto
   qed
   ultimately show ?thesis by auto
@@ -2877,7 +2928,7 @@ proof-
 qed
 
 
-lemma bit_representation: (*Rename to make it more general no j in name*)
+lemma bit_representation:
   assumes "j < 2^m" and "m \<ge> 1"
   shows "j = (\<Sum>i\<in>{1..m}. (bin_rep m j)!(i-1) * 2^(m-i))" 
 proof-
