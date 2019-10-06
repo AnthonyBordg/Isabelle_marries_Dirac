@@ -1,3 +1,10 @@
+(*
+Authors: 
+
+  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
+*)
+
 theory Quantum_Fourier_Transform
 imports
   More_Tensor
