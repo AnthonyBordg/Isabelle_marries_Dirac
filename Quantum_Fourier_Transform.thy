@@ -7,10 +7,9 @@ begin
 
 section \<open>Quantum Fourier Tranform\<close>
 
-
 (*It would be also possible to use this: abbreviation zero where "zero \<equiv> |unit_vec 2 0\<rangle>" *)
-abbreviation zero::"complex Matrix.mat" where "zero \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else 0))"
-abbreviation one::"complex Matrix.mat" where "one \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=1 then 1 else 0))" 
+abbreviation zero :: "complex Matrix.mat" where "zero \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1 else 0))"
+abbreviation one :: "complex Matrix.mat" where "one \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=1 then 1 else 0))" 
 
 lemma Id_left_tensor[simp]: 
   shows "(Id 0) \<Otimes> A = A" 
@@ -26,7 +25,6 @@ lemma Id_mult_left[simp]:
   using Id_def one_mat_def by (simp add: assms)
 
 lemma aux_calculation[simp]:
-  fixes m k c::nat
   shows "m > k \<and> k \<ge> 1 \<longrightarrow> (2::nat)^(k-Suc 0) * 2 * 2^(m-k) = 2^m"
     and "m > k \<and> k \<ge> 1 \<longrightarrow> (2::nat)^(m-Suc 0) = 2^(k-Suc 0) * 2^(m-k)"
     and "m > k \<longrightarrow> Suc (m-Suc k) = m - k" 
@@ -36,6 +34,7 @@ lemma aux_calculation[simp]:
     and "1 \<le> k - c \<and> m \<ge> k \<and> m \<ge> c \<longrightarrow> (2::nat)^(m-c) = 2 * 2^(k-Suc c) * 2^(m-k)"
     and "k \<ge> c \<and> m \<ge> (Suc k) \<longrightarrow> (2::nat)^(k-c) * 2 * 2^(m-Suc k) = 2^(m-c)"
     and "m > k \<and> k \<ge> 1 \<longrightarrow> 2 * ((2::nat) ^ (m - k) * 2 ^ (k - Suc 0)) = 2 ^ m"  
+    and "c \<ge> 1 \<and> c \<le> m \<longrightarrow> 2^(c-Suc 0) * 2 * 2^(m-c) = (2::nat)^m" 
 proof-
   show "m > k \<and> k \<ge> 1 \<longrightarrow> (2::nat)^(k-Suc 0) * 2 * 2^(m-k) = 2^m"
     by (metis One_nat_def le_add_diff_inverse less_or_eq_imp_le not_less_eq_eq power_add power_commutes power_eq_if)
@@ -64,7 +63,11 @@ next
     by (metis (no_types, lifting) Nat.add_diff_assoc2 Suc_eq_plus1 add.assoc le_add_diff_inverse power_add semiring_normalization_rules(28))
 next
   show "m > k \<and> k \<ge> 1 \<longrightarrow> 2 * ((2::nat) ^ (m - k) * 2 ^ (k - Suc 0)) = 2 ^ m"  
-    by (metis Nat.add_diff_assoc One_nat_def add.commute less_imp_le_nat not_less_eq_eq ordered_cancel_comm_monoid_diff_class.add_diff_inverse power_add power_eq_if)
+    by (metis Nat.add_diff_assoc One_nat_def add.commute less_imp_le_nat not_less_eq_eq 
+        ordered_cancel_comm_monoid_diff_class.add_diff_inverse power_add power_eq_if)
+next
+  show "c \<ge> 1 \<and> c \<le> m \<longrightarrow> 2^(c-Suc 0) * 2 * 2^(m-c) = (2::nat)^m" 
+    by (metis One_nat_def dual_order.strict_trans1 le_add_diff_inverse2 less_numeral_extra(1) mult.commute power_add power_minus_mult)
 qed
 
 
@@ -72,80 +75,82 @@ subsection \<open>Transformation of j into a tensor product of single qubits\<cl
 
 (*Gives back the part of j starting at position s being t qubits long. 
 E.g. j=$|01011\rangle$, s=2 and l=3 gives [1,0,1]*)
-primrec j_to_list_bound :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat list" where
-"j_to_list_bound s 0 m j = []" |
-"j_to_list_bound s (Suc l) m j = (if (bin_rep m j)!(s-1) = 0 then zero else one) # (j_to_list_bound (s+1) l m j)"
+primrec to_list_bound :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat list" where
+"to_list_bound s 0 m j = []" |
+"to_list_bound s (Suc l) m j = (if (bin_rep m j)!(s-1) = 0 then zero else one) # (to_list_bound (s+1) l m j)"
 
 (* Product representation:
 Takes a list and the number of elements in this list and gives out the tensor product of the elements*)
 fun pow_tensor_list :: "((complex Matrix.mat) list) \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("pr _ _" 75)  where
-  "(pr [] 0) = (Id 0)"  |
+  "(pr [] 0) = (Id 0)" |
   "(pr (Cons x xs) (Suc k)) = x \<Otimes> (pr xs k)"
 
+(*TODO: Find another abbrev! This was called j_to_tensor_prod before, but then renamed since 
+variables should not be part of names*)
 (*Defines the part of j where s is the start position and t the number of bits as tensor product of single qubits
 where j is a decimal number that is smaller than m. E.g. $|j_1,...,j_n\rangle$ and s=2 and l=3 gives $|j_2,j_3,j_4\rangle$ *)
-definition j_to_tensor_prod :: "nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>complex Matrix.mat" ("j\<Otimes> _ _ _ _" 75) where 
-"(j\<Otimes> s l m j) = pr (j_to_list_bound s l m j) l"
+definition to_tensor_prod :: "nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>nat\<Rightarrow>complex Matrix.mat" ("j\<Otimes> _ _ _ _" 75) where 
+"(j\<Otimes> s l m j) = pr (to_list_bound s l m j) l"
 
-lemma j_to_list_bound_one [simp]:
-  shows "j_to_list_bound s 1 m j = [(if (bin_rep m j)!(s-1) = 0 then zero else one)]" by simp
+lemma to_list_bound_one [simp]:
+  shows "to_list_bound s 1 m j = [(if (bin_rep m j)!(s-1) = 0 then zero else one)]" by simp
 
 lemma pow_tensor_list_one [simp]:
   assumes "xs = []" 
   shows "(pr (Cons x xs) 1) = x" 
   by (simp add: assms)
 
-lemma j_to_tensor_prod_length_0[simp]:
+lemma to_tensor_prod_length_0[simp]:
   shows "(j\<Otimes> s 0 j m) = (Id 0)"    
-  by (simp add: j_to_tensor_prod_def)
+  by (simp add: to_tensor_prod_def)
 
-lemma j_to_tensor_prod_decomp_right_zero:
+lemma to_tensor_prod_decomp_right_zero:
   shows "(bin_rep m j)!(s+l-1) = 0 \<longrightarrow> (j\<Otimes> s (l+1) m j) = (j\<Otimes> s l m j) \<Otimes> zero"
 proof(induction l arbitrary: s)
   show "(bin_rep m j)!(s+0-1) = 0 \<longrightarrow> (j\<Otimes> s (0+1) m j) = (j\<Otimes> s 0 m j) \<Otimes> zero" for s
-      using j_to_list_bound_one j_to_tensor_prod_def by auto
+      using to_list_bound_one to_tensor_prod_def by auto
 next
   fix l s
   assume IH: "(bin_rep m j)!(s+l-1) = 0 \<longrightarrow> (j\<Otimes> s (l+1) m j) = (j\<Otimes> s l m j) \<Otimes> zero" for s
   show "(bin_rep m j)!(s+(Suc l)-1) = 0 \<longrightarrow> (j\<Otimes> s ((Suc l)+1) m j) = (j\<Otimes> s (Suc l) m j) \<Otimes> zero"
   proof
     assume a0: "(bin_rep m j)!(s+(Suc l)-1) = 0"
-    then have "(j\<Otimes> s ((Suc l)+1) m j) = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> pr ((j_to_list_bound (s+1) (Suc l) m j)) (Suc l)" 
-      using j_to_tensor_prod_def by auto
+    then have "(j\<Otimes> s ((Suc l)+1) m j) = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> pr ((to_list_bound (s+1) (Suc l) m j)) (Suc l)" 
+      using to_tensor_prod_def by auto
     also have "... = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> (j\<Otimes> (s+1) (l+1) m j)" 
-      by (metis Suc_eq_plus1 j_to_tensor_prod_def)
+      by (metis Suc_eq_plus1 to_tensor_prod_def)
     also have "... = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> (j\<Otimes> (s+1) l m j) \<Otimes> zero"
       using a0 IH tensor_mat_is_assoc by auto
-    also have "... = (pr (j_to_list_bound s (l+1) m j) (l+1)) \<Otimes> zero"
-      using j_to_tensor_prod_def by auto
+    also have "... = (pr (to_list_bound s (l+1) m j) (l+1)) \<Otimes> zero"
+      using to_tensor_prod_def by auto
     finally show "(j\<Otimes> s ((Suc l)+1) m j) = (j\<Otimes> s (Suc l) m j) \<Otimes> zero"
-      using j_to_tensor_prod_def by auto
+      using to_tensor_prod_def by auto
   qed
 qed
 
-lemma j_to_tensor_prod_decomp_right_one:
+lemma to_tensor_prod_decomp_right_one:
    shows "(bin_rep m j)!(s+l-1) = 1 \<longrightarrow> (j\<Otimes> s (l+1) m j) = (j\<Otimes> s l m j) \<Otimes> one"
 proof(induction l arbitrary: s)
   show "(bin_rep m j)!(s+0-1) = 1 \<longrightarrow> (j\<Otimes> s (0+1) m j) = (j\<Otimes> s 0 m j) \<Otimes> one" for s
-    using j_to_list_bound_one j_to_tensor_prod_def by auto
+    using to_list_bound_one to_tensor_prod_def by auto
 next
   fix l s
   assume IH: "(bin_rep m j)!(s+l-1) = 1 \<longrightarrow> (j\<Otimes> s (l+1) m j) = (j\<Otimes> s l m j) \<Otimes> one" for s
   show "(bin_rep m j)!(s+(Suc l)-1) = 1 \<longrightarrow> (j\<Otimes> s ((Suc l)+1) m j) = (j\<Otimes> s (Suc l) m j) \<Otimes> one"
   proof (*Can be shortened but I think this is better*)
     assume a0: "(bin_rep m j)!(s+(Suc l)-1) = 1"
-    have "(j\<Otimes> s ((Suc l)+1) m j) = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> pr ((j_to_list_bound (s+1) (Suc l) m j)) (Suc l)" 
-      using j_to_tensor_prod_def by auto
+    have "(j\<Otimes> s ((Suc l)+1) m j) = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> pr ((to_list_bound (s+1) (Suc l) m j)) (Suc l)" 
+      using to_tensor_prod_def by auto
     also have "... = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> (j\<Otimes> (s+1) (l+1) m j)" 
-      by (metis Suc_eq_plus1 j_to_tensor_prod_def)
+      by (metis Suc_eq_plus1 to_tensor_prod_def)
     also have "... = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> (j\<Otimes> (s+1) l m j) \<Otimes> one"
       using a0 IH tensor_mat_is_assoc by auto
-    also have "... = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> (pr (j_to_list_bound (s+1) l m j) l) \<Otimes> one"
-      using j_to_tensor_prod_def by auto
-    also have "... = (pr (j_to_list_bound s (l+1) m j) (l+1)) \<Otimes> one"
+    also have "... = (if (bin_rep m j)!(s-1) = 0 then zero else one) \<Otimes> (pr (to_list_bound (s+1) l m j) l) \<Otimes> one"
+      using to_tensor_prod_def by auto
+    also have "... = (pr (to_list_bound s (l+1) m j) (l+1)) \<Otimes> one"
       by auto
     finally show "(j\<Otimes> s ((Suc l)+1) m j) = (j\<Otimes> s (Suc l) m j) \<Otimes> one"
-      using j_to_tensor_prod_def by auto
+      using to_tensor_prod_def by auto
   qed
 qed
 
@@ -172,7 +177,8 @@ proof-
       also have "... = 1 * dim_col ((pr (tl xs) k))" 
         using a1 f0 by (metis dim_col_tensor_mat list.set_intros(1))
       finally show "dim_col (pr xs (Suc k)) = 1" 
-        using IH a0 a1 f0 by (metis add_diff_cancel_left' length_tl list.distinct(1) list.set_sel(2) mult.left_neutral plus_1_eq_Suc)
+        using IH a0 a1 f0 
+        by (metis add_diff_cancel_left' length_tl list.distinct(1) list.set_sel(2) mult.left_neutral plus_1_eq_Suc)
     qed
   qed
   then show ?thesis using assms by auto
@@ -241,68 +247,67 @@ lemma pow_tensor_decomp_right:
   shows "x \<Otimes> (pr xs k) = pr (x#xs) (k+1)" 
   using Suc_le_D assms(1) by force
 
-lemma j_to_list_bound_length:
-  fixes s l m j::nat
-  shows "length (j_to_list_bound s l m j) = l"
+lemma to_list_bound_length:
+  shows "length (to_list_bound s l m j) = l"
 proof(induction l arbitrary: s)
-  show "length (j_to_list_bound s 0 m j) = 0" for s by auto
+  show "length (to_list_bound s 0 m j) = 0" for s by auto
 next
   fix l s
-  assume IH: "length (j_to_list_bound s l m j) = l" for s
-  have "length (j_to_list_bound s (Suc l) m j) = length ((if (bin_rep m j)!(s-1) = 0 then zero else one) 
-                                                 # (j_to_list_bound (s+1) l m j))" by auto
-  then have "length (j_to_list_bound s (Suc l) m j) = length [(if (bin_rep m j)!(s-1) = 0 then zero else one)]
-                                                    + length (j_to_list_bound (s+1) l m j)" by simp
+  assume IH: "length (to_list_bound s l m j) = l" for s
+  have "length (to_list_bound s (Suc l) m j) = length ((if (bin_rep m j)!(s-1) = 0 then zero else one) 
+                                                 # (to_list_bound (s+1) l m j))" by auto
+  then have "length (to_list_bound s (Suc l) m j) = length [(if (bin_rep m j)!(s-1) = 0 then zero else one)]
+                                                    + length (to_list_bound (s+1) l m j)" by simp
   moreover have "length [(if (bin_rep m j)!(s-1) = 0 then zero else one)] = 1" by auto
-  moreover have "length (j_to_list_bound (s+1) l m j) = l" using IH by auto
-  ultimately show "length (j_to_list_bound s (Suc l) m j) = (Suc l)" by auto
+  moreover have "length (to_list_bound (s+1) l m j) = l" using IH by auto
+  ultimately show "length (to_list_bound s (Suc l) m j) = (Suc l)" by auto
 qed
 
 (* I have detailed proofs (without apply) for this if that is desired *)
-lemma j_to_list_bound_dim:
-  shows "(\<forall>x \<in> set (j_to_list_bound s l m j). dim_row x = 2) \<and> (\<forall>x\<in>set (j_to_list_bound s l m j). dim_col x = 1)"
+lemma to_list_bound_dim:
+  shows "(\<forall>x \<in> set (to_list_bound s l m j). dim_row x = 2) \<and> (\<forall>x\<in>set (to_list_bound s l m j). dim_col x = 1)"
   apply (induction l arbitrary: s)
-   apply (auto simp: j_to_list_bound_def).
+   apply (auto simp: to_list_bound_def).
 
 (* I have detailed proofs for this if that is desired *)
-lemma j_to_tensor_prod_dim:
+lemma to_tensor_prod_dim:
   shows "dim_row (j\<Otimes> s l m j) = 2^l \<and> dim_col (j\<Otimes> s l m j) = 1" 
-  using j_to_tensor_prod_def j_to_list_bound_length j_to_list_bound_dim 
+  using to_tensor_prod_def to_list_bound_length to_list_bound_dim 
         pow_tensor_list_dim_row pow_tensor_list_dim_col by auto
 
-lemma j_to_tensor_prod_decomp_left_zero:
+lemma to_tensor_prod_decomp_left_zero:
   assumes "l\<ge>1" and "(bin_rep m j)!(s-1) = 0"
   shows "(j\<Otimes> s l m j) = zero \<Otimes> (j\<Otimes> (s+1) (l-1) m j)"
 proof- 
-  have "(j\<Otimes> s l m j) = pr (j_to_list_bound s l m j) l"
-    using j_to_tensor_prod_def by auto
-  also have "... = pr ((if (bin_rep m j)!(s-1) = 0 then zero else one) # (j_to_list_bound (s+1) (l-1) m j)) l"
-    using assms by (metis j_to_list_bound.simps(2) ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
-  also have "... = pr (zero # (j_to_list_bound (s+1) (l-1) m j)) l"
-    using assms by auto
-  also have "... = zero \<Otimes> pr (j_to_list_bound (s+1) (l-1) m j) (l-1)"
-    using assms pow_tensor_list.simps by (metis One_nat_def Suc_pred less_eq_Suc_le)
+  have "(j\<Otimes> s l m j) = pr (to_list_bound s l m j) l"
+    using to_tensor_prod_def by auto
+  also have "... = pr ((if (bin_rep m j)!(s-1) = 0 then zero else one) # (to_list_bound (s+1) (l-1) m j)) l"
+    using assms(1) by (metis to_list_bound.simps(2) ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
+  also have "... = pr (zero # (to_list_bound (s+1) (l-1) m j)) l"
+    using assms(2) by auto
+  also have "... = zero \<Otimes> pr (to_list_bound (s+1) (l-1) m j) (l-1)"
+    using assms(1) pow_tensor_list.simps by (metis One_nat_def Suc_pred less_eq_Suc_le)
   finally show "(j\<Otimes> s l m j) = zero \<Otimes> (j\<Otimes> (s+1) (l-1) m j)"
-    using j_to_tensor_prod_def by auto
+    using to_tensor_prod_def by auto
 qed
 
-lemma j_to_tensor_prod_decomp_left_one:
+lemma to_tensor_prod_decomp_left_one:
   assumes "l\<ge>1" and "(bin_rep m j)!(s-1) = 1"
   shows "(j\<Otimes> s l m j) = one \<Otimes> (j\<Otimes> (s+1) (l-1) m j)"
 proof- 
-  have "(j\<Otimes> s l m j) = pr (j_to_list_bound s l m j) l"
-    using j_to_tensor_prod_def by auto
-  also have "... = pr ((if (bin_rep m j)!(s-1) = 0 then zero else one) # (j_to_list_bound (s+1) (l-1) m j)) l"
-    using assms by (metis j_to_list_bound.simps(2) ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
-  also have "... = pr (one # (j_to_list_bound (s+1) (l-1) m j)) l"
-    using assms by auto
-  also have "... = one \<Otimes> pr (j_to_list_bound (s+1) (l-1) m j) (l-1)"
-    using assms pow_tensor_list.simps by (metis One_nat_def Suc_pred less_eq_Suc_le)
+  have "(j\<Otimes> s l m j) = pr (to_list_bound s l m j) l"
+    using to_tensor_prod_def by auto
+  also have "... = pr ((if (bin_rep m j)!(s-1) = 0 then zero else one) # (to_list_bound (s+1) (l-1) m j)) l"
+    using assms(1) by (metis to_list_bound.simps(2) ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
+  also have "... = pr (one # (to_list_bound (s+1) (l-1) m j)) l"
+    using assms(2) by auto
+  also have "... = one \<Otimes> pr (to_list_bound (s+1) (l-1) m j) (l-1)"
+    using assms(1) pow_tensor_list.simps by (metis One_nat_def Suc_pred less_eq_Suc_le)
   finally show "(j\<Otimes> s l m j) = one \<Otimes> (j\<Otimes> (s+1) (l-1) m j)"
-    using j_to_tensor_prod_def by auto
+    using to_tensor_prod_def by auto
 qed
 
-lemma j_to_tensor_prod_decomp_right:
+lemma to_tensor_prod_decomp_right:
   assumes "j < 2^m" and "s + t - 1 < m" 
   shows "(j\<Otimes> s (t+1) m j) = (j\<Otimes> s t m j) \<Otimes> (j\<Otimes> (s+t) 1 m j)"
 proof(rule disjE)
@@ -311,24 +316,24 @@ proof(rule disjE)
 next
   assume a0: "(bin_rep m j)!(s+t-1) = 0"
   then have "(j\<Otimes> (s+t) 1 m j) = zero" 
-    using j_to_tensor_prod_def by auto
+    using to_tensor_prod_def by auto
   moreover have "(j\<Otimes> s (t+1) m j) = (j\<Otimes> s t m j) \<Otimes> zero"
-    using j_to_tensor_prod_decomp_right_zero a0 by auto
+    using to_tensor_prod_decomp_right_zero a0 by auto
   ultimately show ?thesis by auto
 next
   assume a0: "(bin_rep m j)!(s+t-1) = 1"
   then have "(j\<Otimes> (s+t) 1 m j) = one" 
-    using j_to_tensor_prod_def by auto
+    using to_tensor_prod_def by auto
   moreover have "(j\<Otimes> s (t+1) m j) = (j\<Otimes> s t m j) \<Otimes> one"
-    using j_to_tensor_prod_decomp_right_one a0 by auto
+    using to_tensor_prod_decomp_right_one a0 by auto
   ultimately show ?thesis by auto
 qed
 
-lemma j_to_tensor_prod_decomp_half:
+lemma to_tensor_prod_decomp_half:
   assumes "j < 2^m" and "n > s" and "n \<le> m" and "t \<ge> n - s" and "m \<ge> 1"
   shows "s + t - 1 \<le> m \<longrightarrow> (j\<Otimes> s t m j) = (j\<Otimes> s (n-s) m j) \<Otimes> (j\<Otimes> n (t-(n-s)) m j)"
 proof(rule Nat.nat_induct_at_least[of "n-s" t])
-  show "t \<ge> n - s" using assms by auto
+  show "t \<ge> n - s" using assms(4) by auto
 next
   show "s + (n - s) - 1 \<le> m \<longrightarrow> (j\<Otimes> s (n-s) m j) = (j\<Otimes> s (n-s) m j) \<Otimes> (j\<Otimes> n ((n-s)-(n-s)) m j)"
   proof
@@ -348,7 +353,7 @@ next
     proof-
       have "s + t - 1 < m" using assms a1 by auto
       then have "(j\<Otimes> s (t+1) m j) = (j\<Otimes> s t m j) \<Otimes> (j\<Otimes> (s+t) 1 m j)" 
-        using j_to_tensor_prod_decomp_right assms by blast
+        using to_tensor_prod_decomp_right assms by blast
       then have "(j\<Otimes> s (t+1) m j) = ((j\<Otimes> s (n-s) m j) \<Otimes> (j\<Otimes> n (t-(n-s)) m j)) \<Otimes> (j\<Otimes> (s+t) 1 m j)" 
         using IH a1 by auto
       then show ?thesis 
@@ -358,7 +363,7 @@ next
     proof-
       have "n + (t - (n - s)) - 1 < m" using assms a1 by linarith
       then have "j\<Otimes> n (t-(n-s)+1) m j = (j\<Otimes> n (t-(n-s)) m j) \<Otimes> (j\<Otimes> (n+(t-(n-s))) 1 m j)"
-        using j_to_tensor_prod_decomp_right[of j m n "(t-(n-s))"] assms a0 by auto
+        using to_tensor_prod_decomp_right[of j m n "(t-(n-s))"] assms a0 by auto
       moreover have "n + (t - (n - s)) = t + s" using assms a0 by linarith
       ultimately show ?thesis 
         by (metis linordered_field_class.sign_simps(2))
@@ -370,17 +375,17 @@ next
   qed
 qed
 
-lemma j_to_tensor_prod_decomp_middle: 
+lemma to_tensor_prod_decomp_middle: 
   assumes "j < 2^m" and "n > s" and "n \<le> m" and "t \<ge> n - s" and "s + t - 1 \<le> m" and "m \<ge> 1"
   shows "(j\<Otimes> s t m j) = (j\<Otimes> s (n-s-1) m j) \<Otimes> (j\<Otimes> (n-1) 1 m j) \<Otimes> (j\<Otimes> n (t-(n-s)) m j)"
 proof-
   have "(j\<Otimes> s t m j) = (j\<Otimes> s (n-s) m j) \<Otimes> (j\<Otimes> n (t-(n-s)) m j)" 
-    using assms j_to_tensor_prod_decomp_half by blast
+    using assms to_tensor_prod_decomp_half by blast
   moreover have "(j\<Otimes> s (n-s) m j) = (j\<Otimes> s (n-s-1) m j) \<Otimes> (j\<Otimes> (n-1) 1 m j)"
   proof-
     have "s + (n - s - 1) - 1 < m" using assms Suc_diff_Suc by linarith
     then have "(j\<Otimes> s (n-s-1+1) m j) = (j\<Otimes> s (n-s-1) m j) \<Otimes> (j\<Otimes> (s+(n-s-1)) 1 m j) "
-      using j_to_tensor_prod_decomp_right[of j m s "n-s-1"] assms by auto
+      using to_tensor_prod_decomp_right[of j m s "n-s-1"] assms by auto
     moreover have "(s + (n - s - 1)) = n - 1" using assms by linarith
     moreover have "(n - s - 1 + 1) = n - s" using assms by auto
     ultimately show ?thesis by auto
@@ -396,27 +401,26 @@ proof-
   ultimately show ?thesis by (metis zero_neq_one)
 qed
 
-lemma j_to_tensor_bin_rep_zero: 
+lemma to_tensor_bin_rep_zero: 
   assumes "n \<ge> 1"
   shows "(j\<Otimes> n 1 m j) = zero \<longleftrightarrow> bin_rep m j ! (n-1) = 0"
 proof
   assume a0: "(j\<Otimes> n 1 m j) = zero"
-  have "(j\<Otimes> n 1 m j) = (if (bin_rep m j)!(n-1) = 0 then zero else one)"  using j_to_tensor_prod_def by auto 
+  have "(j\<Otimes> n 1 m j) = (if (bin_rep m j)!(n-1) = 0 then zero else one)"  using to_tensor_prod_def by auto 
   then have "zero = (if (bin_rep m j)!(n-1) = 0 then zero else one)" using a0 by auto
   then show "bin_rep m j ! (n-1) = 0" using zero_neq_one_mat by auto
 next
   assume "bin_rep m j ! (n - 1) = 0"
-  then show "(j\<Otimes> n 1 m j) = zero" using j_to_tensor_prod_def by auto 
+  then show "(j\<Otimes> n 1 m j) = zero" using to_tensor_prod_def by auto 
 qed
 
-
-lemma j_to_tensor_bin_rep_one: 
+lemma to_tensor_bin_rep_one: 
   assumes "n \<ge> 1" and "j < 2^m" and "n-1 < m" 
   shows "(j\<Otimes> n 1 m j) = one \<longleftrightarrow> bin_rep m j ! (n-1) = 1"
 proof
   assume a0: "(j\<Otimes> n 1 m j) = one"
   have "(j\<Otimes> n 1 m j) = (if (bin_rep m j)!(n-1) = 0 then zero else one)"
-    using j_to_tensor_prod_def by auto 
+    using to_tensor_prod_def by auto 
   then have "one = (if (bin_rep m j)!(n-1) = 0 then zero else one)"
     using a0 by auto
   moreover have "(bin_rep m j)!(n-1) = 0 \<or> (bin_rep m j)!(n-1) = 1" 
@@ -425,10 +429,10 @@ proof
 next
   assume a0: "bin_rep m j ! (n - 1) = 1"
   then show "(j\<Otimes> n 1 m j) = one"
-    using j_to_tensor_prod_def by auto 
+    using to_tensor_prod_def by auto 
 qed
 
-lemma decomp_unit_vec_zero_left: (*This is not needed anymore -_- Might be useful for some other theory?*)
+lemma decomp_unit_vec_zero_left: (*This is not needed anymore -_- Might be useful for some other theory? Otw. delete it*)
   assumes "k \<ge> 1" and "m < 2^(k-1)"
   shows "|unit_vec (2^k) m\<rangle> = zero \<Otimes> |unit_vec (2^(k-1)) m\<rangle>" 
 proof
@@ -513,7 +517,6 @@ proof-
   ultimately show ?thesis using bin_rep_even assms by (metis diff_diff_left)
 qed
 
-
 lemma decomp_unit_vec_zero_right:
   assumes "k \<ge> 1" and "m < 2^k" and "even m" 
   shows "|unit_vec (2^k) m\<rangle> = |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero" 
@@ -522,8 +525,8 @@ proof
   assume a0: "i < dim_row ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero)" 
      and a1: "j < dim_col ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero)" 
   then have f0: "i < 2^k \<and> j = 0" 
-    by (metis (no_types, lifting) One_nat_def assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) dim_row_tensor_mat index_unit_vec(3) 
-        ket_vec_def less_eq_Suc_le less_one one_power2 power2_eq_square power_minus_mult)
+    by (metis (no_types, lifting) One_nat_def assms(1) dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) dim_row_tensor_mat 
+        index_unit_vec(3) ket_vec_def less_eq_Suc_le less_one one_power2 power2_eq_square power_minus_mult)
   then have f1: "( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero) $$ (i,j) = |unit_vec (2^(k-1)) (m div 2)\<rangle> $$ (i div 2, j div 1) 
         * zero $$ (i mod 2, j mod 1)" using unit_vec_def assms ket_vec_def zero_def a0 by fastforce
   show "( |unit_vec (2^k) m\<rangle> ) $$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> zero) $$ (i,j)"
@@ -596,7 +599,8 @@ proof
   next
     assume a2: "i=m"
     have "i div 2^(k-1) = 1" using assms a0 a2 f2
-      by (metis (no_types, lifting) Euclidean_Division.div_eq_0_iff One_nat_def dim_row_mat(1) dim_row_tensor_mat less_2_cases less_mult_imp_div_less not_le power_not_zero zero_neq_numeral)
+      by (metis (no_types, lifting) Euclidean_Division.div_eq_0_iff One_nat_def dim_row_mat(1) 
+          dim_row_tensor_mat less_2_cases less_mult_imp_div_less not_le power_not_zero zero_neq_numeral)
     then have "(one \<Otimes> |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>) $$ (i,j) 
             = 1 * ( |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>) $$ (i mod 2^(k-1), j mod 1)"
       using f4 f1 by auto
@@ -619,7 +623,8 @@ proof
    then have f6: "i<2^(k-1) \<longrightarrow> (one \<Otimes> |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>) $$ (i,j) = 0"
      using assms a2 f4 f0 f1 one_def by auto
    moreover have "( |unit_vec (2^k) m\<rangle>) $$ (i,j) = 0" using a2 assms ket_vec_def unit_vec_def f0 f1
-      by (smt One_nat_def assms(1) assms(2) col_index_of_mat_col dim_col_mat(1) dim_row_mat(1) index_unit_vec(3) index_vec ket_vec_col ket_vec_def less_Suc0 unit_vec_def)
+     by (smt One_nat_def assms(1,2) col_index_of_mat_col dim_col_mat(1) dim_row_mat(1) index_unit_vec(3) index_vec ket_vec_col 
+         ket_vec_def less_Suc0 unit_vec_def)
     ultimately show "( |unit_vec (2^k) m\<rangle>) $$ (i,j)  = (one \<Otimes> |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>) $$ (i,j)"
       using f5 f6 by auto
   qed
@@ -631,7 +636,6 @@ next
   show " dim_col |unit_vec (2 ^ k) m\<rangle> = dim_col (one \<Otimes> |unit_vec (2^(k-1)) (m mod 2^(k-1))\<rangle>)" 
     using ket_vec_def unit_vec_def one_def by auto
 qed
-
 
 lemma bin_rep_odd: 
   assumes "(bin_rep k m)!(k-1) = 1" and "k \<ge> 1" and "m < 2^k" 
@@ -713,7 +717,7 @@ proof
         by (metis diff_diff_cancel diff_le_self div_by_1 index_unit_vec(1) index_unit_vec(3) ket_vec_index less_power_add_imp_div_less 
             mult_eq_0_iff ordered_cancel_comm_monoid_diff_class.add_diff_inverse power_one_right)
       then show "( |unit_vec (2^k) m\<rangle> )$$ (i,j) = ( |unit_vec (2^(k-1)) (m div 2)\<rangle> \<Otimes> one) $$ (i,j)"
-        using f0 a2 by (metis assms(2) index_unit_vec(1) index_unit_vec(3) ket_vec_index)
+        using f0 a2 assms(2) by (metis index_unit_vec(1) index_unit_vec(3) ket_vec_index)
     qed
   qed
 next
@@ -732,8 +736,7 @@ lemma div_of_div:
   using assms
   by (metis One_nat_def Suc_1 diff_Suc_1 diff_self_eq_0 div_mult2_eq eq_iff less_imp_add_positive mult.commute not_less plus_1_eq_Suc power.simps(2))
 
-lemma aux_j_as_unit: 
-  fixes k j m::nat
+lemma aux_as_unit: 
   assumes "j < 2^m" and "k \<ge> 1"
   shows "k \<le> m \<longrightarrow> (j\<Otimes> 1 k m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle>"
 proof(rule Nat.nat_induct_at_least[of 1 k])
@@ -752,7 +755,7 @@ next
         using a0 assms(1)
         by (metis One_nat_def bin_rep_index diff_diff_left diff_zero div_by_0 div_le_dividend le_simps(3) mod_if plus_1_eq_Suc) 
       then have " |unit_vec (2^1) (j div 2^(m-1))\<rangle> = zero" using ket_vec_def by auto
-      moreover have "(j\<Otimes> 1 1 m j) = zero" using j_to_tensor_prod_def a1 by auto
+      moreover have "(j\<Otimes> 1 1 m j) = zero" using to_tensor_prod_def a1 by auto
       ultimately show "(j\<Otimes> 1 1 m j) = |unit_vec (2^1) (j div 2^(m-1))\<rangle>" by auto
     next
       assume a1: "(bin_rep m j)!0 = 1"
@@ -760,7 +763,7 @@ next
         using a0 assms(1)
         by (metis One_nat_def bin_rep_index diff_diff_left diff_zero div_by_0 div_le_dividend le_simps(3) mod_if plus_1_eq_Suc) 
       then have " |unit_vec (2^1) (j div 2^(m-1))\<rangle> = one" using ket_vec_def by auto
-      moreover have "(j\<Otimes> 1 1 m j) = one" using j_to_tensor_prod_def a1 by auto
+      moreover have "(j\<Otimes> 1 1 m j) = one" using to_tensor_prod_def a1 by auto
       ultimately show "(j\<Otimes> 1 1 m j) = |unit_vec (2^1) (j div 2^(m-1))\<rangle>" by auto
     qed
   qed
@@ -778,8 +781,8 @@ next
     next 
       assume a2: "(bin_rep m j)!k = 0"
       then have "(j\<Otimes> 1 (Suc k) m j) = (j\<Otimes> 1 k m j) \<Otimes> zero" 
-        using j_to_tensor_prod_decomp_left_zero[of "k+1" m j 1]   
-        by (metis Suc_eq_plus1 add_diff_cancel_left' j_to_tensor_prod_decomp_right_zero)
+        using to_tensor_prod_decomp_left_zero[of "k+1" m j 1]   
+        by (metis Suc_eq_plus1 add_diff_cancel_left' to_tensor_prod_decomp_right_zero)
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle> \<Otimes> zero" 
         using IH a1 Suc_leD by presburger
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-(Suc k)) div 2)\<rangle> \<Otimes> zero" 
@@ -793,8 +796,8 @@ next
     next
       assume a2: "(bin_rep m j)!k = 1"
       then have "(j\<Otimes> 1 (Suc k) m j) = (j\<Otimes> 1 k m j) \<Otimes> one" 
-        using j_to_tensor_prod_decomp_left_one[of "k+1" m j 1]   
-        by (metis Suc_eq_plus1 add_diff_cancel_left' j_to_tensor_prod_decomp_right_one)
+        using to_tensor_prod_decomp_left_one[of "k+1" m j 1]   
+        by (metis Suc_eq_plus1 add_diff_cancel_left' to_tensor_prod_decomp_right_one)
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-k))\<rangle> \<Otimes> one" 
         using IH a1 Suc_leD by presburger
       then have "(j\<Otimes> 1 (Suc k) m j) = |unit_vec (2^k) (j div 2^(m-(Suc k)) div 2)\<rangle> \<Otimes> one" 
@@ -809,15 +812,15 @@ next
   qed
 qed
 
-lemma j_as_unit:
-  fixes k j m::nat
+lemma as_unit:
   assumes "j < 2^m" and "m\<ge>1"
   shows "(j\<Otimes> 1 m m j) = |unit_vec (2^m) j\<rangle>" 
-  using aux_j_as_unit assms by auto
+  using aux_as_unit assms by auto
+
 
 subsection \<open>Controlled phase gate CR\<close>
 
-definition binary_fraction::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex" ("bf _ _") where
+definition binary_fraction :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex" ("bf _ _") where
 "binary_fraction l k m j \<equiv> (\<Sum>i\<in>{l..k}. ((bin_rep m j)!i) /2^(i-l+1) )"
 
 (*k is not the index of the control qubit but of the distance between the current and the control qubit
@@ -829,7 +832,7 @@ definition controlled_phase_shift:: "nat \<Rightarrow> complex Matrix.mat" ("CR 
 (*Find appropriate name*)
 (*qr 1 n n j_dec is 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>1\<^sup>j\<^sup>2\<^sup>.\<^sup>.\<^sup>.\<^sup>j\<^sup>n|1\<rangle>) 
   qr n n n j_dec is 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>n|1\<rangle>) *)
-definition qr::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
+definition qr :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
 "qr s t m jd \<equiv> (Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then (1::complex)/sqrt(2) 
               else (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (t-1) m jd)))*1/sqrt(2)))"
 
@@ -849,7 +852,8 @@ proof
     show "Re (cnj (exp (2 * complex_of_real pi * \<i> / 2^k))) = Re (exp (2 * complex_of_real pi * -\<i> / 2^k))"
     proof-
       have "Re (exp (2 * complex_of_real pi * \<i> / 2^k)) = cos (2 * pi * 1/2^k)" 
-        by (smt cis.simps(1) cis_conv_exp mult.commute mult_2 of_real_add of_real_divide of_real_hom.hom_one of_real_power one_add_one times_divide_eq_left)
+        by (smt cis.simps(1) cis_conv_exp mult.commute mult_2 of_real_add of_real_divide of_real_hom.hom_one of_real_power one_add_one 
+            times_divide_eq_left)
       moreover have "Re (exp (2 * complex_of_real pi * -\<i> / 2^k)) = cos (2 * pi * 1/2^k)" 
       proof-
         have "2 * complex_of_real pi * -\<i> / 2^k = \<i> * complex_of_real (-1 * (2 * pi / 2^k))" by (simp add: mult.commute)
@@ -911,7 +915,8 @@ next
          apply (auto simp: scalar_prod_def controlled_phase_shift_def).
     qed
     then show ?thesis 
-      by (metis cpx_mat_cnj_cnj cpx_mat_cnj_id cpx_mat_cnj_prod hermite_cnj_dim_col index_transpose_mat(2) transpose_cnj transpose_of_controlled_phase_shift unitary_def)
+      by (metis cpx_mat_cnj_cnj cpx_mat_cnj_id cpx_mat_cnj_prod hermite_cnj_dim_col index_transpose_mat(2) transpose_cnj 
+          transpose_of_controlled_phase_shift unitary_def)
   qed
 qed
 
@@ -955,7 +960,6 @@ proof-
   ultimately show "(exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (r-1-1) m jd))) * (exp (2*pi*\<i>*((bin_rep m jd)!(r-1))/2^(r-s+1)))
                  = (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (r-1) m jd)))" by auto
 qed
-
 
 (*E.g. for 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>1\<^sup>j\<^sup>2|1\<rangle> one has s=1 and r=2. Then, CR (2-1+2) = CR 3 is applied and 
 1\sqrt(2)*(|0\<rangle> + e\<^sup>2\<^sup>\<pi>\<^sup>i\<^sup>0\<^sup>.\<^sup>j\<^sup>1\<^sup>j\<^sup>2\<^sup>j\<^sup>3|1\<rangle> is obtained.*)
@@ -1009,8 +1013,6 @@ next
   show "dim_col ((CR (r-s+1)) * ((qr s (r-1) m jd) \<Otimes> zero)) = dim_col ((qr s r m jd) \<Otimes> zero)"
     using controlled_phase_shift_def qr_def by auto
 qed
-
-
 
 lemma app_controlled_phase_shift_one:
   assumes "r-1 < m" and "s\<le>r-1" and "s\<ge>1" and "((bin_rep m jd)!(r-1)) = 1"
@@ -1077,8 +1079,7 @@ abbreviation swapping_gate :: "complex Matrix.mat" ("SWAP") where
                                 (if i=2 \<and> j=1 then 1 else 
                                 (if i=3 \<and> j=3 then 1 else 0))))"
 
-
-lemma transpose_of_swapping_gate:
+lemma transpose_of_swapping_gate: 
   shows "(SWAP)\<^sup>t = SWAP"
 proof
   fix i j::nat
@@ -1151,7 +1152,6 @@ next
   show "dim_col (SWAP * (v \<Otimes> w)) = dim_col (w \<Otimes> v)" using assms by auto
 qed
 
-
 (*Swaps the k+1 and k+2 qubit of a k+2+t qubit system. E.g. |011010\<rangle> and k=1 and t=3 gives |001110\<rangle> *)
 definition SWAP_all :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
 "SWAP_all k t \<equiv> (Id k) \<Otimes> SWAP \<Otimes> (Id t)"
@@ -1167,7 +1167,6 @@ next
     using Id_def SWAP_all_def by (simp add: power_add)
 qed
 
-
 lemma SWAP_tensor_Id_is_gate:
   shows "gate (k+2) ((Id k) \<Otimes> SWAP)"
 proof
@@ -1178,19 +1177,6 @@ next
   have "gate 2 SWAP" using SWAP_gate by blast
   moreover have "gate k (Id k)" by simp 
   ultimately show "unitary ((Id k) \<Otimes> SWAP)"
-    using gate.unitary tensor_gate SWAP_gate by blast
-qed
-
-lemma Id_tensor_SWAP_is_gate: (*TODO Not needed? *)
-  shows "gate (t+2) (SWAP \<Otimes> (Id t))"
-proof
-  show "dim_row (SWAP \<Otimes> (Id t)) = 2^(t+2)" using Id_def by simp
-next
-  show "square_mat (SWAP \<Otimes> (Id t))" using Id_def by simp
-next
-  have "gate 2 SWAP" using SWAP_gate by blast
-  moreover have "gate t (Id t)" by simp 
-  ultimately show "unitary (SWAP \<Otimes> (Id t))"
     using gate.unitary tensor_gate SWAP_gate by blast
 qed
 
@@ -1221,7 +1207,6 @@ next
       by (simp add: carrier_matI mat_mult_left_right_inverse unitary_def)
   qed
 qed
-
 
 lemma app_SWAP_all:
   assumes "dim_row v = 2" and "dim_col v = 1"  
@@ -1308,7 +1293,7 @@ proof-
   then show "dim_row (fSWAP k t) = 2^(k+t)" and "dim_col (fSWAP k t) = 2^(k+t)"  by auto
 qed
 
-lemma SWAP_front_dim2 [simp]:
+lemma SWAP_front_dim2 [simp]: (*TODO better name *)
   assumes "m \<ge> k" and "k - c \<ge> 1"
   shows "dim_row (fSWAP (k-c) (m-k)) = 2^(m-c)"
     and "dim_col (fSWAP (k-c) (m-k)) = 2^(m-c)"
@@ -1343,12 +1328,14 @@ proof-
       moreover have "(SWAP_all (k-1) t)\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
       moreover have "(fSWAP k (t+1))\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
       moreover have "((fSWAP k (t+1)) * (SWAP_all (k-1) t)) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
-      ultimately have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * (((fSWAP k (t+1))\<^sup>\<dagger>) * ((fSWAP k (t+1)) * (SWAP_all (k-1) t)))" 
+      ultimately have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) 
+                     = (SWAP_all (k-1) t)\<^sup>\<dagger> * (((fSWAP k (t+1))\<^sup>\<dagger>) * ((fSWAP k (t+1)) * (SWAP_all (k-1) t)))" 
         by auto
       moreover have "(fSWAP k (t+1))\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
       moreover have "(fSWAP k (t+1)) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
       moreover have "(SWAP_all (k-1) t) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
-      ultimately have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * ((((fSWAP k (t+1))\<^sup>\<dagger>) * (fSWAP k (t+1))) * (SWAP_all (k-1) t))" 
+      ultimately have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) 
+        = (SWAP_all (k-1) t)\<^sup>\<dagger> * ((((fSWAP k (t+1))\<^sup>\<dagger>) * (fSWAP k (t+1))) * (SWAP_all (k-1) t))" 
         by auto
       then have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = (SWAP_all (k-1) t)\<^sup>\<dagger> * (1\<^sub>m (dim_col (fSWAP k (t+1))) * (SWAP_all (k-1) t))"
         using IH by auto
@@ -1383,7 +1370,6 @@ lemma Id_tensor_SWAP_front_herm_cnj_dim [simp]:
   shows "dim_row (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) = 2^(m-c+1)"
     and "dim_col (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) = 2^(m-c+1)"
   using assms Id_def by auto
-
 
 lemma aux_app_SWAP_front:
   assumes "k \<ge> c + 1" and "k \<ge> 1" and "c \<le> m" 
@@ -1470,7 +1456,8 @@ next
     proof-
       have "length (butlast xs) = (k - c - 1)" using a1 by auto
       moreover have "(butlast xs)@[last xs] = xs" using a0 a1 calculation
-        by (metis append_butlast_last_id butlast.simps(1) diff_diff_left le_imp_less_Suc less_imp_le_nat n_not_Suc_n ordered_cancel_comm_monoid_diff_class.diff_add)
+        by (metis append_butlast_last_id butlast.simps(1) diff_diff_left le_imp_less_Suc less_imp_le_nat n_not_Suc_n 
+            ordered_cancel_comm_monoid_diff_class.diff_add)
       moreover have "k - c - 1 + 1 = k - c" using a0 by auto
       ultimately show "(pr xs (k-c)) = (pr (butlast xs) ((k-c)-1)) \<Otimes> (last xs)" 
         using assms pow_tensor_decomp_left by auto
@@ -1518,7 +1505,6 @@ next
   qed
 qed
 
-
 lemma app_SWAP_front:
   assumes "k \<ge> c + 1" and "k \<ge> 1" and "c \<le> m" and "m \<ge> k" 
       and "dim_row v = 2" and "dim_col v = 1" 
@@ -1556,8 +1542,7 @@ proof-
     using app_SWAP_front[of c k m v xs ys] assms tensor_mat_is_assoc by auto
 qed
 
-
-lemma app_CR_on_all_tensor_Id:
+lemma app_CR_tensor_Id:
   assumes "k \<ge> 2" and "m \<ge> 1" and "k \<le> m" and "c \<ge> 1" and "c \<le> k - 1" and "c \<le> m" 
       and "dim_row v = 2" and "dim_col v = 1" 
       and "v = zero \<or> v = one"
@@ -1587,7 +1572,8 @@ proof-
   qed
   moreover have "dim_row ((pr xs (k-c-1)) \<Otimes> (pr ys (m-k))) = 2^(m-c-1)" 
     using pow_tensor_list_dim_row[of xs "k-c-1"] assms pow_tensor_list_dim_row[of ys "m-k"] 
-    by (smt Nat.add_diff_assoc2 Nat.le_diff_conv2 add_leD1 diff_diff_left dim_row_tensor_mat less_imp_le_nat one_add_one ordered_cancel_comm_monoid_diff_class.add_diff_inverse power_add)
+    by (smt Nat.add_diff_assoc2 Nat.le_diff_conv2 add_leD1 diff_diff_left dim_row_tensor_mat less_imp_le_nat one_add_one 
+        ordered_cancel_comm_monoid_diff_class.add_diff_inverse power_add)
   ultimately have "(CR (k-c+1) \<Otimes> Id (m-c-1)) * ((qr c (k-1) m j) \<Otimes> v \<Otimes> ((pr xs (k-c-1)) \<Otimes> (pr ys (m-k)))) = 
         (CR (k-c+1) * ((qr c (k-1) m j) \<Otimes> v)) \<Otimes> ((pr xs (k-c-1)) \<Otimes> (pr ys (m-k)))" 
     using Id_mult_left by auto
@@ -1610,8 +1596,6 @@ proof-
       using app_controlled_phase_shift_one assms f0 by auto
   qed
 qed
-
-
 
 lemma SWAP_front_herm_cnj_dual:
   assumes "k \<ge> 1" and "(fSWAP k t) * A = B" 
@@ -1643,7 +1627,7 @@ proof-
   moreover have "dim_row ((pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k))) = 2^(k-c+(m-k))" 
     by (metis SWAP_front_dim(1) assms(1) calculation dim_row_tensor_mat index_mult_mat(2) mult.commute)
   moreover have "dim_col ((pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k))) = 1" 
-    by (simp add: assms(6) assms(9-12))
+    by (simp add: assms(6,9-12))
   moreover have "dim_row (v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))) = 2^(k-c+(m-k))" 
     by (metis SWAP_front_dim(1) assms(1) calculation(1) index_mult_mat(2))
   moreover have "dim_col (v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))) = 1" 
@@ -1653,8 +1637,6 @@ proof-
     using SWAP_front_herm_cnj_dual[of "k-c" "m-k" "(pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k))"
                                       "v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))"] assms by auto
 qed
-
-
 
 lemma app_Id_SWAP_front_herm_cnj:
  assumes "k \<ge> 2" and "m \<ge> 1" and "k \<le> m" and "c \<ge> 1" and "c \<le> k - 1" and "c \<le> m"
@@ -1684,8 +1666,7 @@ proof-
   then show "(Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * ((qr c k m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k)))
            = (qr c k m j) \<Otimes> (pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k))"
     using tensor_mat_is_assoc by auto
-qed   
- 
+qed
 
 lemma CR_Id_dim [simp]:
   assumes "m \<ge> c + 1"
@@ -1708,16 +1689,13 @@ next
 qed
 
 
-
-
-
-
 subsection \<open>Applying an $R_k$\<close>
 
 (*Find a good abbreviation for this. Why doesn't something like R\<^sub>_ _ _ work? *)
+
 (*k is the index of the qubit that should be added to the binary fraction, i.e. the controll qubit. 
 c is the current qubit *)
-definition CR_on_all::"nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("R\<^sub>_ _ _" 75) where
+definition CR_on_all :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("R\<^sub>_ _ _" 75) where
 "CR_on_all c k m \<equiv> (Id (c-1)) \<Otimes> ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"
 
 lemma CR_on_all_dim[simp]:
@@ -1728,14 +1706,16 @@ proof-
   have "dim_row (CR_on_all c k m) = dim_row (Id (c-1)) * dim_row ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)))"
     using CR_on_all_def by auto
   moreover have "2^(c-Suc 0) * (2 * 2^(k+(m-k)-c)) = (2::nat)^m" using assms 
-    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
+    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse 
+        semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
   ultimately show "dim_row (CR_on_all c k m) = 2^m"
     using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
 next
   have "dim_col (CR_on_all c k m) = dim_col (Id (c-1)) * dim_col (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))"
     using CR_on_all_def by auto
   moreover have "2^(c-Suc 0) * (2 * 2^(k+(m-k)-c)) = (2::nat)^m" using assms 
-    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
+    by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse 
+        semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
   ultimately show "dim_col (CR_on_all c k m) = 2^m"
     using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
 qed
@@ -1781,7 +1761,6 @@ lemma Id_tensor_SWAP_front_cnj_is_gate:
   using assms
   by (metis SWAP_front_cnj_is_gate add.commute id_is_gate tensor_gate)
 
-
 lemma CR_on_all_wth_Id_is_gate:
   assumes "m > c" and "c < k" and "k \<le> m"
   shows "gate (m-c+1) ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"
@@ -1808,14 +1787,16 @@ next
       have "gate (c - 1) (Quantum.Id (c - 1))" using id_is_gate by blast
       moreover have "gate (m-c+1) ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))" 
         using CR_on_all_wth_Id_is_gate assms by auto
-      ultimately have "((CR_on_all c k m)\<^sup>\<dagger>) * (CR_on_all c k m) = 1\<^sub>m (dim_col (Id (c-1)) * dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))))" 
-        using CR_on_all_def tensor_gate_unitary1[of "c-1" "Id (c-1)" "m-c+1" "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"]
+      ultimately have "((CR_on_all c k m)\<^sup>\<dagger>) * (CR_on_all c k m) 
+  = 1\<^sub>m (dim_col (Id (c-1)) * dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))))" 
+        using CR_on_all_def tensor_gate_unitary1[of "c-1" "Id (c-1)" "m-c+1" 
+              "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))"]
         by auto
       moreover have "(dim_col (Id (c-1)) * dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))) = 2^m" 
       proof-
         have "dim_col (Id (c-1)) = 2^(c-1)" using Id_def by auto
         moreover have "dim_col ((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))) = 2^(m-c+1)" 
-          using Id_tensor_SWAP_front_dim(2) assms(1) assms(3) by auto
+          using Id_tensor_SWAP_front_dim(2) assms(1,3) by auto
         moreover have "2^(c-1) * 2^(m-c+1) = (2::nat)^m" using assms 
           by (metis CR_on_all_def CR_on_all_dim(2) calculation(1) calculation(2) dim_col_tensor_mat)
         ultimately show ?thesis by metis
@@ -1829,7 +1810,6 @@ next
     ultimately show ?thesis by (metis hermite_cnj_dim_col index_mult_mat(3) unitary_def)
   qed
 qed
-
 
 lemma app_CR_on_all_wo_Id:
   assumes "k \<ge> 2" and "m \<ge> 1" and "k \<le> m" and "c \<ge> 1" and "c \<le> k - 1" and "c < m" 
@@ -1853,14 +1833,15 @@ proof-
   proof-
     have "k \<le> m \<and> 1 \<le> k - c \<and> c + 1 \<le> m" using assms(3) f0 by linarith
     then have "(Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> Id (m-c-1)) \<in> carrier_mat (2^(m-c+1)) (2^(m-c+1))" 
-      using Id_tensor_SWAP_front_herm_cnj_dim[of k m c] CR_Id_dim[of c m k] assms f0 by (metis carrier_matI index_mult_mat(2) index_mult_mat(3))
+      using Id_tensor_SWAP_front_herm_cnj_dim[of k m c] CR_Id_dim[of c m k] assms f0 
+      by (metis carrier_matI index_mult_mat(2) index_mult_mat(3))
     moreover have "(Id 1 \<Otimes> (fSWAP (k-c) (m-k))) \<in> carrier_mat (2^(m-c+1)) (2^(m-c+1))"
       using Id_tensor_SWAP_front_dim[of k m c] assms using f0 by blast       
     moreover have "((qr c (k-1) m j) \<Otimes> (pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k))) \<in> carrier_mat (2^(m-c+1)) 1" 
     proof- 
       have "dim_row (pr xs (k-c-1)) = 2^(k-c-1)"  
-        using pow_tensor_list_dim_row[of xs "(k-c-1)" 2] assms(12) assms(16) by blast
-      moreover have "dim_row (pr ys (m-k)) = 2^(m-k)" using pow_tensor_list_dim_row[of ys "m-k" 2] assms(13) assms(17) by blast
+        using pow_tensor_list_dim_row[of xs "(k-c-1)" 2] assms(12,16) by blast
+      moreover have "dim_row (pr ys (m-k)) = 2^(m-k)" using pow_tensor_list_dim_row[of ys "m-k" 2] assms(13,17) by blast
       moreover have "2 * (2^(m-k) * 2^(k-Suc c)) = (2::nat)^(m-c)" 
         using assms f0 
         by (metis Nat.add_diff_assoc2 add.commute diff_diff_left le_SucI ordered_cancel_comm_monoid_diff_class.add_diff_inverse 
@@ -1882,7 +1863,7 @@ proof-
      = (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> (Id (m-c-1))) * ((qr c (k-1) m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))) "
     using app_Id_tensor_fSWAP[of k m c v xs ys] assms tensor_mat_is_assoc by auto
   moreover have "(Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> (Id (m-c-1))) * ((qr c (k-1) m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k)))
-              = (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * ((CR (k-c+1) \<Otimes> (Id (m-c-1))) * ((qr c (k-1) m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))))"
+               = (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * ((CR (k-c+1) \<Otimes> (Id (m-c-1))) * ((qr c (k-1) m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))))"
   proof-
     have "(Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) \<in> carrier_mat (2^(m-c+1)) (2^(m-c+1))" 
       using Id_tensor_SWAP_front_herm_cnj_dim assms f0 by auto
@@ -1904,7 +1885,7 @@ proof-
     by auto
   moreover have "(CR (k-c+1) \<Otimes> Id (m-c-1)) * ((qr c (k-1) m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))) 
         = (qr c k m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k))" 
-    using app_CR_on_all_tensor_Id[of k m c v j xs ys] assms by auto
+    using app_CR_tensor_Id[of k m c v j xs ys] assms by auto
   ultimately have "((Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * (CR (k-c+1) \<Otimes> (Id (m-c-1))) * (Id 1 \<Otimes> (fSWAP (k-c) (m-k))))
                  * ((qr c (k-1) m j) \<Otimes> (pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k))) 
                  = (Id 1 \<Otimes> ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)) * ((qr c k m j) \<Otimes> v \<Otimes> (pr xs (k-c-1)) \<Otimes> (pr ys (m-k)))" 
@@ -1914,8 +1895,6 @@ proof-
                  = ((qr c k m j) \<Otimes> (pr xs (k-c-1)) \<Otimes> v \<Otimes> (pr ys (m-k)))" 
     using assms f0 app_Id_SWAP_front_herm_cnj by auto
 qed
-
-
 
 lemma app_CR_on_all:
   assumes "k \<ge> 2" and "m \<ge> 1" and "k \<le> m" and "c \<ge> 1" and "c \<le> k - 1" and "c \<le> m" 
@@ -1986,9 +1965,7 @@ proof-
     using tensor_mat_is_assoc by auto
 qed
 
-
-
-lemma CR_on_all_j:
+lemma CR_on_all_on_qr:
  assumes "j < 2^m" and "n \<le> m" and "c \<le> m" and "c < n" and "m \<ge> c + 1"
      and "n \<ge> 2" and "m \<ge> 1" and "c \<ge> 1"
   shows 
@@ -2003,14 +1980,14 @@ proof-
      moreover have "n + 1 - (c + 1) \<le> m - c" using assms by simp
      moreover have "c + 1 + (m - c) - 1 \<le> m" using assms a0 by simp
      ultimately have "(j\<Otimes> (c+1) (m-c) m j) = (j\<Otimes> (c+1) ((n+1)-(c+1)-1) m j) \<Otimes> (j\<Otimes> (n+1-1) 1 m j) \<Otimes> (j\<Otimes> (n+1) ((m-c)-((n+1)-(c+1))) m j)"  
-       using j_to_tensor_prod_decomp_middle[of j m "c+1" "n+1" "m-c"] assms a0 by auto
+       using to_tensor_prod_decomp_middle[of j m "c+1" "n+1" "m-c"] assms a0 by auto
      moreover have "(m-c)-((n+1)-(c+1)) = m-n" using assms by auto
      ultimately show ?thesis by auto
   next
      assume a0: "n = m" 
      have "((c + 1) + (m - c - 1)) = m" using add.left_commute add_diff_cancel_left assms by linarith
      moreover have "(j\<Otimes> (c+1) (m-c) m j) = (j\<Otimes> (c+1) (m-c-1) m j) \<Otimes> (j\<Otimes> ((c+1)+(m-c-1)) 1 m j)" 
-       using assms j_to_tensor_prod_decomp_right[of j m "c+1" "m-c-1"] by auto
+       using assms to_tensor_prod_decomp_right[of j m "c+1" "m-c-1"] by auto
      ultimately have "(j\<Otimes> (c+1) (m-c) m j) = (j\<Otimes> (c+1) (n-(c+1)) m j) \<Otimes> (j\<Otimes> n 1 m j)" 
        by (simp add: a0)
      moreover have "(j\<Otimes> (n+1) (m-n) m j) = (Id 0)" using a0 by simp
@@ -2023,52 +2000,52 @@ proof-
 = ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c n m j) \<Otimes> (j\<Otimes> (c+1) (n-(c+1)) m j) \<Otimes> (j\<Otimes> n 1 m j) \<Otimes> (j\<Otimes> (n+1) (m-n) m j))"
   proof-
     have "(CR_on_all c n m) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c (n-1) m j) 
-       \<Otimes> (pr (j_to_list_bound (c+1) (n-(c+1)) m j) (n-c-1)) 
-       \<Otimes> (pr (j_to_list_bound n 1 m j) 1) 
-       \<Otimes> (pr (j_to_list_bound (n+1) (m-n) m j) (m-n)))
+       \<Otimes> (pr (to_list_bound (c+1) (n-(c+1)) m j) (n-c-1)) 
+       \<Otimes> (pr (to_list_bound n 1 m j) 1) 
+       \<Otimes> (pr (to_list_bound (n+1) (m-n) m j) (m-n)))
        =  (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c n m j) 
-       \<Otimes> (pr (j_to_list_bound (c+1) (n-(c+1)) m j) (n-c-1))  
-       \<Otimes> (pr (j_to_list_bound n 1 m j) 1) 
-       \<Otimes> (pr (j_to_list_bound (n+1) (m-n) m j) (m-n))"
+       \<Otimes> (pr (to_list_bound (c+1) (n-(c+1)) m j) (n-c-1))  
+       \<Otimes> (pr (to_list_bound n 1 m j) 1) 
+       \<Otimes> (pr (to_list_bound (n+1) (m-n) m j) (m-n))"
     proof-
       have "2 \<le> n \<and> 1 \<le> m \<and> n \<le> m \<and> 1 \<le> c \<and> c \<le> n - 1 \<and> c \<le> m " using assms by auto
-      moreover have "dim_row (pr (j_to_list_bound n 1 m j) 1) = 2" 
-                and "dim_col (pr (j_to_list_bound n 1 m j) 1) = 1" using pow_tensor_list_one by auto
+      moreover have "dim_row (pr (to_list_bound n 1 m j) 1) = 2" 
+                and "dim_col (pr (to_list_bound n 1 m j) 1) = 1" using pow_tensor_list_one by auto
       moreover have "length [qr (nat i) m m j. i<-[1..(c-1)]] = c-1" by simp
-      moreover have "(\<forall>x \<in> set (j_to_list_bound (c+1) (n-(c+1)) m j). dim_row x = 2)" using j_to_list_bound_dim by blast
-      moreover have "(\<forall>x \<in> set (j_to_list_bound (c+1) (n-(c+1)) m j). dim_col x = 1)" using j_to_list_bound_dim by blast
-      moreover have "length (j_to_list_bound (c+1) (n-(c+1)) m j) = n-c-1" by (simp add: j_to_list_bound_length)
-      moreover have "(\<forall>y \<in> set (j_to_list_bound (n+1) (m-n) m j). dim_row y = 2)" using j_to_list_bound_dim by blast
-      moreover have "(\<forall>y \<in> set (j_to_list_bound (n+1) (m-n) m j). dim_col y = 1)" using j_to_list_bound_dim by blast
-      moreover have "length (j_to_list_bound (n+1) (m-n) m j) = m-n" by (simp add: j_to_list_bound_length)
-      moreover have "(pr (j_to_list_bound n 1 m j) 1) = zero \<or> (pr (j_to_list_bound n 1 m j) 1) = one" using pow_tensor_list_one by auto
-      moreover have "(pr (j_to_list_bound n 1 m j) 1) = zero \<longrightarrow> bin_rep m j ! (n - 1) = 0" 
-        using j_to_tensor_bin_rep_zero j_to_tensor_prod_def assms by auto 
-      moreover have "(pr (j_to_list_bound n 1 m j) 1) = one \<longrightarrow> bin_rep m j ! (n - 1) = 1" 
-        using j_to_tensor_bin_rep_one j_to_tensor_prod_def assms(1-2) assms by auto 
+      moreover have "(\<forall>x \<in> set (to_list_bound (c+1) (n-(c+1)) m j). dim_row x = 2)" using to_list_bound_dim by blast
+      moreover have "(\<forall>x \<in> set (to_list_bound (c+1) (n-(c+1)) m j). dim_col x = 1)" using to_list_bound_dim by blast
+      moreover have "length (to_list_bound (c+1) (n-(c+1)) m j) = n-c-1" by (simp add: to_list_bound_length)
+      moreover have "(\<forall>y \<in> set (to_list_bound (n+1) (m-n) m j). dim_row y = 2)" using to_list_bound_dim by blast
+      moreover have "(\<forall>y \<in> set (to_list_bound (n+1) (m-n) m j). dim_col y = 1)" using to_list_bound_dim by blast
+      moreover have "length (to_list_bound (n+1) (m-n) m j) = m-n" by (simp add: to_list_bound_length)
+      moreover have "(pr (to_list_bound n 1 m j) 1) = zero \<or> (pr (to_list_bound n 1 m j) 1) = one" using pow_tensor_list_one by auto
+      moreover have "(pr (to_list_bound n 1 m j) 1) = zero \<longrightarrow> bin_rep m j ! (n - 1) = 0" 
+        using to_tensor_bin_rep_zero to_tensor_prod_def assms by auto 
+      moreover have "(pr (to_list_bound n 1 m j) 1) = one \<longrightarrow> bin_rep m j ! (n - 1) = 1" 
+        using to_tensor_bin_rep_one to_tensor_prod_def assms(1-2) assms by auto 
       moreover have "(\<forall>c\<in>set (map (\<lambda>i. qr (nat i) m m j) [1..int (c - 1)]). dim_row c = 2)"
         using qr_def by auto
       moreover have 
         "(\<forall>c\<in>set (map (\<lambda>i. qr (nat i) m m j) [1..int (c - 1)]). dim_col c = 1)" using qr_def assms(7) by auto
       ultimately show ?thesis
-        using app_CR_on_all[of n m c "(pr (j_to_list_bound n 1 m j) 1)" j "(j_to_list_bound (c+1) (n-(c+1)) m j)"
-                                   "(j_to_list_bound (n+1) (m-n) m j)" "[qr (nat i) m m j. i<-[1..(c-1)]]"] 
+        using app_CR_on_all[of n m c "(pr (to_list_bound n 1 m j) 1)" j "(to_list_bound (c+1) (n-(c+1)) m j)"
+                                   "(to_list_bound (n+1) (m-n) m j)" "[qr (nat i) m m j. i<-[1..(c-1)]]"] 
         by blast   
     qed
     then have "(CR_on_all c n m) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c (n-1) m j) 
-    \<Otimes> (pr (j_to_list_bound (c+1) (n-(c+1)) m j) (n-(c+1))) 
-    \<Otimes> (pr (j_to_list_bound n 1 m j) 1) 
-    \<Otimes> (pr (j_to_list_bound (n+1) (m-n) m j) (m-n)))
+    \<Otimes> (pr (to_list_bound (c+1) (n-(c+1)) m j) (n-(c+1))) 
+    \<Otimes> (pr (to_list_bound n 1 m j) 1) 
+    \<Otimes> (pr (to_list_bound (n+1) (m-n) m j) (m-n)))
     =  (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c n m j) 
-    \<Otimes> (pr (j_to_list_bound (c+1) (n-(c+1)) m j) (n-(c+1)))  
-    \<Otimes> (pr (j_to_list_bound n 1 m j) 1) 
-    \<Otimes> (pr (j_to_list_bound (n+1) (m-n) m j) (m-n))" by auto
-    moreover have "(j\<Otimes> (c+1) (n-(c+1)) m j) = (pr (j_to_list_bound (c+1) (n-(c+1)) m j) (n-(c+1)))" 
-      using j_to_tensor_prod_def by auto
-    moreover have "(j\<Otimes> n 1 m j) = (pr (j_to_list_bound n 1 m j) 1) " 
-      using j_to_tensor_prod_def by auto
-    moreover have "(j\<Otimes> (n+1) (m-n) m j) = (pr (j_to_list_bound (n+1) (m-n) m j) (m-n))"       
-      using j_to_tensor_prod_def by auto
+    \<Otimes> (pr (to_list_bound (c+1) (n-(c+1)) m j) (n-(c+1)))  
+    \<Otimes> (pr (to_list_bound n 1 m j) 1) 
+    \<Otimes> (pr (to_list_bound (n+1) (m-n) m j) (m-n))" by auto
+    moreover have "(j\<Otimes> (c+1) (n-(c+1)) m j) = (pr (to_list_bound (c+1) (n-(c+1)) m j) (n-(c+1)))" 
+      using to_tensor_prod_def by auto
+    moreover have "(j\<Otimes> n 1 m j) = (pr (to_list_bound n 1 m j) 1) " 
+      using to_tensor_prod_def by auto
+    moreover have "(j\<Otimes> (n+1) (m-n) m j) = (pr (to_list_bound (n+1) (m-n) m j) (m-n))"       
+      using to_tensor_prod_def by auto
     ultimately show ?thesis by auto
   qed
 ultimately have "(CR_on_all c n m) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c (n-1) m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))
@@ -2083,19 +2060,16 @@ then show "(CR_on_all c n m) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<O
 qed
 
 
-
-
-
 subsection \<open>Applying all $R_k$'s\<close>
 
 (*Could go into generic mult function would be more confusing to understand though*)
+
 (*A series of R\<^sub>k gates should be applied to each qubit, e.g. R\<^sub>2...R\<^sub>n are applied to |j\<^sub>1\<rangle>, R\<^sub>2...R\<^sub>n\<^sub>-\<^sub>1 are applied to |j\<^sub>2\<rangle> etc.  
 c is the current qubit and k=(n-c) ensures that R\<^sub>2 to R\<^sub>n\<^sub>-\<^sub>c\<^sub>+\<^sub>1 are applied to the qubit with the 
 special case for c=n that nothing is applied. *)
 fun all_CR:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("aCR _ _ _" 75) where
   "(aCR c 0 m) = (Id m)"  
 | "(aCR c (Suc k) m) = (CR_on_all c (c+(Suc k)) m) * (aCR c k m)"
-
 
 lemma all_CR_dim [simp]:
   assumes "c \<le> m" and "1 \<le> c"
@@ -2143,8 +2117,7 @@ next
     proof-
       have "dim_row (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) = 2^(c-1)" 
         using qr_def pow_tensor_list_dim_row[of "[qr (nat i) m m j. i<-[1..(c-1)]]" "c-1" 2] by auto
-      moreover have  "2^(c-Suc 0) * 2 * 2^(m-c) = (2::nat)^m" using a0 assms(1) by auto (*TODO: Put into aux_calculation*)
-      ultimately show ?thesis using qr_def j_to_tensor_prod_dim by auto
+      then show ?thesis using qr_def to_tensor_prod_dim aux_calculation(10) assms a0 by auto
     qed
     ultimately show  "aCR c (c-c) m * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)) 
             = ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
@@ -2167,12 +2140,12 @@ next
     proof-
       have "dim_row (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) = (2^(c-1))" 
         using qr_def pow_tensor_list_dim_row[of "[qr (nat i) m m j. i<-[1..(c-1)]]" "c-1" 2] by auto 
-      moreover have "dim_row (j\<Otimes> (c+1) (m-c) m j) = (2^(m-c))" using j_to_tensor_prod_dim by blast
-      moreover have "2^(c-1) * 2 * 2^(m-c) = (2::nat)^m" using assms(1,2) by auto
+      moreover have "dim_row (j\<Otimes> (c+1) (m-c) m j) = (2^(m-c))" using to_tensor_prod_dim by blast
+      moreover have "2^(c-1) * 2 * 2^(m-c) = (2::nat)^m" using assms(1-2) by auto
       ultimately have "dim_row ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)) = (2^m)" 
         using qr_def assms by auto
       moreover have "dim_col ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)) = 1" 
-        using qr_def assms pow_tensor_list_dim_col j_to_tensor_prod_dim by auto
+        using qr_def assms pow_tensor_list_dim_col to_tensor_prod_dim by auto
       ultimately have "((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)) \<in> carrier_mat (2^m) 1" 
         by auto
       moreover have "(CR_on_all c (Suc n) m) \<in> carrier_mat (2^m) (2^m)" 
@@ -2189,7 +2162,7 @@ next
     moreover have "c < Suc n " by (simp add: a0 less_Suc_eq_le)
     ultimately show "aCR c ((Suc n)-c) m * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)) 
         = ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (qr c (Suc n) m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
-      using CR_on_all_j[of j m "Suc n" c] a0 a1 assms by (metis Suc_le_mono add_leD1 le_trans one_add_one plus_1_eq_Suc)
+      using CR_on_all_on_qr[of j m "Suc n" c] a0 a1 assms by (metis Suc_le_mono add_leD1 le_trans one_add_one plus_1_eq_Suc)
   qed
 qed
 
@@ -2200,9 +2173,7 @@ lemma all_CR_app:
   using aux_all_CR_app[of c m m j] assms by auto
 
 
-
-
-subsection \<open> Application of all necessary gates to a single qubit \<close>
+subsection \<open>Application of all necessary gates to a single qubit\<close>
 
 (*Apply the H gate to the current qubit then apply R\<^sub>2 to R\<^sub>m\<^sub>-\<^sub>c*)
 definition all_gates_on_single_qubit:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("G _ _" 75)  where
@@ -2218,8 +2189,7 @@ proof-
   ultimately show "dim_row (G c m) = 2^m" using all_CR_dim[of c m "m-c"] assms by auto
 next
   have "dim_col (G c m) = dim_col (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))" using all_gates_on_single_qubit_def by auto
-  moreover have "2^(c-1) * 2 * 2^(m-c) = (2::nat)^m" using assms(1) assms(2) by auto (*Put in aux_calculation*)
-  then show "dim_col (G c m) = 2^m" using Id_def by (simp add: H_without_scalar_prod calculation)
+  then show "dim_col (G c m) = 2^m" using Id_def assms(1-2) by (simp add: H_without_scalar_prod)
 qed
 
 lemma G_is_gate:
@@ -2228,7 +2198,7 @@ lemma G_is_gate:
 proof-
   have "gate m (aCR c (m-c) m)" using all_CR_is_gate assms by auto
   moreover have "gate m (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))" 
-    by (metis H_is_gate assms(1) assms(2) id_is_gate le_add_diff_inverse2 ordered_cancel_comm_monoid_diff_class.add_diff_inverse tensor_gate)
+    by (metis H_is_gate assms(1-2) id_is_gate le_add_diff_inverse2 ordered_cancel_comm_monoid_diff_class.add_diff_inverse tensor_gate)
   ultimately show ?thesis using prod_of_gate_is_gate all_gates_on_single_qubit_def by auto
 qed
 
@@ -2322,13 +2292,13 @@ proof-
     have "dim_col (Id (c-1)) = dim_row (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1))"
       using Id_def pow_tensor_list_dim_row[of "[qr (nat i) m m j. i<-[1..(c-1)]]" "c-1" 2] qr_def by auto
     moreover have "dim_col (H \<Otimes> Id (m-c)) = dim_row (j\<Otimes> c (m-c+1) m j)"
-      using Id_def j_to_tensor_prod_dim by (simp add: H_without_scalar_prod)
+      using Id_def to_tensor_prod_dim by (simp add: H_without_scalar_prod)
     moreover have "dim_col (Id (c-1)) > 0" using Id_def by auto
     moreover have "dim_col H > 0" by (simp add: H_without_scalar_prod)
-    moreover have "dim_col (j\<Otimes> c (m-c+1) m j) > 0" using j_to_tensor_prod_dim by auto
+    moreover have "dim_col (j\<Otimes> c (m-c+1) m j) > 0" using to_tensor_prod_dim by auto
     moreover have "dim_col (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) > 0"
       using pow_tensor_list_dim_col qr_def by auto
-    ultimately show ?thesis using tensor_mat_is_assoc j_to_tensor_prod_dim mult_distr_tensor pos2 by auto
+    ultimately show ?thesis using tensor_mat_is_assoc to_tensor_prod_dim mult_distr_tensor pos2 by auto
   qed
   then have "(Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
   = (pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j)"
@@ -2338,14 +2308,14 @@ proof-
     assume a0: "v = zero \<or> v = one"
     then have "dim_col H = dim_row v" by (smt H_without_scalar_prod dim_col_mat(1) dim_row_mat(1))
     moreover have "dim_col (Id (m-c)) = dim_row (j\<Otimes> (c+1) (m-c) m j)" 
-      using Id_def by (simp add: j_to_tensor_prod_dim)
+      using Id_def by (simp add: to_tensor_prod_dim)
     moreover have "dim_col H > 0" and "dim_col (Id (m-c)) > 0" and "dim_col (j\<Otimes> (c+1) (m-c) m j) > 0" 
               and "dim_col v > 0"
-      using a0 apply (auto simp: H_without_scalar_prod Id_def j_to_tensor_prod_dim).
+      using a0 apply (auto simp: H_without_scalar_prod Id_def to_tensor_prod_dim).
     ultimately have "(H \<Otimes> Id (m-c)) * (v \<Otimes> j\<Otimes> (c+1) (m-c) m j) = (H * v) \<Otimes> (Id (m-c) * j\<Otimes> (c+1) (m-c) m j)"
       using mult_distr_tensor by auto
     then show "(H \<Otimes> Id (m-c)) * (v \<Otimes> j\<Otimes> (c+1) (m-c) m j) = (H * v) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)"
-      using Id_mult_left j_to_tensor_prod_dim by auto
+      using Id_mult_left to_tensor_prod_dim by auto
   qed
   moreover have "(H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j) = qr c c m j \<Otimes> (j\<Otimes> (c+1) (m-c) m j)"
   proof(rule disjE)
@@ -2353,7 +2323,7 @@ proof-
   next
     assume a0: "(bin_rep m j)!(c-1) = 1"
     then have "(j\<Otimes> c (m-c+1) m j) = one \<Otimes> (j\<Otimes> (c+1) (m-c) m j)"
-      using j_to_tensor_prod_decomp_left_one assms a0 by auto
+      using to_tensor_prod_decomp_left_one assms a0 by auto
     then have "(H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j) = (H * one) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)" 
       using f1 by simp
     then show "(H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j) = (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)" 
@@ -2361,7 +2331,7 @@ proof-
   next
     assume a0: "(bin_rep m j)!(c-1) = 0"
     then have "(j\<Otimes> c (m-c+1) m j) = zero \<Otimes> (j\<Otimes> (c+1) (m-c) m j)"
-      using j_to_tensor_prod_decomp_left_zero assms a0 by auto
+      using to_tensor_prod_decomp_left_zero assms a0 by auto
     then have "(H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j) = (H * zero) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)" 
       using f1 by simp
     then show "(H \<Otimes> Id (m-c)) * (j\<Otimes> c (m-c+1) m j) = (qr c c m j) \<Otimes> (j\<Otimes> (c+1) (m-c) m j)" 
@@ -2372,9 +2342,7 @@ proof-
     using tensor_mat_is_assoc by auto
 qed
 
-
 lemma app_G:
-  fixes c m j::nat
   assumes "c \<ge> 1" and "m \<ge> c" and "j < 2^m" 
   shows "G c m * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = ((pr [qr (nat i) m m j. i<-[1..c]] c) \<Otimes> (j\<Otimes> (c+1) (m-c) m j))"
@@ -2388,7 +2356,9 @@ next
          = (Id m * (Id (m-1) \<Otimes> H \<Otimes> Id (m-m))) * ((pr [qr (nat i) m m j. i<-[1..(m-1)]] (m-1)) \<Otimes> (j\<Otimes> m (m-m+1) m j))" 
    using all_gates_on_single_qubit_def by auto
   moreover have "dim_row (Id (m-1) \<Otimes> H \<Otimes> Id (m-m)) = 2^m" 
-    by (metis (no_types, lifting) H_without_scalar_prod Id_right_tensor One_nat_def Quantum.Id_def a0 assms(1) diff_self_eq_0 dim_row_mat(1) dim_row_tensor_mat index_one_mat(2) less_eq_Suc_le power_minus_mult)
+    using a0 assms(1)
+    by (metis (no_types, lifting) H_without_scalar_prod Id_right_tensor One_nat_def Quantum.Id_def diff_self_eq_0 dim_row_mat(1) 
+        dim_row_tensor_mat index_one_mat(2) less_eq_Suc_le power_minus_mult)
   ultimately have "G c m * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = ((Id (m-1) \<Otimes> H \<Otimes> Id (m-m))) * ((pr [qr (nat i) m m j. i<-[1..(m-1)]] (m-1)) \<Otimes> (j\<Otimes> m (m-m+1) m j))" 
     using Id_mult_left by auto
@@ -2401,7 +2371,8 @@ next
     using pow_tensor_decomp_left a0 by auto
   moreover have "[qr (nat i) m m j. i<-[1..(m-1)]]@[qr m m m j] = [qr (nat i) m m j. i<-[1..m]]"
     using a0 assms(1) 
-    by (metis (no_types, lifting) linordered_nonzero_semiring_class.of_nat_mono list.simps(8) list.simps(9) map_append nat_int of_nat_1 of_nat_diff upto_rec2)
+    by (metis (no_types, lifting) linordered_nonzero_semiring_class.of_nat_mono list.simps(8) list.simps(9) 
+        map_append nat_int of_nat_1 of_nat_diff upto_rec2)
   ultimately have "G c m * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = ((pr [qr (nat i) m m j. i<-[1..m]] m) \<Otimes> (j\<Otimes> (m+1) (m-m+1-1) m j))" 
     using assms by auto
@@ -2415,11 +2386,11 @@ next
   moreover have "(aCR c (m-c) m * (Id (c-1) \<Otimes> H \<Otimes> Id (m-c))) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
                = aCR c (m-c) m * ((Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j)))"
   proof-
-    have "aCR c (m-c) m \<in> carrier_mat (2^m) (2^m)" using assms(1,2) by auto
-    moreover have "2^(c-1) * 2 * 2^(m-c) = (2::nat)^m" using a0 assms(1) by auto (*TODO: put into aux_calculation*)
+    have "aCR c (m-c) m \<in> carrier_mat (2^m) (2^m)" using assms(1-2) by auto
     moreover have "(Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) \<in> carrier_mat (2^m) (2^m)" 
-      using Id_def H_without_scalar_prod calculation a0 assms(1) carrier_matI[of H 2 2] carrier_matI[of "Id (c-1)" "c-1" "c-1"] carrier_matI[of "Id (m-c)" "m-c" "m-c"] 
-      by (metis (no_types, lifting) carrier_matI dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) dim_row_tensor_mat index_one_mat(2) index_one_mat(3))
+      using Id_def H_without_scalar_prod aux_calculation(10) a0 assms carrier_matI[of H 2 2] carrier_matI[of "Id (c-1)" "c-1" "c-1"] 
+            carrier_matI[of "Id (m-c)" "m-c" "m-c"]
+      by (smt One_nat_def carrier_matI dim_col_mat(1) dim_col_tensor_mat dim_row_mat(1) dim_row_tensor_mat index_one_mat(2) index_one_mat(3))
     moreover have "((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j)) \<in> carrier_mat (2^m) 1" 
     proof-
       have "length [qr (nat i) m m j. i<-[1..(c-1)]] = c-1" by simp
@@ -2427,11 +2398,12 @@ next
       moreover have "\<forall>x\<in>set [qr (nat i) m m j. i<-[1..(c-1)]]. dim_col x = 1" using qr_def by auto
       ultimately have "(pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<in> carrier_mat (2^(c-1)) 1"         
         using pow_tensor_list_dim_row[of "[qr (nat i) m m j. i<-[1..(c-1)]]" "c-1" 2] by auto
-      moreover have "(j\<Otimes> c (m-c+1) m j) \<in> carrier_mat (2^(m-c+1)) 1" using j_to_tensor_prod_dim by auto
-      moreover have "2^(c-1) * 2^(m-c+1) = (2::nat)^m" using \<open>2 ^ (c - 1) * 2 * 2 ^ (m - c) = 2 ^ m\<close> by auto (*TODO: put into aux_calculation*)
+      moreover have "(j\<Otimes> c (m-c+1) m j) \<in> carrier_mat (2^(m-c+1)) 1" using to_tensor_prod_dim by auto
+      moreover have "2^(c-1) * 2^(m-c+1) = (2::nat)^m" 
+        using a0 assms aux_calculation(10) by (simp add: semigroup_mult_class.mult.assoc)
       ultimately show ?thesis by auto
     qed
-    ultimately show ?thesis by auto
+    ultimately show ?thesis using a0 assms(1) by auto
   qed
   ultimately have "G c m * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j))
       = aCR c (m-c) m * ((Id (c-1) \<Otimes> H \<Otimes> Id (m-c)) * ((pr [qr (nat i) m m j. i<-[1..(c-1)]] (c-1)) \<Otimes> (j\<Otimes> c (m-c+1) m j)))" by auto
@@ -2454,7 +2426,7 @@ next
 qed
 
 
-subsection \<open> Extension to all qubits \<close>
+subsection \<open>Extension to all qubits\<close>
 
 fun pow_mult :: "(complex Matrix.mat) list \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("pm _ _" 75)  where
   "(pm (Cons x []) (Suc 0)) = x"  
@@ -2467,7 +2439,8 @@ proof(rule Nat.nat_induct_at_least[of 1 k])
   show "k\<ge>1" using assms by auto
 next
   show "\<forall>xs. length xs = 1 \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n) \<longrightarrow> dim_row (pm xs 1) = n \<and> dim_col (pm xs 1) = n"
-    by (metis One_nat_def cancel_comm_monoid_add_class.diff_cancel last_ConsL last_in_set length_0_conv length_tl list.exhaust_sel pow_mult.simps(1) zero_neq_one)
+    by (metis One_nat_def cancel_comm_monoid_add_class.diff_cancel last_ConsL last_in_set length_0_conv length_tl list.exhaust_sel 
+        pow_mult.simps(1) zero_neq_one)
 next
   fix k::nat
   assume a0: "k \<ge> 1"
@@ -2510,7 +2483,8 @@ next
     assume a0: "length xs = 1 \<and> (\<forall>x \<in> set xs. dim_row x = n \<and> dim_col x = n)"
     then have "\<exists>y. xs = y # tl xs" by (metis One_nat_def length_Suc_conv list.sel(3))
     then have "\<exists>y. xs = [y]" using a0 
-      by (metis One_nat_def Suc_le_mono add_diff_cancel_left' butlast.simps(2) impossible_Cons le_numeral_extra(4) length_butlast length_tl list.sel(2) list.size(3) plus_1_eq_Suc)
+      by (metis One_nat_def Suc_le_mono add_diff_cancel_left' butlast.simps(2) impossible_Cons le_numeral_extra(4) 
+          length_butlast length_tl list.sel(2) list.size(3) plus_1_eq_Suc)
     then obtain y where f0: "xs = [y]" by auto
     have "pm (xs@[x]) (Suc 1) = pm ([y]@[x]) (Suc 1)" using f0 by auto
     then have "pm (xs@[x]) (Suc 1) = x * y" by auto
@@ -2596,7 +2570,6 @@ next
   qed
 qed
 
-
 lemma app_all_G: 
   assumes "k \<ge> 1" and "j < 2^m" and "m \<ge> 1"
   shows "k \<le> m \<longrightarrow> (pm [G (nat i) m. i<-[1..k]] k) * (j\<Otimes> 1 m m j)
@@ -2638,11 +2611,13 @@ next
                  = (G (Suc k) m) * ((pm [G (nat i) m. i<-[1..int k]] k) * (j\<Otimes> 1 m m j))"
     proof-
       have "length [G (nat i) m. i<-[1..int k]] = k" by simp
-      moreover have "\<forall>x\<in>set (map (\<lambda>i. G nat i m) [1..int k]). dim_row x = 2^m \<and> dim_col x = 2^m" using G_dim a0 a1 by auto
+      moreover have "\<forall>x\<in>set (map (\<lambda>i. G nat i m) [1..int k]). dim_row x = 2^m \<and> dim_col x = 2^m" 
+        using G_dim a0 a1 by auto
       ultimately have "(pm [G (nat i) m. i<-[1..int k]] k) \<in> carrier_mat (2^m) (2^m)" 
         using a0 pow_mult_dim[of k "[G (nat i) m. i<-[1..int k]]" "2^m"] by auto
-        moreover have "(G (Suc k) m) \<in> carrier_mat (2^m) (2^m)" using G_dim[of "Suc k" m] a1 a0 le_SucI by blast
-      moreover have "(j\<Otimes> 1 m m j) \<in> carrier_mat (2^m) 1" using j_to_tensor_prod_dim[of 1 m m j] by auto
+      moreover have "(G (Suc k) m) \<in> carrier_mat (2^m) (2^m)" 
+        using G_dim[of "Suc k" m] a1 a0 le_SucI by blast
+      moreover have "(j\<Otimes> 1 m m j) \<in> carrier_mat (2^m) 1" using to_tensor_prod_dim[of 1 m m j] by auto
       ultimately show ?thesis by auto
     qed
     ultimately have "(pm [G (nat i) m. i<-[1..int (Suc k)]] (Suc k)) * (j\<Otimes> 1 m m j)
@@ -2657,15 +2632,13 @@ next
 qed
 
 
-
-
-subsection \<open> Reverse the qubits \<close>
+subsection \<open>Reversing the qubits\<close>
 
 fun reverse_qubits:: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" ("rQB _ _" 75) where
   "(rQB 0 m) = (Id m)" 
 | "(rQB (Suc k) m) = fSWAP (Suc k) (m-(Suc k)) * rQB k m"
 
-lemma reverse_qubits_dim:
+lemma reverse_qubits_dim[simp]:
   shows "k \<le> m \<longrightarrow> dim_row (rQB k m) = 2^m \<and> dim_col (rQB k m) = 2^m" 
 proof(induction k)
   show "0 \<le> m \<longrightarrow> dim_row (rQB 0 m) = 2^m \<and> dim_col (rQB 0 m) = 2^m" using Id_def by auto
@@ -2744,7 +2717,7 @@ next
         by (metis (mono_tags, lifting) Suc_diff_le Suc_eq_plus1 a0 diff_Suc_Suc diff_diff_left)
     qed
     ultimately have "(rQB (Suc i) m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
-       = fSWAP (Suc i) (m-(Suc i)) * ((pr (rev [qr (nat k) m m j. k<-[1..int i]]) i) \<Otimes> qr (nat (i+1)) m m j \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-i-1)))" 
+= fSWAP (Suc i) (m-(Suc i)) * ((pr (rev [qr (nat k) m m j. k<-[1..int i]]) i) \<Otimes> qr (nat (i+1)) m m j \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-i-1)))" 
       using tensor_mat_is_assoc by auto
     moreover have "fSWAP (Suc i-0) (m-(Suc i)) *
 ((pr (rev [qr (nat k) m m j. k<-[1..int i]]) (Suc i - 0 - 1)) \<Otimes> qr (nat (i+1)) m m j \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-(Suc i))))
@@ -2766,7 +2739,7 @@ next
                        "[qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]]"] tensor_mat_is_assoc a0 by auto
     qed
     ultimately have "(rQB (Suc i) m) * (pr [qr (nat k) m m j. k<-[1..int m]] m) 
-       = (qr (nat (i+1)) m m j \<Otimes> (pr (rev [qr (nat k) m m j. k<-[1..int i]]) i) \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-i-1)))" 
+= (qr (nat (i+1)) m m j \<Otimes> (pr (rev [qr (nat k) m m j. k<-[1..int i]]) i) \<Otimes> (pr [qr (nat k) m m j. k<-[int ((Suc i)+1)..int m]] (m-i-1)))" 
       by auto
     moreover have "qr (nat (i+1)) m m j \<Otimes> (pr (rev [qr (nat k) m m j. k<-[1..int i]]) i)
                  = pr (rev [qr (nat k) m m j. k<-[1..int (Suc i)]]) (Suc i)"
@@ -2787,7 +2760,7 @@ next
 qed
 
 
-subsection \<open> The Quantum Fourier Transform \<close>
+subsection \<open>The Quantum Fourier Transform\<close>
 
 definition quantum_fourier_transform :: "nat\<Rightarrow>complex Matrix.mat" ("QFT _" 75) where 
 "(QFT m) = (rQB m m) * (pm [G (nat i) m. i<-[1..m]] m)"
@@ -2801,16 +2774,15 @@ proof-
   ultimately show ?thesis using prod_of_gate_is_gate quantum_fourier_transform_def by auto
 qed
 
-abbreviation \<psi>\<^sub>1::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
+abbreviation \<psi>\<^sub>1 :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where
   "\<psi>\<^sub>1 m j \<equiv> pr [qr (nat k) m m j. k<-[1..m] ] m"
 
 lemma aux_quantum_fourier_transform_prod_rep:
-  fixes j m::nat
-  assumes "j < 2^m" and "m\<ge>1"
+  assumes "j < 2^m" and "m \<ge> 1"
   shows "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle>  = \<psi>\<^sub>1 m j" 
 proof-
   have "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle>  = (pm [G (nat i) m. i<-[1..m]] m) * (j\<Otimes> 1 m m j)"
-    using assms(1) assms(2) j_as_unit by auto
+    using assms(1-2) as_unit by auto
   then have "(pm [G (nat i) m. i<-[1..m]] m) * |unit_vec (2^m) j\<rangle> = ((pr [qr (nat i) m m j. i<-[1..m]] m) \<Otimes> (j\<Otimes> (m+1) (m-m) m j))" 
     using app_all_G assms by auto
   moreover have "(j\<Otimes> (m+1) (m-m) m j) = (Id 0)" by simp
@@ -2818,11 +2790,10 @@ proof-
   then show ?thesis by auto
 qed
 
-abbreviation \<psi>\<^sub>2::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
+abbreviation \<psi>\<^sub>2 :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>2 m j \<equiv> pr [qr (m+1-nat k) m m j. k<-[1..m] ] m"
 
 lemma list_shift_one:
-  fixes n::nat
   assumes "n \<ge> 1"
   shows "[A k. k<-[1..int n]] = [A (k-1). k<-[2..int (Suc n)]]" 
 proof(rule Nat.nat_induct_at_least[of 1 n])
@@ -2833,8 +2804,9 @@ next
   fix n
   assume a0: "n \<ge> 1"
      and IH: "[A k. k<-[1..int n]] = [A (k-1). k<-[2..int (Suc n)]]" 
-  have "[A k. k<-[1..int (Suc n)]] = [A k. k<-[1..int n]] @ [A (Suc n)]" (*Can be replaced *)
-    by (smt append_self_conv2 list.map(1) list.map(2) map_append of_nat_le_0_iff semiring_1_class.of_nat_simps(2) upto_empty upto_single upto_split2)
+  have "[A k. k<-[1..int (Suc n)]] = [A k. k<-[1..int n]] @ [A (Suc n)]"
+    by (smt append_self_conv2 list.map(1) list.map(2) map_append of_nat_le_0_iff semiring_1_class.of_nat_simps(2) 
+        upto_empty upto_single upto_split2)
   then have "[A k. k<-[1..int (Suc n)]] = [A (k-1). k<-[2..int (Suc n)]] @ [A (Suc n)]" by (simp add: IH)
   moreover have "[A (Suc n)] = [A (k-1). k<-[(Suc (Suc n))..int (Suc (Suc n))]]" using a0 by simp
   ultimately show "[A k. k<-[1..int (Suc n)]] = [A (k-1). k<-[2..int (Suc (Suc n))]]" 
@@ -2842,7 +2814,7 @@ next
 qed
  
 lemma rev_of_qr_list:
-  assumes "n\<ge>1"
+  assumes "n \<ge> 1"
   shows "n \<le> m \<longrightarrow> (rev [qr (nat k) m m j. k<-[1..n]]) = [qr (n+1-nat k) m m j. k<-[1..n]]"
 proof(rule Nat.nat_induct_at_least)
   show "n\<ge>1" using assms by auto
@@ -2874,7 +2846,6 @@ next
   qed
 qed
 
-
 theorem quantum_fourier_transform_prod_rep:
   assumes "j < 2^m" and "m \<ge> 1"
   shows "(QFT m) * |unit_vec (2^m) j\<rangle> = \<psi>\<^sub>2 m j" 
@@ -2895,7 +2866,8 @@ proof-
        = (pr (rev [qr (nat k) m m j. k<-[1..m]]) m) \<Otimes> (pr [qr (nat k) m m j. k<-[m+1..m]] (m-m))" 
       using app_reverse_qubits by auto 
     then have "(rQB m m) * (\<psi>\<^sub>1 m j) = (pr (rev [qr (nat k) m m j. k<-[1..m]]) m)" by auto 
-    moreover have "(rev [qr (nat k) m m j. k<-[1..m]]) = [qr (m+1-nat k) m m j. k<-[1..m]]" using rev_of_qr_list[of m m j] assms by auto
+    moreover have "(rev [qr (nat k) m m j. k<-[1..m]]) = [qr (m+1-nat k) m m j. k<-[1..m]]" 
+      using rev_of_qr_list[of m m j] assms by auto
     ultimately show ?thesis by auto
   qed
   ultimately show ?thesis by auto
@@ -2903,10 +2875,10 @@ qed
 
 lemma aux_exp_term_one_1: 
   assumes "m \<ge> k" and "k \<ge> 1" and "m \<ge> i" and "k \<ge> i + 1" 
-  shows "1/2^(m-k+1)*(2::nat)^(m-i) = 2^(k-i-1)"
+  shows "1/2^(m-k+1) * (2::nat)^(m-i) = 2^(k-i-1)"
 proof-
   have "m - k + 1 \<le> m - i" 
-    using assms(1) assms(4) by linarith
+    using assms(1,4) by linarith
   then have "1/2^(m-k+1)*(2::nat)^(m-i) = 2^(m-i-(m-k+1))"
     using power_diff[of 2 "m-k+1" "m-i"] 
     by (metis One_nat_def add.right_neutral add_Suc_right diff_diff_left mult.left_neutral of_nat_numeral 
@@ -2926,11 +2898,12 @@ proof-
     by (smt mult.right_neutral of_nat_1 of_nat_add of_nat_power one_add_one power_diff)
   then have "(2::nat)^(m-k+1) * 1/2^(m-(i+1)) = 2^(i-(k-1)+1)" 
     using assms
-    by (smt Nat.add_diff_assoc2 add_diff_cancel_right atLeastAtMost_iff cancel_ab_semigroup_add_class.diff_right_commute diff_diff_cancel diff_le_mono2 le_add_diff_inverse2) 
+    by (smt Nat.add_diff_assoc2 add_diff_cancel_right atLeastAtMost_iff le_add_diff_inverse2
+        cancel_ab_semigroup_add_class.diff_right_commute diff_diff_cancel diff_le_mono2) 
   then show ?thesis
-    by (metis (no_types, lifting) divide_divide_eq_right nat_mult_1_right of_nat_1 of_nat_add of_nat_power one_add_one times_divide_eq_left)
+    by (metis (no_types, lifting) divide_divide_eq_right nat_mult_1_right of_nat_1 of_nat_add of_nat_power 
+        one_add_one times_divide_eq_left)
 qed
-
 
 lemma bit_representation:
   assumes "j < 2^m" and "m \<ge> 1"
@@ -2982,7 +2955,7 @@ next
              * exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))" 
       by (metis (mono_tags, lifting) exp_double of_nat_numeral)
     then have "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) =
-                   exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))" 
+               exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k)))" 
       using IH a1 by auto
     moreover have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k))) = 1"
     proof(rule disjE)
@@ -3000,8 +2973,9 @@ next
         using a1
         by (metis (no_types, lifting) One_nat_def Suc_diff_le add.right_neutral add_Suc_right diff_Suc_Suc)
       then have "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k))) = exp(2*pi*\<i>)"  
-        using  a0 a1
-        by (smt Suc_diff_le Suc_eq_plus1 Suc_leD add.right_neutral add_diff_cancel_right' diff_Suc_Suc aux_exp_term_one_1 le_SucI mult.right_neutral of_nat_power of_real_hom.hom_one order_refl plus_1_eq_Suc power.simps(1))
+        using  a0 a1 aux_exp_term_one_1
+        by (smt Suc_diff_le Suc_eq_plus1 Suc_leD add.right_neutral add_diff_cancel_right' diff_Suc_Suc le_SucI mult.right_neutral 
+            of_nat_power of_real_hom.hom_one order_refl plus_1_eq_Suc power.simps(1))
       then show "exp(2*pi*\<i>*((bin_rep m jd)!(k-1) * 1/2^(m-(Suc k)+1)*real 2^(m-k))) = 1" by simp
     qed
     ultimately show "exp(2*pi*\<i>*(\<Sum>i\<in>{1..<(Suc k)}. (bin_rep m jd)!(i-1) * 1/2^(m-(Suc k)+1)*real 2^(m-i))) = 1" 
@@ -3009,9 +2983,7 @@ next
   qed
 qed
 
-
-
-lemma qr_different_rep:
+lemma aux_qr_different_rep:
   assumes "m \<ge> 1" and "m \<ge> k" and "k \<ge> 1" and "jd < 2^m"
   shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))" 
 proof- 
@@ -3034,10 +3006,10 @@ proof-
     moreover have "(\<Sum>i\<in>{1..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) = 
           (\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)) +
           (\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))" 
-      using assms(2) assms(3) 
+      using assms(2-3) 
       by (smt atLeastLessThanSuc_atLeastAtMost le_eq_less_or_eq le_less_trans lessI sum.atLeastLessThan_concat)
     ultimately have "exp(2*pi*\<i>*jd/2^(m-k+1)) 
-        = exp(2*pi*\<i>*((\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))+(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))))"
+= exp(2*pi*\<i>*((\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))+(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))))"
       by metis
     then have "exp(2*pi*\<i>*jd/2^(m-k+1)) 
              = exp(2*pi*\<i>*(\<Sum>i\<in>{1..<k}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))) *
@@ -3050,7 +3022,7 @@ proof-
     proof-
       have "(\<Sum>i\<in>{k..m}. (bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i))
           = (\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i* 1/2^(m-k+1)*real 2^(m-(i+1)))"
-        using sum.shift_bounds_cl_nat_ivl[of "\<lambda>i.(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)" "k-1" 1 "m-1"] assms(1) assms(3)
+        using sum.shift_bounds_cl_nat_ivl[of "\<lambda>i.(bin_rep m jd)!(i-1) * 1/2^(m-k+1)*real 2^(m-i)" "k-1" 1 "m-1"] assms(1,3)
         by auto
       moreover have "(\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * (1/2^(m-k+1)*real 2^(m-(i+1))))
                    = (\<Sum>i\<in>{k-1..m-1}. (bin_rep m jd)!i * (1/2^(i-(k-1)+1)))" 
@@ -3065,19 +3037,18 @@ proof-
   ultimately show ?thesis by auto
 qed
 
-lemma qr_different_rep':
-  fixes k m jd::nat
+lemma qr_different_rep:
   assumes "m \<ge> 1" and "m \<ge> k" and "k \<ge> 1" and "jd < 2^m"
   shows "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2))" 
 proof-
   have "qr k m m jd = Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))" 
-    using qr_different_rep assms by simp
+    using aux_qr_different_rep assms by simp
   moreover have "Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2))
-              = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2))"
+               = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2))"
   proof
     fix i j
     assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2)))"
-       and "j < dim_col( Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2)))"
+       and "j < dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2)))"
     then have "i \<in> {0,1} \<and> j = 0" by auto
     moreover have "Matrix.mat 2 1 (\<lambda>(i,j). if i=0 then 1/sqrt(2) else exp(2*pi*\<i>*jd/2^(m-k+1))*1/sqrt(2)) $$ (0,0)
               = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(m-k+1))*1/sqrt(2)) $$ (0,0)"
@@ -3104,24 +3075,25 @@ proof-
   have "m \<le> n \<longrightarrow> i div 2 mod 2^m = i mod 2^(m+1) div 2" for m::nat
     using assms by (simp add: mod_mult2_eq)
   then have f0: "i div 2 mod 2^(n-l+1) = i mod 2^(n-l+1+1) div 2" 
-    by (metis assms(3) assms(4) le_add_diff_inverse2 nat_add_left_cancel_le)
+    by (metis assms(3-4) le_add_diff_inverse2 nat_add_left_cancel_le)
   have "(bin_rep n (i div 2))!(l-1) = ((i div 2) mod 2^(n-(l-1))) div 2^(n-1-(l-1))"
     using bin_rep_index assms by auto
   then have "(bin_rep n (i div 2))!(l-1) = (i mod 2^(n-l+1+1) div 2) div 2^(n-1-(l-1))" 
-    using f0 assms(3) assms(4) 
+    using f0 assms(3-4)
     by (metis Nat.add_diff_assoc2 Nat.diff_diff_right)
   then have "(bin_rep n (i div 2))!(l-1) = i mod 2^(n-l+1+1) div 2^(n-1-(l-1)+1)" 
     by (metis (no_types, lifting) Groups.mult_ac(2) div_mult2_eq power_add power_one_right)
   then have "(bin_rep n (i div 2))!(l-1) = (i mod 2^((Suc n)-(l-1))) div 2^(n-1-(l-1)+1)" 
-    by (smt Nat.diff_diff_eq One_nat_def Suc_diff_le add.right_neutral add_Suc_right assms(2) assms(3) assms(4) diff_Suc_1 le_SucI)
+    using assms(2-4)
+    by (smt Nat.diff_diff_eq One_nat_def Suc_diff_le add.right_neutral add_Suc_right diff_Suc_1 le_SucI)
   then have "(bin_rep n (i div 2))!(l-1) = (i mod 2^((Suc n)-(l-1))) div 2^((Suc n)-1-(l-1))" 
-    by (smt Suc_diff_le add.right_neutral add_Suc_right assms(2) assms(3) assms(4) diff_Suc_Suc ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
+    using assms(2-4)
+    by (smt Suc_diff_le add.right_neutral add_Suc_right  diff_Suc_Suc ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
   then show "(bin_rep n (i div 2))!(l-1) = (bin_rep (Suc n) i)!(l-1)"
     using bin_rep_index assms by auto
 qed
 
-lemma product_rep_to_def: 
-  fixes n m jd::nat
+lemma product_rep_to_matrix_rep: 
   assumes "n \<ge> 1" and "m \<ge> 1" and "jd < 2^m"
   shows "n \<le> m \<longrightarrow> (pr [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n] ] n)
        = Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)"
@@ -3135,18 +3107,17 @@ next
     have "(pr [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..int 1] ] 1)
        = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2))" by auto
     moreover have "Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^1)*1/sqrt(2))
-                = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2))" 
+                 = Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2))" 
     proof
       fix i j
       assume "i < dim_row (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)))" 
       and "j < dim_col (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 (of_nat i))!(1-1)/2^1)*1/sqrt(2)))" 
       then have f0: "i \<in> {0,1} \<and> j = 0" by auto
       moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^1)*1/sqrt(2))) $$ (0,j)
-                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (0,j)"  
+                   = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (0,j)"  
         using f0 by (simp add: bin_rep_index_0)
       moreover have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^1)*1/sqrt(2))) $$ (1,j)
-                = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (1,j)" 
-        using f0 
+                   = (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (1,j)" 
       proof-
         have "(Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 i)!(1-1)/2^1)*1/sqrt(2))) $$ (1,j)
             = exp(complex_of_real(2*pi)*\<i>*jd*(bin_rep 1 1)!(1-1)/2^1)*1/sqrt(2)" using f0 by auto
@@ -3178,16 +3149,16 @@ next
   fix n::nat
   assume a0: "n \<ge> 1"
   assume IH: "n \<le> m \<longrightarrow> (pr [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n] ] n)
-       =  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)"
+=  Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)"
   show  "(Suc n) \<le> m \<longrightarrow> (pr [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)] ] (Suc n))
-       =  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n))"
+=  Matrix.mat (2^(Suc n)) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l))*1/sqrt(2)^(Suc n))"
   proof
     assume a1: "(Suc n) \<le> m"
     have "length [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n]] = n" by auto
     moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..n]]
               @ [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k <-[Suc n..Suc n]]
             = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)]]" 
-      by (smt One_nat_def a0 map_append nat_1 nat_le_iff of_nat_Suc upto_split1)
+      using a0 by (smt One_nat_def map_append nat_1 nat_le_iff of_nat_Suc upto_split1)
     moreover have "[Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k <-[Suc n..Suc n]]
                  = [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2))]" by auto
     ultimately have "(pr ([Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..(Suc n)]]) (n+1))
@@ -3211,7 +3182,8 @@ next
       \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
         = (Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)) $$ (i div 2, j div 2)
         * (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))$$ (i mod 2, j mod 2)" 
-        by (smt One_nat_def add_self_mod_2 dim_col_mat(1) dim_row_mat(1) index_tensor_mat less_numeral_extra(1) mod_add_self1 mod_div_trivial mod_if one_add_one one_power2 plus_1_eq_Suc plus_nat.simps(2) power_Suc2 power_one_right)
+        by (smt One_nat_def add_self_mod_2 dim_col_mat(1) dim_row_mat(1) index_tensor_mat less_numeral_extra(1) 
+            mod_add_self1 mod_div_trivial mod_if one_add_one one_power2 plus_1_eq_Suc plus_nat.simps(2) power_Suc2 power_one_right)
       then have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
       \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
         = (exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat (i div 2)))!(l-1)/2^l))
@@ -3228,7 +3200,7 @@ next
                               "(of_nat (i mod 2))/2^(nat (Suc n))"] by auto
       ultimately have "(Matrix.mat (2^n) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..n}. (bin_rep n (of_nat i))!(l-1)/2^l))*1/sqrt(2)^n)
       \<Otimes> (Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat (Suc n)))*1/sqrt(2)))) $$ (i,j)
-        = (exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n)))))*1/sqrt(2)^(Suc n)"
+    = (exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n)))))*1/sqrt(2)^(Suc n)"
         by auto
       moreover have "(\<Sum>l\<in>{1..n}. (bin_rep n (i div 2))!(l-1)/2^l) + (of_nat (i mod 2))/2^(nat (Suc n))
                     = (\<Sum>l\<in>{1..(Suc n)}. (bin_rep (Suc n) (of_nat i))!(l-1)/2^l)"
@@ -3277,41 +3249,35 @@ next
   qed
 qed
 
-abbreviation \<psi>\<^sub>3::"nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
+abbreviation \<psi>\<^sub>3 :: "nat \<Rightarrow> nat \<Rightarrow> complex Matrix.mat" where 
   "\<psi>\<^sub>3 m jd \<equiv> Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*i/2^m)*1/sqrt(2)^m)"
 
 lemma product_rep_equals_matrix_rep: 
-  fixes m jd::nat
   assumes "jd < 2^m" and "m \<ge> 1"
   shows "(\<psi>\<^sub>2 m jd) = (\<psi>\<^sub>3 m jd)"
 proof-
-  have "[qr (m+1-nat k) m m jd. k<-[1..m]] = [Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(nat k))*1/sqrt(2)). k<-[1..m]]" 
-  proof- (*Why does this not work without subproof? *)
-    have  "k \<in> {1..m} \<longrightarrow> qr (m+1-nat k) m m jd = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(nat k))*1/sqrt(2))" for k::int
-      using qr_different_rep'[of m "m+1-nat k" jd] assms by auto
-    then show ?thesis by auto
-  qed
+  have  "k \<in> {1..m} \<longrightarrow> qr (m+1-nat k) m m jd = Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(nat k))*1/sqrt(2))" for k::int
+      using qr_different_rep[of m "m+1-nat k" jd] assms by auto
+  then have "[qr (m+1-nat k) m m jd. k<-[1..m]] = [Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*i/2^(nat k))*1/sqrt(2)). k<-[1..m]]" 
+      by auto
   then have "(\<psi>\<^sub>2 m jd) = pr [Matrix.mat 2 1 (\<lambda>(i,j). exp(2*pi*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..m]] m" 
     by presburger   
-  moreover have "m \<le> m \<longrightarrow> (pr [Matrix.mat 2 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(of_nat i)/2^(nat k))*1/sqrt(2)). k<-[1..m] ] m)
-       = Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m)"
-    using product_rep_to_def assms by auto
-  ultimately have "(\<psi>\<^sub>2 m jd) = Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m)"
-    by auto
+  then have "(\<psi>\<^sub>2 m jd) = Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m)"
+    using product_rep_to_matrix_rep assms by auto
   moreover have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m)
-= (\<psi>\<^sub>3 m jd)"
+               = (\<psi>\<^sub>3 m jd)"
   proof
     fix i j::nat
     assume a0: "i < dim_row (\<psi>\<^sub>3 m jd)" and a1: "j < dim_col (\<psi>\<^sub>3 m jd)"
     then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
     = exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m" by auto
     then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
-    =exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l)*2^m/2^m))*1/sqrt(2)^m" by auto
+    = exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l)*2^m/2^m))*1/sqrt(2)^m" by auto
     then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
-    =exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l*2^m)*1/2^m))*1/sqrt(2)^m" 
+    = exp(complex_of_real(2*pi)*\<i>*jd*((\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l*2^m)*1/2^m))*1/sqrt(2)^m" 
       by (smt sum.cong sum_distrib_right)
     then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
-    =exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*(1/2^l*2^m))*1/2^m)*1/sqrt(2)^m" 
+    = exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*(1/2^l*2^m))*1/2^m)*1/sqrt(2)^m" 
       using mult.commute by auto
     moreover have "(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*(1/2^l*2^m)) = (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*2^(m-l))"
     proof-
@@ -3319,10 +3285,10 @@ proof-
       then show ?thesis by auto
     qed
     ultimately have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
-    =exp(complex_of_real(2*pi)*\<i>*jd*real (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*2^(m-l))*1/2^m)*1/sqrt(2)^m" 
+    = exp(complex_of_real(2*pi)*\<i>*jd*real (\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)*2^(m-l))*1/2^m)*1/sqrt(2)^m" 
       by metis
     then have "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
-    =exp(complex_of_real(2*pi)*\<i>*jd*real i*1/2^m)*1/sqrt(2)^m" 
+    = exp(complex_of_real(2*pi)*\<i>*jd*real i*1/2^m)*1/sqrt(2)^m" 
       using bit_representation[of i m] assms nat_mult_1_right 
       by (metis (mono_tags, lifting) a0 dim_row_mat(1) of_nat_id sum.cong)
     then show "Matrix.mat (2^m) 1 (\<lambda>(i,j). exp(complex_of_real(2*pi)*\<i>*jd*(\<Sum>l\<in>{1..m}. (bin_rep m (of_nat i))!(l-1)/2^l))*1/sqrt(2)^m) $$ (i,j)
@@ -3337,25 +3303,22 @@ proof-
   ultimately show ?thesis by auto
 qed
 
-
 theorem quantum_fourier_transform_matrix_rep:
-  fixes j m::nat
-  assumes "j < 2^m" and "m\<ge>1"
+  assumes "j < 2^m" and "m \<ge> 1"
   shows "(QFT m) * |unit_vec (2^m) j\<rangle> = \<psi>\<^sub>3 m j" 
   using quantum_fourier_transform_prod_rep assms product_rep_equals_matrix_rep by auto
 
 theorem quantum_fourier_transform_is_state:
-  fixes j m::nat
-  assumes "j < 2^m" and "m\<ge>1"
+  assumes "j < 2^m" and "m \<ge> 1"
   shows "state m (\<psi>\<^sub>3 m j)"
 proof-
   have "(QFT m) * |unit_vec (2^m) j\<rangle> = \<psi>\<^sub>3 m j" using quantum_fourier_transform_matrix_rep assms by auto
   moreover have "gate m (QFT m)" using assms quantum_fourier_transform_is_gate by auto
   moreover have "state m |unit_vec (2^m) j\<rangle>" 
-    by (metis (no_types, lifting) assms(1) dim_col_mat(1) dim_row_mat(1) index_unit_vec(3) ket_vec_col ket_vec_def state_def unit_cpx_vec_length)
+    using assms(1) 
+    by (metis (no_types, lifting) dim_col_mat(1) dim_row_mat(1) index_unit_vec(3) ket_vec_col ket_vec_def state_def unit_cpx_vec_length)
   ultimately show ?thesis
-     by (metis gate_on_state_is_state)
- qed
-
+    by (metis gate_on_state_is_state)
+qed
 
 end
