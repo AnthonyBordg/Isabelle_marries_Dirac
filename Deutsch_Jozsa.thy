@@ -1764,7 +1764,7 @@ proof-
     using assms by simp
 qed
 
-text \<open>The Correctness of the algorithm\<close>
+text \<open>We prove the correctness of the algorithm.\<close>
 
 definition (in jozsa) jozsa_algo_eval:: "real" where
 "jozsa_algo_eval \<equiv> prob0_fst_qubits n jozsa_algo"
