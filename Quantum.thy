@@ -513,7 +513,9 @@ lemma inner_prod_csqrt [simp]:
       real_sqrt_unique sum_nonneg zero_le_power2)
 
 
-subsection "Unitary Matrices and Length-preservation"
+subsection "Unitary Matrices and Length-Preservation"
+
+subsubsection "Unitary Matrices are Length-Preserving"
 
 text \<open>The bra-vector @{text "\<langle>A * v|"} is given by @{text "\<langle>v| * A\<^sup>\<dagger>"}$\<close>
 
@@ -635,11 +637,6 @@ lemma state_col_ket_vec:
   shows "state 1 |col v 0\<rangle>"
   using assms by (simp add: state_def)
 
-lemma eq_ket_vec [intro]:
-  assumes "u = v"
-  shows "|u\<rangle> = |v\<rangle>"
-  using assms by simp
-
 lemma col_ket_vec_index [simp]:
   assumes "i < dim_row v"
   shows "|col v 0\<rangle> $$ (i,0) = v $$ (i,0)"
@@ -681,8 +678,11 @@ lemma unitary_length_bis [simp]:
   using assms unitary_squared_length_bis
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
+
+subsubsection "Length-Preserving Matrices are Unitary"
+
 lemma inverts_mat_sym:
-  fixes A B::"complex mat"
+  fixes A B:: "complex mat"
   assumes "inverts_mat A B" and "dim_row B = dim_col A" and "square_mat B"
   shows "inverts_mat B A"
 proof-
@@ -738,7 +738,7 @@ proof-
 qed
 
 lemma sum_of_unit_vec_length:
-  fixes i j n::nat and c::complex
+  fixes i j n:: nat and c:: complex
   assumes "i < n" and "j < n" and "i \<noteq> j"
   shows "\<parallel>unit_vec n i + c \<cdot>\<^sub>v unit_vec n j\<parallel>\<^sup>2 = 1 + cnj(c) * c"
 proof-
@@ -777,7 +777,7 @@ next
 qed
 
 lemma inner_prod_is_sesquilinear:
-  fixes u1 u2 v1 v2::"complex vec" and c1 c2 c3 c4::complex and n::nat
+  fixes u1 u2 v1 v2:: "complex vec" and c1 c2 c3 c4:: complex and n:: nat
   assumes "dim_vec u1 = n" and "dim_vec u2 = n" and "dim_vec v1 = n" and "dim_vec v2 = n"
   shows "\<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|c3 \<cdot>\<^sub>v v1 + c4 \<cdot>\<^sub>v v2\<rangle> = cnj (c1) * c3 * \<langle>u1|v1\<rangle> + cnj (c2) * c3 * \<langle>u2|v1\<rangle> + 
                                                  cnj (c1) * c4 * \<langle>u1|v2\<rangle> + cnj (c2) * c4 * \<langle>u2|v2\<rangle>"
@@ -802,12 +802,12 @@ proof-
     by (auto simp add: algebra_simps)
 qed
 
-lemma set_n:
-  fixes n::nat
-  shows "{..<n} = {0..<n}"
-  by auto
+text \<open>
+A length-preserving matrix is unitary. So, unitary matrices are exactly the length-preserving
+matrices.
+\<close>
 
-lemma unitary_length_bis_conv:
+lemma length_preserving_is_unitary:
   fixes U:: "complex mat"
   assumes "square_mat U" and "\<forall>v::complex vec. dim_vec v = dim_col U \<longrightarrow> \<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
   shows "unitary U"
@@ -828,7 +828,7 @@ proof-
       fix l assume a1:"l<n"
       define v::"complex vec" where d1:"v = unit_vec n l"
       have "\<parallel>col U l\<parallel>\<^sup>2 = (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l))"
-        using c0 a1 cpx_vec_length_inner_prod inner_prod_def set_n by simp
+        using c0 a1 cpx_vec_length_inner_prod inner_prod_def lessThan_atLeast0 by simp
       moreover have "\<parallel>col U l\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2" using c0 d1 a1 assms(2) unit_vec_to_col by simp
       moreover have "\<parallel>v\<parallel>\<^sup>2 = 1" using d1 a1 cpx_vec_length_inner_prod by simp
       ultimately show "(\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1" by simp
@@ -853,7 +853,7 @@ proof-
         using inner_prod_is_sesquilinear[of "col U i" "dim_row U" "col U j" "col U i" "col U j" "1" "1" "1" "1"]
         by simp
       ultimately have f2:"\<langle>col U j|col U i\<rangle> + \<langle>col U i|col U j\<rangle> = 0"
-        using c0 a0 f1 inner_prod_def set_n by auto
+        using c0 a0 f1 inner_prod_def lessThan_atLeast0 by simp
 
       have "\<parallel>v2\<parallel>\<^sup>2 = 1 + cnj \<i> * \<i>" using a0 a2 d2 sum_of_unit_vec_length by simp
       then have "\<parallel>v2\<parallel>\<^sup>2 = 2"
@@ -867,9 +867,9 @@ proof-
         using inner_prod_is_sesquilinear[of "col U i" "dim_row U" "col U j" "col U i" "col U j" "1" "\<i>" "1" "\<i>"]
         by simp
       ultimately have "\<langle>col U j|col U i\<rangle> - \<langle>col U i|col U j\<rangle> = 0"
-        using c0 a0 f1 inner_prod_def set_n by auto
+        using c0 a0 f1 inner_prod_def lessThan_atLeast0 by auto
       then show "(\<Sum>k<n. cnj (U $$ (k, i)) * U $$ (k, j)) = 0"
-        using c0 a0 f2 set_n inner_prod_def by auto
+        using c0 a0 f2 lessThan_atLeast0 inner_prod_def by auto
     qed
     ultimately show "(U\<^sup>\<dagger> * U) $$ (i, j) = 1\<^sub>m (dim_col U) $$ (i, j)"
       using c0 assms(1) a0 one_mat_def dagger_def by auto
