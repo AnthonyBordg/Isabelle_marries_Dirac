@@ -696,7 +696,7 @@ lemma mult_ket_vec_is_ket_vec_of_mult:
   by (metis One_nat_def col_fst_is_col dim_col dim_col_mat(1) index_mult_mat(3) ket_vec_col less_Suc0 
 mat_col_eqI)
 
-lemma unitary_squared_length_bis [simp]:
+lemma unitary_is_sq_length_preserving [simp]:
   assumes "unitary U" and "dim_vec v = dim_col U"
   shows "\<parallel>U * |v\<rangle>\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2"
 proof -
@@ -738,14 +738,14 @@ lemma col_index_of_mat_col [simp]:
   shows "col v 0 $ i = v $$ (i,0)"
   using assms by simp
 
-lemma unitary_squared_length [simp]:
+lemma unitary_is_sq_length_preserving_bis [simp]:
   assumes "unitary U" and "dim_row v = dim_col U" and "dim_col v = 1"
   shows "\<parallel>col (U * v) 0\<parallel>\<^sup>2 = \<parallel>col v 0\<parallel>\<^sup>2"
 proof -
   have "dim_vec (col v 0) = dim_col U"
     using assms(2) by simp
   then have "\<parallel>col_fst (U * |col v 0\<rangle>)\<parallel>\<^sup>2 = \<parallel>col v 0\<parallel>\<^sup>2"
-    using unitary_squared_length_bis[of "U" "col v 0"] assms(1) by simp
+    using unitary_is_sq_length_preserving[of "U" "col v 0"] assms(1) by simp
   thus ?thesis
     using assms(3) by simp
 qed
@@ -755,18 +755,18 @@ A unitary matrix is length-preserving, i.e. it acts on a vector to produce anoth
 same length. 
 \<close>
 
-lemma unitary_length [simp]:
+lemma unitary_is_length_preserving_bis [simp]:
   fixes U::"complex mat" and v::"complex mat"
   assumes "unitary U" and "dim_row v = dim_col U" and "dim_col v = 1"
   shows "\<parallel>col (U * v) 0\<parallel> = \<parallel>col v 0\<parallel>"
-  using assms unitary_squared_length
+  using assms unitary_is_sq_length_preserving_bis
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
-lemma unitary_length_bis [simp]:
+lemma unitary_is_length_preserving [simp]:
   fixes U:: "complex mat" and v:: "complex vec"
   assumes "unitary U" and "dim_vec v = dim_col U"
   shows "\<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
-  using assms unitary_squared_length_bis
+  using assms unitary_is_sq_length_preserving
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
 
@@ -998,7 +998,7 @@ text \<open>As a consequence we prove that columns and rows of a unitary matrix 
 lemma unitary_unit_col [simp]:
   assumes "unitary U" and "dim_col U = n" and "i < n"
   shows "\<parallel>col U i\<parallel> = 1"
-  using assms unit_vec_to_col unitary_length_bis by simp
+  using assms unit_vec_to_col unitary_is_length_preserving by simp
 
 lemma unitary_unit_row [simp]:
   assumes "unitary U" and "dim_row U = n" and "i < n"
@@ -1053,7 +1053,7 @@ next
   then have "dim_col A = dim_row v"
     using a2 state.dim_row by simp
   then have "\<parallel>col (A * v) 0\<parallel> = \<parallel>col v 0\<parallel>"
-    using unitary_length assms gate_def state_def by simp
+    using unitary_is_length_preserving_bis assms gate_def state_def by simp
   thus"\<parallel>col (A * v) 0\<parallel> = 1"
     using a2 state.is_normal by simp
 qed
