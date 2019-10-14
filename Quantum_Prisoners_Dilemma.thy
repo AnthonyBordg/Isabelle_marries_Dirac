@@ -2,20 +2,23 @@
 authors:
   Yijun He, University of Cambridge, yh403@cam.ac.uk
   Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
 *)
 
 theory Quantum_Prisoners_Dilemma
 imports
   More_Tensor
   Measurement
+  Basics
 begin
 
 
 text \<open>
-Prisoner's dilemma ceases to pose a dilemma if quantum strategies are allowed for. Indeed, 
-Alice and Bob both choosing to defect is no longer a Nash equilibrium. However, a new Nash 
-equilibrium appears which is at the same time Pareto optimal. Moreover, there exists a 
-quantum strategy which always gives reward if played against any classical strategy. 
+In the 2-parameter strategic space of Eisert, Wilkens and Lewenstein [EWL], Prisoner's Dilemma 
+ceases to pose a dilemma if quantum strategies are allowed for. Indeed, Alice and Bob both choosing 
+to defect is no longer a Nash equilibrium. However, a new Nash equilibrium appears which is at the 
+same time Pareto optimal. Moreover, there exists a quantum strategy which always gives reward if 
+played against any classical strategy. 
 Below the parameter \<gamma> can be seen as a measure of the game's entanglement. The game behaves 
 classically if \<gamma> = 0, and for the maximally entangled case (\<gamma> = 2*$\pi$) the dilemma disappears
 as pointed out above.   
@@ -46,7 +49,7 @@ proof
     using mat_of_cols_list_def ket_vec_def by auto
   also have "... = (\<Sum>k\<in>{0,1,2,3}. (J $$ (i,k)) * ( |unit_vec 4 0\<rangle> $$ (k,j)))" 
     using set_4 atLeast0LessThan by simp
-  also have "... = \<psi>\<^sub>1 $$(i,j)"
+  also have "... = \<psi>\<^sub>1 $$ (i,j)"
   proof-
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
@@ -98,22 +101,6 @@ mat_of_cols_list 4 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>
                     [sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2),
                             exp(-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2), exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2)]]"
 
-lemma set_4_lessThan: "{..<4::nat} = {0,1,2,3}" by auto (* idem *)
-lemma set_2_lessThan: "{..<2::nat} = {0,1}" by auto
-
-(* The 4 following lemmas should be moved in Basics.thy *)
-lemma two_div_two [simp]: 
-  shows "2 div Suc (Suc 0) = 1" by simp
-
-lemma two_mod_two [simp]: 
-  shows "2 mod Suc (Suc 0) = 0" by (simp add: numeral_2_eq_2)
-
-lemma three_div_two [simp]: 
-  shows "3 div Suc (Suc 0) = 1" by (simp add: numeral_3_eq_3)
-
-lemma three_mod_two [simp]: 
-  shows "3 mod Suc (Suc 0) = 1" by (simp add: mod_Suc numeral_3_eq_3)
-
 lemma (in strategic_space_2p) U\<^sub>A_tensor_U\<^sub>B:
   shows "(U\<^sub>A \<Otimes> U\<^sub>B) = U\<^sub>A\<^sub>B"
 proof
@@ -140,7 +127,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B set_4_lessThan by auto
+      using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B set_4_bis by auto
   qed
 next
   show "dim_row ((U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" 
@@ -199,7 +186,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def set_4_lessThan hermite_cnj_of_J by auto
+      using mat_of_cols_list_def set_4_bis hermite_cnj_of_J by auto
   qed
 next
   show "dim_row ((J\<^sup>\<dagger>) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>f" 
@@ -211,7 +198,7 @@ qed
 
 lemma (in prisoner) unit_vec_4_0_ket_is_state: 
   shows "state 2 |unit_vec 4 0\<rangle>"
-  using state_def cpx_vec_length_def ket_vec_def unit_vec_def by (auto simp add: set_4_lessThan)
+  using state_def cpx_vec_length_def ket_vec_def unit_vec_def by (auto simp add: set_4_bis)
 
 lemma cos_sin_squared_add_cpx: 
   "complex_of_real (cos (\<gamma>/2)) * complex_of_real (cos (\<gamma>/2)) -
@@ -234,7 +221,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_of_J set_4_lessThan cos_sin_squared_add_cpx by auto
+      using mat_of_cols_list_def hermite_cnj_of_J set_4_bis cos_sin_squared_add_cpx by auto
   qed
 next
   show "dim_row (J\<^sup>\<dagger> * J) = dim_row (1\<^sub>m 4)"
@@ -253,7 +240,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_of_J set_4_lessThan cos_sin_squared_add_cpx by auto
+      using mat_of_cols_list_def hermite_cnj_of_J set_4_bis cos_sin_squared_add_cpx by auto
   qed
 next
   show "dim_row (J * (J\<^sup>\<dagger>)) = dim_row (1\<^sub>m 4)"
@@ -290,26 +277,6 @@ abbreviation (in strategic_space_2p) U\<^sub>A_cnj :: "complex Matrix.mat" where
 abbreviation (in strategic_space_2p) U\<^sub>B_cnj :: "complex Matrix.mat" where
 "U\<^sub>B_cnj \<equiv> mat_of_cols_list 2 [[(exp(-\<i>*\<phi>\<^sub>B))*cos(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>B/2)],
                               [-sin(\<theta>\<^sub>B/2), (exp(\<i>*\<phi>\<^sub>B))*cos(\<theta>\<^sub>B/2)]]"
-
-lemma exp_of_real_cnj:
-  fixes x ::real
-  shows "cnj (exp (\<i> * x)) = exp (-(\<i> * x))"
-proof
-  show "Re (cnj (exp (\<i> * x))) = Re (exp (-(\<i> * x)))"
-    using Re_exp by simp
-  show "Im (cnj (exp (\<i> * x))) = Im (exp (-(\<i> * x)))"
-    using Im_exp by simp
-qed
-
-lemma exp_of_real_cnj2:
-  fixes x ::real
-  shows "cnj (exp (-(\<i> * x))) = exp (\<i> * x)"
-proof
-  show "Re (cnj (exp (-(\<i> * x)))) = Re (exp (\<i> * x))"
-    using Re_exp by simp
-  show "Im (cnj (exp (-(\<i> * x)))) = Im (exp (\<i> * x))"
-    using Im_exp by simp
-qed
 
 lemma (in strategic_space_2p) hermite_cnj_of_U\<^sub>A:
   shows "U\<^sub>A\<^sup>\<dagger> = U\<^sub>A_cnj"
@@ -369,7 +336,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>A exp_sin_cos_squared_add[of "\<phi>\<^sub>A" "\<theta>\<^sub>A / 2"]
-      by (auto simp add: set_2_lessThan algebra_simps)
+      by (auto simp add: set_2_bis algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>A\<^sup>\<dagger> * U\<^sub>A) = dim_row (1\<^sub>m 2)"
@@ -389,7 +356,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>A exp_sin_cos_squared_add[of "\<phi>\<^sub>A" "\<theta>\<^sub>A / 2"]
-      by (auto simp add: set_2_lessThan algebra_simps)
+      by (auto simp add: set_2_bis algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>A * (U\<^sub>A\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)"
@@ -409,7 +376,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>B exp_sin_cos_squared_add[of "\<phi>\<^sub>B" "\<theta>\<^sub>B / 2"]
-      by (auto simp add: set_2_lessThan algebra_simps)
+      by (auto simp add: set_2_bis algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>B\<^sup>\<dagger> * U\<^sub>B) = dim_row (1\<^sub>m 2)"
@@ -429,7 +396,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>B exp_sin_cos_squared_add[of "\<phi>\<^sub>B" "\<theta>\<^sub>B / 2"]
-      by (auto simp add: set_2_lessThan algebra_simps)
+      by (auto simp add: set_2_bis algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>B * (U\<^sub>B\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)"
@@ -559,7 +526,7 @@ proof-
         (cmod (v $$ (0,0)))\<^sup>2 + (cmod (v $$ (1,0)))\<^sup>2 + (cmod (v $$ (2,0)))\<^sup>2 + (cmod (v $$ (3,0)))\<^sup>2"
     using assms by auto
   then show ?thesis
-    using state_def assms cpx_vec_length_def by (auto simp add: set_4_lessThan)
+    using state_def assms cpx_vec_length_def by (auto simp add: set_4_bis)
 qed
 
 lemma (in strategic_space_2p) sum_payoff_le_6:
@@ -584,7 +551,7 @@ lemma (in strategic_space_2p) coop_is_pareto_opt:
 
 section \<open>The Separable Case\<close>
 
-lemma (in strategic_space_2p) separable_case_CC: (* both player defect *)
+lemma (in strategic_space_2p) separable_case_CC: (* both player cooperate *)
   assumes "\<gamma> = 0"
   shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
   using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state by auto
@@ -598,16 +565,6 @@ lemma (in strategic_space_2p) separable_case_DC: (* Alice defects, and Bob coope
   assumes "\<gamma> = 0"
   shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 5 \<and> bob_payoff = 0"
   using alice_payoff_def bob_payoff_def sin_cos_squared_add_cpx psi_f_is_state by auto
-
-lemma sin_squared_le_one:
-  fixes x:: real
-  shows "(sin x)\<^sup>2 \<le> 1"
-  using abs_sin_le_one abs_square_le_1 by blast
-
-lemma cos_squared_le_one:
-  fixes x:: real
-  shows "(cos x)\<^sup>2 \<le> 1"
-  using abs_cos_le_one abs_square_le_1 by blast
 
 lemma (in strategic_space_2p) separable_alice_payoff_D\<^sub>B: 
 (* Alice's payoff in the separable case given that Bob defects *)
@@ -646,7 +603,7 @@ lemma (in strategic_space_2p) separable_case_DD_is_nash_eq:
 
 lemma (in strategic_space_2p) separable_case_CC_is_not_nash_eq:
   assumes "\<gamma> = 0"
-  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> \<not>is_nash_eq"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> \<not> is_nash_eq"
 proof
   assume asm:"\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0"
   then have f0:"strategic_space_2p \<gamma> pi 0 \<theta>\<^sub>B \<phi>\<^sub>B"
@@ -668,50 +625,6 @@ lemma (in strategic_space_2p) separable_case_CC_is_pareto_optimal:
 
 
 section \<open>The Maximally Entangled Case\<close>
-
-lemma exp_of_half_pi: 
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "exp (\<i> * complex_of_real x) = \<i>"
-  using assms cis_conv_exp cis_pi_half by fastforce
-
-lemma exp_of_minus_half_pi: 
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "exp (-(\<i> * complex_of_real x)) = -\<i>"
-  using assms cis_conv_exp cis_minus_pi_half by fastforce
-
-lemma sin_of_quarter_pi:
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "sin (x/2) = (sqrt 2)/2"
-  by (auto simp add: assms sin_45)
-
-lemma cos_of_quarter_pi:
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "cos (x/2) = (sqrt 2)/2"
-  by (auto simp add: assms cos_45)
-
-lemma exp_of_real:
-  fixes x:: real
-  shows "exp (\<i> * x) = cos x + \<i> * (sin x)"
-proof
-  show "Re (exp (\<i> * x)) = Re ((cos x) + \<i> * (sin x))"
-    using Re_exp by simp
-  show "Im (exp (\<i> * x)) = Im ((cos x) + \<i> * (sin x))"
-    using Im_exp by simp
-qed
-
-lemma exp_of_real_inv:
-  fixes x:: real
-  shows "exp (-(\<i> * x)) = cos x - \<i> * (sin x)"
-proof
-  show "Re (exp (-(\<i> * x))) = Re ((cos x) - \<i> * (sin x))"
-    using Re_exp by simp
-  show "Im (exp (-(\<i> * x))) = Im ((cos x) - \<i> * (sin x))"
-    using Im_exp by simp
-qed
 
 lemma exp_to_sin:
   fixes x:: real
@@ -753,7 +666,7 @@ proof-
 qed
 
 lemma sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * complex_of_real (sqrt 2) = 2"
-  by (metis dbl_def dbl_simps(5) mult_2_right of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
+  by (metis mult_2_right numeral_Bit0 of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
 
 lemma hidden_sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * (complex_of_real (sqrt 2) * x) / 4 = x/2"
   using sqrt_two_squared_cpx by (auto simp add: algebra_simps)
@@ -1016,7 +929,7 @@ qed
 (*
 Bibliography:
 
-@ARTICLE{1999PhRvL..83.3077E,
+@ARTICLE{EWL,
    author = {{Eisert}, J. and {Wilkens}, M. and {Lewenstein}, M.},
     title = "{Quantum Games and Quantum Strategies}",
   journal = {Physical Review Letters},
