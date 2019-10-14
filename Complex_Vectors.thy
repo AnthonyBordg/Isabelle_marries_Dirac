@@ -228,7 +228,7 @@ proof
     fix v
     assume "v \<in> {module.lincomb (module_cpx_vec (2 ^ n)) a A |a A.
               finite A \<and> A \<subseteq> unit_vectors (2 ^ n) \<and> a \<in> A \<rightarrow> UNIV \<and> \<parallel>module.lincomb (module_cpx_vec (2 ^ n)) a A\<parallel> = 1}"
-    then show "v\<in> state_qbit n"
+    then show "v \<in> state_qbit n"
       using state_qbit_def dim_vec_lincomb unit_vectors_carrier_vec by(smt mem_Collect_eq order_trans)
   qed
 qed

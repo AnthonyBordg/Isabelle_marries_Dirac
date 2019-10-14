@@ -127,7 +127,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B set_4_bis by auto
+      using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B set_4 by auto
   qed
 next
   show "dim_row ((U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" 
@@ -186,7 +186,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def set_4_bis hermite_cnj_of_J by auto
+      using mat_of_cols_list_def set_4 hermite_cnj_of_J by auto
   qed
 next
   show "dim_row ((J\<^sup>\<dagger>) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>f" 
@@ -198,7 +198,7 @@ qed
 
 lemma (in prisoner) unit_vec_4_0_ket_is_state: 
   shows "state 2 |unit_vec 4 0\<rangle>"
-  using state_def cpx_vec_length_def ket_vec_def unit_vec_def by (auto simp add: set_4_bis)
+  using state_def cpx_vec_length_def ket_vec_def unit_vec_def by (auto simp add: set_4)
 
 lemma cos_sin_squared_add_cpx: 
   "complex_of_real (cos (\<gamma>/2)) * complex_of_real (cos (\<gamma>/2)) -
@@ -221,7 +221,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_of_J set_4_bis cos_sin_squared_add_cpx by auto
+      using mat_of_cols_list_def hermite_cnj_of_J set_4 cos_sin_squared_add_cpx by auto
   qed
 next
   show "dim_row (J\<^sup>\<dagger> * J) = dim_row (1\<^sub>m 4)"
@@ -240,7 +240,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_of_J set_4_bis cos_sin_squared_add_cpx by auto
+      using mat_of_cols_list_def hermite_cnj_of_J set_4 cos_sin_squared_add_cpx by auto
   qed
 next
   show "dim_row (J * (J\<^sup>\<dagger>)) = dim_row (1\<^sub>m 4)"
@@ -336,7 +336,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>A exp_sin_cos_squared_add[of "\<phi>\<^sub>A" "\<theta>\<^sub>A / 2"]
-      by (auto simp add: set_2_bis algebra_simps)
+      by (auto simp add: set_2 algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>A\<^sup>\<dagger> * U\<^sub>A) = dim_row (1\<^sub>m 2)"
@@ -356,7 +356,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>A exp_sin_cos_squared_add[of "\<phi>\<^sub>A" "\<theta>\<^sub>A / 2"]
-      by (auto simp add: set_2_bis algebra_simps)
+      by (auto simp add: set_2 algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>A * (U\<^sub>A\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)"
@@ -376,7 +376,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>B exp_sin_cos_squared_add[of "\<phi>\<^sub>B" "\<theta>\<^sub>B / 2"]
-      by (auto simp add: set_2_bis algebra_simps)
+      by (auto simp add: set_2 algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>B\<^sup>\<dagger> * U\<^sub>B) = dim_row (1\<^sub>m 2)"
@@ -396,7 +396,7 @@ proof
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
       using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>B exp_sin_cos_squared_add[of "\<phi>\<^sub>B" "\<theta>\<^sub>B / 2"]
-      by (auto simp add: set_2_bis algebra_simps)
+      by (auto simp add: set_2 algebra_simps)
   qed
 next
   show "dim_row (U\<^sub>B * (U\<^sub>B\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)"
@@ -511,7 +511,7 @@ proof-
         (cmod (v $$ (0,0)))\<^sup>2 + (cmod (v $$ (1,0)))\<^sup>2 + (cmod (v $$ (2,0)))\<^sup>2 + (cmod (v $$ (3,0)))\<^sup>2"
     using assms by auto
   then show ?thesis
-    using state_def assms cpx_vec_length_def by (auto simp add: set_4_bis)
+    using state_def assms cpx_vec_length_def by (auto simp add: set_4)
 qed
 
 lemma (in strategic_space_2p) sum_payoff_le_6:

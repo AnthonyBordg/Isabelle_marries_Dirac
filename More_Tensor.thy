@@ -211,6 +211,12 @@ lemma mat_tensor_prod_2_bis:
                                               v $$ (1,0) * w $$ (0,0))\<rangle>"
   using assms ket_vec_def mat_tensor_prod_2 by(simp add: mat_eq_iff)
 
+lemma eq_ket_vec:
+  fixes u v:: "complex Matrix.vec"
+  assumes "u = v"
+  shows "|u\<rangle> = |v\<rangle>"
+  using assms by simp
+
 lemma mat_tensor_ket_vec:
   assumes "state 1 v" and "state 1 w"
   shows "v \<Otimes> w = |(Matrix.col v 0) \<otimes> (Matrix.col w 0)\<rangle>"

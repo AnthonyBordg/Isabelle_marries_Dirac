@@ -11,21 +11,21 @@ begin
 
 section \<open>Basic Set-Theoretic Results\<close>
 
-lemma set_2 [simp]: "{0..<2::nat} = {0,1}" by auto
+lemma set_2_atLeast0 [simp]: "{0..<2::nat} = {0,1}" by auto
 
-lemma set_2_bis: "{..<2::nat} = {0,1}" by auto
+lemma set_2: "{..<2::nat} = {0,1}" by auto
 
-lemma set_4 [simp]:"{0..<4::nat} = {0,1,2,3}" by auto
+lemma set_4_atLeast0 [simp]:"{0..<4::nat} = {0,1,2,3}" by auto
 
-lemma set_4_bis: "{..<4::nat} = {0,1,2,3}" by auto
+lemma set_4: "{..<4::nat} = {0,1,2,3}" by auto
 
-lemma set_four [simp]: 
+lemma set_4_disj [simp]: 
   fixes i:: nat
   assumes "i < 4"
   shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" 
   using assms by auto
 
-lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
+lemma set_8_atLeast0 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
 
 lemma index_is_2 [simp]: "\<forall>i::nat. i \<noteq> Suc 0 \<longrightarrow> i \<noteq> 3 \<longrightarrow> 0 < i \<longrightarrow> i < 4 \<longrightarrow> i = 2" by simp
 

@@ -233,7 +233,7 @@ proof
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
     then have "i \<in> {0..<8} \<and> j = 0"
-      using asm set_8 mat_of_cols_list_def by auto
+      using asm set_8_atLeast0 mat_of_cols_list_def by auto
     then show "post_meas0 3 (alice \<phi>) 0 $$ (i, j) = v $$ (i, j)"
       using post_meas0_def assms asm mat_of_cols_list_def ket_vec_def
       apply (auto simp add: prob_index_0_alice)
@@ -254,7 +254,7 @@ proof
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
     then have "i \<in> {0..<8} \<and> j = 0"
-      using asm set_8 mat_of_cols_list_def by auto
+      using asm set_8_atLeast0 mat_of_cols_list_def by auto
     then show "post_meas1 3 (alice \<phi>) 0 $$ (i,j) = v $$ (i,j)"
       using post_meas1_def assms asm mat_of_cols_list_def ket_vec_def
       apply (auto simp add: prob_index_0_alice)
