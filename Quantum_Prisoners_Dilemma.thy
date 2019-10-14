@@ -1,8 +1,7 @@
 (*
 authors:
   Yijun He, University of Cambridge, yh403@cam.ac.uk
-  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
-  Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
+  with contributions by Anthony Bordg and Hanna Lachnitt.
 *)
 
 theory Quantum_Prisoners_Dilemma
