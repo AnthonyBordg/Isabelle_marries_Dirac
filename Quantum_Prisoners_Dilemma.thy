@@ -446,21 +446,6 @@ proof-
     using psi_two by simp
 qed
 
-(* This could be added to Quantum.thy *)
-lemma hermite_cnj_of_hermite_cnj:
-  fixes M :: "complex Matrix.mat"
-  shows "(M\<^sup>\<dagger>)\<^sup>\<dagger> = M"
-proof
-  show "dim_row ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_row M" by simp
-  show "dim_col ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_col M" by simp
-  fix i j assume a0:"i < dim_row M" and a1:"j < dim_col M"
-  then show "(M\<^sup>\<dagger>)\<^sup>\<dagger> $$ (i,j) = M $$ (i,j)"
-  proof-
-    show ?thesis
-      using dagger_def a0 a1 by auto
-  qed
-qed
-
 lemma (in strategic_space_2p) J_cnj_is_gate:
   shows "gate 2 (J\<^sup>\<dagger>)"
 proof
@@ -469,7 +454,7 @@ proof
   moreover show "square_mat (J\<^sup>\<dagger>)"
     using mat_of_cols_list_def by simp
   moreover have "(J\<^sup>\<dagger>)\<^sup>\<dagger> = J"
-    using hermite_cnj_of_hermite_cnj by auto
+    using dagger_of_dagger_is_id by auto
   ultimately show "unitary (J\<^sup>\<dagger>)"
     using mat_of_cols_list_def unitary_def J_cnj_times_J J_times_J_cnj by auto
 qed

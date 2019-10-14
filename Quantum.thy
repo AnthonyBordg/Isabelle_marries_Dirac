@@ -3,6 +3,7 @@ Authors:
 
   Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
   Yijun He, University of Cambridge, yh403@cam.ac.uk
+  with contributions by Hanna Lachnitt
 *)
 
 theory Quantum
@@ -148,6 +149,20 @@ lemma row_of_dagger [simp]:
   shows "row (M\<^sup>\<dagger>) i = vec (dim_row M) (\<lambda>j. cnj (M $$ (j,i)))"
   using assms row_def dagger_def by simp
 
+lemma dagger_of_dagger_is_id:
+  fixes M :: "complex Matrix.mat"
+  shows "(M\<^sup>\<dagger>)\<^sup>\<dagger> = M"
+proof
+  show "dim_row ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_row M" by simp
+  show "dim_col ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_col M" by simp
+  fix i j assume a0:"i < dim_row M" and a1:"j < dim_col M"
+  then show "(M\<^sup>\<dagger>)\<^sup>\<dagger> $$ (i,j) = M $$ (i,j)"
+  proof-
+    show ?thesis
+      using dagger_def a0 a1 by auto
+  qed
+qed
+
 lemma dagger_of_sqr_is_sqr [simp]:
   "square_mat ((M::cpx_sqr_mat)\<^sup>\<dagger>)"
 proof-
@@ -260,7 +275,7 @@ dim_row_of_cjn_prod dim_col_of_cjn_prod
   finally show "(M * N)\<^sup>\<star> $$ (i, j) = ((M\<^sup>\<star>) * (N\<^sup>\<star>)) $$ (i, j)" by simp
 qed
 
-lemma cpx_mat_transpose_prod:
+lemma transpose_of_prod:
   fixes M N::"complex Matrix.mat"
   assumes "dim_col M = dim_row N"
   shows "(M * N)\<^sup>t = N\<^sup>t * (M\<^sup>t)"
@@ -316,16 +331,58 @@ lemma dagger_of_transpose_is_cnj [simp]:
   "(M\<^sup>t)\<^sup>\<dagger> = (M\<^sup>\<star>)"
   by (metis transpose_transpose transpose_cnj_is_dagger)
 
-lemma cpx_mat_hermite_cnj_prod:
+lemma dagger_of_prod:
   fixes M N::"complex Matrix.mat"
   assumes "dim_col M = dim_row N"
   shows "(M * N)\<^sup>\<dagger> = N\<^sup>\<dagger> * (M\<^sup>\<dagger>)"
 proof-
   have "(M * N)\<^sup>\<dagger> = ((M * N)\<^sup>\<star>)\<^sup>t" by auto
   also have "... = ((M\<^sup>\<star>) * (N\<^sup>\<star>))\<^sup>t" using assms cpx_mat_cnj_prod by auto
-  also have "... = (N\<^sup>\<star>)\<^sup>t * ((M\<^sup>\<star>)\<^sup>t)" using assms cpx_mat_transpose_prod 
+  also have "... = (N\<^sup>\<star>)\<^sup>t * ((M\<^sup>\<star>)\<^sup>t)" using assms transpose_of_prod 
     by (metis cnj_transpose_is_dagger dim_col_of_dagger dim_row_of_dagger index_transpose_mat(2) index_transpose_mat(3))
   finally show "(M * N)\<^sup>\<dagger> = N\<^sup>\<dagger> * (M\<^sup>\<dagger>)" by auto
+qed
+
+text \<open>The product of two quantum gates is a quantum gate.\<close>
+
+lemma prod_of_gate_is_gate: 
+  assumes "gate n G1" and "gate n G2"
+  shows "gate n (G1 * G2)"
+proof
+  show "dim_row (G1 * G2) = 2^n" using assms by (simp add: gate_def)
+next
+  show "square_mat (G1 * G2)" 
+    using assms gate.dim_row gate.square_mat by simp
+next
+  show "unitary (G1 * G2)" 
+  proof-
+    have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col (G1 * G2))" 
+    proof-
+      have f0: "G1 \<in> carrier_mat (2^n) (2^n) \<and> G2 \<in> carrier_mat (2^n) (2^n)
+              \<and> G1\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n) \<and> G2\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n)
+              \<and> G1 * G2 \<in> carrier_mat (2^n) (2^n)" 
+        using assms gate.dim_row gate.square_mat by auto
+      have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = ((G2\<^sup>\<dagger>) * (G1\<^sup>\<dagger>)) * (G1 * G2)" 
+        using assms dagger_of_prod gate.dim_row gate.square_mat by simp
+      also have "... = (G2\<^sup>\<dagger>) * ((G1\<^sup>\<dagger>) * (G1 * G2))" 
+        using assms f0 by auto
+      also have "... = (G2\<^sup>\<dagger>) * (((G1\<^sup>\<dagger>) * G1) * G2)" 
+        using assms f0 f0 by auto
+      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G1)) * G2)" 
+        using gate.unitary[of n G1] assms unitary_def[of G1] by simp
+      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G2)) * G2)" 
+        using assms f0 by (metis carrier_matD(2))
+      also have "... = (G2\<^sup>\<dagger>) * G2" 
+        using f0 by (metis carrier_matD(2) left_mult_one_mat)
+      finally show "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col (G1 * G2))" 
+        using assms gate.unitary unitary_def by simp
+    qed
+    moreover have "(G1 * G2) * ((G1 * G2)\<^sup>\<dagger>) = 1\<^sub>m (dim_row (G1 * G2))"
+      using assms calculation
+      by (smt carrier_matI dim_col_of_dagger dim_row_of_dagger gate.dim_row gate.square_mat index_mult_mat(2) index_mult_mat(3) 
+          mat_mult_left_right_inverse square_mat.elims(2))
+    ultimately show ?thesis using unitary_def by simp
+  qed
 qed
 
 lemma left_inv_of_unitary_transpose [simp]:
@@ -1001,45 +1058,6 @@ next
     using a2 state.is_normal by simp
 qed
 
-lemma prod_of_gate_is_gate: 
-  assumes "gate n G1" and "gate n G2"
-  shows "gate n (G1 * G2)"
-proof
-  show "dim_row (G1 * G2) = 2^n" using assms by (simp add: gate_def)
-next
-  show "square_mat (G1 * G2)" 
-    using assms gate.dim_row gate.square_mat by auto
-next
-  show "unitary (G1 * G2)" 
-  proof-
-    have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col (G1 * G2))" 
-    proof-
-      have f0: "G1 \<in> carrier_mat (2^n) (2^n) \<and> G2 \<in> carrier_mat (2^n) (2^n)
-              \<and> G1\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n) \<and> G2\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n)
-              \<and> G1 * G2 \<in> carrier_mat (2^n) (2^n)" 
-        using assms gate.dim_row gate.square_mat by auto
-      have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = ((G2\<^sup>\<dagger>) * (G1\<^sup>\<dagger>)) * (G1 * G2)" 
-        using assms cpx_mat_hermite_cnj_prod gate.dim_row gate.square_mat by auto
-      also have "... = (G2\<^sup>\<dagger>) * ((G1\<^sup>\<dagger>) * (G1 * G2))" 
-        using assms f0 by auto
-      also have "... = (G2\<^sup>\<dagger>) * (((G1\<^sup>\<dagger>) * G1) * G2)" 
-        using assms f0 f0 by auto
-      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G1)) * G2)" 
-        using gate.unitary[of n G1] assms unitary_def[of G1] by auto
-      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G2)) * G2)" 
-        using assms f0 by (metis carrier_matD(2))
-      also have "... = (G2\<^sup>\<dagger>) * G2" 
-        using f0 by (metis carrier_matD(2) left_mult_one_mat)
-      finally show "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col (G1 * G2))" 
-        using assms gate.unitary unitary_def by auto
-    qed
-    moreover have "(G1 * G2) * ((G1 * G2)\<^sup>\<dagger>) = 1\<^sub>m (dim_row (G1 * G2))" (* smt could be replaced if this is wanted *)
-      using assms calculation 
-      by (smt carrier_matI dim_col_of_dagger dim_row_of_dagger gate.dim_row gate.square_mat index_mult_mat(2) index_mult_mat(3) 
-          mat_mult_left_right_inverse square_mat.elims(2))
-    ultimately show ?thesis using unitary_def by auto
-  qed
-qed
 
 subsection \<open>A Few Well-known Quantum Gates\<close>
 
@@ -1291,7 +1309,7 @@ lemma bell_11_index [simp]:
   done
 
 
-subsection \<open>The Bitwise Inner Product\<close> (* contribution by Hanna Lachnitt *)
+subsection \<open>The Bitwise Inner Product\<close>
 
 definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where 
 "bitwise_inner_prod n i j = (\<Sum>k\<in>{0..<n}. (bin_rep n i) ! k * (bin_rep n j) ! k)"
