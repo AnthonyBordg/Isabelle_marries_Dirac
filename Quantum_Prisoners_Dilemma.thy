@@ -1,21 +1,23 @@
 (*
 authors:
   Yijun He, University of Cambridge, yh403@cam.ac.uk
-  Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
+  with contributions by Anthony Bordg and Hanna Lachnitt.
 *)
 
 theory Quantum_Prisoners_Dilemma
 imports
   More_Tensor
   Measurement
+  Basics
 begin
 
 
 text \<open>
-Prisoner's dilemma ceases to pose a dilemma if quantum strategies are allowed for. Indeed, 
-Alice and Bob both choosing to defect is no longer a Nash equilibrium. However, a new Nash 
-equilibrium appears which is at the same time Pareto optimal. Moreover, there exists a 
-quantum strategy which always gives reward if played against any classical strategy. 
+In the 2-parameter strategic space of Eisert, Wilkens and Lewenstein [EWL], Prisoner's Dilemma 
+ceases to pose a dilemma if quantum strategies are allowed for. Indeed, Alice and Bob both choosing 
+to defect is no longer a Nash equilibrium. However, a new Nash equilibrium appears which is at the 
+same time Pareto optimal. Moreover, there exists a quantum strategy which always gives reward if 
+played against any classical strategy. 
 Below the parameter \<gamma> can be seen as a measure of the game's entanglement. The game behaves 
 classically if \<gamma> = 0, and for the maximally entangled case (\<gamma> = 2*$\pi$) the dilemma disappears
 as pointed out above.   
@@ -38,7 +40,7 @@ abbreviation (in prisoner) J :: "complex Matrix.mat" where
 abbreviation (in prisoner) \<psi>\<^sub>1 :: "complex Matrix.mat" where
 "\<psi>\<^sub>1 \<equiv> mat_of_cols_list 4 [[cos(\<gamma>/2), 0, 0, \<i>*sin(\<gamma>/2)]]"
 
-lemma (in prisoner) 
+lemma (in prisoner) psi_one:
   shows "J * |unit_vec 4 0\<rangle> = \<psi>\<^sub>1"
 proof
   fix i j assume a0:"i < dim_row \<psi>\<^sub>1" and a1:"j < dim_col \<psi>\<^sub>1"      
@@ -46,7 +48,7 @@ proof
     using mat_of_cols_list_def ket_vec_def by auto
   also have "... = (\<Sum>k\<in>{0,1,2,3}. (J $$ (i,k)) * ( |unit_vec 4 0\<rangle> $$ (k,j)))" 
     using set_4 atLeast0LessThan by simp
-  also have "... = \<psi>\<^sub>1 $$(i,j)"
+  also have "... = \<psi>\<^sub>1 $$ (i,j)"
   proof-
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
@@ -62,32 +64,32 @@ next
     using mat_of_cols_list_def by (simp add: ket_vec_def)
 qed
 
-locale restricted_strategic_space = prisoner +
+locale strategic_space_2p = prisoner +
   fixes \<theta>\<^sub>A:: "real"
     and \<phi>\<^sub>A:: "real" 
     and \<theta>\<^sub>B:: "real"
     and \<phi>\<^sub>B:: "real"
-  assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> 2*pi"
+  assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> pi"
       and "0 \<le> \<phi>\<^sub>A \<and> \<phi>\<^sub>A \<le> 2*pi"
-      and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> 2*pi"
+      and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> pi"
       and "0 \<le> \<phi>\<^sub>B \<and> \<phi>\<^sub>B \<le> 2*pi"
 
-abbreviation (in restricted_strategic_space) U\<^sub>A :: "complex Matrix.mat" where
-"U\<^sub>A \<equiv> mat_of_cols_list 2 [[(exp(\<i>*\<phi>\<^sub>A))*cos(\<theta>\<^sub>A/2), -sin (\<theta>\<^sub>A/2)],
-                           [sin(\<theta>\<^sub>A/2), (exp (-\<i>*\<phi>\<^sub>A))*cos(\<theta>\<^sub>A/2)]]"
+abbreviation (in strategic_space_2p) U\<^sub>A :: "complex Matrix.mat" where
+"U\<^sub>A \<equiv> mat_of_cols_list 2 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2), -sin(\<theta>\<^sub>A/2)],
+                           [sin(\<theta>\<^sub>A/2), exp(-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2)]]"
 
-abbreviation (in restricted_strategic_space) U\<^sub>B :: "complex Matrix.mat" where
+abbreviation (in strategic_space_2p) U\<^sub>B :: "complex Matrix.mat" where
 "U\<^sub>B \<equiv> mat_of_cols_list 2 [[exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2), -sin(\<theta>\<^sub>B/2)],
                            [sin(\<theta>\<^sub>B/2), exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2)]]"
 
-abbreviation (in restricted_strategic_space) \<psi>\<^sub>2 :: "complex Matrix.mat" where
+abbreviation (in strategic_space_2p) \<psi>\<^sub>2 :: "complex Matrix.mat" where
 "\<psi>\<^sub>2 \<equiv> 
 mat_of_cols_list 4 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
                      exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
                      -sin(\<theta>\<^sub>A/2) * exp (\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2),
                      sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)]]"
 
-abbreviation (in restricted_strategic_space) U\<^sub>A\<^sub>B :: "complex Matrix.mat" where
+abbreviation (in strategic_space_2p) U\<^sub>A\<^sub>B :: "complex Matrix.mat" where
 "U\<^sub>A\<^sub>B \<equiv> 
 mat_of_cols_list 4 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2), exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2),
                             -sin(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2), -sin(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2)],
@@ -98,20 +100,7 @@ mat_of_cols_list 4 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>
                     [sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2),
                             exp(-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2), exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2)]]"
 
-(* The 4 following lemmas should be moved in Basics.thy *)
-lemma two_div_two [simp]: 
-  shows "2 div Suc (Suc 0) = 1" by simp
-
-lemma two_mod_two [simp]: 
-  shows "2 mod Suc (Suc 0) = 0" by (simp add: numeral_2_eq_2)
-
-lemma three_div_two [simp]: 
-  shows "3 div Suc (Suc 0) = 1" by (simp add: numeral_3_eq_3)
-
-lemma three_mod_two [simp]: 
-  shows "3 mod Suc (Suc 0) = 1" by (simp add: mod_Suc numeral_3_eq_3)
-
-lemma (in restricted_strategic_space) U\<^sub>A_tensor_U\<^sub>B:
+lemma (in strategic_space_2p) U\<^sub>A_tensor_U\<^sub>B:
   shows "(U\<^sub>A \<Otimes> U\<^sub>B) = U\<^sub>A\<^sub>B"
 proof
   fix i j assume a0: "i<dim_row U\<^sub>A\<^sub>B" and a1: "j<dim_col U\<^sub>A\<^sub>B"
@@ -127,14 +116,7 @@ next
     using mat_of_cols_list_def by simp
 qed
 
-lemma set_4_lessThan: "{..<4::nat} = {0,1,2,3}" by auto (* idem *)
-
-lemma sum_4: (* idem *)
-  fixes f::"nat \<Rightarrow> complex"
-  shows "(\<Sum>k<4::nat. f(k)) = f 0 + f 1 + f 2 + f 3"
-  using set_4_lessThan by simp
-
-lemma (in restricted_strategic_space)
+lemma (in strategic_space_2p) psi_two:
   shows "(U\<^sub>A \<Otimes> U\<^sub>B) * \<psi>\<^sub>1 = \<psi>\<^sub>2"
 proof
   fix i j
@@ -144,7 +126,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B sum_4 by auto
+      using mat_of_cols_list_def U\<^sub>A_tensor_U\<^sub>B set_4 by auto
   qed
 next
   show "dim_row ((U\<^sub>A \<Otimes> U\<^sub>B)*\<psi>\<^sub>1) = dim_row \<psi>\<^sub>2" 
@@ -154,7 +136,7 @@ next
     using mat_of_cols_list_def by simp  
 qed
 
-abbreviation (in prisoner) J_cnj :: "complex Matrix.mat" where (* To do: define the conjugate of a matrix in Quantum.thy *)
+abbreviation (in prisoner) J_cnj :: "complex Matrix.mat" where
 "J_cnj \<equiv> mat_of_cols_list 4 [[cos(\<gamma>/2), 0, 0, -\<i>*sin(\<gamma>/2)],
                              [0, cos(\<gamma>/2), \<i>*sin(\<gamma>/2), 0],
                              [0, \<i>*sin(\<gamma>/2), cos(\<gamma>/2), 0],
@@ -169,7 +151,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def hermite_cnj_def by auto
+      using mat_of_cols_list_def dagger_def by auto
   qed
 next
   show "dim_row (J\<^sup>\<dagger>) = dim_row J_cnj" 
@@ -179,22 +161,22 @@ next
     using mat_of_cols_list_def by simp
 qed
 
-abbreviation (in restricted_strategic_space) \<psi>\<^sub>f :: "complex Matrix.mat" where
+abbreviation (in strategic_space_2p) \<psi>\<^sub>f :: "complex Matrix.mat" where
 "\<psi>\<^sub>f \<equiv> mat_of_cols_list 4 [[
 cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 + (-\<i>*sin(\<gamma>/2)) * (sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
-cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) +sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
+cos(\<gamma>/2) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
 + (\<i>*sin(\<gamma>/2)) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
-(\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2)+ sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
+(\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * -sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * exp(-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 + cos(\<gamma>/2) * (-sin(\<theta>\<^sub>A/2) * exp (\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)),
 
 (-\<i>*sin(\<gamma>/2)) * (exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp(\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2)) 
 + cos(\<gamma>/2) * (sin(\<theta>\<^sub>A/2) * sin(\<theta>\<^sub>B/2) * cos(\<gamma>/2) + exp (-\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2) * exp (-\<i>*\<phi>\<^sub>B)*cos(\<theta>\<^sub>B/2) * \<i>*sin(\<gamma>/2))
 ]]"
 
-lemma (in restricted_strategic_space)
+lemma (in strategic_space_2p) psi_f:
   shows "(J\<^sup>\<dagger>) * \<psi>\<^sub>2 = \<psi>\<^sub>f"
 proof
   fix i j assume a0:"i < dim_row \<psi>\<^sub>f" and a1:"j < dim_col \<psi>\<^sub>f"
@@ -203,7 +185,7 @@ proof
     have "i\<in>{0,1,2,3} \<and> j=0" 
       using a0 a1 mat_of_cols_list_def by auto
     thus ?thesis
-      using mat_of_cols_list_def sum_4 hermite_cnj_of_J by auto
+      using mat_of_cols_list_def set_4 hermite_cnj_of_J by auto
   qed
 next
   show "dim_row ((J\<^sup>\<dagger>) * \<psi>\<^sub>2) = dim_row \<psi>\<^sub>f" 
@@ -211,54 +193,11 @@ next
 next
   show "dim_col ((J\<^sup>\<dagger>) * \<psi>\<^sub>2) = dim_col \<psi>\<^sub>f" 
     using mat_of_cols_list_def by simp  
-qed 
-
-abbreviation (in restricted_strategic_space) prob00 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob00 v \<equiv> if state 2 v then (cmod (v $$ (0,0)))\<^sup>2 else undefined"
-
-abbreviation (in restricted_strategic_space) prob01 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob01 v \<equiv> if state 2 v then (cmod (v $$ (1,0)))\<^sup>2 else undefined"
-
-abbreviation (in restricted_strategic_space) prob10 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob10 v \<equiv> if state 2 v then (cmod (v $$ (2,0)))\<^sup>2 else undefined"
-
-abbreviation (in restricted_strategic_space) prob11 :: "complex Matrix.mat \<Rightarrow> real" where
-"prob11 v \<equiv> if state 2 v then (cmod (v $$ (3,0)))\<^sup>2 else undefined"
-
-definition (in restricted_strategic_space) alice_payoff :: "real" where
-"alice_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 0 * (prob01 \<psi>\<^sub>f) + 5 * (prob10 \<psi>\<^sub>f)"
-
-definition (in restricted_strategic_space) bob_payoff :: "real" where
-"bob_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 0 * (prob10 \<psi>\<^sub>f)"
-
-
-section \<open>The Separable Case\<close>
-
-lemma select_index_2_0: (* To move in Measurement *)
-  shows "{x. select_index 2 0 x} = {2,3}"
-  using select_index_def by auto
-
-lemma select_index_2_0_inv: 
-  shows "{x. x < 4 \<and> \<not> select_index 2 0 x} = {0,1}" (* idem *)
-  using select_index_def by auto
-
-lemma select_index_2_1: 
-  shows "{x. select_index 2 (Suc 0) x} = {1,3}" (* idem *)
-proof
-  show "{1,3} \<subseteq> {x. select_index 2 (Suc 0) x}" 
-    using select_index_def by simp
-  show "{x. select_index 2 (Suc 0) x} \<subseteq> {1,3}"
-  proof
-    fix x assume "x \<in> {x. select_index 2 (Suc 0) x}"
-    then have "x \<in> {0,1,2,3} \<and> x mod 2 \<ge> 1" 
-      using select_index_def by auto
-    then show "x \<in> {1,3}" by auto
-  qed
 qed
 
-lemma select_index_2_1_inv: (* idem *)
-  shows "{x. x < 4 \<and> \<not> select_index 2 (Suc 0) x} = {0,2}"
-  using select_index_def select_index_2_1 by auto
+lemma (in prisoner) unit_vec_4_0_ket_is_state: 
+  shows "state 2 |unit_vec 4 0\<rangle>"
+  using state_def cpx_vec_length_def ket_vec_def unit_vec_def by (auto simp add: set_4)
 
 lemma cos_sin_squared_add_cpx: 
   "complex_of_real (cos (\<gamma>/2)) * complex_of_real (cos (\<gamma>/2)) -
@@ -272,106 +211,404 @@ lemma sin_cos_squared_add_cpx:
   apply (auto simp add: algebra_simps)
   by (metis of_real_add of_real_hom.hom_one of_real_mult sin_cos_squared_add3)
 
-lemma unit_vec_4_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[0, 0, 0, 1]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
+lemma (in prisoner) J_cnj_times_J:
+  shows "J\<^sup>\<dagger> * J = 1\<^sub>m 4"
+proof
+  fix i j assume a0:"i < dim_row (1\<^sub>m 4)" and a1:"j < dim_col (1\<^sub>m 4)"
+  then show "(J\<^sup>\<dagger> * J) $$ (i,j) = 1\<^sub>m 4 $$ (i,j)"
+  proof-
+    have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def hermite_cnj_of_J set_4 cos_sin_squared_add_cpx by auto
+  qed
+next
+  show "dim_row (J\<^sup>\<dagger> * J) = dim_row (1\<^sub>m 4)"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (J\<^sup>\<dagger> * J) = dim_col (1\<^sub>m 4)" 
+    using mat_of_cols_list_def by simp
+qed
 
-lemma minus_unit_vec_4_is_state: 
-  shows "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). [[-1, 0, 0, 0]] ! j ! i))"
-  using state_def cpx_vec_length_def by (auto simp add: set_4_lessThan)
+lemma (in prisoner) J_times_J_cnj:
+  shows "J * (J\<^sup>\<dagger>) = 1\<^sub>m 4"
+proof
+  fix i j assume a0:"i < dim_row (1\<^sub>m 4)" and a1:"j < dim_col (1\<^sub>m 4)"
+  then show "(J * (J\<^sup>\<dagger>)) $$ (i,j) = 1\<^sub>m 4 $$ (i,j)"
+  proof-
+    have "i\<in>{0,1,2,3} \<and> j\<in>{0,1,2,3}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def hermite_cnj_of_J set_4 cos_sin_squared_add_cpx by auto
+  qed
+next
+  show "dim_row (J * (J\<^sup>\<dagger>)) = dim_row (1\<^sub>m 4)"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (J * (J\<^sup>\<dagger>)) = dim_col (1\<^sub>m 4)"
+    using mat_of_cols_list_def by simp
+qed
 
-lemma (in restricted_strategic_space) separable_case_DD: (* both player defect *)
+lemma (in prisoner) J_is_gate:
+  shows "gate 2 J"
+proof
+  show "dim_row J = 2\<^sup>2"
+    using mat_of_cols_list_def by simp
+  moreover show "square_mat J"
+    using mat_of_cols_list_def by simp
+  ultimately show "unitary J"
+    using mat_of_cols_list_def unitary_def J_cnj_times_J J_times_J_cnj by auto
+qed
+
+lemma (in strategic_space_2p) psi_one_is_state: 
+  shows "state 2 \<psi>\<^sub>1"
+proof-
+  have "state 2 (J * |unit_vec 4 0\<rangle>)"
+    using unit_vec_4_0_ket_is_state J_is_gate by auto
+  then show ?thesis
+    using psi_one by simp
+qed
+
+abbreviation (in strategic_space_2p) U\<^sub>A_cnj :: "complex Matrix.mat" where
+"U\<^sub>A_cnj \<equiv> mat_of_cols_list 2 [[(exp(-\<i>*\<phi>\<^sub>A))*cos(\<theta>\<^sub>A/2), sin(\<theta>\<^sub>A/2)],
+                              [-sin(\<theta>\<^sub>A/2), (exp (\<i>*\<phi>\<^sub>A))*cos(\<theta>\<^sub>A/2)]]"
+
+abbreviation (in strategic_space_2p) U\<^sub>B_cnj :: "complex Matrix.mat" where
+"U\<^sub>B_cnj \<equiv> mat_of_cols_list 2 [[(exp(-\<i>*\<phi>\<^sub>B))*cos(\<theta>\<^sub>B/2), sin(\<theta>\<^sub>B/2)],
+                              [-sin(\<theta>\<^sub>B/2), (exp(\<i>*\<phi>\<^sub>B))*cos(\<theta>\<^sub>B/2)]]"
+
+lemma (in strategic_space_2p) hermite_cnj_of_U\<^sub>A:
+  shows "U\<^sub>A\<^sup>\<dagger> = U\<^sub>A_cnj"
+proof
+  fix i j assume a0:"i < dim_row U\<^sub>A_cnj" and a1:"j < dim_col U\<^sub>A_cnj"
+  then show "U\<^sub>A\<^sup>\<dagger> $$ (i,j) = U\<^sub>A_cnj $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}"
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def dagger_def exp_of_real_cnj exp_of_real_cnj2 by auto
+  qed
+next
+  show "dim_row (U\<^sub>A\<^sup>\<dagger>) = dim_row U\<^sub>A_cnj"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (U\<^sub>A\<^sup>\<dagger>) = dim_col U\<^sub>A_cnj"
+    using mat_of_cols_list_def by simp
+qed
+
+lemma (in strategic_space_2p) hermite_cnj_of_U\<^sub>B:
+  shows "U\<^sub>B\<^sup>\<dagger> = U\<^sub>B_cnj"
+proof
+  fix i j assume a0:"i < dim_row U\<^sub>B_cnj" and a1:"j < dim_col U\<^sub>B_cnj"
+  then show "U\<^sub>B\<^sup>\<dagger> $$ (i,j) = U\<^sub>B_cnj $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}"
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def dagger_def exp_of_real_cnj exp_of_real_cnj2 by auto
+  qed
+next
+  show "dim_row (U\<^sub>B\<^sup>\<dagger>) = dim_row U\<^sub>B_cnj"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (U\<^sub>B\<^sup>\<dagger>) = dim_col U\<^sub>B_cnj"
+    using mat_of_cols_list_def by simp
+qed
+
+lemma exp_sin_cos_squared_add:
+  fixes x y :: real
+  shows "exp (- (\<i> * x)) * cos (y) * (exp (\<i> * x) * cos (y)) + sin(y) * sin(y) = 1"
+proof-
+  have "exp (- (\<i> * x)) * cos (y) * (exp (\<i> * x) * cos (y)) = cos(y) * cos(y)"
+    using exp_minus_inverse by (auto simp add: algebra_simps)
+  then show ?thesis
+    by (metis of_real_add of_real_hom.hom_one sin_cos_squared_add3)
+qed
+
+lemma (in strategic_space_2p) U\<^sub>A_cnj_times_U\<^sub>A:
+  shows "U\<^sub>A\<^sup>\<dagger> * U\<^sub>A = 1\<^sub>m 2"
+proof
+  fix i j assume a0:"i < dim_row (1\<^sub>m 2)" and a1:"j < dim_col (1\<^sub>m 2)"
+  then show "(U\<^sub>A\<^sup>\<dagger> * U\<^sub>A) $$ (i,j) = 1\<^sub>m 2 $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>A exp_sin_cos_squared_add[of "\<phi>\<^sub>A" "\<theta>\<^sub>A / 2"]
+      by (auto simp add: set_2 algebra_simps)
+  qed
+next
+  show "dim_row (U\<^sub>A\<^sup>\<dagger> * U\<^sub>A) = dim_row (1\<^sub>m 2)"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (U\<^sub>A\<^sup>\<dagger> * U\<^sub>A) = dim_col (1\<^sub>m 2)" 
+    using mat_of_cols_list_def by simp
+qed
+
+lemma (in strategic_space_2p) U\<^sub>A_times_U\<^sub>A_cnj:
+  shows "U\<^sub>A * (U\<^sub>A\<^sup>\<dagger>) = 1\<^sub>m 2"
+proof
+  fix i j assume a0:"i < dim_row (1\<^sub>m 2)" and a1:"j < dim_col (1\<^sub>m 2)"
+  then show "(U\<^sub>A * (U\<^sub>A\<^sup>\<dagger>)) $$ (i,j) = 1\<^sub>m 2 $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>A exp_sin_cos_squared_add[of "\<phi>\<^sub>A" "\<theta>\<^sub>A / 2"]
+      by (auto simp add: set_2 algebra_simps)
+  qed
+next
+  show "dim_row (U\<^sub>A * (U\<^sub>A\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (U\<^sub>A * (U\<^sub>A\<^sup>\<dagger>)) = dim_col (1\<^sub>m 2)" 
+    using mat_of_cols_list_def by simp
+qed
+
+lemma (in strategic_space_2p) U\<^sub>B_cnj_times_U\<^sub>B:
+  shows "U\<^sub>B\<^sup>\<dagger> * U\<^sub>B = 1\<^sub>m 2"
+proof
+  fix i j assume a0:"i < dim_row (1\<^sub>m 2)" and a1:"j < dim_col (1\<^sub>m 2)"
+  then show "(U\<^sub>B\<^sup>\<dagger> * U\<^sub>B) $$ (i,j) = 1\<^sub>m 2 $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>B exp_sin_cos_squared_add[of "\<phi>\<^sub>B" "\<theta>\<^sub>B / 2"]
+      by (auto simp add: set_2 algebra_simps)
+  qed
+next
+  show "dim_row (U\<^sub>B\<^sup>\<dagger> * U\<^sub>B) = dim_row (1\<^sub>m 2)"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (U\<^sub>B\<^sup>\<dagger> * U\<^sub>B) = dim_col (1\<^sub>m 2)" 
+    using mat_of_cols_list_def by simp
+qed
+
+lemma (in strategic_space_2p) U\<^sub>B_times_U\<^sub>B_cnj:
+  shows "U\<^sub>B * (U\<^sub>B\<^sup>\<dagger>) = 1\<^sub>m 2"
+proof
+  fix i j assume a0:"i < dim_row (1\<^sub>m 2)" and a1:"j < dim_col (1\<^sub>m 2)"
+  then show "(U\<^sub>B * (U\<^sub>B\<^sup>\<dagger>)) $$ (i,j) = 1\<^sub>m 2 $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def cos_sin_squared_add_cpx hermite_cnj_of_U\<^sub>B exp_sin_cos_squared_add[of "\<phi>\<^sub>B" "\<theta>\<^sub>B / 2"]
+      by (auto simp add: set_2 algebra_simps)
+  qed
+next
+  show "dim_row (U\<^sub>B * (U\<^sub>B\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)"
+    using mat_of_cols_list_def by simp
+next
+  show "dim_col (U\<^sub>B * (U\<^sub>B\<^sup>\<dagger>)) = dim_col (1\<^sub>m 2)" 
+    using mat_of_cols_list_def by simp
+qed
+
+lemma (in strategic_space_2p) U\<^sub>A\<^sub>_is_gate:
+  shows "gate 1 U\<^sub>A"
+proof
+  show "dim_row U\<^sub>A = 2^1"
+    using mat_of_cols_list_def by simp
+  moreover show "square_mat U\<^sub>A"
+    using mat_of_cols_list_def by simp
+  ultimately show "unitary U\<^sub>A"
+    using mat_of_cols_list_def unitary_def U\<^sub>A_cnj_times_U\<^sub>A U\<^sub>A_times_U\<^sub>A_cnj by auto
+qed
+
+lemma (in strategic_space_2p) U\<^sub>B_is_gate:
+  shows "gate 1 U\<^sub>B"
+proof
+  show "dim_row U\<^sub>B = 2^1"
+    using mat_of_cols_list_def by simp
+  moreover show "square_mat U\<^sub>B"
+    using mat_of_cols_list_def by simp
+  ultimately show "unitary U\<^sub>B"
+    using mat_of_cols_list_def unitary_def U\<^sub>B_cnj_times_U\<^sub>B U\<^sub>B_times_U\<^sub>B_cnj by auto
+qed
+
+lemma (in strategic_space_2p) U\<^sub>A\<^sub>B_is_gate:
+  shows "gate 2 (U\<^sub>A \<Otimes> U\<^sub>B)"
+proof-
+  have "gate (1+1) (U\<^sub>A \<Otimes> U\<^sub>B)"
+    using U\<^sub>A\<^sub>_is_gate U\<^sub>B_is_gate tensor_gate[of "1" "U\<^sub>A" "1" "U\<^sub>B"] by auto
+  then show ?thesis
+    by (auto simp add: numeral_2_eq_2)
+qed
+
+lemma (in strategic_space_2p) psi_two_is_state:
+  shows "state 2 \<psi>\<^sub>2"
+proof-
+  have "state 2 ((U\<^sub>A \<Otimes> U\<^sub>B) * \<psi>\<^sub>1)"
+    using psi_one_is_state U\<^sub>A\<^sub>B_is_gate by auto
+  then show ?thesis
+    using psi_two by simp
+qed
+
+lemma (in strategic_space_2p) J_cnj_is_gate:
+  shows "gate 2 (J\<^sup>\<dagger>)"
+proof
+  show "dim_row (J\<^sup>\<dagger>) = 2\<^sup>2"
+    using mat_of_cols_list_def by simp
+  moreover show "square_mat (J\<^sup>\<dagger>)"
+    using mat_of_cols_list_def by simp
+  moreover have "(J\<^sup>\<dagger>)\<^sup>\<dagger> = J"
+    using dagger_of_dagger_is_id by auto
+  ultimately show "unitary (J\<^sup>\<dagger>)"
+    using mat_of_cols_list_def unitary_def J_cnj_times_J J_times_J_cnj by auto
+qed
+
+lemma (in strategic_space_2p) psi_f_is_state: 
+  shows "state 2 \<psi>\<^sub>f"
+proof-
+  have "state 2 ((J\<^sup>\<dagger>) * \<psi>\<^sub>2)"
+    using psi_two_is_state J_cnj_is_gate by auto
+  then show ?thesis
+    using psi_f by simp
+qed
+
+(* equation (1) in the paper *)
+lemma (in strategic_space_2p) equation_one:
+  shows "(J\<^sup>\<dagger>) * ((U\<^sub>A \<Otimes> U\<^sub>B) * (J * |unit_vec 4 0\<rangle>)) = \<psi>\<^sub>f"
+  using psi_one psi_two psi_f by auto
+
+abbreviation (in strategic_space_2p) prob00 :: "complex Matrix.mat \<Rightarrow> real" where
+"prob00 v \<equiv> if state 2 v then (cmod (v $$ (0,0)))\<^sup>2 else undefined"
+
+abbreviation (in strategic_space_2p) prob01 :: "complex Matrix.mat \<Rightarrow> real" where
+"prob01 v \<equiv> if state 2 v then (cmod (v $$ (1,0)))\<^sup>2 else undefined"
+
+abbreviation (in strategic_space_2p) prob10 :: "complex Matrix.mat \<Rightarrow> real" where
+"prob10 v \<equiv> if state 2 v then (cmod (v $$ (2,0)))\<^sup>2 else undefined"
+
+abbreviation (in strategic_space_2p) prob11 :: "complex Matrix.mat \<Rightarrow> real" where
+"prob11 v \<equiv> if state 2 v then (cmod (v $$ (3,0)))\<^sup>2 else undefined"
+
+definition (in strategic_space_2p) alice_payoff :: "real" where
+"alice_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 0 * (prob01 \<psi>\<^sub>f) + 5 * (prob10 \<psi>\<^sub>f)"
+
+definition (in strategic_space_2p) bob_payoff :: "real" where
+"bob_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 0 * (prob10 \<psi>\<^sub>f)"
+
+definition (in strategic_space_2p) is_nash_eq :: "bool" where
+"is_nash_eq \<equiv> (\<forall>tA pA. strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<longrightarrow> alice_payoff \<ge> strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B) \<and>
+               (\<forall>tB pB. strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<longrightarrow> bob_payoff \<ge> strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB)"
+
+definition (in strategic_space_2p) is_pareto_opt :: "bool" where
+"is_pareto_opt \<equiv> \<forall>tA pA tB pB. strategic_space_2p \<gamma> tA pA tB pB \<longrightarrow>
+((strategic_space_2p.alice_payoff \<gamma> tA pA tB pB > alice_payoff \<longrightarrow> 
+  strategic_space_2p.bob_payoff \<gamma> tA pA tB pB < bob_payoff) \<and>
+ (strategic_space_2p.bob_payoff \<gamma> tA pA tB pB > bob_payoff \<longrightarrow> 
+  strategic_space_2p.alice_payoff \<gamma> tA pA tB pB < alice_payoff))"
+
+lemma (in strategic_space_2p) sum_of_prob:
+  fixes v :: "complex Matrix.mat"
+  assumes "state 2 v"
+  shows "(prob00 v) + (prob11 v) + (prob01 v) + (prob10 v) = 1"
+proof-
+  have "(prob00 v) + (prob11 v) + (prob01 v) + (prob10 v) = 
+        (cmod (v $$ (0,0)))\<^sup>2 + (cmod (v $$ (1,0)))\<^sup>2 + (cmod (v $$ (2,0)))\<^sup>2 + (cmod (v $$ (3,0)))\<^sup>2"
+    using assms by auto
+  then show ?thesis
+    using state_def assms cpx_vec_length_def by (auto simp add: set_4)
+qed
+
+lemma (in strategic_space_2p) sum_payoff_le_6:
+  fixes tA pA tB pB :: real
+  shows "alice_payoff + bob_payoff \<le> 6"
+proof-
+  have "alice_payoff + bob_payoff = 6 * (prob00 \<psi>\<^sub>f) + 2 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 5 * (prob10 \<psi>\<^sub>f)"
+    using alice_payoff_def bob_payoff_def psi_f_is_state by auto
+  then have "alice_payoff + bob_payoff \<le> 6 * ((prob00 \<psi>\<^sub>f) + (prob11 \<psi>\<^sub>f) + (prob01 \<psi>\<^sub>f) + (prob10 \<psi>\<^sub>f))"
+    using psi_f_is_state by (auto simp add: algebra_simps)
+  moreover have "(prob00 \<psi>\<^sub>f) + (prob11 \<psi>\<^sub>f) + (prob01 \<psi>\<^sub>f) + (prob10 \<psi>\<^sub>f) = 1"
+    using sum_of_prob[of "\<psi>\<^sub>f"] psi_f_is_state by auto
+  ultimately show ?thesis
+    by auto
+qed
+
+lemma (in strategic_space_2p) coop_is_pareto_opt:
+  assumes "alice_payoff = 3 \<and> bob_payoff = 3"
+  shows "is_pareto_opt"
+  using is_pareto_opt_def strategic_space_2p.sum_payoff_le_6 assms by fastforce
+
+
+section \<open>The Separable Case\<close>
+
+lemma (in strategic_space_2p) separable_case_CC: (* both player cooperate *)
+  assumes "\<gamma> = 0"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state by auto
+
+lemma (in strategic_space_2p) separable_case_DD: (* both player defect *)
   assumes "\<gamma> = 0"
   shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
-  using alice_payoff_def bob_payoff_def mat_of_cols_list_def cos_sin_squared_add_cpx 
-        unit_vec_4_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state by auto
 
-lemma cmod_squared_of_rotated_real:
-  fixes x y
-  shows "(cmod (exp (\<i>*complex_of_real y) * complex_of_real x))\<^sup>2 = x\<^sup>2"
-  by (simp add: norm_mult)
+lemma (in strategic_space_2p) separable_case_DC: (* Alice defects, and Bob cooperates *)
+  assumes "\<gamma> = 0"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 5 \<and> bob_payoff = 0"
+  using alice_payoff_def bob_payoff_def sin_cos_squared_add_cpx psi_f_is_state by auto
 
-lemma sin_squared_le_one:
-  fixes x:: real
-  shows "(sin x)\<^sup>2 \<le> 1"
-  using abs_sin_le_one abs_square_le_1 by blast
-
-lemma cos_squared_le_one:
-  fixes x:: real
-  shows "(cos x)\<^sup>2 \<le> 1"
-  using abs_cos_le_one abs_square_le_1 by blast
-
-lemma alice_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[0,-exp (\<i>*complex_of_real \<phi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A/2)),0,complex_of_real (sin (\<theta>\<^sub>A/2))]] ! j ! i))"
-  using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_4_lessThan)
-
-lemma bob_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[0,0,-exp (\<i>*complex_of_real \<phi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B/2)),complex_of_real (sin (\<theta>\<^sub>B/2))]] ! j ! i))"
-  using state_def cpx_vec_length_def cmod_squared_of_rotated_real by (auto simp add: set_4_lessThan)
-
-lemma (in restricted_strategic_space) separable_alice_payoff_D\<^sub>B: 
+lemma (in strategic_space_2p) separable_alice_payoff_D\<^sub>B: 
 (* Alice's payoff in the separable case given that Bob defects *)
   assumes "\<gamma> = 0" and "\<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
   shows "alice_payoff \<le> 1"
-  using alice_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
-        sin_squared_le_one alice_vec_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def assms sin_squared_le_one psi_f_is_state by auto
 
-lemma (in restricted_strategic_space) separable_bob_payoff_D\<^sub>A:
+lemma (in strategic_space_2p) separable_bob_payoff_D\<^sub>A:
 (* Bob's payoff in the separable case given that Alice defects *)
   assumes "\<gamma> = 0" and "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi"
   shows "bob_payoff \<le> 1"
-  using bob_payoff_def mat_of_cols_list_def assms cmod_squared_of_rotated_real 
-        sin_squared_le_one bob_vec_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using bob_payoff_def assms sin_squared_le_one psi_f_is_state by auto
+
+lemma (in strategic_space_2p) separable_case_DD_alice_opt:
+  assumes "\<gamma> = 0" and "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
+  shows "\<And>tA pA. strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<longrightarrow> strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<le> alice_payoff"
+proof
+  fix tA pA assume "strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B"
+  then show "strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<le> alice_payoff"
+    using separable_case_DD strategic_space_2p.separable_alice_payoff_D\<^sub>B assms by auto
+qed
+
+lemma (in strategic_space_2p) separable_case_DD_bob_opt:
+  assumes "\<gamma> = 0" and "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
+  shows "\<And>tB pB. strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<longrightarrow> strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<le> bob_payoff"
+proof
+  fix tB pB assume "strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB"
+  then show "strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<le> bob_payoff"
+    using separable_case_DD strategic_space_2p.separable_bob_payoff_D\<^sub>A assms by auto
+qed
+
+lemma (in strategic_space_2p) separable_case_DD_is_nash_eq:
+  assumes "\<gamma> = 0"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> is_nash_eq"
+  using is_nash_eq_def separable_case_DD_alice_opt separable_case_DD_bob_opt assms by auto
+
+lemma (in strategic_space_2p) separable_case_CC_is_not_nash_eq:
+  assumes "\<gamma> = 0"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> \<not> is_nash_eq"
+proof
+  assume asm:"\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0"
+  then have f0:"strategic_space_2p \<gamma> pi 0 \<theta>\<^sub>B \<phi>\<^sub>B"
+    using strategic_space_2p_def strategic_space_2p_axioms_def prisoner_def asm by (simp add: assms)
+  then have "strategic_space_2p.alice_payoff \<gamma> pi 0 \<theta>\<^sub>B \<phi>\<^sub>B = 5"
+    using strategic_space_2p.separable_case_DC assms asm by blast
+  moreover have "alice_payoff = 3"
+    using separable_case_CC assms asm by blast
+  ultimately have "strategic_space_2p \<gamma> pi 0 \<theta>\<^sub>B \<phi>\<^sub>B \<and> strategic_space_2p.alice_payoff \<gamma> pi 0 \<theta>\<^sub>B \<phi>\<^sub>B > alice_payoff"
+    using f0 by simp
+  then show "\<not>is_nash_eq"
+    using is_nash_eq_def by fastforce
+qed
+
+lemma (in strategic_space_2p) separable_case_CC_is_pareto_optimal:
+  assumes "\<gamma> = 0"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> is_pareto_opt"
+  using coop_is_pareto_opt separable_case_CC assms by auto
 
 
 section \<open>The Maximally Entangled Case\<close>
-
-lemma exp_of_half_pi: 
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "exp (\<i> * complex_of_real x) = \<i>"
-  using assms cis_conv_exp cis_pi_half by fastforce
-
-lemma exp_of_minus_half_pi: 
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "exp (-(\<i> * complex_of_real x)) = -\<i>"
-  using assms cis_conv_exp cis_minus_pi_half by fastforce
-
-lemma sin_of_quarter_pi:
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "sin (x/2) = (sqrt 2)/2"
-  by (auto simp add: assms sin_45)
-
-lemma cos_of_quarter_pi:
-  fixes x:: real
-  assumes "x = pi/2"
-  shows "cos (x/2) = (sqrt 2)/2"
-  by (auto simp add: assms cos_45)
-
-lemma exp_of_real:
-  fixes x:: real
-  shows "exp (\<i> * x) = cos x + \<i> * (sin x)"
-proof
-  show "Re (exp (\<i> * x)) = Re ((cos x) + \<i> * (sin x))"
-    using Re_exp by simp
-  show "Im (exp (\<i> * x)) = Im ((cos x) + \<i> * (sin x))"
-    using Im_exp by simp
-qed
-
-lemma exp_of_real_inv:
-  fixes x:: real
-  shows "exp (-(\<i> * x)) = cos x - \<i> * (sin x)"
-proof
-  show "Re (exp (-(\<i> * x))) = Re ((cos x) - \<i> * (sin x))"
-    using Re_exp by simp
-  show "Im (exp (-(\<i> * x))) = Im ((cos x) - \<i> * (sin x))"
-    using Im_exp by simp
-qed
 
 lemma exp_to_sin:
   fixes x:: real
@@ -388,7 +625,7 @@ lemma cmod_real_prod_squared:
   shows "(cmod (complex_of_real x * complex_of_real y))\<^sup>2 = x\<^sup>2 * y\<^sup>2"
   by (simp add: norm_mult power_mult_distrib)
 
-lemma quantum_reward_simp:
+lemma quantum_payoff_simp:
   fixes x y:: real
   shows "3 * (cmod (complex_of_real (sin x) * complex_of_real (cos y)))\<^sup>2 +
          (cmod (complex_of_real (cos x) * complex_of_real (cos y)))\<^sup>2 = 
@@ -401,7 +638,7 @@ proof-
     by (simp add: cmod_real_prod_squared power_mult_distrib)
 qed
 
-lemma quantum_reward_le_3: 
+lemma quantum_payoff_le_3: 
   fixes x y:: real
   shows "2 * (sin x)\<^sup>2 * (cos y)\<^sup>2 + (cos y)\<^sup>2 \<le> 3"
 proof-
@@ -413,49 +650,35 @@ proof-
 qed
 
 lemma sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * complex_of_real (sqrt 2) = 2"
-  by (metis dbl_def dbl_simps(5) mult_2_right of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
+  by (metis mult_2_right numeral_Bit0 of_real_mult of_real_numeral real_sqrt_four real_sqrt_mult)
 
 lemma hidden_sqrt_two_squared_cpx: "complex_of_real (sqrt 2) * (complex_of_real (sqrt 2) * x) / 4 = x/2"
   using sqrt_two_squared_cpx by (auto simp add: algebra_simps)
 
-lemma (in restricted_strategic_space) max_entangled_QQ: 
-(* both players play the quantum move in the maximally entangled case *)
+lemma (in strategic_space_2p) max_entangled_DD:
+(* both players defects in the maximally entangled case *)
   assumes "\<gamma> = pi/2"
-  shows "\<phi>\<^sub>A = pi*(1/2) \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
-  using alice_payoff_def bob_payoff_def mat_of_cols_list_def sin_cos_squared_add_cpx
-        cmod_squared_of_rotated_real exp_of_half_pi exp_of_minus_half_pi minus_unit_vec_4_is_state
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx psi_f_is_state
+  by auto
 
-lemma alice_quantum_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[-(complex_of_real (sin \<phi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A/2))), 
-  complex_of_real (sin (\<theta>\<^sub>A/2)), 
-  0,
-  complex_of_real (cos \<phi>\<^sub>A) * complex_of_real (cos (\<theta>\<^sub>A/2))]] ! j ! i))"
-proof-
-  have "(sin \<phi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A/2))\<^sup>2 + ((sin (\<theta>\<^sub>A/2))\<^sup>2 + (cos \<phi>\<^sub>A)\<^sup>2 * (cos (\<theta>\<^sub>A/2))\<^sup>2) =
-        ((sin \<phi>\<^sub>A)\<^sup>2 + (cos \<phi>\<^sub>A)\<^sup>2) * (cos (\<theta>\<^sub>A/2))\<^sup>2 + (sin (\<theta>\<^sub>A/2))\<^sup>2"
-    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
-  then show ?thesis
-    using state_def cpx_vec_length_def cmod_real_prod_squared sin_cos_squared_add 
-    by (auto simp add: set_4_lessThan)
-qed
+lemma (in strategic_space_2p) max_entangled_QQ:
+(* both players play the move Q in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 3"
+  using alice_payoff_def bob_payoff_def sin_cos_squared_add_cpx exp_of_half_pi exp_of_minus_half_pi psi_f_is_state
+  by auto
 
-lemma bob_quantum_vec_is_state: "state 2 (Matrix.mat 4 (Suc 0) (\<lambda>(i,j). 
-[[-(complex_of_real (sin \<phi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B/2))), 
-  0, 
-  complex_of_real (sin (\<theta>\<^sub>B/2)),
-  complex_of_real (cos \<phi>\<^sub>B) * complex_of_real (cos (\<theta>\<^sub>B/2))]] ! j ! i))" 
-proof-
-  have "(sin \<phi>\<^sub>B)\<^sup>2 * (cos (\<theta>\<^sub>B/2))\<^sup>2 + ((sin (\<theta>\<^sub>B/2))\<^sup>2 + (cos \<phi>\<^sub>B)\<^sup>2 * (cos (\<theta>\<^sub>B/2))\<^sup>2) =
-        ((sin \<phi>\<^sub>B)\<^sup>2 + (cos \<phi>\<^sub>B)\<^sup>2) * (cos (\<theta>\<^sub>B/2))\<^sup>2 + (sin (\<theta>\<^sub>B/2))\<^sup>2"
-    by (auto simp add: algebra_simps simp del: sin_cos_squared_add2)
-  then show ?thesis
-    using state_def cpx_vec_length_def cmod_real_prod_squared sin_cos_squared_add 
-    by (auto simp add: set_4_lessThan)
-qed
+lemma (in strategic_space_2p) max_entangled_QD:
+(* Alice plays the move Q, and Bob defects in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 5 \<and> bob_payoff = 0"
+  using alice_payoff_def bob_payoff_def cos_sin_squared_add_cpx exp_of_half_pi exp_of_minus_half_pi 
+        psi_f_is_state sqrt_two_squared_cpx
+  by (auto simp add: assms algebra_simps sin_45 cos_45)
 
-lemma (in restricted_strategic_space) max_entangled_alice_payoff_D\<^sub>B:
-(* Alice's payoff in the maximally entangled case given that Bob defects *)
+lemma (in strategic_space_2p) max_entangled_alice_payoff_Q\<^sub>B:
+(* Alice's payoff in the maximally entangled case given that Bob plays the move Q *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff \<le> 3"
 proof
@@ -493,12 +716,12 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "alice_payoff \<le> 3"
-  using alice_payoff_def mat_of_cols_list_def alice_quantum_vec_is_state quantum_reward_simp quantum_reward_le_3 
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using alice_payoff_def psi_f_is_state quantum_payoff_simp quantum_payoff_le_3 
+  by auto
 qed
 
-lemma (in restricted_strategic_space) max_entangled_bob_payoff_D\<^sub>A:
-(* Bob's payoff in the maximally entangled case given that Alice defects *)
+lemma (in strategic_space_2p) max_entangled_bob_payoff_Q\<^sub>A:
+(* Bob's payoff in the maximally entangled case given that Alice plays the move Q *)
   assumes "\<gamma> = pi/2"
   shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<longrightarrow> bob_payoff \<le> 3"
 proof
@@ -536,25 +759,161 @@ proof
       using exp_to_cos by (simp add: algebra_simps)
   qed
   ultimately show "bob_payoff \<le> 3"
-  using bob_payoff_def mat_of_cols_list_def bob_quantum_vec_is_state quantum_reward_simp quantum_reward_le_3 
-  by (auto simp add: select_index_2_0 select_index_2_0_inv select_index_2_1 select_index_2_1_inv)
+  using bob_payoff_def psi_f_is_state quantum_payoff_simp quantum_payoff_le_3 
+  by auto
 qed
 
-(* 
-To do:
+lemma (in strategic_space_2p) max_entangled_DD_is_not_nash_eq:
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> \<not>is_nash_eq"
+proof
+  assume asm:"\<phi>\<^sub>A = 0 \<and> \<theta>\<^sub>A = pi \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
+  then have f0:"strategic_space_2p \<gamma> 0 (pi/2) \<theta>\<^sub>B \<phi>\<^sub>B"
+    using strategic_space_2p_def strategic_space_2p_axioms_def prisoner_def asm by (simp add: assms)
+  then have "strategic_space_2p.alice_payoff \<gamma> 0 (pi/2) \<theta>\<^sub>B \<phi>\<^sub>B = 5"
+    using strategic_space_2p.max_entangled_QD assms asm by blast
+  moreover have "alice_payoff = 1"
+    using max_entangled_DD assms asm by blast
+  ultimately have "strategic_space_2p \<gamma> 0 (pi/2) \<theta>\<^sub>B \<phi>\<^sub>B \<and> strategic_space_2p.alice_payoff \<gamma> 0 (pi/2) \<theta>\<^sub>B \<phi>\<^sub>B > alice_payoff"
+    using f0 by simp
+  then show "\<not>is_nash_eq"
+    using is_nash_eq_def by fastforce
+qed
 
-- Formal specifications for Nash equilibrium and Pareto optimum in the context of the
-locale restricted_strategic_space, then prove that in the maximally entangled case
-D \<otimes> D is no longer a Nash equilibrium and Q \<otimes> Q is a new Nash equilibrium which is also
-Pareto optimal.
+lemma (in strategic_space_2p) max_entangled_alice_opt:
+  assumes "\<gamma> = pi/2" and "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0"
+  shows "\<And>tA pA. strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<longrightarrow> strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<le> alice_payoff"
+proof
+  fix tA pA assume "strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B"
+  then have "strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<le> 3"
+    using strategic_space_2p.max_entangled_alice_payoff_Q\<^sub>B assms by blast
+  moreover have "alice_payoff = 3"
+    using max_entangled_QQ assms by blast
+  ultimately show "strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<le> alice_payoff"
+    by simp
+qed
 
-- A fourth section on the biased strategic space and the "miracle move" M.
-*)
+lemma (in strategic_space_2p) max_entangled_bob_opt:
+  assumes "\<gamma> = pi/2" and "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0"
+  shows "\<And>tB pB. strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<longrightarrow> strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<le> bob_payoff"
+proof
+  fix tB pB assume "strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB"
+  then have "strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<le> 3"
+    using strategic_space_2p.max_entangled_bob_payoff_Q\<^sub>A assms by blast
+  moreover have "bob_payoff = 3"
+    using max_entangled_QQ assms by blast
+  ultimately show "strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<le> bob_payoff"
+    by simp
+qed
+
+lemma (in strategic_space_2p) max_entangled_QQ_is_nash_eq:
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> is_nash_eq"
+  using max_entangled_alice_opt max_entangled_bob_opt is_nash_eq_def assms by blast
+
+lemma (in strategic_space_2p) max_entangled_QQ_is_pareto_optimal:
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = 0 \<and> \<phi>\<^sub>B = pi/2 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> is_pareto_opt"
+  using coop_is_pareto_opt max_entangled_QQ assms by blast
+
+
+section \<open>The Unfair Strategy Case\<close>
+
+lemma half_sqrt_two_squared: "2 * (sqrt 2 / 2)\<^sup>2 = 1"
+  by (auto simp add: power2_eq_square)
+
+lemma (in strategic_space_2p) max_entangled_MD:
+(* Alice plays the "miracle move", and Bob plays the classical defect move in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 1/2"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi"
+  show "alice_payoff = 3 \<and> bob_payoff = 1/2"
+    using alice_payoff_def bob_payoff_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] psi_f_is_state
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+qed
+
+lemma (in strategic_space_2p) max_entangled_MC:
+(* Alice plays the "miracle move", and Bob plays the classical defect move in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0 \<longrightarrow> alice_payoff = 3 \<and> bob_payoff = 1/2"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = 0"
+  show "alice_payoff = 3 \<and> bob_payoff = 1/2"
+    using alice_payoff_def bob_payoff_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] psi_f_is_state
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+qed
+
+lemma (in strategic_space_2p) max_entangled_MH:
+(* Alice plays the "miracle move", and Bob plays the classical half move in the maximally entangled case *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi/2 \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>B = pi/2"
+  show "alice_payoff = 1 \<and> bob_payoff = 1"
+    using alice_payoff_def bob_payoff_def sqrt_two_squared_cpx half_sqrt_two_squared
+          exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] psi_f_is_state
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+qed
+
+(* This is the definition of M in equation (9) *)
+abbreviation M :: "complex Matrix.mat" where
+"M \<equiv> mat_of_cols_list 2 [[\<i> * sqrt(2)/2, -1 * sqrt(2)/2],
+                          [1 * sqrt(2)/2, -\<i> * sqrt(2)/2]]"
+
+lemma (in strategic_space_2p) M_correct:
+  assumes "\<phi>\<^sub>A = pi/2 \<and> \<theta>\<^sub>A = pi/2"
+  shows "U\<^sub>A = M"
+proof
+  show "dim_row U\<^sub>A = dim_row M" using mat_of_cols_list_def by simp
+  show "dim_col U\<^sub>A = dim_col M" using mat_of_cols_list_def by simp
+  fix i j assume a0:"i < dim_row M" and a1:"j < dim_col M"
+  then show "U\<^sub>A $$ (i,j) = M $$ (i,j)"
+  proof-
+    have "i\<in>{0,1} \<and> j\<in>{0,1}" 
+      using a0 a1 mat_of_cols_list_def by auto
+    thus ?thesis
+      using mat_of_cols_list_def exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+      by (auto simp add: assms sin_45 cos_45)
+  qed
+qed
+
+lemma hidden_sqrt_two_squared_cpx2:
+  fixes x y :: complex
+  shows "(sqrt 2) * ((sqrt 2) * (x * y)) / 2 = x * y"
+  using sqrt_two_squared_cpx by auto
+
+lemma (in strategic_space_2p) unfair_strategy_no_benefit:
+(* Two players' payoffs in the maximally entangled case given that Alice plays a quantum move and Bob 
+plays a classical move with the same \<theta> *)
+  assumes "\<gamma> = pi/2"
+  shows "\<phi>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>A = \<theta>\<^sub>B \<longrightarrow> alice_payoff = 1 \<and> bob_payoff = 1"
+proof
+  assume asm:"\<phi>\<^sub>A = pi/2 \<and> \<phi>\<^sub>B = 0 \<and> \<theta>\<^sub>A = \<theta>\<^sub>B"
+  have "\<psi>\<^sub>f $$ (0,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (1,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (2,0) = 0"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"]
+    by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
+  moreover have "\<psi>\<^sub>f $$ (3,0) = 1"
+    using exp_of_half_pi[of "pi/2"] exp_of_minus_half_pi[of "pi/2"] cos_sin_squared_add_cpx
+    by (auto simp add: asm assms sin_45 cos_45 hidden_sqrt_two_squared_cpx2 algebra_simps)
+  ultimately show "alice_payoff = 1 \<and> bob_payoff = 1"
+    using alice_payoff_def bob_payoff_def psi_f_is_state
+    by auto
+qed
+
 
 (*
 Bibliography:
 
-@ARTICLE{1999PhRvL..83.3077E,
+@ARTICLE{EWL,
    author = {{Eisert}, J. and {Wilkens}, M. and {Lewenstein}, M.},
     title = "{Quantum Games and Quantum Strategies}",
   journal = {Physical Review Letters},

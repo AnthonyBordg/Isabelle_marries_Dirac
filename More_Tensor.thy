@@ -132,31 +132,31 @@ lemma mat_tensor_prod_2_col [simp]:
 proof
   show f1:"dim_vec (Matrix.col (v \<Otimes> w) 0) = dim_vec (Matrix.col v 0 \<otimes> Matrix.col w 0)"
     using assms vec_tensor_prod_2_bis
-    by (smt Matrix.col_def dim_row_tensor_mat dim_vec mult_2 numeral_Bit0 power_one_right state_def state_to_state_qbit)
+    by (smt Tensor.mat_of_cols_list_def dim_col dim_row_mat(1) dim_vec mat_tensor_prod_2_prelim state.state_to_state_qbit)
 next
   show "\<And>i. i<dim_vec (Matrix.col v 0 \<otimes> Matrix.col w 0) \<Longrightarrow> Matrix.col (v \<Otimes> w) 0 $ i = (Matrix.col v 0 \<otimes> Matrix.col w 0) $ i"
   proof -
     have "dim_vec (Matrix.col v 0 \<otimes> Matrix.col w 0) = 4"
-      by (metis (no_types, lifting) assms(1) assms(2) dim_vec state_to_state_qbit vec_tensor_prod_2_bis)
+      by (metis (no_types, lifting) assms(1) assms(2) dim_vec state.state_to_state_qbit vec_tensor_prod_2_bis)
     moreover have "(Matrix.col v 0 \<otimes> Matrix.col w 0) $ 0 = v $$ (0,0) * w $$ (0,0)"
-      using assms vec_tensor_prod_2 state_to_state_qbit col_index_of_mat_col
+      using assms vec_tensor_prod_2 state.state_to_state_qbit col_index_of_mat_col
       by (smt nth_Cons_0 power_one_right state_def vec_of_list_index zero_less_numeral)
     moreover have "\<dots> = Matrix.col (v \<Otimes> w) 0 $ 0"
       using assms by simp
     moreover have "(Matrix.col v 0 \<otimes> Matrix.col w 0) $ 1 = v $$ (0,0) * w $$ (1,0)"
-      using assms vec_tensor_prod_2 state_to_state_qbit col_index_of_mat_col 
+      using assms vec_tensor_prod_2 state.state_to_state_qbit col_index_of_mat_col 
       by (smt One_nat_def Suc_1 lessI nth_Cons_0 power_one_right state_def vec_index_vCons_Suc 
 vec_of_list_Cons vec_of_list_index zero_less_numeral)
     moreover have "\<dots> = Matrix.col (v \<Otimes> w) 0 $ 1"
       using assms by simp
     moreover have "(Matrix.col v 0 \<otimes> Matrix.col w 0) $ 2 = v $$ (1,0) * w $$ (0,0)"
-      using assms vec_tensor_prod_2 state_to_state_qbit col_index_of_mat_col
+      using assms vec_tensor_prod_2 state.state_to_state_qbit col_index_of_mat_col
       by (smt One_nat_def Suc_1 lessI nth_Cons_0 power_one_right state_def vec_index_vCons_Suc 
 vec_of_list_Cons vec_of_list_index zero_less_numeral)
     moreover have "\<dots> = Matrix.col (v \<Otimes> w) 0 $ 2"
       using assms by simp
     moreover have "(Matrix.col v 0 \<otimes> Matrix.col w 0) $ 3 = v $$ (1,0) * w $$ (1,0)"
-      using assms vec_tensor_prod_2 state_to_state_qbit col_index_of_mat_col numeral_3_eq_3
+      using assms vec_tensor_prod_2 state.state_to_state_qbit col_index_of_mat_col numeral_3_eq_3
   by (smt One_nat_def Suc_1 lessI nth_Cons_0 power_one_right state_def vec_index_vCons_Suc 
 vec_of_list_Cons vec_of_list_index zero_less_numeral)
     moreover have "\<dots> = Matrix.col (v \<Otimes> w) 0 $ 3"
@@ -196,7 +196,7 @@ proof
                                       if i = 3 then Matrix.col v 0 $ 1 * Matrix.col w 0 $ 1 else
                                           if i = 1 then Matrix.col v 0 $ 0 * Matrix.col w 0 $ 1 else 
                                             Matrix.col v 0 $ 1 * Matrix.col w 0 $ 0) $ i"
-      using vec_tensor_prod_2_bis assms state_to_state_qbit by presburger 
+      using vec_tensor_prod_2_bis assms state.state_to_state_qbit by presburger 
     thus "(v \<Otimes> w) $$ (i, j) = u $$ (i,j)"
       using u_def a1 a2 assms state_def by simp
   qed
@@ -210,6 +210,12 @@ lemma mat_tensor_prod_2_bis:
                                             if i = 1 then v $$ (0,0) * w $$ (1,0) else 
                                               v $$ (1,0) * w $$ (0,0))\<rangle>"
   using assms ket_vec_def mat_tensor_prod_2 by(simp add: mat_eq_iff)
+
+lemma eq_ket_vec:
+  fixes u v:: "complex Matrix.vec"
+  assumes "u = v"
+  shows "|u\<rangle> = |v\<rangle>"
+  using assms by simp
 
 lemma mat_tensor_ket_vec:
   assumes "state 1 v" and "state 1 w"
@@ -238,7 +244,7 @@ proof -
     apply (rule eq_vecI)
     using col_index_of_mat_col assms state_def apply auto[2].
   finally show ?thesis
-    using vec_tensor_prod_2_bis assms state_to_state_qbit by presburger
+    using vec_tensor_prod_2_bis assms state.state_to_state_qbit by presburger
 qed
 
 text \<open>The property of being a state (resp. a gate) is preserved by tensor product.\<close>
@@ -248,7 +254,7 @@ lemma tensor_state2 [simp]:
   shows "state 2 (u \<Otimes> v)"
 proof
   show "dim_col (u \<Otimes> v) = 1"
-    using assms dim_col_tensor_mat state.dim_col by presburger
+    using assms dim_col_tensor_mat state.is_column by presburger
   show "dim_row (u \<Otimes> v) = 2\<^sup>2" 
     using assms dim_row_tensor_mat state.dim_row
     by (metis (mono_tags, lifting) power2_eq_square power_one_right)
@@ -334,7 +340,7 @@ lemma tensor_state [simp]:
   shows "state (m + n) (u \<Otimes> v)"
 proof
   show c1:"dim_col (u \<Otimes> v) = 1"
-    using assms dim_col_tensor_mat state.dim_col by presburger
+    using assms dim_col_tensor_mat state.is_column by presburger
   show c2:"dim_row (u \<Otimes> v) = 2^(m + n)" 
     using assms dim_row_tensor_mat state.dim_row by (metis power_add)
   have "(\<Sum>i<2^(m + n). (cmod (u $$ (i div 2 ^ n, 0) * v $$ (i mod 2 ^ n, 0)))\<^sup>2) = 
@@ -406,18 +412,18 @@ cnj(G1 $$ (k div 2^n, i div 2^n)) * cnj(G2 $$ (k mod 2^n, i mod 2^n))"
 "\<lambda>x. cnj(G2 $$ (x, i mod 2^n)) * G2 $$ (x, j mod 2^n)" "2^m"]
     by (metis (no_types, lifting) power_add semigroup_mult_class.mult.assoc sum.cong)
   also have "((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i, j) = (\<Sum>k<2^(m+n).cnj((G1 \<Otimes> G2) $$ (k,i)) * ((G1 \<Otimes> G2) $$ (k,j)))"
-    using assms index_matrix_prod[of "i" "(G1 \<Otimes> G2)\<^sup>\<dagger>" "j" "(G1 \<Otimes> G2)"] hermite_cnj_def 
+    using assms index_matrix_prod[of "i" "(G1 \<Otimes> G2)\<^sup>\<dagger>" "j" "(G1 \<Otimes> G2)"] dagger_def 
 dim_row_of_tensor_gate tensor_gate_sqr_mat by simp
   ultimately have "((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i,j) = 
               (\<Sum>k1<2^m. cnj(G1 $$ (k1, i div 2^n)) * G1 $$ (k1, j div 2^n)) * 
               (\<Sum>k2<2^n. cnj(G2 $$ (k2, i mod 2^n)) * G2 $$ (k2, j mod 2^n))" by simp
   moreover have "(\<Sum>k<2^m. cnj(G1 $$ (k, i div 2^n))* G1 $$ (k, j div 2^n)) = (G1\<^sup>\<dagger> * G1) $$ (i div 2^n, j div 2^n)"
-      using assms gate_def hermite_cnj_def index_matrix_prod[of "i div 2^n" "G1\<^sup>\<dagger>" "j div 2^n" "G1"]
+      using assms gate_def dagger_def index_matrix_prod[of "i div 2^n" "G1\<^sup>\<dagger>" "j div 2^n" "G1"]
       by (simp add: less_mult_imp_div_less power_add)
   moreover have "\<dots> = 1\<^sub>m(2^m) $$ (i div 2^n, j div 2^n)"
     using assms(1,2) gate_def unitary_def by simp
   moreover have "(\<Sum>k<2^n. cnj(G2 $$ (k, i mod 2^n))* G2 $$ (k, j mod 2^n)) = (G2\<^sup>\<dagger> * G2) $$ (i mod 2^n, j mod 2^n)"
-    using assms(1,2) gate_def hermite_cnj_def index_matrix_prod[of "i mod 2^n" "G2\<^sup>\<dagger>" "j mod 2^n" "G2"] by simp
+    using assms(1,2) gate_def dagger_def index_matrix_prod[of "i mod 2^n" "G2\<^sup>\<dagger>" "j mod 2^n" "G2"] by simp
   moreover have "\<dots> = 1\<^sub>m(2^n) $$ (i mod 2^n, j mod 2^n)"
     using assms(1,2) gate_def unitary_def by simp
   ultimately have "((G1 \<Otimes> G2)\<^sup>\<dagger> * (G1 \<Otimes> G2)) $$ (i,j) = 1\<^sub>m (2^m) $$ (i div 2^n, j div 2^n) * 1\<^sub>m (2^n) $$ (i mod 2^n, j mod 2^n)"
@@ -461,18 +467,18 @@ cnj(G1 $$ (j div 2^n, k div 2^n)) * cnj(G2 $$ (j mod 2^n, k mod 2^n))"
                         "\<lambda>k. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k))" "2^m"]
     by (metis (no_types, lifting) power_add semigroup_mult_class.mult.assoc sum.cong)
   also have "((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i, j) = (\<Sum>k<2^(m+n). (G1 \<Otimes> G2) $$ (i,k) * cnj((G1 \<Otimes> G2) $$ (j,k)))"
-    using assms index_matrix_prod[of "i" "(G1 \<Otimes> G2)" "j" "(G1 \<Otimes> G2)\<^sup>\<dagger>"] hermite_cnj_def
+    using assms index_matrix_prod[of "i" "(G1 \<Otimes> G2)" "j" "(G1 \<Otimes> G2)\<^sup>\<dagger>"] dagger_def
 dim_row_of_tensor_gate tensor_gate_sqr_mat by simp
   ultimately have "((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i,j) = 
              (\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) * 
              (\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k)))" by simp
   moreover have "(\<Sum>k<2^m. G1 $$ (i div 2^n, k) * cnj(G1 $$ (j div 2^n, k))) = (G1 * (G1\<^sup>\<dagger>)) $$ (i div 2^n, j div 2^n)"
-    using assms gate_def hermite_cnj_def index_matrix_prod[of "i div 2^n" "G1" "j div 2^n" "G1\<^sup>\<dagger>"]
+    using assms gate_def dagger_def index_matrix_prod[of "i div 2^n" "G1" "j div 2^n" "G1\<^sup>\<dagger>"]
     by (simp add: less_mult_imp_div_less power_add)
   moreover have "\<dots> = 1\<^sub>m(2^m) $$ (i div 2^n, j div 2^n)"
     using assms(1,2) gate_def unitary_def by simp
   moreover have "(\<Sum>k<2^n. G2 $$ (i mod 2^n, k) * cnj(G2 $$ (j mod 2^n, k))) = (G2 * (G2\<^sup>\<dagger>)) $$ (i mod 2^n, j mod 2^n)"
-    using assms(1,2) gate_def hermite_cnj_def index_matrix_prod[of "i mod 2^n" "G2" "j mod 2^n" "G2\<^sup>\<dagger>"] by simp
+    using assms(1,2) gate_def dagger_def index_matrix_prod[of "i mod 2^n" "G2" "j mod 2^n" "G2\<^sup>\<dagger>"] by simp
   moreover have "\<dots> = 1\<^sub>m(2^n) $$ (i mod 2^n, j mod 2^n)"
     using assms(1,2) gate_def unitary_def by simp
   ultimately have "((G1 \<Otimes> G2) * ((G1 \<Otimes> G2)\<^sup>\<dagger>)) $$ (i,j) = 1\<^sub>m(2^m) $$ (i div 2^n, j div 2^n) * 1\<^sub>m(2^n) $$ (i mod 2^n, j mod 2^n)"

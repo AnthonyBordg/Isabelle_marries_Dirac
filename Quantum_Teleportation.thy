@@ -96,7 +96,7 @@ proof
   then show "dim_row (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>) = dim_row v"
     using assms(1) alice_step_1_state state.dim_row mat_of_cols_list_def by fastforce
   show "dim_col (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>) = dim_col v"
-    using assms(1) alice_step_1_state state.dim_col asm mat_of_cols_list_def by fastforce
+    using assms(1) alice_step_1_state state.is_column asm mat_of_cols_list_def by fastforce
   show "\<And>i j. i < dim_row v \<Longrightarrow> j < dim_col v \<Longrightarrow> (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>) $$ (i,j) = v $$ (i,j)"
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
@@ -121,7 +121,7 @@ proof
   then show "dim_row ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) = dim_row v"
     using assms(1) alice_step_2_state state.dim_row mat_of_cols_list_def by fastforce
   show "dim_col ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) = dim_col v"
-    using assms(1) alice_step_2_state state.dim_col asm mat_of_cols_list_def by fastforce
+    using assms(1) alice_step_2_state state.is_column asm mat_of_cols_list_def by fastforce
   show "\<And>i j. i<dim_row v \<Longrightarrow> j<dim_col v \<Longrightarrow> ((CNOT \<Otimes> Id 1) * (\<phi> \<Otimes> |\<beta>\<^sub>0\<^sub>0\<rangle>)) $$ (i,j) = v $$ (i,j)"
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
@@ -233,7 +233,7 @@ proof
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
     then have "i \<in> {0..<8} \<and> j = 0"
-      using asm set_8 mat_of_cols_list_def by auto
+      using asm set_8_atLeast0 mat_of_cols_list_def by auto
     then show "post_meas0 3 (alice \<phi>) 0 $$ (i, j) = v $$ (i, j)"
       using post_meas0_def assms asm mat_of_cols_list_def ket_vec_def
       apply (auto simp add: prob_index_0_alice)
@@ -254,7 +254,7 @@ proof
   proof-
     fix i j assume "i < dim_row v" and "j < dim_col v"
     then have "i \<in> {0..<8} \<and> j = 0"
-      using asm set_8 mat_of_cols_list_def by auto
+      using asm set_8_atLeast0 mat_of_cols_list_def by auto
     then show "post_meas1 3 (alice \<phi>) 0 $$ (i,j) = v $$ (i,j)"
       using post_meas1_def assms asm mat_of_cols_list_def ket_vec_def
       apply (auto simp add: prob_index_0_alice)

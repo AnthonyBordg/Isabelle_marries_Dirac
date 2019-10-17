@@ -154,7 +154,7 @@ proof
   then have "i < 4" and "j < 4" by auto
   thus "U\<^sub>f $$ (i,j) = V\<^sub>f $$ (i,j)"
     by (smt deutsch_transform_alt_rep_coeff deutsch_transform_alt_rep_coeff_is_zero deutsch_transform_coeff
- deutsch_transform_coeff_is_zero set_four)
+ deutsch_transform_coeff_is_zero set_4_disj)
 qed
 
 text \<open>@{text U\<^sub>f} is a gate.\<close>
@@ -168,7 +168,7 @@ proof
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
   thus "U\<^sub>f\<^sup>t $$ (i, j) = U\<^sub>f $$ (i, j)"
     apply (auto simp add: transpose_mat_def)
-    by (metis deutsch_transform_coeff(1-4) deutsch_transform_coeff_is_zero set_four)
+    by (metis deutsch_transform_coeff(1-4) deutsch_transform_coeff_is_zero set_4_disj)
 qed
 
 lemma (in deutsch) adjoint_of_deutsch_transform: 
@@ -179,9 +179,9 @@ proof
   fix i j:: nat
   assume "i < dim_row U\<^sub>f" and "j < dim_col U\<^sub>f"
   thus "U\<^sub>f\<^sup>\<dagger> $$ (i, j) = U\<^sub>f $$ (i, j)"
-    apply (auto simp add: hermite_cnj_def)
+    apply (auto simp add: dagger_def)
     by (metis complex_cnj_of_nat complex_cnj_zero deutsch_transform_coeff 
-deutsch_transform_coeff_is_zero set_four)
+deutsch_transform_coeff_is_zero set_4_disj)
 qed
 
 lemma (in deutsch) deutsch_transform_is_gate:
@@ -326,7 +326,7 @@ next
     by (simp add: Tensor.mat_of_cols_list_def)
 next
   show "\<parallel>Matrix.col \<psi>\<^sub>1 0\<parallel> = 1"
-    using H_on_ket_one_is_state H_on_ket_zero_is_state state.length tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
+    using H_on_ket_one_is_state H_on_ket_zero_is_state state.is_normal tensor_state2 \<psi>\<^sub>0_to_\<psi>\<^sub>1
     H_on_ket_one H_on_ket_zero by force
 qed
 
@@ -527,7 +527,7 @@ lemma (in deutsch) sum_mod_2_cases:
   using f_cases is_balanced_sum_mod_2 is_const_sum_mod_2 by auto 
 
 lemma (in deutsch) deutsch_algo_eval_is_sum_mod_2:
-  shows "deutsch_algo_eval = (f(0) + f(1)) mod 2"
+  shows "deutsch_algo_eval = (f 0 + f 1) mod 2"
   using deutsch_algo_eval_def f_cases is_const_sum_mod_2 is_balanced_sum_mod_2 
 prob1_deutsch_algo_const prob1_deutsch_algo_balanced by auto
 
