@@ -1366,7 +1366,7 @@ next
   show "unitary (fSWAP k t)" using SWAP_front_unitary assms by auto
 qed
 
-lemma SWAP_front_hermite_cnj_dim [simp]:
+lemma SWAP_front_dagger_dim [simp]:
   assumes "k\<ge>1"
   shows "dim_row (fSWAP k t)\<^sup>\<dagger> = 2^(k+t)"
   and "dim_col (fSWAP k t)\<^sup>\<dagger> = 2^(k+t)" 
@@ -1613,9 +1613,9 @@ proof-
   have "(fSWAP k t)\<^sup>\<dagger> * ((fSWAP k t) * A) = (fSWAP k t)\<^sup>\<dagger> * B" using assms arg_cong by auto
   then have "((fSWAP k t)\<^sup>\<dagger> * (fSWAP k t)) * A = (fSWAP k t)\<^sup>\<dagger> * B" 
     using assoc_mult_mat[of "(fSWAP k t)\<^sup>\<dagger>" "2^(k+t)" "2^(k+t)" "(fSWAP k t)" "2^(k+t)" A 1] assms 
-    by (metis SWAP_front_hermite_cnj_dim(1) carrier_matI dim_col_of_dagger dim_row_of_dagger index_mult_mat(2))
+    by (metis SWAP_front_dagger_dim(1) carrier_matI dim_col_of_dagger dim_row_of_dagger index_mult_mat(2))
   then have "(1\<^sub>m (2^(k+t))) * A = (fSWAP k t)\<^sup>\<dagger> * B" 
-    using assms gate.unitary unitary_def SWAP_front_hermite_cnj_dim SWAP_front_gate 
+    using assms gate.unitary unitary_def SWAP_front_dagger_dim SWAP_front_gate 
     by (metis dim_row_of_dagger)
   then show "(fSWAP k t)\<^sup>\<dagger> * B = A" by (simp add: assms(3))
 qed
@@ -1716,7 +1716,7 @@ proof-
     by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse 
         semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
   ultimately show "dim_row (CR_on_all c k m) = 2^m"
-    using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
+    using Id_def[of "c-1"] Id_def[of 1] SWAP_front_dagger_dim[of "k-c" "m-k"] assms by auto
 next
   have "dim_col (CR_on_all c k m) = dim_col (Id (c-1)) * dim_col (Id 1 \<Otimes> (fSWAP (k-c) (m-k)))"
     using CR_on_all_def by auto
@@ -1724,7 +1724,7 @@ next
     by (metis (no_types, lifting) One_nat_def Suc_le_eq aux_calculation(1) le_add_diff_inverse 
         semigroup_mult_class.mult.assoc trans_less_add1 zero_less_diff)
   ultimately show "dim_col (CR_on_all c k m) = 2^m"
-    using Id_def[of "c-1"] Id_def[of 1] SWAP_front_hermite_cnj_dim[of "k-c" "m-k"] assms by auto
+    using Id_def[of "c-1"] Id_def[of 1] SWAP_front_dagger_dim[of "k-c" "m-k"] assms by auto
 qed
 
 lemma Id_tensor_SWAP_front_is_gate:
