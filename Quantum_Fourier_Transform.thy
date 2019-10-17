@@ -844,7 +844,7 @@ definition qr :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Ri
               else (exp (complex_of_real (2*pi)*\<i>*(bf (s-1) (t-1) m jd)))*1/sqrt(2)))"
 
 lemma transpose_of_controlled_phase_shift:
-  shows "(CR k)\<^sup>t = (CR k)" using controlled_phase_shift_def hermite_cnj_def by auto
+  shows "(CR k)\<^sup>t = (CR k)" using controlled_phase_shift_def dagger_def by auto
 
 lemma adjoint_of_controlled_phase_shift: 
   fixes k
@@ -887,7 +887,7 @@ proof
     qed
   qed
   ultimately show "(CR k)\<^sup>\<dagger> $$ (i, j) = CR_adjoint $$ (i, j)"
-    apply (auto simp add: hermite_cnj_def)
+    apply (auto simp add: dagger_def)
     apply (auto simp add: controlled_phase_shift_def CR_adjoint_def).
 next
   show "dim_row (CR k)\<^sup>\<dagger> = dim_row CR_adjoint" using controlled_phase_shift_def CR_adjoint_def by simp
@@ -922,8 +922,8 @@ next
          apply (auto simp: scalar_prod_def controlled_phase_shift_def).
     qed
     then show ?thesis 
-      by (metis cpx_mat_cnj_cnj cpx_mat_cnj_id cpx_mat_cnj_prod hermite_cnj_dim_col index_transpose_mat(2) transpose_cnj 
-          transpose_of_controlled_phase_shift unitary_def)
+      by (metis cnj_transpose_is_dagger dim_col_of_dagger index_transpose_mat(2) transpose_cnj_is_dagger 
+          transpose_of_controlled_phase_shift transpose_of_prod transpose_one unitary_def)
   qed
 qed
 
@@ -1012,7 +1012,7 @@ proof
     using qr_def ket_vec_def f0 by auto
   moreover have "i\<in>{0,1,2,3}" using f0 by auto
   ultimately show "((CR (r-s+1)) * ((qr s (r-1) m jd) \<Otimes> zero)) $$ (i,j) = ((qr s r m jd) \<Otimes> zero) $$ (i,j)" 
-    using f0 ket_vec_def qr_def by (smt set_four)
+    using f0 ket_vec_def qr_def by (smt index_sl_four)
 next
   show "dim_row ((CR (r-s+1)) * ((qr s (r-1) m jd) \<Otimes> zero)) = dim_row ((qr s r m jd) \<Otimes> zero)" 
     by (simp add: controlled_phase_shift_def qr_def)
@@ -1027,7 +1027,7 @@ lemma app_controlled_phase_shift_one:
 proof
   fix i j::nat
   assume "i < Matrix.dim_row ((qr s r m jd) \<Otimes> one)" and "j < Matrix.dim_col ((qr s r m jd) \<Otimes> one)" 
-  then have f0: "i<4 \<and> j=0" using ket_vec_def qr_def  by auto
+  then have f0: "i<4 \<and> j=0" using ket_vec_def qr_def by auto
   then have "((CR (r-s+1)) * ((qr s (r-1) m jd) \<Otimes> one)) $$ (i,j) 
            = (\<Sum>k\<in>{0,1,2,3}. ((CR (r-s+1)) $$ (i,k)) * (((qr s (r-1) m jd) \<Otimes> one) $$ (k,j)))" 
     using f0 ket_vec_def qr_def set_4 atLeast0LessThan controlled_phase_shift_def by auto
@@ -1062,7 +1062,7 @@ proof
     using qr_def ket_vec_def f0 by auto
   moreover have "i\<in>{0,1,2,3}" using f0 by auto
   ultimately show "((CR (r-s+1)) * ((qr s (r-1) m jd) \<Otimes> one)) $$ (i,j) = ((qr s r m jd) \<Otimes> one) $$ (i,j)" 
-    using f0 ket_vec_def qr_def by (smt set_four)
+    using f0 ket_vec_def qr_def by (smt index_sl_four)
 next
   show "dim_row ((CR (r-s+1)) * ((qr s (r-1) m jd) \<Otimes> one)) = dim_row ((qr s r m jd) \<Otimes> one)" 
     by (simp add: controlled_phase_shift_def ket_vec_def qr_def)
@@ -1110,7 +1110,7 @@ next
   assume "i < dim_row SWAP" and "j < dim_col SWAP"
   then have "i \<in> {0,1,2,3}" and "j \<in> {0,1,2,3}" by auto
   thus "SWAP\<^sup>\<dagger> $$ (i, j) = SWAP $$ (i, j)" 
-    using hermite_cnj_def by auto
+    using dagger_def by auto
 qed
 
 lemma SWAP_gate:
@@ -1331,7 +1331,7 @@ proof-
       have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = ((fSWAP k (t+1)) * (SWAP_all (k-1) t))\<^sup>\<dagger> * ((fSWAP k (t+1)) * (SWAP_all (k-1) t))"
         using Suc_le_D assms a0 by fastforce
       then have "(fSWAP (Suc k) t)\<^sup>\<dagger> * (fSWAP (Suc k) t) = ((SWAP_all (k-1) t)\<^sup>\<dagger> * ((fSWAP k (t+1))\<^sup>\<dagger>)) * ((fSWAP k (t+1)) * (SWAP_all (k-1) t))"
-        using a0 cpx_mat_hermite_cnj_prod[of "fSWAP k (t+1)" "(SWAP_all (k-1) t)"] by simp
+        using a0 dagger_of_prod[of "fSWAP k (t+1)" "(SWAP_all (k-1) t)"] by simp
       moreover have "(SWAP_all (k-1) t)\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
       moreover have "(fSWAP k (t+1))\<^sup>\<dagger> \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
       moreover have "((fSWAP k (t+1)) * (SWAP_all (k-1) t)) \<in> carrier_mat (2^(k+t+1)) (2^(k+t+1))" using a0 by auto
@@ -1351,8 +1351,8 @@ proof-
         by (metis SWAP_all_is_gate gate.unitary index_mult_mat(3) unitary_def)
     qed
   qed
-  then show ?thesis using SWAP_front_dim assms
-    by (metis carrier_matI hermite_cnj_dim_col hermite_cnj_dim_row mat_mult_left_right_inverse unitary_def)
+  then show ?thesis using SWAP_front_dim assms cnj_transpose_is_dagger 
+    by (metis carrier_matI dim_col_of_dagger dim_row_of_dagger mat_mult_left_right_inverse unitary_def)
 qed
 
 lemma SWAP_front_gate: 
@@ -1613,10 +1613,10 @@ proof-
   have "(fSWAP k t)\<^sup>\<dagger> * ((fSWAP k t) * A) = (fSWAP k t)\<^sup>\<dagger> * B" using assms arg_cong by auto
   then have "((fSWAP k t)\<^sup>\<dagger> * (fSWAP k t)) * A = (fSWAP k t)\<^sup>\<dagger> * B" 
     using assoc_mult_mat[of "(fSWAP k t)\<^sup>\<dagger>" "2^(k+t)" "2^(k+t)" "(fSWAP k t)" "2^(k+t)" A 1] assms 
-    by (metis SWAP_front_hermite_cnj_dim(1) carrier_matI hermite_cnj_dim_col hermite_cnj_dim_row index_mult_mat(2))
+    by (metis SWAP_front_hermite_cnj_dim(1) carrier_matI dim_col_of_dagger dim_row_of_dagger index_mult_mat(2))
   then have "(1\<^sub>m (2^(k+t))) * A = (fSWAP k t)\<^sup>\<dagger> * B" 
     using assms gate.unitary unitary_def SWAP_front_hermite_cnj_dim SWAP_front_gate 
-    by (metis hermite_cnj_dim_row)
+    by (metis dim_row_of_dagger)
   then show "(fSWAP k t)\<^sup>\<dagger> * B = A" by (simp add: assms(3))
 qed
 
@@ -1759,7 +1759,7 @@ next
 next
   show "unitary ((fSWAP (k-c) (m-k))\<^sup>\<dagger>)"
     using assms SWAP_front_unitary
-    by (metis cpx_mat_hermite_cnj_prod  hermite_cnj_dim_col hermite_cnj_dim_row hermite_cnj_of_id_is_id unitary_def)
+    by (metis dagger_of_prod dim_col_of_dagger dim_row_of_dagger dagger_of_id_is_id unitary_def)
 qed
 
 lemma Id_tensor_SWAP_front_cnj_is_gate:
@@ -1813,8 +1813,8 @@ next
     qed
     moreover have "((CR_on_all c k m) * ((CR_on_all c k m)\<^sup>\<dagger>)) = 1\<^sub>m (dim_col (CR_on_all c k m))" 
       using calculation assms
-      by (metis CR_on_all_dim(1) CR_on_all_dim(2) carrier_matI hermite_cnj_dim_col hermite_cnj_dim_row mat_mult_left_right_inverse)
-    ultimately show ?thesis by (metis hermite_cnj_dim_col index_mult_mat(3) unitary_def)
+      by (metis CR_on_all_dim(1) CR_on_all_dim(2) carrier_matI dim_col_of_dagger dim_row_of_dagger mat_mult_left_right_inverse)
+    ultimately show ?thesis by (metis dim_col_of_dagger index_mult_mat(3) unitary_def)
   qed
 qed
 
