@@ -11,17 +11,21 @@ begin
 
 section \<open>Basic Set-Theoretic Results\<close>
 
-lemma set_2 [simp]: "{0..<2::nat} = {0,1}" by auto
+lemma set_2_atLeast0 [simp]: "{0..<2::nat} = {0,1}" by auto
 
-lemma set_4 [simp]:"{0..<4::nat} = {0,1,2,3}" by auto
+lemma set_2: "{..<2::nat} = {0,1}" by auto
 
-lemma set_four [simp]: 
+lemma set_4_atLeast0 [simp]:"{0..<4::nat} = {0,1,2,3}" by auto
+
+lemma set_4: "{..<4::nat} = {0,1,2,3}" by auto
+
+lemma set_4_disj [simp]: 
   fixes i:: nat
   assumes "i < 4"
   shows "i = 0 \<or> i = 1 \<or> i = 2 \<or> i = 3" 
   using assms by auto
 
-lemma set_8 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
+lemma set_8_atLeast0 [simp]: "{0..<8::nat} = {0,1,2,3,4,5,6,7}" by auto
 
 lemma index_is_2 [simp]: "\<forall>i::nat. i \<noteq> Suc 0 \<longrightarrow> i \<noteq> 3 \<longrightarrow> 0 < i \<longrightarrow> i < 4 \<longrightarrow> i = 2" by simp
 
@@ -101,6 +105,18 @@ lemma [simp]:
   shows "2 * (cmod (1 / complex_of_real (sqrt 2)))\<^sup>2 = 1" 
   using cmod_def by (simp add: power_divide)
 
+lemma two_div_two [simp]: 
+  shows "2 div Suc (Suc 0) = 1" by simp
+
+lemma two_mod_two [simp]: 
+  shows "2 mod Suc (Suc 0) = 0" by (simp add: numeral_2_eq_2)
+
+lemma three_div_two [simp]: 
+  shows "3 div Suc (Suc 0) = 1" by (simp add: numeral_3_eq_3)
+
+lemma three_mod_two [simp]: 
+  shows "3 mod Suc (Suc 0) = 1" by (simp add: mod_Suc numeral_3_eq_3)
+
 
 section \<open>Basic Results on Matrices\<close>
 
@@ -128,5 +144,88 @@ next
   then show ?case by simp
 qed
 
+
+section \<open>Basic Results Involving the Exponential Function.\<close>
+
+lemma exp_of_real_cnj:
+  fixes x ::real
+  shows "cnj (exp (\<i> * x)) = exp (-(\<i> * x))"
+proof
+  show "Re (cnj (exp (\<i> * x))) = Re (exp (-(\<i> * x)))"
+    using Re_exp by simp
+  show "Im (cnj (exp (\<i> * x))) = Im (exp (-(\<i> * x)))"
+    using Im_exp by simp
+qed
+
+lemma exp_of_real_cnj2:
+  fixes x ::real
+  shows "cnj (exp (-(\<i> * x))) = exp (\<i> * x)"
+proof
+  show "Re (cnj (exp (-(\<i> * x)))) = Re (exp (\<i> * x))"
+    using Re_exp by simp
+  show "Im (cnj (exp (-(\<i> * x)))) = Im (exp (\<i> * x))"
+    using Im_exp by simp
+qed
+
+lemma exp_of_half_pi: 
+  fixes x:: real
+  assumes "x = pi/2"
+  shows "exp (\<i> * complex_of_real x) = \<i>"
+  using assms cis_conv_exp cis_pi_half by fastforce
+
+lemma exp_of_minus_half_pi: 
+  fixes x:: real
+  assumes "x = pi/2"
+  shows "exp (-(\<i> * complex_of_real x)) = -\<i>"
+  using assms cis_conv_exp cis_minus_pi_half by fastforce
+
+lemma exp_of_real:
+  fixes x:: real
+  shows "exp (\<i> * x) = cos x + \<i> * (sin x)"
+proof
+  show "Re (exp (\<i> * x)) = Re ((cos x) + \<i> * (sin x))"
+    using Re_exp by simp
+  show "Im (exp (\<i> * x)) = Im ((cos x) + \<i> * (sin x))"
+    using Im_exp by simp
+qed
+
+lemma exp_of_real_inv:
+  fixes x:: real
+  shows "exp (-(\<i> * x)) = cos x - \<i> * (sin x)"
+proof
+  show "Re (exp (-(\<i> * x))) = Re ((cos x) - \<i> * (sin x))"
+    using Re_exp by simp
+  show "Im (exp (-(\<i> * x))) = Im ((cos x) - \<i> * (sin x))"
+    using Im_exp by simp
+qed
+
+
+section \<open>Basic Results with Trigonometric Functions.\<close>
+
+subsection \<open>Basic Inequalities\<close>
+
+lemma sin_squared_le_one:
+  fixes x:: real
+  shows "(sin x)\<^sup>2 \<le> 1"
+  using abs_sin_le_one abs_square_le_1 by blast
+
+lemma cos_squared_le_one:
+  fixes x:: real
+  shows "(cos x)\<^sup>2 \<le> 1"
+  using abs_cos_le_one abs_square_le_1 by blast
+
+subsection \<open>Basic Equalities\<close>
+
+lemma sin_of_quarter_pi:
+  fixes x:: real
+  assumes "x = pi/2"
+  shows "sin (x/2) = (sqrt 2)/2"
+  by (auto simp add: assms sin_45)
+
+lemma cos_of_quarter_pi:
+  fixes x:: real
+  assumes "x = pi/2"
+  shows "cos (x/2) = (sqrt 2)/2"
+  by (auto simp add: assms cos_45)
 
 end

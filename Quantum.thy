@@ -3,6 +3,7 @@ Authors:
 
   Anthony Bordg, University of Cambridge, apdb3@cam.ac.uk
   Yijun He, University of Cambridge, yh403@cam.ac.uk
+  with contributions by Hanna Lachnitt
 *)
 
 theory Quantum
@@ -148,6 +149,20 @@ lemma row_of_dagger [simp]:
   shows "row (M\<^sup>\<dagger>) i = vec (dim_row M) (\<lambda>j. cnj (M $$ (j,i)))"
   using assms row_def dagger_def by simp
 
+lemma dagger_of_dagger_is_id:
+  fixes M :: "complex Matrix.mat"
+  shows "(M\<^sup>\<dagger>)\<^sup>\<dagger> = M"
+proof
+  show "dim_row ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_row M" by simp
+  show "dim_col ((M\<^sup>\<dagger>)\<^sup>\<dagger>) = dim_col M" by simp
+  fix i j assume a0:"i < dim_row M" and a1:"j < dim_col M"
+  then show "(M\<^sup>\<dagger>)\<^sup>\<dagger> $$ (i,j) = M $$ (i,j)"
+  proof-
+    show ?thesis
+      using dagger_def a0 a1 by auto
+  qed
+qed
+
 lemma dagger_of_sqr_is_sqr [simp]:
   "square_mat ((M::cpx_sqr_mat)\<^sup>\<dagger>)"
 proof-
@@ -260,6 +275,28 @@ dim_row_of_cjn_prod dim_col_of_cjn_prod
   finally show "(M * N)\<^sup>\<star> $$ (i, j) = ((M\<^sup>\<star>) * (N\<^sup>\<star>)) $$ (i, j)" by simp
 qed
 
+lemma transpose_of_prod:
+  fixes M N::"complex Matrix.mat"
+  assumes "dim_col M = dim_row N"
+  shows "(M * N)\<^sup>t = N\<^sup>t * (M\<^sup>t)"
+proof
+  fix i j::nat
+  assume a0: "i < dim_row (N\<^sup>t * (M\<^sup>t))" and a1: "j < dim_col (N\<^sup>t * (M\<^sup>t))"  
+  then have "(M * N)\<^sup>t $$ (i,j) = (M * N) $$ (j,i)" by auto
+  also have "... = (\<Sum>k<dim_row M\<^sup>t.  M $$ (j,k) * N $$ (k,i))"
+    using assms a0 a1 by auto
+  also have "... = (\<Sum>k<dim_row M\<^sup>t. N $$ (k,i) * M $$ (j,k))"
+   by (simp add: semiring_normalization_rules(7))
+  also have "... = (\<Sum>k<dim_row M\<^sup>t. ((N\<^sup>t) $$ (i,k)) * (M\<^sup>t) $$ (k,j))" 
+    using assms a0 a1 by auto
+  finally show "((M * N)\<^sup>t) $$ (i,j) = (N\<^sup>t * (M\<^sup>t)) $$ (i,j)" 
+    using assms a0 a1 by auto
+next
+  show "dim_row ((M * N)\<^sup>t) = dim_row (N\<^sup>t * (M\<^sup>t))" by auto
+next
+  show "dim_col ((M * N)\<^sup>t) = dim_col (N\<^sup>t * (M\<^sup>t))" by auto
+qed
+
 lemma transpose_cnj_is_dagger [simp]:
   "(M\<^sup>t)\<^sup>\<star> = (M\<^sup>\<dagger>)"
 proof
@@ -293,6 +330,60 @@ qed
 lemma dagger_of_transpose_is_cnj [simp]:
   "(M\<^sup>t)\<^sup>\<dagger> = (M\<^sup>\<star>)"
   by (metis transpose_transpose transpose_cnj_is_dagger)
+
+lemma dagger_of_prod:
+  fixes M N::"complex Matrix.mat"
+  assumes "dim_col M = dim_row N"
+  shows "(M * N)\<^sup>\<dagger> = N\<^sup>\<dagger> * (M\<^sup>\<dagger>)"
+proof-
+  have "(M * N)\<^sup>\<dagger> = ((M * N)\<^sup>\<star>)\<^sup>t" by auto
+  also have "... = ((M\<^sup>\<star>) * (N\<^sup>\<star>))\<^sup>t" using assms cpx_mat_cnj_prod by auto
+  also have "... = (N\<^sup>\<star>)\<^sup>t * ((M\<^sup>\<star>)\<^sup>t)" using assms transpose_of_prod 
+    by (metis cnj_transpose_is_dagger dim_col_of_dagger dim_row_of_dagger index_transpose_mat(2) index_transpose_mat(3))
+  finally show "(M * N)\<^sup>\<dagger> = N\<^sup>\<dagger> * (M\<^sup>\<dagger>)" by auto
+qed
+
+text \<open>The product of two quantum gates is a quantum gate.\<close>
+
+lemma prod_of_gate_is_gate: 
+  assumes "gate n G1" and "gate n G2"
+  shows "gate n (G1 * G2)"
+proof
+  show "dim_row (G1 * G2) = 2^n" using assms by (simp add: gate_def)
+next
+  show "square_mat (G1 * G2)" 
+    using assms gate.dim_row gate.square_mat by simp
+next
+  show "unitary (G1 * G2)" 
+  proof-
+    have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col (G1 * G2))" 
+    proof-
+      have f0: "G1 \<in> carrier_mat (2^n) (2^n) \<and> G2 \<in> carrier_mat (2^n) (2^n)
+              \<and> G1\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n) \<and> G2\<^sup>\<dagger> \<in> carrier_mat (2^n) (2^n)
+              \<and> G1 * G2 \<in> carrier_mat (2^n) (2^n)" 
+        using assms gate.dim_row gate.square_mat by auto
+      have "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = ((G2\<^sup>\<dagger>) * (G1\<^sup>\<dagger>)) * (G1 * G2)" 
+        using assms dagger_of_prod gate.dim_row gate.square_mat by simp
+      also have "... = (G2\<^sup>\<dagger>) * ((G1\<^sup>\<dagger>) * (G1 * G2))" 
+        using assms f0 by auto
+      also have "... = (G2\<^sup>\<dagger>) * (((G1\<^sup>\<dagger>) * G1) * G2)" 
+        using assms f0 f0 by auto
+      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G1)) * G2)" 
+        using gate.unitary[of n G1] assms unitary_def[of G1] by simp
+      also have "... = (G2\<^sup>\<dagger>) * ((1\<^sub>m (dim_col G2)) * G2)" 
+        using assms f0 by (metis carrier_matD(2))
+      also have "... = (G2\<^sup>\<dagger>) * G2" 
+        using f0 by (metis carrier_matD(2) left_mult_one_mat)
+      finally show "((G1 * G2)\<^sup>\<dagger>) * (G1 * G2) = 1\<^sub>m (dim_col (G1 * G2))" 
+        using assms gate.unitary unitary_def by simp
+    qed
+    moreover have "(G1 * G2) * ((G1 * G2)\<^sup>\<dagger>) = 1\<^sub>m (dim_row (G1 * G2))"
+      using assms calculation
+      by (smt carrier_matI dim_col_of_dagger dim_row_of_dagger gate.dim_row gate.square_mat index_mult_mat(2) index_mult_mat(3) 
+          mat_mult_left_right_inverse square_mat.elims(2))
+    ultimately show ?thesis using unitary_def by simp
+  qed
+qed
 
 lemma left_inv_of_unitary_transpose [simp]:
   assumes "unitary U"
@@ -513,7 +604,9 @@ lemma inner_prod_csqrt [simp]:
       real_sqrt_unique sum_nonneg zero_le_power2)
 
 
-subsection "Unitary Matrices and Length-preservation"
+subsection "Unitary Matrices and Length-Preservation"
+
+subsubsection "Unitary Matrices are Length-Preserving"
 
 text \<open>The bra-vector @{text "\<langle>A * v|"} is given by @{text "\<langle>v| * A\<^sup>\<dagger>"}$\<close>
 
@@ -603,7 +696,7 @@ lemma mult_ket_vec_is_ket_vec_of_mult:
   by (metis One_nat_def col_fst_is_col dim_col dim_col_mat(1) index_mult_mat(3) ket_vec_col less_Suc0 
 mat_col_eqI)
 
-lemma unitary_squared_length_bis [simp]:
+lemma unitary_is_sq_length_preserving [simp]:
   assumes "unitary U" and "dim_vec v = dim_col U"
   shows "\<parallel>U * |v\<rangle>\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2"
 proof -
@@ -635,11 +728,6 @@ lemma state_col_ket_vec:
   shows "state 1 |col v 0\<rangle>"
   using assms by (simp add: state_def)
 
-lemma eq_ket_vec [intro]:
-  assumes "u = v"
-  shows "|u\<rangle> = |v\<rangle>"
-  using assms by simp
-
 lemma col_ket_vec_index [simp]:
   assumes "i < dim_row v"
   shows "|col v 0\<rangle> $$ (i,0) = v $$ (i,0)"
@@ -650,14 +738,14 @@ lemma col_index_of_mat_col [simp]:
   shows "col v 0 $ i = v $$ (i,0)"
   using assms by simp
 
-lemma unitary_squared_length [simp]:
+lemma unitary_is_sq_length_preserving_bis [simp]:
   assumes "unitary U" and "dim_row v = dim_col U" and "dim_col v = 1"
   shows "\<parallel>col (U * v) 0\<parallel>\<^sup>2 = \<parallel>col v 0\<parallel>\<^sup>2"
 proof -
   have "dim_vec (col v 0) = dim_col U"
     using assms(2) by simp
   then have "\<parallel>col_fst (U * |col v 0\<rangle>)\<parallel>\<^sup>2 = \<parallel>col v 0\<parallel>\<^sup>2"
-    using unitary_squared_length_bis[of "U" "col v 0"] assms(1) by simp
+    using unitary_is_sq_length_preserving[of "U" "col v 0"] assms(1) by simp
   thus ?thesis
     using assms(3) by simp
 qed
@@ -667,22 +755,25 @@ A unitary matrix is length-preserving, i.e. it acts on a vector to produce anoth
 same length. 
 \<close>
 
-lemma unitary_length [simp]:
+lemma unitary_is_length_preserving_bis [simp]:
   fixes U::"complex mat" and v::"complex mat"
   assumes "unitary U" and "dim_row v = dim_col U" and "dim_col v = 1"
   shows "\<parallel>col (U * v) 0\<parallel> = \<parallel>col v 0\<parallel>"
-  using assms unitary_squared_length
+  using assms unitary_is_sq_length_preserving_bis
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
-lemma unitary_length_bis [simp]:
+lemma unitary_is_length_preserving [simp]:
   fixes U:: "complex mat" and v:: "complex vec"
   assumes "unitary U" and "dim_vec v = dim_col U"
   shows "\<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
-  using assms unitary_squared_length_bis
+  using assms unitary_is_sq_length_preserving
   by (metis cpx_vec_length_inner_prod inner_prod_csqrt of_real_hom.injectivity)
 
+
+subsubsection "Length-Preserving Matrices are Unitary"
+
 lemma inverts_mat_sym:
-  fixes A B::"complex mat"
+  fixes A B:: "complex mat"
   assumes "inverts_mat A B" and "dim_row B = dim_col A" and "square_mat B"
   shows "inverts_mat B A"
 proof-
@@ -738,7 +829,7 @@ proof-
 qed
 
 lemma sum_of_unit_vec_length:
-  fixes i j n::nat and c::complex
+  fixes i j n:: nat and c:: complex
   assumes "i < n" and "j < n" and "i \<noteq> j"
   shows "\<parallel>unit_vec n i + c \<cdot>\<^sub>v unit_vec n j\<parallel>\<^sup>2 = 1 + cnj(c) * c"
 proof-
@@ -777,7 +868,7 @@ next
 qed
 
 lemma inner_prod_is_sesquilinear:
-  fixes u1 u2 v1 v2::"complex vec" and c1 c2 c3 c4::complex and n::nat
+  fixes u1 u2 v1 v2:: "complex vec" and c1 c2 c3 c4:: complex and n:: nat
   assumes "dim_vec u1 = n" and "dim_vec u2 = n" and "dim_vec v1 = n" and "dim_vec v2 = n"
   shows "\<langle>c1 \<cdot>\<^sub>v u1 + c2 \<cdot>\<^sub>v u2|c3 \<cdot>\<^sub>v v1 + c4 \<cdot>\<^sub>v v2\<rangle> = cnj (c1) * c3 * \<langle>u1|v1\<rangle> + cnj (c2) * c3 * \<langle>u2|v1\<rangle> + 
                                                  cnj (c1) * c4 * \<langle>u1|v2\<rangle> + cnj (c2) * c4 * \<langle>u2|v2\<rangle>"
@@ -802,12 +893,12 @@ proof-
     by (auto simp add: algebra_simps)
 qed
 
-lemma set_n:
-  fixes n::nat
-  shows "{..<n} = {0..<n}"
-  by auto
+text \<open>
+A length-preserving matrix is unitary. So, unitary matrices are exactly the length-preserving
+matrices.
+\<close>
 
-lemma unitary_length_bis_conv:
+lemma length_preserving_is_unitary:
   fixes U:: "complex mat"
   assumes "square_mat U" and "\<forall>v::complex vec. dim_vec v = dim_col U \<longrightarrow> \<parallel>U * |v\<rangle>\<parallel> = \<parallel>v\<parallel>"
   shows "unitary U"
@@ -828,7 +919,7 @@ proof-
       fix l assume a1:"l<n"
       define v::"complex vec" where d1:"v = unit_vec n l"
       have "\<parallel>col U l\<parallel>\<^sup>2 = (\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l))"
-        using c0 a1 cpx_vec_length_inner_prod inner_prod_def set_n by simp
+        using c0 a1 cpx_vec_length_inner_prod inner_prod_def lessThan_atLeast0 by simp
       moreover have "\<parallel>col U l\<parallel>\<^sup>2 = \<parallel>v\<parallel>\<^sup>2" using c0 d1 a1 assms(2) unit_vec_to_col by simp
       moreover have "\<parallel>v\<parallel>\<^sup>2 = 1" using d1 a1 cpx_vec_length_inner_prod by simp
       ultimately show "(\<Sum>k<n. cnj (U $$ (k, l)) * U $$ (k, l)) = 1" by simp
@@ -853,7 +944,7 @@ proof-
         using inner_prod_is_sesquilinear[of "col U i" "dim_row U" "col U j" "col U i" "col U j" "1" "1" "1" "1"]
         by simp
       ultimately have f2:"\<langle>col U j|col U i\<rangle> + \<langle>col U i|col U j\<rangle> = 0"
-        using c0 a0 f1 inner_prod_def set_n by auto
+        using c0 a0 f1 inner_prod_def lessThan_atLeast0 by simp
 
       have "\<parallel>v2\<parallel>\<^sup>2 = 1 + cnj \<i> * \<i>" using a0 a2 d2 sum_of_unit_vec_length by simp
       then have "\<parallel>v2\<parallel>\<^sup>2 = 2"
@@ -867,9 +958,9 @@ proof-
         using inner_prod_is_sesquilinear[of "col U i" "dim_row U" "col U j" "col U i" "col U j" "1" "\<i>" "1" "\<i>"]
         by simp
       ultimately have "\<langle>col U j|col U i\<rangle> - \<langle>col U i|col U j\<rangle> = 0"
-        using c0 a0 f1 inner_prod_def set_n by auto
+        using c0 a0 f1 inner_prod_def lessThan_atLeast0 by auto
       then show "(\<Sum>k<n. cnj (U $$ (k, i)) * U $$ (k, j)) = 0"
-        using c0 a0 f2 set_n inner_prod_def by auto
+        using c0 a0 f2 lessThan_atLeast0 inner_prod_def by auto
     qed
     ultimately show "(U\<^sup>\<dagger> * U) $$ (i, j) = 1\<^sub>m (dim_col U) $$ (i, j)"
       using c0 assms(1) a0 one_mat_def dagger_def by auto
@@ -907,7 +998,7 @@ text \<open>As a consequence we prove that columns and rows of a unitary matrix 
 lemma unitary_unit_col [simp]:
   assumes "unitary U" and "dim_col U = n" and "i < n"
   shows "\<parallel>col U i\<parallel> = 1"
-  using assms unit_vec_to_col unitary_length_bis by simp
+  using assms unit_vec_to_col unitary_is_length_preserving by simp
 
 lemma unitary_unit_row [simp]:
   assumes "unitary U" and "dim_row U = n" and "i < n"
@@ -962,7 +1053,7 @@ next
   then have "dim_col A = dim_row v"
     using a2 state.dim_row by simp
   then have "\<parallel>col (A * v) 0\<parallel> = \<parallel>col v 0\<parallel>"
-    using unitary_length assms gate_def state_def by simp
+    using unitary_is_length_preserving_bis assms gate_def state_def by simp
   thus"\<parallel>col (A * v) 0\<parallel> = 1"
     using a2 state.is_normal by simp
 qed
@@ -1218,7 +1309,7 @@ lemma bell_11_index [simp]:
   done
 
 
-subsection \<open>The Bitwise Inner Product\<close> (* contribution by Hanna Lachnitt *)
+subsection \<open>The Bitwise Inner Product\<close>
 
 definition bitwise_inner_prod:: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where 
 "bitwise_inner_prod n i j = (\<Sum>k\<in>{0..<n}. (bin_rep n i) ! k * (bin_rep n j) ! k)"
