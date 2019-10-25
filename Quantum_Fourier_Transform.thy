@@ -740,11 +740,11 @@ definition phase_shifted_qubit :: "nat ⇒ nat ⇒ nat ⇒ nat ⇒ complex Matri
 "psq s t m jd ≡ (Matrix.mat 2 1 (λ(i,j). if i=0 then (1::complex)/sqrt(2) 
               else (exp (complex_of_real (2*pi)*𝗂*(bin_frac (s-1) (t-1) m jd)))*1/sqrt(2)))"
 
-lemma transpose_of_controlled_phase_shift: (* AB: Maybe simply transpose_of_CR ? *)
+lemma transpose_of_CR: 
   shows "(CR k)⇧t = (CR k)"
   using controlled_phase_shift_def dagger_def by auto
 
-lemma dagger_of_controlled_phase_shift: (* AB: idem *)
+lemma dagger_of_CR:
   fixes k
   defines "CR_dagger ≡ Matrix.mat 4 4 (λ(i,j). if i = j then (if i = 3 then (exp (2*pi*-𝗂*1/2^k)) else 1) else 0)"
   shows "(CR k)⇧† = CR_dagger"
@@ -793,7 +793,7 @@ next
   show "dim_col (CR k)⇧† = dim_col CR_dagger" using controlled_phase_shift_def CR_dagger_def by simp
 qed
 
-lemma controlled_phase_shift_is_gate: (* AB: maybe CR_is_gate *)
+lemma controlled_CR_is_gate: 
   shows "gate 2 (CR k)"
 proof
   show "dim_row (CR k) = 2⇧2" using controlled_phase_shift_def by simp
@@ -812,7 +812,7 @@ next
       assume "i < dim_row (1⇩m (dim_col (CR k)))" and "j < dim_col (1⇩m (dim_col (CR k)))"
       then have "i ∈ {0,1,2,3}" and "j ∈ {0,1,2,3}" using controlled_phase_shift_def by auto
       moreover have "(CR k)⇧† = Matrix.mat 4 4 (λ(i,j). if i = j then (if i = 3 then (exp (2*pi*-𝗂*1/2^k)) else 1) else 0)"
-        using dagger_of_controlled_phase_shift by simp     
+        using dagger_of_CR by simp     
       moreover have "exp (- (2 * complex_of_real pi * 𝗂 / 2 ^ k)) * exp (2 * complex_of_real pi * 𝗂 / 2 ^ k) = 1" 
         by (simp add: mult_exp_exp)
       ultimately show "((CR k)⇧† * (CR k)) $$ (i,j) = 1⇩m (dim_col (CR k)) $$ (i, j)"
@@ -821,7 +821,7 @@ next
     qed
     then show ?thesis 
       by (metis cnj_transpose_is_dagger dim_col_of_dagger index_transpose_mat(2) transpose_cnj_is_dagger 
-          transpose_of_controlled_phase_shift transpose_of_prod transpose_one unitary_def)
+          transpose_of_CR transpose_of_prod transpose_one unitary_def)
   qed
 qed
 
@@ -869,7 +869,7 @@ qed
 (*E.g. for 1\sqrt(2)*(|0⟩ + e⇧2⇧π⇧i⇧0⇧.⇧j⇧1⇧j⇧2|1⟩ one has s=1 and r=2. Then, CR (2-1+2) = CR 3 is applied and 
 1\sqrt(2)*(|0⟩ + e⇧2⇧π⇧i⇧0⇧.⇧j⇧1⇧j⇧2⇧j⇧3|1⟩ is obtained.*)
 
-lemma app_controlled_phase_shift_zero: (* AB: maybe CR_on_ket_zero *)
+lemma app_CR_on_ket_zero:
   assumes "r - 1 < m" and "s ≤ r - 1" and "s ≥ 1" and "((bin_rep m jd)!(r-1)) = 0" 
   shows "(CR (r-s+1)) * ((psq s (r-1) m jd) ⨂ |zero⟩) = (psq s r m jd) ⨂ |zero⟩"
 proof
@@ -921,7 +921,7 @@ next
     using controlled_phase_shift_def phase_shifted_qubit_def by simp
 qed
 
-lemma app_controlled_phase_shift_one: (* AB CR_on_ket_one ? *)
+lemma app_CR_one: 
   assumes "r-1 < m" and "s≤r-1" and "s≥1" and "((bin_rep m jd)!(r-1)) = 1"
   shows "(CR (r-s+1)) * ((psq s (r-1) m jd) ⨂ |one⟩) = (psq s r m jd) ⨂ |one⟩"
 proof
@@ -1496,12 +1496,12 @@ proof-
     assume "v = |zero⟩" 
     then show "(CR (k-c+1) ⨂ Id (m-c-1)) * ((psq c (k-1) m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))) 
              = (psq c k m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))" 
-      using app_controlled_phase_shift_zero assms f0 by auto
+      using app_CR_on_ket_zero assms f0 by auto
   next
     assume "v = |one⟩" 
     then show "(CR (k-c+1) ⨂ Id (m-c-1)) * ((psq c (k-1) m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))) 
              = (psq c k m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))" 
-      using app_controlled_phase_shift_one assms f0 by auto
+      using app_CR_one assms f0 by auto
   qed
 qed
 
@@ -1645,7 +1645,7 @@ lemma CR_tensor_Id_is_gate:
   shows "gate (m-c+1) (CR (k-c+1) ⨂ Id (m-c-1))"
 proof-
   have "gate (m-c-1) (Id (m-c-1))" by simp
-  moreover have "gate 2 (CR (k-c+1))" using controlled_phase_shift_is_gate by simp
+  moreover have "gate 2 (CR (k-c+1))" using controlled_CR_is_gate by simp
   moreover have "(m-c-1) + 2 = m-c+1" using assms by simp
   ultimately show ?thesis by (metis add.commute tensor_gate)
 qed
