@@ -921,7 +921,7 @@ next
     using controlled_phase_shift_def phase_shifted_qubit_def by simp
 qed
 
-lemma app_CR_one: 
+lemma app_CR_on_ket_one: 
   assumes "r-1 < m" and "s≤r-1" and "s≥1" and "((bin_rep m jd)!(r-1)) = 1"
   shows "(CR (r-s+1)) * ((psq s (r-1) m jd) ⨂ |one⟩) = (psq s r m jd) ⨂ |one⟩"
 proof
@@ -1501,7 +1501,7 @@ proof-
     assume "v = |one⟩" 
     then show "(CR (k-c+1) ⨂ Id (m-c-1)) * ((psq c (k-1) m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))) 
              = (psq c k m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))" 
-      using app_CR_one assms f0 by auto
+      using app_CR_on_ket_one assms f0 by auto
   qed
 qed
 
