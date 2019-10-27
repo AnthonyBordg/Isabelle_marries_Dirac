@@ -175,12 +175,6 @@ less_nat_zero_code mult_eq_0_iff neq0_conv)
   qed
 qed
 
-lemma hermite_cnj_of_prod:
-  assumes "dim_col A = dim_row B"
-  shows "(A * B)\<^sup>\<dagger>  = (B\<^sup>\<dagger>) * (A\<^sup>\<dagger>)"
-  using assms by(metis carrier_mat_triv cpx_mat_cnj_cnj cpx_mat_cnj_prod dim_col_of_dagger 
-dim_row_of_dagger transpose_cnj_is_dagger transpose_mult)
-
 locale quantum_machine =
   fixes n:: nat and s:: "complex Matrix.vec" and U:: "complex Matrix.mat"
   assumes dim_vec [simp]: "dim_vec s = 2^n"
@@ -208,7 +202,7 @@ proof-
   moreover have f1:"( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger> * ( |w\<rangle> \<Otimes> |w\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * ( |w\<rangle> \<Otimes> |s\<rangle>)"
   proof-
     have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>)"
-      using hermite_cnj_of_prod[of "U" "|v\<rangle> \<Otimes> |s\<rangle>"] f0 d0 by (simp add: ket_vec_def)
+      using dagger_of_prod[of "U" "|v\<rangle> \<Otimes> |s\<rangle>"] f0 d0 by (simp add: ket_vec_def)
     then have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (\<langle>|v\<rangle>| \<Otimes> \<langle>|s\<rangle>| ) * (U\<^sup>\<dagger>) * U * ( |w\<rangle> \<Otimes> |s\<rangle>)" by simp
     moreover have "(U * ( |v\<rangle> \<Otimes> |s\<rangle>))\<^sup>\<dagger> * U * ( |w\<rangle> \<Otimes> |s\<rangle>) = (( |v\<rangle> \<Otimes> |v\<rangle>)\<^sup>\<dagger>) * ( |w\<rangle> \<Otimes> |w\<rangle>)"
       using assms(2-4) d0 unit_vec_def by (smt Matrix.dim_vec assoc_mult_mat carrier_mat_triv dim_row_mat(1) 
