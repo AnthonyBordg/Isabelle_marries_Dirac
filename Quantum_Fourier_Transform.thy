@@ -78,12 +78,12 @@ qed
 
 subsection ‹The Transformation of a State into a Tensor Product of Single Qubits›
 
-(* Each natural number j < 2⇧n corresponds to a unit vector which is 0 at all positions except at 
-entry j where it is 1. Let |j⟩ be |unit_vec (2^n) j⟩ where j is seen as a string j⇩1j⇩2...j⇩n of length n, 
-namely its binary representation. Clearly |j⟩ is a state. Moreover, |j⟩ might be written as a tensor 
-product of length n of the matrices |zero⟩ and |one⟩, where a factor at position i is |one⟩ if j⇩i = 1 
-and |zero⟩ otherwise. 
-For example, if j = 9 and n = 4, it holds that |1001⟩ = |one⟩ ⨂ |zero⟩ ⨂ |zero⟩ ⨂ |one⟩. 
+(* Each number j < 2⇧m corresponds to a unit vector which is 0 at all positions except at entry j. 
+Let |j⟩ be |unit_vec (2^m) j⟩ where j is simultaneously seen as a string j⇩1j⇩2...j⇩m of length m, namely 
+as a natural number strictly less then 2⇧m and its binary representation. Clearly
+|j⟩ is a state. Moreover, |j⟩ might be written as a tensor product of length n of the 
+matrices |zero⟩ and |one⟩, where a factor at position i is |one⟩ if j⇩i = 1 and |zero⟩ otherwise. 
+For example, if j = 9 and m = 4, it holds that |1001⟩ = |one⟩ ⨂ |zero⟩ ⨂ |zero⟩ ⨂ |one⟩. 
 This result is proven in this subsection.*)
 
 (* The function to_list_bound returns the part of the decomposition of j in |zero⟩ and |one⟩ matrices 
