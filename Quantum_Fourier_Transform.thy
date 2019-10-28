@@ -1,5 +1,5 @@
 (*
-Authors: 
+Author: 
   Hanna Lachnitt, TU Wien, lachnitt@student.tuwien.ac.at
 *)
 
@@ -9,6 +9,7 @@ imports
   Binary_Nat
   Basics
 begin
+
 
 section ‹The Quantum Fourier Transform›
 
@@ -77,21 +78,21 @@ qed
 
 subsection ‹The Transformation of a State into a Tensor Product of Single Qubits›
 
-(* Each number j < 2⇧m corresponds to a unit vector which is 0 at all positions except at entry j. 
-Let |j⟩ be |unit_vec (2^m) j⟩ where j is simultaneously seen as a string j⇩1j⇩2...j⇩n of length n, namely 
-its binary representation and as a natural number strictly less then 2⇧m. Clearly
-|j⟩ is a state. Moreover, |j⟩ might be written as a tensor product of length n of the 
-matrices |zero⟩ and |one⟩, where a factor at position i is |one⟩ if j⇩i = 1 and |zero⟩ otherwise. 
-For example, if j = 9 and m = 4, it holds that |1001⟩ = |one⟩ ⨂ |zero⟩ ⨂ |zero⟩ ⨂ |one⟩. 
+(* Each natural number j < 2⇧n corresponds to a unit vector which is 0 at all positions except at 
+entry j where it is 1. Let |j⟩ be |unit_vec (2^n) j⟩ where j is seen as a string j⇩1j⇩2...j⇩n of length n, 
+namely its binary representation. Clearly |j⟩ is a state. Moreover, |j⟩ might be written as a tensor 
+product of length n of the matrices |zero⟩ and |one⟩, where a factor at position i is |one⟩ if j⇩i = 1 
+and |zero⟩ otherwise. 
+For example, if j = 9 and n = 4, it holds that |1001⟩ = |one⟩ ⨂ |zero⟩ ⨂ |zero⟩ ⨂ |one⟩. 
 This result is proven in this subsection.*)
 
 (* The function to_list_bound returns the part of the decomposition of j in |zero⟩ and |one⟩ matrices 
-where s is the start position and l is the length of the partition. The result is returned as a list.
-E.g. j=9, s=2 and l=3. The binary representation of 9 is 1001 it follows that
+where s is the starting position and l is the length of the partition. The result is returned as a list.
+E.g. j=9, s=2 and l=3. The binary representation of 9 being 1001, it follows that
 to_list_bound s l j = [|zero⟩,|zero⟩,|one⟩] *)
 primrec to_list_bound :: "nat ⇒ nat ⇒ nat ⇒ nat ⇒ complex Matrix.mat list" where
-"to_list_bound s 0 m j = []" |
-"to_list_bound s (Suc l) m j = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) # (to_list_bound (s+1) l m j)"
+"to_list_bound s 0 n j = []" |
+"to_list_bound s (Suc l) n j = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) # (to_list_bound (s+1) l n j)"
 
 (* The function pow_tensor_list takes a list and the number of its elements and returns the tensor 
 product of the elements *)
@@ -100,94 +101,93 @@ fun pow_tensor_list:: "((complex Matrix.mat) list) ⇒ nat ⇒ complex Matrix.ma
   "(pr (Cons x xs) (Suc k)) = x ⨂ (pr xs k)"
 
 (* The definition to_tensor_prod declares the decomposition of a number j into a tensor product of 
-|zero⟩ and |one⟩ matrices. Parameter s is the start position, t the number of bits and m a number 
-such that j < 2⇧m. E.g. For j=j⇩1...j⇩n, s=2 and l=3, ⨂r is |j⇩2,j⇩3,j⇩4⟩ *)
+|zero⟩ and |one⟩ matrices. Parameter s is the starting position, l the number of bits and n a number 
+such that j < 2⇧n. E.g. For j=j⇩1...j⇩n, s=2 and l=3, ⨂r is |j⇩2,j⇩3,j⇩4⟩ *)
 definition to_tensor_prod:: "nat ⇒ nat ⇒ nat ⇒ nat ⇒ complex Matrix.mat" ("⨂r _ _ _ _" 75) where 
-"(⨂r s l m j) = pr (to_list_bound s l m j) l"
+"(⨂r s l n j) = pr (to_list_bound s l n j) l"
 
 lemma to_list_bound_length_1 [simp]: 
-  shows "to_list_bound s 1 m j = [(if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩)]" by simp
+  shows "to_list_bound s 1 n j = [(if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩)]" by simp
 
 lemma pow_tensor_length_1:
-  fixes X:: "complex Matrix.mat"
   shows "(pr [X] 1) = X"
-  by simp
+  by simp    
 
 lemma to_tensor_prod_length_0 [simp]:
-  shows "(⨂r s 0 j m) = (Id 0)"    
+  shows "(⨂r s 0 j n) = (Id 0)"    
   by (simp add: to_tensor_prod_def)
 
 lemma to_tensor_prod_decomp_right_zero:
-  shows "(bin_rep m j)!(s+l-1) = 0 ⟶ (⨂r s (l+1) m j) = (⨂r s l m j) ⨂ |zero⟩"
+  shows "(bin_rep n j)!(s+l-1) = 0 ⟶ (⨂r s (l+1) n j) = (⨂r s l n j) ⨂ |zero⟩"
 proof(induction l arbitrary: s)
-  show "(bin_rep m j)!(s+0-1) = 0 ⟶ (⨂r s (0+1) m j) = (⨂r s 0 m j) ⨂ |zero⟩" for s
+  show "(bin_rep n j)!(s+0-1) = 0 ⟶ (⨂r s (0+1) n j) = (⨂r s 0 n j) ⨂ |zero⟩" for s
       using to_list_bound_length_1 to_tensor_prod_def by simp
 next
   fix l s
-  assume IH: "(bin_rep m j)!(s+l-1) = 0 ⟶ (⨂r s (l+1) m j) = (⨂r s l m j) ⨂ |zero⟩" for s
-  show "(bin_rep m j)!(s+(Suc l)-1) = 0 ⟶ (⨂r s ((Suc l)+1) m j) = (⨂r s (Suc l) m j) ⨂ |zero⟩"
+  assume IH: "(bin_rep n j)!(s+l-1) = 0 ⟶ (⨂r s (l+1) n j) = (⨂r s l n j) ⨂ |zero⟩" for s
+  show "(bin_rep n j)!(s+(Suc l)-1) = 0 ⟶ (⨂r s ((Suc l)+1) n j) = (⨂r s (Suc l) n j) ⨂ |zero⟩"
   proof
-    assume a0: "(bin_rep m j)!(s+(Suc l)-1) = 0"
-    then have "(⨂r s ((Suc l)+1) m j) = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ pr ((to_list_bound (s+1) (Suc l) m j)) (Suc l)" 
+    assume a0: "(bin_rep n j)!(s+(Suc l)-1) = 0"
+    then have "(⨂r s ((Suc l)+1) n j) = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ pr ((to_list_bound (s+1) (Suc l) n j)) (Suc l)" 
       using to_tensor_prod_def by simp
-    also have "... = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) (l+1) m j)" 
+    also have "... = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) (l+1) n j)" 
       by (metis Suc_eq_plus1 to_tensor_prod_def)
-    also have "... = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) l m j) ⨂ |zero⟩"
+    also have "... = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) l n j) ⨂ |zero⟩"
       using a0 IH tensor_mat_is_assoc by simp
-    also have "... = (pr (to_list_bound s (l+1) m j) (l+1)) ⨂ |zero⟩"
+    also have "... = (pr (to_list_bound s (l+1) n j) (l+1)) ⨂ |zero⟩"
       using to_tensor_prod_def by simp
-    finally show "(⨂r s ((Suc l)+1) m j) = (⨂r s (Suc l) m j) ⨂ |zero⟩"
+    finally show "(⨂r s ((Suc l)+1) n j) = (⨂r s (Suc l) n j) ⨂ |zero⟩"
       using to_tensor_prod_def by simp
   qed
 qed
 
 lemma to_tensor_prod_decomp_right_one:
-   shows "(bin_rep m j)!(s+l-1) = 1 ⟶ (⨂r s (l+1) m j) = (⨂r s l m j) ⨂ |one⟩"
+   shows "(bin_rep n j)!(s+l-1) = 1 ⟶ (⨂r s (l+1) n j) = (⨂r s l n j) ⨂ |one⟩"
 proof(induction l arbitrary: s)
-  show "(bin_rep m j)!(s+0-1) = 1 ⟶ (⨂r s (0+1) m j) = (⨂r s 0 m j) ⨂ |one⟩" for s
+  show "(bin_rep n j)!(s+0-1) = 1 ⟶ (⨂r s (0+1) n j) = (⨂r s 0 n j) ⨂ |one⟩" for s
     using to_list_bound_length_1 to_tensor_prod_def by simp
 next
   fix l s
-  assume IH: "(bin_rep m j)!(s+l-1) = 1 ⟶ (⨂r s (l+1) m j) = (⨂r s l m j) ⨂ |one⟩" for s
-  show "(bin_rep m j)!(s+(Suc l)-1) = 1 ⟶ (⨂r s ((Suc l)+1) m j) = (⨂r s (Suc l) m j) ⨂ |one⟩"
+  assume IH: "(bin_rep n j)!(s+l-1) = 1 ⟶ (⨂r s (l+1) n j) = (⨂r s l n j) ⨂ |one⟩" for s
+  show "(bin_rep n j)!(s+(Suc l)-1) = 1 ⟶ (⨂r s ((Suc l)+1) n j) = (⨂r s (Suc l) n j) ⨂ |one⟩"
   proof 
-    assume a0: "(bin_rep m j)!(s+(Suc l)-1) = 1"
-    have "(⨂r s ((Suc l)+1) m j) = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ pr ((to_list_bound (s+1) (Suc l) m j)) (Suc l)" 
+    assume a0: "(bin_rep n j)!(s+(Suc l)-1) = 1"
+    have "(⨂r s ((Suc l)+1) n j) = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ pr ((to_list_bound (s+1) (Suc l) n j)) (Suc l)" 
       using to_tensor_prod_def by simp
-    also have "... = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) (l+1) m j)" 
+    also have "... = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) (l+1) n j)" 
       by (metis Suc_eq_plus1 to_tensor_prod_def)
-    also have "... = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) l m j) ⨂ |one⟩"
+    also have "... = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (⨂r (s+1) l n j) ⨂ |one⟩"
       using a0 IH tensor_mat_is_assoc by simp
-    also have "... = (if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (pr (to_list_bound (s+1) l m j) l) ⨂ |one⟩"
+    also have "... = (if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) ⨂ (pr (to_list_bound (s+1) l n j) l) ⨂ |one⟩"
       using to_tensor_prod_def by simp
-    also have "... = (pr (to_list_bound s (l+1) m j) (l+1)) ⨂ |one⟩" by simp
-    finally show "(⨂r s ((Suc l)+1) m j) = (⨂r s (Suc l) m j) ⨂ |one⟩"
+    also have "... = (pr (to_list_bound s (l+1) n j) (l+1)) ⨂ |one⟩" by simp
+    finally show "(⨂r s ((Suc l)+1) n j) = (⨂r s (Suc l) n j) ⨂ |one⟩"
       using to_tensor_prod_def by simp
   qed
 qed
 
 lemma pow_tensor_list_dim_col [simp]:
-  assumes "length xs = k" and "(∀x ∈ set xs. dim_col x = 1)"
-  shows "dim_col (pr xs k) = 1" 
+  assumes "length xs = l" and "(∀x ∈ set xs. dim_col x = 1)"
+  shows "dim_col (pr xs l) = 1" 
 proof-
-  have "length xs = k ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs k) = 1"
-  proof(induction k arbitrary: xs)
+  have "length xs = l ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs l) = 1"
+  proof(induction l arbitrary: xs)
     fix xs
     show "length xs = 0 ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs 0) = 1" 
       using Id_def one_mat_def by simp
   next
-    fix k xs
-    assume IH: "length xs = k ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs k) = 1" for xs
-    show "length xs = (Suc k) ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs (Suc k)) = 1"
+    fix l xs
+    assume IH: "length xs = l ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs l) = 1" for xs
+    show "length xs = (Suc l) ⟶ (∀x ∈ set xs. dim_col x = 1) ⟶ dim_col (pr xs (Suc l)) = 1"
     proof(rule impI, rule impI)
-      assume a0: "length xs = (Suc k)" and a1: "(∀x ∈ set xs. dim_col x = 1)"
+      assume a0: "length xs = (Suc l)" and a1: "(∀x ∈ set xs. dim_col x = 1)"
       then have "∃x. xs = x # tl xs" by (metis length_Suc_conv list.sel(3))
       then obtain x where f0: "xs = x # tl xs" by auto 
-      have "dim_col (pr xs (Suc k)) = dim_col (x ⨂ (pr (tl xs) k))" 
+      have "dim_col (pr xs (Suc l)) = dim_col (x ⨂ (pr (tl xs) l))" 
         using pow_tensor_list.simps f0 by metis
-      also have "... = 1 * dim_col ((pr (tl xs) k))" 
+      also have "... = 1 * dim_col ((pr (tl xs) l))" 
         using a1 f0 by (metis dim_col_tensor_mat list.set_intros(1))
-      finally show "dim_col (pr xs (Suc k)) = 1" 
+      finally show "dim_col (pr xs (Suc l)) = 1" 
         using IH a0 a1 f0 
         by (metis add_diff_cancel_left' length_tl list.distinct(1) list.set_sel(2) mult.left_neutral plus_1_eq_Suc)
     qed
@@ -196,214 +196,215 @@ proof-
 qed
 
 lemma pow_tensor_list_dim_row:
-  assumes "length xs = k" and "(∀x ∈ set xs. dim_row x = m)"
-  shows "dim_row (pr xs k) = m^k"
+  assumes "length xs = l" and "(∀x ∈ set xs. dim_row x = m)"
+  shows "dim_row (pr xs l) = m^l"
 proof-
-  have "length xs = k ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs k) = m^k"
-  proof(induction k arbitrary: xs)
+  have "length xs = l ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs l) = m^l"
+  proof(induction l arbitrary: xs)
     fix xs
     show "length xs = 0 ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs 0) = m^0" 
       using Id_def one_mat_def by simp
   next
-    fix k xs
-    assume IH: "length xs = k ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs k) = m^k" for xs
-    show "length xs = (Suc k) ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs (Suc k)) = m^(Suc k)"
+    fix l xs
+    assume IH: "length xs = l ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs l) = m^l" for xs
+    show "length xs = (Suc l) ⟶ (∀x ∈ set xs. dim_row x = m) ⟶ dim_row (pr xs (Suc l)) = m^(Suc l)"
     proof(rule impI, rule impI)
-      assume a0: "length xs = (Suc k)" and a1: "(∀x ∈ set xs. dim_row x = m)"
+      assume a0: "length xs = (Suc l)" and a1: "(∀x ∈ set xs. dim_row x = m)"
       then have "∃x. xs = x # tl xs" by (metis length_Suc_conv list.sel(3))
       then obtain x where f0: "xs = x # tl xs" by auto 
-      have "dim_row (pr xs (Suc k)) = dim_row (x ⨂ (pr (tl xs) k))" 
+      have "dim_row (pr xs (Suc l)) = dim_row (x ⨂ (pr (tl xs) l))" 
         using pow_tensor_list.simps f0 by metis
-      also have "... = m * dim_row ((pr (tl xs) k))" 
+      also have "... = m * dim_row ((pr (tl xs) l))" 
         using a1 f0 by (metis dim_row_tensor_mat list.set_intros(1))
-      also have "... = m * m^k" 
+      also have "... = m * m^l" 
         using IH a0 a1 f0 by (metis add_diff_cancel_left' length_tl list.distinct(1) list.set_sel(2) plus_1_eq_Suc)
-      finally show "dim_row (pr xs (Suc k)) = m^(Suc k)" by simp
+      finally show "dim_row (pr xs (Suc l)) = m^(Suc l)" by simp
     qed
   qed
   then show ?thesis using assms by simp
 qed
 
 lemma pow_tensor_decomp_left:
-  assumes "length xs = k"
-  shows "(pr xs k) ⨂ x = pr (xs @ [x]) (k+1)" 
+  assumes "length xs = l"
+  shows "(pr xs l) ⨂ x = pr (xs @ [x]) (l+1)" 
 proof-
-  have "length xs = k ⟶ (pr xs k) ⨂ x = pr (xs @ [x]) (k+1)" 
-  proof(induction k arbitrary: xs)
+  have "length xs = l ⟶ (pr xs l) ⨂ x = pr (xs @ [x]) (l+1)" 
+  proof(induction l arbitrary: xs)
     fix xs
-    show "length xs = 0 ⟶ (pr xs 0) ⨂ x = pr (xs @ [x]) (0+1)" using Id_left_tensor Id_def by auto
+    show "length xs = 0 ⟶ (pr xs 0) ⨂ x = pr (xs @ [x]) (0+1)" 
+      using Id_left_tensor Id_def by auto
   next
-    fix k xs
-    assume IH: "length xs = k ⟶ (pr xs k) ⨂ x = pr (xs @ [x]) (k+1)" for xs
-    show "length xs = (Suc k) ⟶ (pr xs (Suc k)) ⨂ x = pr (xs @ [x]) ((Suc k)+1)"
+    fix l xs
+    assume IH: "length xs = l ⟶ (pr xs l) ⨂ x = pr (xs @ [x]) (l+1)" for xs
+    show "length xs = (Suc l) ⟶ (pr xs (Suc l)) ⨂ x = pr (xs @ [x]) ((Suc l)+1)"
     proof
-      assume a0: "length xs = (Suc k)"
-      moreover have "xs = (y#ys) ⟶ pr (xs @ [x]) ((Suc k)+1) = (pr xs (Suc k)) ⨂ x" 
+      assume a0: "length xs = (Suc l)"
+      moreover have "xs = (y#ys) ⟶ pr (xs @ [x]) ((Suc l)+1) = (pr xs (Suc l)) ⨂ x" 
         for y::"complex Matrix.mat" and ys::"complex Matrix.mat list"
       proof
         assume a2: "xs = y#ys"
-        then have "pr (xs @ [x]) ((Suc k)+1) = y ⨂ pr (ys @ [x]) (k+1)" by simp
-        also have "... = y ⨂ ((pr ys k) ⨂ x)" using a0 a2 IH by simp
-        also have "... = (y ⨂ (pr ys k)) ⨂ x" using tensor_mat_is_assoc by simp
-        also have "... = (pr (y#ys) (Suc k)) ⨂ x" by auto
-        finally show "pr (xs@[x]) ((Suc k)+1) = (pr xs (Suc k)) ⨂ x" using a2 by simp
+        then have "pr (xs @ [x]) ((Suc l)+1) = y ⨂ pr (ys @ [x]) (l+1)" by simp
+        also have "... = y ⨂ ((pr ys l) ⨂ x)" using a0 a2 IH by simp
+        also have "... = (y ⨂ (pr ys l)) ⨂ x" using tensor_mat_is_assoc by simp
+        also have "... = (pr (y#ys) (Suc l)) ⨂ x" by auto
+        finally show "pr (xs @ [x]) ((Suc l)+1) = (pr xs (Suc l)) ⨂ x" using a2 by simp
       qed
-      ultimately show "(pr xs (Suc k)) ⨂ x = pr (xs@[x]) ((Suc k)+1)" by (metis Suc_length_conv)
+      ultimately show "(pr xs (Suc l)) ⨂ x = pr (xs @ [x]) ((Suc l)+1)" by (metis Suc_length_conv)
     qed
   qed
   then show ?thesis using assms by simp
 qed
 
 lemma pow_tensor_decomp_right:
-  assumes "length xs = k"
-  shows "x ⨂ (pr xs k) = pr (x#xs) (k+1)" 
+  assumes "length xs = l"
+  shows "x ⨂ (pr xs l) = pr (x # xs) (l+1)" 
   using Suc_le_D assms(1) by simp
 
 lemma to_list_bound_length:
-  shows "length (to_list_bound s l m j) = l"
+  shows "length (to_list_bound s l n j) = l"
 proof(induction l arbitrary: s)
-  show "length (to_list_bound s 0 m j) = 0" for s by simp
+  show "length (to_list_bound s 0 n j) = 0" for s by simp
 next
   fix l s
-  assume IH: "length (to_list_bound s l m j) = l" for s
-  have "length (to_list_bound s (Suc l) m j) = length ((if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) 
-                                                 # (to_list_bound (s+1) l m j))" by simp
-  then have "length (to_list_bound s (Suc l) m j) = length [(if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩)]
-                                                    + length (to_list_bound (s+1) l m j)" by simp
-  moreover have "length [(if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩)] = 1" by simp
-  moreover have "length (to_list_bound (s+1) l m j) = l" using IH by simp
-  ultimately show "length (to_list_bound s (Suc l) m j) = (Suc l)" by simp
+  assume IH: "length (to_list_bound s l n j) = l" for s
+  have "length (to_list_bound s (Suc l) n j) = length ((if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) 
+                                                 # (to_list_bound (s+1) l n j))" by simp
+  then have "length (to_list_bound s (Suc l) n j) = length [(if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩)]
+                                                    + length (to_list_bound (s+1) l n j)" by simp
+  moreover have "length [(if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩)] = 1" by simp
+  moreover have "length (to_list_bound (s+1) l n j) = l" using IH by simp
+  ultimately show "length (to_list_bound s (Suc l) n j) = (Suc l)" by simp
 qed
 
 lemma to_list_bound_dim:
-  shows "(∀x ∈ set (to_list_bound s l m j). dim_row x = 2) ∧ (∀x∈set (to_list_bound s l m j). dim_col x = 1)"
+  shows "(∀x ∈ set (to_list_bound s l n j). dim_row x = 2) ∧ (∀x∈set (to_list_bound s l n j). dim_col x = 1)"
   apply (induction l arbitrary: s)
    apply (auto simp: to_list_bound_def ket_vec_def).
 
 lemma to_tensor_prod_dim:
-  shows "dim_row (⨂r s l m j) = 2^l ∧ dim_col (⨂r s l m j) = 1" 
+  shows "dim_row (⨂r s l n j) = 2^l ∧ dim_col (⨂r s l n j) = 1" 
   using to_tensor_prod_def to_list_bound_length to_list_bound_dim pow_tensor_list_dim_row pow_tensor_list_dim_col 
   by simp
 
 lemma to_tensor_prod_decomp_left_zero:
-  assumes "l ≥ 1" and "(bin_rep m j)!(s-1) = 0"
-  shows "(⨂r s l m j) = |zero⟩ ⨂ (⨂r (s+1) (l-1) m j)"
+  assumes "l ≥ 1" and "(bin_rep n j)!(s-1) = 0"
+  shows "(⨂r s l n j) = |zero⟩ ⨂ (⨂r (s+1) (l-1) n j)"
 proof- 
-  have "(⨂r s l m j) = pr (to_list_bound s l m j) l"
+  have "(⨂r s l n j) = pr (to_list_bound s l n j) l"
     using to_tensor_prod_def by simp
-  also have "... = pr ((if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) # (to_list_bound (s+1) (l-1) m j)) l"
+  also have "... = pr ((if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) # (to_list_bound (s+1) (l-1) n j)) l"
     using assms(1) by (metis to_list_bound.simps(2) ordered_cancel_comm_monoid_diff_class.add_diff_inverse plus_1_eq_Suc)
-  also have "... = pr ( |zero⟩ # (to_list_bound (s+1) (l-1) m j)) l"
+  also have "... = pr ( |zero⟩ # (to_list_bound (s+1) (l-1) n j)) l"
     using assms(2) by simp
-  also have "... = |zero⟩ ⨂ pr (to_list_bound (s+1) (l-1) m j) (l-1)"
+  also have "... = |zero⟩ ⨂ pr (to_list_bound (s+1) (l-1) n j) (l-1)"
     using assms(1) pow_tensor_list.simps by (metis One_nat_def Suc_pred less_eq_Suc_le)
-  finally show "(⨂r s l m j) = |zero⟩ ⨂ (⨂r (s+1) (l-1) m j)"
+  finally show "(⨂r s l n j) = |zero⟩ ⨂ (⨂r (s+1) (l-1) n j)"
     using to_tensor_prod_def by simp
 qed
 
 lemma to_tensor_prod_decomp_left_one:
-  assumes "l ≥ 1" and "(bin_rep m j)!(s-1) = 1"
-  shows "(⨂r s l m j) = |one⟩ ⨂ (⨂r (s+1) (l-1) m j)"
+  assumes "l ≥ 1" and "(bin_rep n j)!(s-1) = 1"
+  shows "(⨂r s l n j) = |one⟩ ⨂ (⨂r (s+1) (l-1) n j)"
 proof- 
-  have "(⨂r s l m j) = pr (to_list_bound s l m j) l"
+  have "(⨂r s l n j) = pr (to_list_bound s l n j) l"
     using to_tensor_prod_def by simp
-  also have "... = pr ((if (bin_rep m j)!(s-1) = 0 then |zero⟩ else |one⟩) # (to_list_bound (s+1) (l-1) m j)) l"
+  also have "... = pr ((if (bin_rep n j)!(s-1) = 0 then |zero⟩ else |one⟩) # (to_list_bound (s+1) (l-1) n j)) l"
     using assms(1) by (metis Suc_diff_1 less_le_trans less_one to_list_bound.simps(2))
-  also have "... = pr ( |one⟩ # (to_list_bound (s+1) (l-1) m j)) l"
+  also have "... = pr ( |one⟩ # (to_list_bound (s+1) (l-1) n j)) l"
     using assms(2) by simp
-  also have "... = |one⟩ ⨂ pr (to_list_bound (s+1) (l-1) m j) (l-1)"
+  also have "... = |one⟩ ⨂ pr (to_list_bound (s+1) (l-1) n j) (l-1)"
     using assms(1) pow_tensor_list.simps by (metis One_nat_def Suc_pred less_eq_Suc_le)
-  finally show "(⨂r s l m j) = |one⟩ ⨂ (⨂r (s+1) (l-1) m j)"
+  finally show "(⨂r s l n j) = |one⟩ ⨂ (⨂r (s+1) (l-1) n j)"
     using to_tensor_prod_def by simp
 qed
 
 lemma to_tensor_prod_decomp_right:
-  assumes "j < 2^m" and "s + t - 1 < m" 
-  shows "(⨂r s (t+1) m j) = (⨂r s t m j) ⨂ (⨂r (s+t) 1 m j)"
+  assumes "j < 2^n" and "s + t - 1 < n" 
+  shows "(⨂r s (t+1) n j) = (⨂r s t n j) ⨂ (⨂r (s+t) 1 n j)"
 proof(rule disjE)
-  show "(bin_rep m j)!(s+t-1) = 0 ∨ (bin_rep m j)!(s+t-1) = 1" 
+  show "(bin_rep n j)!(s+t-1) = 0 ∨ (bin_rep n j)!(s+t-1) = 1" 
     using bin_rep_coeff assms by simp
 next
-  assume a0: "(bin_rep m j)!(s+t-1) = 0"
-  then have "(⨂r (s+t) 1 m j) = |zero⟩" 
+  assume a0: "(bin_rep n j)!(s+t-1) = 0"
+  then have "(⨂r (s+t) 1 n j) = |zero⟩" 
     using to_tensor_prod_def by simp
-  moreover have "(⨂r s (t+1) m j) = (⨂r s t m j) ⨂ |zero⟩"
+  moreover have "(⨂r s (t+1) n j) = (⨂r s t n j) ⨂ |zero⟩"
     using to_tensor_prod_decomp_right_zero a0 by simp
   ultimately show ?thesis by simp
 next
-  assume a0: "(bin_rep m j)!(s+t-1) = 1"
-  then have "(⨂r (s+t) 1 m j) = |one⟩" 
+  assume a0: "(bin_rep n j)!(s+t-1) = 1"
+  then have "(⨂r (s+t) 1 n j) = |one⟩" 
     using to_tensor_prod_def by simp
-  moreover have "(⨂r s (t+1) m j) = (⨂r s t m j) ⨂ |one⟩"
+  moreover have "(⨂r s (t+1) n j) = (⨂r s t n j) ⨂ |one⟩"
     using to_tensor_prod_decomp_right_one a0 by simp
   ultimately show ?thesis by simp
 qed
 
 lemma to_tensor_prod_decomp_half:
-  assumes "j < 2^m" and "n > s" and "n ≤ m" and "t ≥ n - s" and "m ≥ 1"
-  shows "s + t - 1 ≤ m ⟶ (⨂r s t m j) = (⨂r s (n-s) m j) ⨂ (⨂r n (t-(n-s)) m j)"
-proof(rule Nat.nat_induct_at_least[of "n-s" t])
-  show "t ≥ n - s" using assms(4) by simp
+  assumes "j < 2^n" and "m > s" and "m ≤ n" and "t ≥ m - s" and "n ≥ 1"
+  shows "s + t - 1 ≤ n ⟶ (⨂r s t n j) = (⨂r s (m-s) n j) ⨂ (⨂r m (t-(m-s)) n j)"
+proof(rule Nat.nat_induct_at_least[of "m-s" t])
+  show "t ≥ m - s" using assms(4) by simp
 next
-  show "s + (n - s) - 1 ≤ m ⟶ (⨂r s (n-s) m j) = (⨂r s (n-s) m j) ⨂ (⨂r n ((n-s)-(n-s)) m j)"
+  show "s + (m - s) - 1 ≤ n ⟶ (⨂r s (m-s) n j) = (⨂r s (m-s) n j) ⨂ (⨂r m ((m-s)-(m-s)) n j)"
   proof
-    assume a0: "s + (n - s) - 1 ≤ m"
-    then have "(⨂r n ((n-s)-(n-s)) m j) = Id 0" by simp
-    then show "(⨂r s (n-s) m j) = (⨂r s (n-s) m j) ⨂ (⨂r n ((n-s)-(n-s)) m j)" 
+    assume a0: "s + (m - s) - 1 ≤ n"
+    then have "(⨂r m ((m-s)-(m-s)) n j) = Id 0" by simp
+    then show "(⨂r s (m-s) n j) = (⨂r s (m-s) n j) ⨂ (⨂r m ((m-s)-(m-s)) n j)" 
       using Id_right_tensor by simp
   qed
 next
   fix t 
-  assume a0: "t ≥ n - s"
-     and IH: "s + t - 1 ≤ m ⟶ (⨂r s t m j) = (⨂r s (n-s) m j) ⨂ (⨂r n (t-(n-s)) m j)"
-  show "s + (Suc t) - 1 ≤ m ⟶ (⨂r s (Suc t) m j) = (⨂r s (n-s) m j) ⨂ (⨂r n ((Suc t)-(n-s)) m j)"
+  assume a0: "t ≥ m - s"
+     and IH: "s + t - 1 ≤ n ⟶ (⨂r s t n j) = (⨂r s (m-s) n j) ⨂ (⨂r m (t-(m-s)) n j)"
+  show "s + (Suc t) - 1 ≤ n ⟶ (⨂r s (Suc t) n j) = (⨂r s (m-s) n j) ⨂ (⨂r m ((Suc t)-(m-s)) n j)"
   proof
-    assume a1: "s + (Suc t) - 1 ≤ m" 
-    have "(⨂r s (t+1) m j) = (⨂r s (n-s) m j) ⨂ ((⨂r n (t-(n-s)) m j) ⨂ (⨂r (s+t) 1 m j))" 
+    assume a1: "s + (Suc t) - 1 ≤ n" 
+    have "(⨂r s (t+1) n j) = (⨂r s (m-s) n j) ⨂ ((⨂r m (t-(m-s)) n j) ⨂ (⨂r (s+t) 1 n j))" 
     proof-
-      have "s + t - 1 < m" using assms a1 by simp
-      then have "(⨂r s (t+1) m j) = (⨂r s t m j) ⨂ (⨂r (s+t) 1 m j)" 
+      have "s + t - 1 < n" using assms a1 by simp
+      then have "(⨂r s (t+1) n j) = (⨂r s t n j) ⨂ (⨂r (s+t) 1 n j)" 
         using to_tensor_prod_decomp_right assms by blast
-      then have "(⨂r s (t+1) m j) = ((⨂r s (n-s) m j) ⨂ (⨂r n (t-(n-s)) m j)) ⨂ (⨂r (s+t) 1 m j)" 
+      then have "(⨂r s (t+1) n j) = ((⨂r s (m-s) n j) ⨂ (⨂r m (t-(m-s)) n j)) ⨂ (⨂r (s+t) 1 n j)" 
         using IH a1 by simp
       then show ?thesis 
         using tensor_mat_is_assoc by simp
     qed
-    moreover have "(⨂r n (t-(n-s)+1) m j) = (⨂r n (t-(n-s)) m j) ⨂ (⨂r (s+t) 1 m j)"
+    moreover have "(⨂r m (t-(m-s)+1) n j) = (⨂r m (t-(m-s)) n j) ⨂ (⨂r (s+t) 1 n j)"
     proof-
-      have "n + (t - (n - s)) - 1 < m" using assms a1 by linarith
-      then have "⨂r n (t-(n-s)+1) m j = (⨂r n (t-(n-s)) m j) ⨂ (⨂r (n+(t-(n-s))) 1 m j)"
-        using to_tensor_prod_decomp_right[of j m n "(t-(n-s))"] assms a0 by simp
-      moreover have "n + (t - (n - s)) = t + s" using assms a0 by linarith
+      have "m + (t - (m - s)) - 1 < n" using assms a1 by linarith
+      then have "⨂r m (t-(m-s)+1) n j = (⨂r m (t-(m-s)) n j) ⨂ (⨂r (m+(t-(m-s))) 1 n j)"
+        using to_tensor_prod_decomp_right[of j n m "(t-(m-s))"] assms a0 by simp
+      moreover have "m + (t - (m - s)) = t + s" using assms a0 by linarith
       ultimately show ?thesis 
         by (metis linordered_field_class.sign_simps(2))
     qed
-    ultimately have "(⨂r s (t+1) m j) = (⨂r s (n-s) m j) ⨂ (⨂r n (t-(n-s)+1) m j)"
+    ultimately have "(⨂r s (t+1) n j) = (⨂r s (m-s) n j) ⨂ (⨂r m (t-(m-s)+1) n j)"
       by simp
-    then show "(⨂r s (Suc t) m j) = (⨂r s (n-s) m j) ⨂ (⨂r n ((Suc t)-(n-s)) m j)" 
+    then show "(⨂r s (Suc t) n j) = (⨂r s (m-s) n j) ⨂ (⨂r m ((Suc t)-(m-s)) n j)" 
       by (metis Suc_diff_le Suc_eq_plus1 a0)
   qed
 qed
 
 lemma to_tensor_prod_decomp_middle: 
-  assumes "j < 2^m" and "n > s" and "n ≤ m" and "t ≥ n - s" and "s + t - 1 ≤ m" and "m ≥ 1"
-  shows "(⨂r s t m j) = (⨂r s (n-s-1) m j) ⨂ (⨂r (n-1) 1 m j) ⨂ (⨂r n (t-(n-s)) m j)"
+  assumes "j < 2^n" and "m > s" and "m ≤ n" and "t ≥ m - s" and "s + t - 1 ≤ n" and "n ≥ 1"
+  shows "(⨂r s t n j) = (⨂r s (m-s-1) n j) ⨂ (⨂r (m-1) 1 n j) ⨂ (⨂r m (t-(m-s)) n j)"
 proof-
-  have "(⨂r s t m j) = (⨂r s (n-s) m j) ⨂ (⨂r n (t-(n-s)) m j)" 
+  have "(⨂r s t n j) = (⨂r s (m-s) n j) ⨂ (⨂r m (t-(m-s)) n j)" 
     using assms to_tensor_prod_decomp_half by blast
-  moreover have "(⨂r s (n-s) m j) = (⨂r s (n-s-1) m j) ⨂ (⨂r (n-1) 1 m j)"
+  moreover have "(⨂r s (m-s) n j) = (⨂r s (m-s-1) n j) ⨂ (⨂r (m-1) 1 n j)"
   proof-
-    have "s + (n - s - 1) - 1 < m" using assms Suc_diff_Suc by linarith
-    then have "(⨂r s (n-s-1+1) m j) = (⨂r s (n-s-1) m j) ⨂ (⨂r (s+(n-s-1)) 1 m j) "
-      using to_tensor_prod_decomp_right[of j m s "n-s-1"] assms by simp
-    moreover have "(s + (n - s - 1)) = n - 1" using assms by linarith
-    moreover have "(n - s - 1 + 1) = n - s" using assms by simp
+    have "s + (m - s - 1) - 1 < n" using assms Suc_diff_Suc by linarith
+    then have "(⨂r s (m-s-1+1) n j) = (⨂r s (m-s-1) n j) ⨂ (⨂r (s+(m-s-1)) 1 n j) "
+      using to_tensor_prod_decomp_right[of j n s "m-s-1"] assms by simp
+    moreover have "(s + (m - s - 1)) = m - 1" using assms by linarith
+    moreover have "(m - s - 1 + 1) = m - s" using assms by simp
     ultimately show ?thesis by simp
   qed
   ultimately show ?thesis by simp
 qed
 
-lemma zero_neq_one_mat:
+lemma ket_zero_neq_ket_one:
   shows "|zero⟩ ≠ |one⟩"
 proof-
   have "|zero⟩ $$ (0,0) = 1" by simp
@@ -412,34 +413,34 @@ proof-
 qed
 
 lemma to_tensor_bin_rep_zero: 
-  assumes "n ≥ 1"
-  shows "(⨂r n 1 m j) = |zero⟩ ⟷ bin_rep m j ! (n-1) = 0"
+  assumes "m ≥ 1"
+  shows "(⨂r m 1 n j) = |zero⟩ ⟷ bin_rep n j ! (m-1) = 0"
 proof
-  assume a0: "(⨂r n 1 m j) = |zero⟩"
-  have "(⨂r n 1 m j) = (if (bin_rep m j)!(n-1) = 0 then |zero⟩ else |one⟩)"  using to_tensor_prod_def by simp 
-  then have "|zero⟩ = (if (bin_rep m j)!(n-1) = 0 then |zero⟩ else |one⟩)" using a0 by simp
-  then show "bin_rep m j ! (n-1) = 0" using zero_neq_one_mat by auto
+  assume a0: "(⨂r m 1 n j) = |zero⟩"
+  have "(⨂r m 1 n j) = (if (bin_rep n j)!(m-1) = 0 then |zero⟩ else |one⟩)"  using to_tensor_prod_def by simp 
+  then have "|zero⟩ = (if (bin_rep n j)!(m-1) = 0 then |zero⟩ else |one⟩)" using a0 by simp
+  then show "bin_rep n j ! (m-1) = 0" using ket_zero_neq_ket_one by auto
 next
-  assume "bin_rep m j ! (n - 1) = 0"
-  then show "(⨂r n 1 m j) = |zero⟩" using to_tensor_prod_def by simp 
+  assume "bin_rep n j ! (m - 1) = 0"
+  then show "(⨂r m 1 n j) = |zero⟩" using to_tensor_prod_def by simp 
 qed
 
 lemma to_tensor_bin_rep_one: 
-  assumes "n ≥ 1" and "j < 2^m" and "n - 1 < m" 
-  shows "(⨂r n 1 m j) = |one⟩ ⟷ bin_rep m j ! (n-1) = 1"
+  assumes "m ≥ 1" and "j < 2^n" and "m - 1 < n" 
+  shows "(⨂r m 1 n j) = |one⟩ ⟷ bin_rep n j ! (m-1) = 1"
 proof
-  assume a0: "(⨂r n 1 m j) = |one⟩"
-  have "(⨂r n 1 m j) = (if (bin_rep m j)!(n-1) = 0 then |zero⟩ else |one⟩)"
+  assume a0: "(⨂r m 1 n j) = |one⟩"
+  have "(⨂r m 1 n j) = (if (bin_rep n j)!(m-1) = 0 then |zero⟩ else |one⟩)"
     using to_tensor_prod_def by simp 
-  then have "|one⟩ = (if (bin_rep m j)!(n-1) = 0 then |zero⟩ else |one⟩)"
+  then have "|one⟩ = (if (bin_rep n j)!(m-1) = 0 then |zero⟩ else |one⟩)"
     using a0 by simp
-  moreover have "(bin_rep m j)!(n-1) = 0 ∨ (bin_rep m j)!(n-1) = 1" 
+  moreover have "(bin_rep n j)!(m-1) = 0 ∨ (bin_rep n j)!(m-1) = 1" 
     using bin_rep_coeff assms by simp
-  ultimately show "bin_rep m j ! (n-1) = 1" 
-    using zero_neq_one_mat ket_vec_def by auto
+  ultimately show "bin_rep n j ! (m-1) = 1" 
+    using ket_zero_neq_ket_one ket_vec_def by auto
 next
-  assume a0: "bin_rep m j ! (n - 1) = 1"
-  then show "(⨂r n 1 m j) = |one⟩"
+  assume a0: "bin_rep n j ! (m - 1) = 1"
+  then show "(⨂r m 1 n j) = |one⟩"
     using to_tensor_prod_def by simp 
 qed
 
@@ -712,8 +713,8 @@ next
 qed
 
 lemma ket_unit_to_tensor_prod: 
-  assumes "j < 2^m" and "m ≥ 1"
-  shows "(⨂r 1 m m j) = |unit_vec (2^m) j⟩" 
+  assumes "j < 2^n" and "n ≥ 1"
+  shows "(⨂r 1 n n j) = |unit_vec (2^n) j⟩" 
   using aux_ket_unit_to_tensor_prod assms by simp
 
 
@@ -732,7 +733,7 @@ definition controlled_phase_shift:: "nat ⇒ complex Matrix.mat" ("CR _") where
 "CR k ≡ Matrix.mat 4 4 (λ(i,j). if i = j then (if i = 3 then (exp (2*pi*𝗂*1/2^k)) else 1) else 0)"
 
 (* AB: note to myself, maybe it should be cR with a lower-case as it's common in textbooks.
-In that case I should rename CNOT in Qauntum.thy with cNOT. *)
+In that case I should rename CNOT in Quantum.thy with cNOT. *)
 
 (* phase_shifted_qubit defines the result of applying CR gates to the current qubit (H*|j⇩i⟩)
 E.g. psq 1 n n j_dec is 1\sqrt(2)*(|0⟩ + e⇧2⇧π⇧i⇧0⇧.⇧j⇧1⇧j⇧2⇧.⇧.⇧.⇧j⇧n|1⟩) 
@@ -741,11 +742,11 @@ definition phase_shifted_qubit :: "nat ⇒ nat ⇒ nat ⇒ nat ⇒ complex Matri
 "psq s t m jd ≡ (Matrix.mat 2 1 (λ(i,j). if i=0 then (1::complex)/sqrt(2) 
               else (exp (complex_of_real (2*pi)*𝗂*(bin_frac (s-1) (t-1) m jd)))*1/sqrt(2)))"
 
-lemma transpose_of_controlled_phase_shift: (* AB: Maybe simply transpose_of_CR ? *)
+lemma transpose_of_CR: 
   shows "(CR k)⇧t = (CR k)"
   using controlled_phase_shift_def dagger_def by auto
 
-lemma dagger_of_controlled_phase_shift: (* AB: idem *)
+lemma dagger_of_CR:
   fixes k
   defines "CR_dagger ≡ Matrix.mat 4 4 (λ(i,j). if i = j then (if i = 3 then (exp (2*pi*-𝗂*1/2^k)) else 1) else 0)"
   shows "(CR k)⇧† = CR_dagger"
@@ -794,7 +795,7 @@ next
   show "dim_col (CR k)⇧† = dim_col CR_dagger" using controlled_phase_shift_def CR_dagger_def by simp
 qed
 
-lemma controlled_phase_shift_is_gate: (* AB: maybe CR_is_gate *)
+lemma controlled_CR_is_gate: 
   shows "gate 2 (CR k)"
 proof
   show "dim_row (CR k) = 2⇧2" using controlled_phase_shift_def by simp
@@ -813,7 +814,7 @@ next
       assume "i < dim_row (1⇩m (dim_col (CR k)))" and "j < dim_col (1⇩m (dim_col (CR k)))"
       then have "i ∈ {0,1,2,3}" and "j ∈ {0,1,2,3}" using controlled_phase_shift_def by auto
       moreover have "(CR k)⇧† = Matrix.mat 4 4 (λ(i,j). if i = j then (if i = 3 then (exp (2*pi*-𝗂*1/2^k)) else 1) else 0)"
-        using dagger_of_controlled_phase_shift by simp     
+        using dagger_of_CR by simp     
       moreover have "exp (- (2 * complex_of_real pi * 𝗂 / 2 ^ k)) * exp (2 * complex_of_real pi * 𝗂 / 2 ^ k) = 1" 
         by (simp add: mult_exp_exp)
       ultimately show "((CR k)⇧† * (CR k)) $$ (i,j) = 1⇩m (dim_col (CR k)) $$ (i, j)"
@@ -822,7 +823,7 @@ next
     qed
     then show ?thesis 
       by (metis cnj_transpose_is_dagger dim_col_of_dagger index_transpose_mat(2) transpose_cnj_is_dagger 
-          transpose_of_controlled_phase_shift transpose_of_prod transpose_one unitary_def)
+          transpose_of_CR transpose_of_prod transpose_one unitary_def)
   qed
 qed
 
@@ -870,7 +871,7 @@ qed
 (*E.g. for 1\sqrt(2)*(|0⟩ + e⇧2⇧π⇧i⇧0⇧.⇧j⇧1⇧j⇧2|1⟩ one has s=1 and r=2. Then, CR (2-1+2) = CR 3 is applied and 
 1\sqrt(2)*(|0⟩ + e⇧2⇧π⇧i⇧0⇧.⇧j⇧1⇧j⇧2⇧j⇧3|1⟩ is obtained.*)
 
-lemma app_controlled_phase_shift_zero: (* AB: maybe CR_on_ket_zero *)
+lemma app_CR_on_ket_zero:
   assumes "r - 1 < m" and "s ≤ r - 1" and "s ≥ 1" and "((bin_rep m jd)!(r-1)) = 0" 
   shows "(CR (r-s+1)) * ((psq s (r-1) m jd) ⨂ |zero⟩) = (psq s r m jd) ⨂ |zero⟩"
 proof
@@ -922,7 +923,7 @@ next
     using controlled_phase_shift_def phase_shifted_qubit_def by simp
 qed
 
-lemma app_controlled_phase_shift_one: (* AB CR_on_ket_one ? *)
+lemma app_CR_on_ket_one: 
   assumes "r-1 < m" and "s≤r-1" and "s≥1" and "((bin_rep m jd)!(r-1)) = 1"
   shows "(CR (r-s+1)) * ((psq s (r-1) m jd) ⨂ |one⟩) = (psq s r m jd) ⨂ |one⟩"
 proof
@@ -973,7 +974,7 @@ next
 qed
 
 
-subsection ‹Swapping of Qubits›
+subsection ‹Swapping of the Qubits›
 
 (*The idea is to apply the controlled R gate only to the tensor product of two single qubits. The first qubit is 
 already at the current position. This is the qubit we want to apply the R_j gate too. The second qubit is "hidden" 
@@ -1497,12 +1498,12 @@ proof-
     assume "v = |zero⟩" 
     then show "(CR (k-c+1) ⨂ Id (m-c-1)) * ((psq c (k-1) m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))) 
              = (psq c k m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))" 
-      using app_controlled_phase_shift_zero assms f0 by auto
+      using app_CR_on_ket_zero assms f0 by auto
   next
     assume "v = |one⟩" 
     then show "(CR (k-c+1) ⨂ Id (m-c-1)) * ((psq c (k-1) m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))) 
              = (psq c k m j) ⨂ v ⨂ (pr xs (k-c-1)) ⨂ (pr ys (m-k))" 
-      using app_controlled_phase_shift_one assms f0 by auto
+      using app_CR_on_ket_one assms f0 by auto
   qed
 qed
 
@@ -1597,7 +1598,7 @@ next
     by (simp add: Quantum.Id_def controlled_phase_shift_def)
 qed
 
-
+(*Better? ‹The Application of a $CR_k$ t all Qubits›*)
 subsection ‹Applying an $R_k$›
 
 (*Find a good abbreviation for this. Why doesn't something like R⇩_ _ _ work? *)
@@ -1646,7 +1647,7 @@ lemma CR_tensor_Id_is_gate:
   shows "gate (m-c+1) (CR (k-c+1) ⨂ Id (m-c-1))"
 proof-
   have "gate (m-c-1) (Id (m-c-1))" by simp
-  moreover have "gate 2 (CR (k-c+1))" using controlled_phase_shift_is_gate by simp
+  moreover have "gate 2 (CR (k-c+1))" using controlled_CR_is_gate by simp
   moreover have "(m-c-1) + 2 = m-c+1" using assms by simp
   ultimately show ?thesis by (metis add.commute tensor_gate)
 qed
@@ -2349,7 +2350,7 @@ next
 qed
 
 
-subsection ‹Extension to all Qubits›
+subsection ‹Extension of the Application of all Necessary Gates to all Qubits›
 
 fun pow_mult :: "(complex Matrix.mat) list ⇒ nat ⇒ complex Matrix.mat" ("pm _ _" 75)  where
   "(pm (Cons x []) (Suc 0)) = x"  
