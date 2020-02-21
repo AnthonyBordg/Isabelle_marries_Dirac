@@ -28,8 +28,7 @@ section \<open>The Set-Up\<close>
 
 locale prisoner =
   fixes \<gamma>:: "real" 
-  assumes "\<gamma> \<le> (2*pi)"
-      and "\<gamma> \<ge> 0"
+  assumes "\<gamma> \<le> pi/2" and "\<gamma> \<ge> 0"
 
 abbreviation (in prisoner) J :: "complex Matrix.mat" where
 "J \<equiv> mat_of_cols_list 4  [[cos(\<gamma>/2), 0, 0, \<i>*sin(\<gamma>/2)],
@@ -70,9 +69,9 @@ locale strategic_space_2p = prisoner +
     and \<theta>\<^sub>B:: "real"
     and \<phi>\<^sub>B:: "real"
   assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> pi"
-      and "0 \<le> \<phi>\<^sub>A \<and> \<phi>\<^sub>A \<le> 2*pi"
+      and "0 \<le> \<phi>\<^sub>A \<and> \<phi>\<^sub>A \<le> pi/2"
       and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> pi"
-      and "0 \<le> \<phi>\<^sub>B \<and> \<phi>\<^sub>B \<le> 2*pi"
+      and "0 \<le> \<phi>\<^sub>B \<and> \<phi>\<^sub>B \<le> pi/2"
 
 abbreviation (in strategic_space_2p) U\<^sub>A :: "complex Matrix.mat" where
 "U\<^sub>A \<equiv> mat_of_cols_list 2 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2), -sin(\<theta>\<^sub>A/2)],
@@ -491,8 +490,12 @@ definition (in strategic_space_2p) bob_payoff :: "real" where
 "bob_payoff \<equiv> 3 * (prob00 \<psi>\<^sub>f) + 1 * (prob11 \<psi>\<^sub>f) + 5 * (prob01 \<psi>\<^sub>f) + 0 * (prob10 \<psi>\<^sub>f)"
 
 definition (in strategic_space_2p) is_nash_eq :: "bool" where
-"is_nash_eq \<equiv> (\<forall>tA pA. strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<longrightarrow> alice_payoff \<ge> strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B) \<and>
-               (\<forall>tB pB. strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<longrightarrow> bob_payoff \<ge> strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB)"
+"is_nash_eq \<equiv> 
+(\<forall>tA pA. strategic_space_2p \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B \<longrightarrow> 
+    alice_payoff \<ge> strategic_space_2p.alice_payoff \<gamma> tA pA \<theta>\<^sub>B \<phi>\<^sub>B) 
+\<and>
+(\<forall>tB pB. strategic_space_2p \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB \<longrightarrow> 
+    bob_payoff \<ge> strategic_space_2p.bob_payoff \<gamma> \<theta>\<^sub>A \<phi>\<^sub>A tB pB)"
 
 definition (in strategic_space_2p) is_pareto_opt :: "bool" where
 "is_pareto_opt \<equiv> \<forall>tA pA tB pB. strategic_space_2p \<gamma> tA pA tB pB \<longrightarrow>
