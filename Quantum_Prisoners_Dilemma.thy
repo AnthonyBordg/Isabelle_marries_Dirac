@@ -28,7 +28,7 @@ section \<open>The Set-Up\<close>
 
 locale prisoner =
   fixes \<gamma>:: "real" 
-  assumes "\<gamma> \<le> (2*pi)"
+  assumes "\<gamma> \<le> pi/2"
       and "\<gamma> \<ge> 0"
 
 abbreviation (in prisoner) J :: "complex Matrix.mat" where
@@ -70,9 +70,9 @@ locale strategic_space_2p = prisoner +
     and \<theta>\<^sub>B:: "real"
     and \<phi>\<^sub>B:: "real"
   assumes "0 \<le> \<theta>\<^sub>A \<and> \<theta>\<^sub>A \<le> pi"
-      and "0 \<le> \<phi>\<^sub>A \<and> \<phi>\<^sub>A \<le> 2*pi"
+      and "0 \<le> \<phi>\<^sub>A \<and> \<phi>\<^sub>A \<le> pi/2"
       and "0 \<le> \<theta>\<^sub>B \<and> \<theta>\<^sub>B \<le> pi"
-      and "0 \<le> \<phi>\<^sub>B \<and> \<phi>\<^sub>B \<le> 2*pi"
+      and "0 \<le> \<phi>\<^sub>B \<and> \<phi>\<^sub>B \<le> pi/2"
 
 abbreviation (in strategic_space_2p) U\<^sub>A :: "complex Matrix.mat" where
 "U\<^sub>A \<equiv> mat_of_cols_list 2 [[exp(\<i>*\<phi>\<^sub>A)*cos(\<theta>\<^sub>A/2), -sin(\<theta>\<^sub>A/2)],
