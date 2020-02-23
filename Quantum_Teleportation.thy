@@ -398,7 +398,7 @@ definition bob:: "complex Matrix.mat => bit \<times> bit \<Rightarrow> complex M
 if (fst b, snd b) = (zero, zero) then q else 
   if (fst b, snd b) = (zero, one) then (Id 2 \<Otimes> X) * q else
     if (fst b, snd b) = (one, zero) then (Id 2 \<Otimes> Z) * q else
-      if (fst b, snd b) = (one, one) then (Id 2 \<Otimes> Y) * q else 
+      if (fst b, snd b) = (one, one) then (Id 2 \<Otimes> Z * X) * q else 
         undefined"
 
 lemma alice_out_unique [simp]:
@@ -462,31 +462,88 @@ id_is_gate Id_def by (auto simp add: mat_of_cols_list_def X_def)
 qed
 
 abbreviation M4:: "complex Matrix.mat" where 
-"M4 \<equiv> mat_of_cols_list 8 [[0, \<i>, 0, 0, 0, 0, 0, 0],
-                          [-\<i>, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, \<i>, 0, 0, 0, 0],
-                          [0, 0, -\<i>, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, \<i>, 0, 0],
-                          [0, 0, 0, 0, -\<i>, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, \<i>],
-                          [0, 0, 0, 0, 0, 0, -\<i>, 0]]"
+"M4 \<equiv> mat_of_cols_list 8 [[0, -1, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, -1, 0, 0, 0, 0],
+                          [0, 0, 1, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, -1, 0, 0],
+                          [0, 0, 0, 0, 1, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, -1],
+                          [0, 0, 0, 0, 0, 0, 1, 0]]"
+
+abbreviation ZX:: "complex Matrix.mat" where
+"ZX \<equiv> mat_of_cols_list 2 [[0, -1], [1, 0]]"
+
+lemma l_inv_of_ZX:
+  shows "ZX\<^sup>\<dagger> * ZX = 1\<^sub>m 2"
+proof
+  show "dim_row (ZX\<^sup>\<dagger> * ZX) = dim_row (1\<^sub>m 2)" using dagger_def mat_of_cols_list_def by simp
+  show "dim_col (ZX\<^sup>\<dagger> * ZX) = dim_col (1\<^sub>m 2)" using dagger_def mat_of_cols_list_def by simp
+  show "\<And>i j. i < dim_row (1\<^sub>m 2) \<Longrightarrow> j < dim_col (1\<^sub>m 2) \<Longrightarrow> (ZX\<^sup>\<dagger> * ZX) $$ (i, j) = 1\<^sub>m 2 $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row (1\<^sub>m 2)" and "j < dim_col (1\<^sub>m 2)"
+    then have "i \<in> {0..<2} \<and> j \<in> {0..<2}" by auto
+    then show "(ZX\<^sup>\<dagger> * ZX) $$ (i, j) = 1\<^sub>m 2 $$ (i, j)"
+      using mat_of_cols_list_def dagger_def by (auto simp add: set_2)
+  qed
+qed
+
+lemma r_inv_of_ZX:
+  shows "ZX * (ZX\<^sup>\<dagger>) = 1\<^sub>m 2"
+proof
+  show "dim_row (ZX * (ZX\<^sup>\<dagger>)) = dim_row (1\<^sub>m 2)" using dagger_def mat_of_cols_list_def by simp
+  show "dim_col (ZX * (ZX\<^sup>\<dagger>)) = dim_col (1\<^sub>m 2)" using dagger_def mat_of_cols_list_def by simp
+  show "\<And>i j. i < dim_row (1\<^sub>m 2) \<Longrightarrow> j < dim_col (1\<^sub>m 2) \<Longrightarrow> (ZX * (ZX\<^sup>\<dagger>)) $$ (i, j) = 1\<^sub>m 2 $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row (1\<^sub>m 2)" and "j < dim_col (1\<^sub>m 2)"
+    then have "i \<in> {0..<2} \<and> j \<in> {0..<2}" by auto
+    then show "(ZX * (ZX\<^sup>\<dagger>)) $$ (i, j) = 1\<^sub>m 2 $$ (i, j)"
+      using mat_of_cols_list_def dagger_def by (auto simp add: set_2)
+  qed
+qed
+
+lemma ZX_is_gate [simp]:
+  shows "gate 1 ZX"
+proof
+  show "dim_row ZX = 2 ^ 1" using mat_of_cols_list_def by simp
+  show "square_mat ZX" using mat_of_cols_list_def by simp
+  show "unitary ZX" using unitary_def l_inv_of_ZX r_inv_of_ZX mat_of_cols_list_def by auto
+qed
+
+lemma prod_of_ZX:
+  shows "Z * X = ZX"
+proof
+  show "dim_row (Z * X) = dim_row ZX"
+    using Z_is_gate mat_of_cols_list_def gate_def by auto
+  show "dim_col (Z * X) = dim_col ZX"
+    using X_is_gate mat_of_cols_list_def gate_def by auto
+  show "\<And>i j. i < dim_row ZX \<Longrightarrow> j < dim_col ZX \<Longrightarrow> (Z * X) $$ (i, j) = ZX $$ (i, j)"
+  proof-
+    fix i j assume "i < dim_row ZX" and "j < dim_col ZX"
+    then have "i \<in> {0..<2} \<and> j \<in> {0..<2}" by (auto simp add: mat_of_cols_list_def)
+    then show "(Z * X) $$ (i, j) = ZX $$ (i, j)" by (auto simp add: set_2 Z_def X_def)
+  qed
+qed
 
 lemma tensor_prod_of_id_2_y:
-  shows "(Id 2 \<Otimes> Y) = M4"
+  shows "(Id 2 \<Otimes> Z * X) = M4"
 proof
-    have f0:"gate 3 (Id 2 \<Otimes> Y)"
-      using Y_is_gate tensor_gate[of "2" "Id 2" "1" "Y"] by simp
-    then show "dim_row (Id 2 \<Otimes> Y) = dim_row M4"
+  have f0:"gate 3 (Id 2 \<Otimes> Z * X)"
+    using prod_of_ZX ZX_is_gate tensor_gate[of "2" "Id 2" "1" "Z * X"] by simp
+  then show "dim_row (Id 2 \<Otimes> Z * X) = dim_row M4"
       using gate_def by (simp add: mat_of_cols_list_def)
-    show "dim_col (Id 2 \<Otimes> Y) = dim_col M4"
-      using f0 gate_def by (simp add: mat_of_cols_list_def)
-    show "\<And>i j. i < dim_row M4 \<Longrightarrow> j < dim_col M4 \<Longrightarrow> (Id 2 \<Otimes> Y) $$ (i,j) = M4 $$ (i,j)"
-    proof-
-      fix i j assume "i < dim_row M4" and "j < dim_col M4"
-      then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add: mat_of_cols_list_def)
-      then show "(Id 2 \<Otimes> Y) $$ (i, j) = M4 $$ (i,j)"
-        using Id_def Y_def index_tensor_mat[of "Id 2" "4" "4" "Y" "2" "2" "i" "j"] gate_def Y_is_gate 
-id_is_gate Id_def by (auto simp add: mat_of_cols_list_def Y_def)
+  show "dim_col (Id 2 \<Otimes> Z * X) = dim_col M4"
+    using f0 gate_def by (simp add: mat_of_cols_list_def)
+  show "\<And>i j. i < dim_row M4 \<Longrightarrow> j < dim_col M4 \<Longrightarrow> (Id 2 \<Otimes> Z * X) $$ (i,j) = M4 $$ (i,j)"
+  proof-
+    fix i j assume "i < dim_row M4" and "j < dim_col M4"
+    then have "i \<in> {0..<8} \<and> j \<in> {0..<8}" by (auto simp add: mat_of_cols_list_def)
+    then have "(Id 2 \<Otimes> ZX) $$ (i, j) = M4 $$ (i,j)"
+      using Id_def mat_of_cols_list_def index_tensor_mat[of "Id 2" "4" "4" "ZX" "2" "2" "i" "j"] 
+        gate_def ZX_is_gate id_is_gate
+      by (auto simp add: mat_of_cols_list_def)
+    then show "(Id 2 \<Otimes> Z * X) $$ (i, j) = M4 $$ (i,j)"
+      using prod_of_ZX by simp
     qed
 qed
 
@@ -596,25 +653,25 @@ mat_of_cols_list 4 [[0,0,1,0]] \<Otimes> \<phi>"
     qed
   qed
   moreover have "q = mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, -\<beta>, \<alpha>]] \<Longrightarrow> bob q (alice_out \<phi> q) = 
-mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>"
+mat_of_cols_list 4 [[0, 0, 0, 1]] \<Otimes> \<phi>"
   proof
     assume asm:"q = Tensor.mat_of_cols_list 8 [[0, 0, 0, 0, 0, 0, -\<beta>, \<alpha>]]"
-    show "dim_row (bob q (alice_out \<phi> q)) = dim_row (Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>)"
+    show "dim_row (bob q (alice_out \<phi> q)) = dim_row (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>)"
       using mat_of_cols_list_def a0 a1 assms(1) state_def bob_def alice_out_def asm tensor_prod_of_id_2_y by simp
-    show "dim_col (bob q (alice_out \<phi> q)) = dim_col (Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>)"
-      using mat_of_cols_list_def a0 a1 assms(1) state_def bob_def alice_out_def asm by simp    
-    show "\<And>i j. i < dim_row (Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>) \<Longrightarrow> 
-                j < dim_col (Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>) \<Longrightarrow>
-           bob q (alice_out \<phi> q) $$ (i,j) = (Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>) $$ (i,j)"
+    show "dim_col (bob q (alice_out \<phi> q)) = dim_col (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>)"
+      using mat_of_cols_list_def a0 a1 assms(1) state_def bob_def alice_out_def asm by simp  
+    show "\<And>i j. i < dim_row (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>) \<Longrightarrow> 
+                j < dim_col (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>) \<Longrightarrow>
+           bob q (alice_out \<phi> q) $$ (i,j) = (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>) $$ (i,j)"
     proof-
-      fix i j assume "i < dim_row (Tensor.mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>)" and
-                     "j < dim_col (Tensor.mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>)"
+      fix i j assume "i < dim_row (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>)" and
+                     "j < dim_col (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>)"
       then have c1:"i \<in> {0..<8} \<and> j = 0"
         using asm mat_of_cols_list_def assms state_def by auto
       then have "(M4 * (Matrix.mat 8 (Suc 0) (\<lambda>(i, j). [[0,0,0,0,0,0,-\<phi> $$ (Suc 0,0),\<phi> $$ (0,0)]]!j!i))) $$ (i,j) = 
-(Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>) $$ (i,j)"
+(Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>) $$ (i,j)"
         using state_def assms(1) by(auto simp add: a0 a1 mat_of_cols_list_def times_mat_def scalar_prod_def)
-      then show "bob q (alice_out \<phi> q) $$ (i,j) = (Tensor.mat_of_cols_list 4 [[0,0,0,-\<i>]] \<Otimes> \<phi>) $$ (i,j)"
+      then show "bob q (alice_out \<phi> q) $$ (i,j) = (Tensor.mat_of_cols_list 4 [[0,0,0,1]] \<Otimes> \<phi>) $$ (i,j)"
         using bob_def alice_out_def asm c1 a0 a1 mat_of_cols_list_def tensor_prod_of_id_2_y assms(1) by simp
     qed
   qed
@@ -624,7 +681,7 @@ mat_of_cols_list 4 [[0, 0, 0, -\<i>]] \<Otimes> \<phi>"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0 by simp
   moreover have "state 2 (mat_of_cols_list 4 [[0, 0, 1, 0]])"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0 by simp
-  moreover have "state 2 (mat_of_cols_list 4 [[0, 0, 0, -\<i>]])"
+  moreover have "state 2 (mat_of_cols_list 4 [[0, 0, 0, 1]])"
     using state_def mat_of_cols_list_def cpx_vec_length_def lessThan_atLeast0 by simp
   ultimately show ?thesis by auto
 qed
