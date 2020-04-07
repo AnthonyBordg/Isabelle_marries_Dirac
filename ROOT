@@ -1,8 +1,8 @@
-chapter "Isabelle_marries_Dirac"
+chapter "Quantum_Computation_and_Quantum_Information"
 
-session "Isabelle_marries_Dirac" (AFP) = "Jordan_Normal_Form" +
+session "Quantum_Computation_and_Quantum_Information" (AFP) = "Jordan_Normal_Form" +
   description
-    "Quantum Computation and Quantum Information"
+    "A certified library for quantum computation and quantum information in Isabelle/HOL"
   sessions
     Matrix_Tensor
     VectorSpace
