@@ -2,7 +2,7 @@ chapter "Isabelle_marries_Dirac"
 
 session "Isabelle_marries_Dirac" (AFP) = "Jordan_Normal_Form" +
   description
-    "A Certified Library of Quantum Computing"
+    "Quantum Computation and Quantum Information"
   sessions
     Matrix_Tensor
     VectorSpace
